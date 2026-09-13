@@ -88,6 +88,25 @@ func unboundReport(chosen library.Voice, table cue.Table, chooser randomChooser)
 	return nil
 }
 
+// scanLibrary finds the voices under root, warning where a chosen root cannot be read.
+//
+// No root at all is the ordinary state of an application nobody has yet pointed at
+// their recordings, so it finds nothing and says nothing. Scanning it anyway asked the
+// file system to read a directory with no name and printed the refusal on every start,
+// including the one Wails makes while generating bindings during a build. A root that
+// was chosen but cannot be read still warns, because somebody chose it.
+func scanLibrary(root string, table cue.Table) ([]library.Voice, library.Report) {
+	if root == "" {
+		return nil, library.Report{}
+	}
+	found, report, err := library.Scan(root, table)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: %v\n", err)
+		return nil, library.Report{}
+	}
+	return found, report
+}
+
 // warnAbout prints what a scan passed over, so nothing is skipped in silence.
 //
 // A misspelled folder name and a directory holding no recordings both leave an empty

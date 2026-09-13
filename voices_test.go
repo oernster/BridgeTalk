@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -59,5 +60,32 @@ func TestEverythingAScanPassedOverIsNamed(t *testing.T) {
 func TestACleanScanPrintsNothing(t *testing.T) {
 	if written := captureStderr(t, func() { warnAbout(library.Report{}) }); written != "" {
 		t.Errorf("stderr = %q, want nothing", written)
+	}
+}
+
+// An application nobody has pointed at their recordings yet is not in trouble, so an
+// unset root finds nothing and says nothing. A chosen root that cannot be read still
+// warns, because somebody chose it; a readable one finds its voices in silence.
+func TestOnlyAChosenLibraryRootThatCannotBeReadWarns(t *testing.T) {
+	table := fixtureTable(t)
+	cases := []struct {
+		name   string
+		root   string
+		voices int
+		warns  bool
+	}{
+		{"an unset root is silent", "", 0, false},
+		{"a chosen root that is missing warns", filepath.Join(t.TempDir(), "gone"), 0, true},
+		{"a readable root finds its voices", libraryRootFixture(t), 2, false},
+	}
+	for _, each := range cases {
+		var found []library.Voice
+		written := captureStderr(t, func() { found, _ = scanLibrary(each.root, table) })
+		if len(found) != each.voices {
+			t.Errorf("%s: found %d voices, want %d", each.name, len(found), each.voices)
+		}
+		if warned := strings.Contains(written, "warning:"); warned != each.warns {
+			t.Errorf("%s: stderr = %q, want a warning: %v", each.name, written, each.warns)
+		}
 	}
 }

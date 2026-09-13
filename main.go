@@ -198,11 +198,7 @@ func run() error {
 	stored := settings.Load()
 
 	root := preferred(*libraryRoot, stored.LibraryRoot)
-	found, report, scanErr := library.Scan(root, table)
-	if scanErr != nil {
-		fmt.Fprintf(os.Stderr, "warning: %v\n", scanErr)
-		found = nil
-	}
+	found, report := scanLibrary(root, table)
 	warnAbout(report)
 
 	chooser := randomChooser{source: rand.New(rand.NewSource(time.Now().UnixNano()))}

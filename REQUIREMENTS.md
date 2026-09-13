@@ -29,12 +29,12 @@ project.
 - An audio library held in a directory the user chooses, organised by the person
   who recorded it.
 - Discovery of that library by scanning, with no configuration step.
-- A recorder that captures audio from the user's own microphone and files it
-  against the cue vocabulary.
+- A checklist of the moments a voice has no recording for, each opening the folder
+  its recording belongs in.
 - Auditioning, casting a voice, settings and a tray presence.
 - An extension point through which an additional audio source may be supplied.
-- Windows and Linux, decided by Oliver on 2026-09-13. What Linux still needs is in
-  OQ-12.
+- Windows and Linux, decided by Oliver on 2026-09-13. Linux work comes after
+  everything else.
 
 **Out of scope:**
 
@@ -48,6 +48,7 @@ project.
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
 | macOS | Not asked for; Windows and Linux are the platforms in scope |
+| Capturing audio | Recorded in a dedicated program; section 4 |
 
 ### 1.4 Definitions
 
@@ -82,7 +83,7 @@ graph LR
   CAT --> SCAN["Scanner<br/>exact cue id match"]
   SCAN --> ROOT["User-chosen<br/>library root"]
   CAT --> PLAY[Audio player]
-  REC[Recorder] -->|writes takes| ROOT
+  REC["Recording program<br/>outside the application"] -->|saves takes| ROOT
   DROP["Drop in a folder<br/>of audio files"] --> ROOT
   PORT["Audio source port<br/>section 6"] -.optional.-> CAT
 ```
@@ -95,20 +96,19 @@ nothing back. Everything about how audio is stored sits below that line.
 | Class | Description | May do | May not do |
 |---|---|---|---|
 | **Commander** | Plays Elite Dangerous, wants spoken feedback | Choose a library root, cast a voice, audition, adjust settings, record | Modify the cue vocabulary from the interface |
-| **Contributor** | Someone recording a voice for a commander | Record takes into their own voice directory | Anything else; the recorder is the whole interface |
+| **Contributor** | Someone recording a voice for a commander | Record takes in a program of their choice and save them into a voice directory | Anything else |
 
 A single person is usually both.
 
 ### 2.3 Operating environment
 
 Windows 10 and Windows 11, x64. Go 1.26 with Wails v2 hosting a React and
-TypeScript front end. No CGO, per the house rule; audio capture was measured and
-needs no exception to it, see NFR-C-304. Elite Dangerous journal files in their
+TypeScript front end. No CGO, per the house rule. Elite Dangerous journal files in their
 standard location. No network dependency at runtime: the application makes no
 outbound request.
 
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
-built yet; OQ-12 holds the one part nothing has been measured for. The library
+built yet and comes after all other work. The library
 schema in section 3 is already portable, so nothing there changes either way.
 
 ### 2.4 Constraints
@@ -127,8 +127,8 @@ schema in section 3 is already portable, so nothing there changes either way.
 
 | ID | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| ASM-1 | The 256 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before the recorder is built |
-| ASM-2 | Contributors record with ordinary consumer microphones in untreated rooms, so capture quality is not controllable by the application. | Oliver | Before the recorder is built |
+| ASM-1 | The 256 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
+| ASM-2 | Recordings are made with ordinary consumer microphones in untreated rooms, so their quality is not controllable by the application. | Oliver | Before recordings are made in earnest |
 | ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
 
 ---
@@ -350,9 +350,9 @@ application shall play one take for that cue.
 **FR-217 The library is read only, with three named exceptions**
 Priority: Must.
 The application shall never write to, move, rename or delete a file under the
-library root, except the recorder writing a take, FR-212 writing a `voice.toml`
-plus FR-223 making a voice's empty folders. All three are confined to the voice
-directory being targeted.
+library root, except FR-212 writing a `voice.toml`, FR-223 making a voice's empty
+folders plus FR-314 making a missing moment's folder. All three are confined to the
+voice directory being targeted.
 
 **FR-218 If two directories differ only in case, then merge their takes**
 Priority: Must.
@@ -396,7 +396,7 @@ When the user asks for the folders of a named voice, the application shall creat
 the vocabulary.
 Rationale: a folder named for its cue is the folder form of rule 2, so a person
 filling a voice by hand puts each recording in the folder for its moment and never
-types a cue id. The recorder writes into the same folders under FR-304.
+types a cue id. The Record pane opens the same folders under FR-314.
 Acceptance: Given an empty library root and a vocabulary of 256 cues, when the user
 makes the folders for `Oliver`, then `Oliver/` holds 256 empty subdirectories, one
 per cue id; a take then placed in `Oliver/DockingGranted/` under any file name
@@ -498,115 +498,61 @@ at the 95th percentile, measured over 100 firings in the player benchmark.
 
 ---
 
-## 4. The recorder
+## 4. Recording
 
-```mermaid
-stateDiagram-v2
-  [*] --> ChooseVoice
-  ChooseVoice --> SelectCue: voice directory chosen or created
-  SelectCue --> Armed: cue chosen from the vocabulary
-  Armed --> Recording: user starts
-  Recording --> Review: user stops or the ceiling is reached
-  Review --> Recording: retake
-  Review --> Saved: keep
-  Review --> SelectCue: discard
-  Saved --> SelectCue: next cue
-  SelectCue --> [*]: done
-```
+Recording happens outside the application, in whatever program the person recording
+prefers. The application's part is to say what a voice is still missing and to open the
+folder each take belongs in.
 
-**FR-301 Guided cue list**
+**Withdrawn on 2026-09-13.** A built-in recorder was specified here as FR-301 to FR-310
+with NFR-C-301 to NFR-C-304. Oliver withdrew it in favour of recording in a dedicated
+program, which already records WAV and can trim a take or even out its level, where a
+bare recorder here would do neither. Those identifiers are retired and are not reused.
+
+**FR-311 List what a voice is missing**
 Priority: Must.
-The recorder shall present the cue vocabulary as a list, showing for each cue its
-title, its id and how many takes the target voice already has.
+When the user chooses a voice folder on the Record pane, the application shall list
+every cue that voice has no take for, grouped under each cue's heading and showing each
+cue's title and id.
+Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 256
+cues, when Oliver is chosen, then 255 cues are listed and `Docked` is not.
+Verified by: `TestMissingListsWhatAVoiceHasNoTakeFor` in
+`internal/infrastructure/library/checklist_test.go`; `TestTheChecklistCountsWhatIsRecorded`
+in `checklist_test.go`; `frontend/src/record.test.tsx`.
 
-**FR-302 Record a take**
+**FR-312 Offer every voice folder, recorded or not**
 Priority: Must.
-When the user starts recording, the application shall capture audio from the
-selected input device until the user stops or the ceiling in NFR-C-301 is reached.
+The Record pane shall offer every immediate subdirectory of the library root as a voice
+folder, including one that holds no take yet.
+Rationale: a voice made under FR-223 holds no take until the first is saved, so under
+FR-209 it is not yet a voice; it is exactly the one that needs the list.
+Verified by: `TestVoiceDirsListsEveryFolderRecordedOrNot`;
+`TestEveryVoiceFolderIsOfferedRecordedOrNot`.
 
-**FR-303 Review before writing**
-Priority: Must.
-When a recording stops, the application shall play it back on request and shall
-write nothing to disk until the user keeps it.
-Rationale: a recorder that writes first and asks later fills a library with throat
-clearing.
-
-**FR-304 Write location and file name**
-Priority: Must.
-When the user keeps a take, the application shall write it to
-`<library root>/<voice>/<cue id>/<n>.wav`, where `<n>` is the lowest positive
-integer not already used in that directory, zero padded to two digits.
-Rationale: file names carry no meaning under section 3.1 rule 2, so the only
-requirement on one is that it is distinct and stable. Writing into a folder named
-by cue id is the folder form of the drop-in convention, so a recorded voice and a
-hand assembled one are the same thing on disk.
-
-**FR-305 If the target directory cannot be written, then keep the take in memory**
-Priority: Must.
-If writing a kept take fails, then the application shall report the path and the
-reason, shall retain the recording in memory and shall offer to retry, rather than
-losing the performance.
-
-**FR-306 Choose an input device**
-Priority: Must.
-The user shall be able to select the capture device from those the operating
-system reports; the selection shall persist in settings.
-
-**FR-307 Input level indication**
+**FR-313 Show progress**
 Priority: Should.
-While the recorder is armed or recording, the application shall show a live input
-level, so a user can tell a dead microphone from a quiet one before recording the
-whole vocabulary into silence.
+While a voice folder is chosen, the Record pane shall show how many cues of the
+vocabulary it has at least one take for.
+Verified by: `TestTheChecklistCountsWhatIsRecorded`.
 
-**FR-308 If the input is clipping, then warn**
-Priority: Could.
-If more than 0.1 percent of samples in a take reach full scale, then the
-application shall mark the take as clipped in the review step.
-
-**FR-309 Progress across the vocabulary**
-Priority: Should.
-The recorder shall show how many cues of the vocabulary the target voice now has
-at least one take for.
-
-**FR-310 The recorder writes only into the target voice directory**
+**FR-314 Open a moment's folder**
 Priority: Must.
-The recorder shall write no file outside `<library root>/<voice>/`, for the voice
-currently targeted.
+When the user presses Open folder beside a cue, the application shall open that cue's
+folder inside the chosen voice folder in the system file manager, creating the folder
+where it is missing.
+Acceptance: Given `Oliver/` with no `Docked` folder, when Open folder is pressed beside
+Docked, then `Oliver/Docked/` exists and File Explorer shows it.
+Verified by: `TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot`;
+`TestOpeningAMomentsFolderMakesItAndShowsIt`. File Explorer appearing is not verified by
+a test, since a test opens no window.
 
-### 4.1 Non-functional
-
-**NFR-C-301 Take ceiling**
+**FR-315 If a moment's folder cannot be opened, then say why**
 Priority: Must.
-A single take shall be capped at 30 seconds. When the cap is reached, recording
-stops and the take enters review.
-Rationale: no cue in the vocabulary is a monologue; an uncapped recorder left
-running writes a gigabyte.
-
-**NFR-C-302 Capture format**
-Priority: Must.
-The recorder shall write 16 bit signed PCM WAV at 48,000 Hz, single channel.
-Rationale: WASAPI in shared mode delivers only the endpoint's own mixer rate,
-which measured 48,000 Hz on the reference machine, so specifying 44,100 Hz would
-force a resampler into the recorder for no gain. WAV is one of the four formats
-already decoded, it is lossless and it needs no encoder dependency. Where the
-endpoint reports more than one channel, the recorder shall downmix to one by
-averaging.
-
-**NFR-C-303 Recording does not block the interface**
-Priority: Must.
-While recording, the user interface shall continue to respond to input, measured
-by the level meter in FR-307 updating at least 10 times a second.
-
-**NFR-C-304 No CGO in the capture path**
-Priority: Must.
-The capture path shall build and run with `CGO_ENABLED=0`.
-Verified by measurement: `github.com/moutend/go-wca` over
-`github.com/go-ole/go-ole`, built with `CGO_ENABLED=0`, opened the default
-endpoint, negotiated 48,000 Hz stereo float32 shared mode and delivered 143,040
-frames across 2.98 seconds, with a peak magnitude of 0.0117. A second spike
-enumerated the active capture endpoints by name and id. `go-ole` is already an
-indirect dependency, through Wails, so this adds one direct dependency and no
-toolchain change.
+If the cue is not in the vocabulary, the voice folder does not exist or the folder
+cannot be made or shown, then the application shall report the reason on the Record
+pane without opening anything.
+Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
+`TestAMomentFolderThatCannotBeOpenedIsReported`.
 
 ---
 
@@ -626,7 +572,7 @@ toolchain change.
 
 - The application does not encrypt recordings at rest.
 - The application does not verify who a recording is of or who owns it.
-- The application does not process, clean up or improve captured audio.
+- The application does not record, process, clean up or improve audio.
 - The application cannot control the game.
 
 ---
@@ -656,9 +602,9 @@ then application, then infrastructure, then user interface.
 
 The diagnostic that says the foundation is sound: every user visible action in
 this document is executable from a Go test with no window open. Choosing a root,
-scanning, casting, auditioning, recording a take and writing it are each one named
-entry point. If the user interface for the recorder turns out to be hard, the
-recorder actions were not given callable homes; that is a hypothesis; the
+scanning, casting, auditioning, making a voice's folders and opening a moment's folder
+are each one named entry point. If a user interface over them turns out to be hard,
+the actions were not given callable homes; that is a hypothesis; the
 headless test is how it gets tested.
 
 ---
@@ -668,7 +614,6 @@ headless test is how it gets tested.
 | ID | Question | Blocks | Owner |
 |---|---|---|---|
 | **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
-| **OQ-12** | **How does the recorder capture audio on Linux with no CGO?** Linux is in scope alongside Windows, decided by Oliver on 2026-09-13; the recorder is used by whoever runs the application. The measured capture path, WASAPI under NFR-C-304, is Windows only. Nothing has been measured on Linux, so whether a capture backend exists there without CGO is unknown and nothing is claimed. The rest of what Linux needs is known and unbuilt: a tray and window integration, an install and update story that is not the registry and journal discovery under Proton. | The recorder on Linux | Claude to measure a capture spike; Oliver to decide on the result |
 
 ---
 
@@ -676,10 +621,10 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
-| **Should** | FR-206, FR-210, FR-212, FR-307, FR-309, FR-501, NFR-P-201 |
-| **Could** | FR-308 |
-| **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-311, FR-312, FR-314, FR-315, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
+| **Could** | Nothing at present |
+| **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

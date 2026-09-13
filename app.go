@@ -86,6 +86,9 @@ type App struct {
 	// choose-a-directory methods do with an answer is otherwise unreachable.
 	chooseDir func(title, start string) (string, error)
 
+	// reveal opens a folder in the file manager; a field so a test opens no window.
+	reveal func(dir string) error
+
 	// quitting records that a quit has already been decided, so the close dialog is
 	// not raised over the top of the quit it was just asked to perform.
 	quitting atomic.Bool

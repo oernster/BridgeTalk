@@ -60,7 +60,7 @@ exactly like one that holds.
 application services by constructor and hands the assembled facade to Wails. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
-facade is spread over the root files beside them, `settings.go`, `cast.go`, `folders.go`, `audition.go`,
+facade is spread over the root files beside them, `settings.go`, `cast.go`, `folders.go`, `checklist.go`, `audition.go`,
 `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`.
 

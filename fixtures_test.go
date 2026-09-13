@@ -102,6 +102,7 @@ func fixtureApp(t *testing.T) (*App, *fakePlayer, *recorder) {
 	player := newFakePlayer()
 	current, root := fixtureSession(t, player)
 	app := newApp(current, nil, "journal-dir", "status-file", root, nil)
+	app.reveal = func(string) error { return nil }
 	log := newRecorder()
 	app.emit = log.emit
 	return app, player, log

@@ -109,3 +109,12 @@ type VoiceFoldersDTO struct {
 	Path string `json:"path"`
 	Made int    `json:"made"`
 }
+
+// ChecklistDTO is what one voice folder still has no recording for, with how many of the
+// vocabulary's moments it does have one for.
+type ChecklistDTO struct {
+	Voice    string   `json:"voice"`
+	Recorded int      `json:"recorded"`
+	Total    int      `json:"total"`
+	Missing  []CueDTO `json:"missing"`
+}

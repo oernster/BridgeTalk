@@ -118,7 +118,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The menus',
     paragraphs: [
-      'File holds Quit. Audio opens Cast or Audition and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
+      'File holds Quit. Audio opens Cast, Audition or Record and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
     ],
   },
   {
@@ -135,6 +135,10 @@ export const guideSections: GuideSection[] = [
       {
         title: 'A recording is found by its name.',
         text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Look again. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played.",
+      },
+      {
+        title: 'Record in a program built for it.',
+        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Record pane, under Audio, lists the moments a voice has no recording for yet; Open folder beside one opens the folder its take belongs in, ready for the take to be saved there under any name.',
       },
       {
         title: 'Each moment plays one recording.',

@@ -40,13 +40,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 80.4% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 79% | 75% | `test.ps1` |
+| the root package (the Wails facade) | 79.5% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 67.3% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 22.4% | 22% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 
-348 test functions, which expand to 398 runs once their subtests are counted.
+358 test functions, which expand to 408 runs once their subtests are counted.
 Sixteen of them are the structural tests in `tests/structural`, which assert the
 architecture itself rather than any behaviour: layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band and the rule
@@ -73,7 +73,7 @@ that the product is named in exactly one place.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.1%** | **94.5%** |
 
-150 tests across 13 files, run under Vitest with jsdom.
+160 tests across 14 files, run under Vitest with jsdom.
 
 ## How each layer is tested
 
@@ -108,7 +108,9 @@ of them is found by running the application, which is what the manual pass befor
 release is for.
 
 - **`internal/infrastructure/window` (0%).** Win32 focus handling: finding the
-  WebView2 child window and giving it the keyboard. There is no window in a test.
+  WebView2 child window and giving it the keyboard. Opening a moment's folder in File
+  Explorer lives here too. There is no window in a test; the facade reaches the opener
+  through a field, so what it opens is tested while Explorer appearing is not.
 - **`internal/infrastructure/taskbar` (22.4%).** The tray icon runs its own Win32
   message loop on a locked OS thread. What is testable without one, the command
   vocabulary and the state the menu reads, is tested; the loop, the window

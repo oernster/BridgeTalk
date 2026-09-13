@@ -5,8 +5,8 @@ package library
 // A folder named exactly for a cue id is the folder form of the drop-in convention, so
 // making every one of them in advance means the person filling a voice never types a
 // cue id at all. They put a recording in the folder for its moment; any file name will
-// do. The recorder writes into the same folders, so a recorded voice and a hand filled
-// one are the same thing on disk.
+// do. The Record pane opens the same folders one moment at a time, so a take saved from
+// there and one dropped in by hand land in the same place.
 
 import (
 	"errors"

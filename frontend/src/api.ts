@@ -80,6 +80,14 @@ export interface CueBreakdown {
   unserved: CueEntry[]
 }
 
+/** Checklist is what one voice folder still has no recording for, with its progress. */
+export interface Checklist {
+  voice: string
+  recorded: number
+  total: number
+  missing: CueEntry[]
+}
+
 /** VoiceFolders reports what making a voice's folders did; an empty path is a cancel. */
 export interface VoiceFolders {
   path: string
@@ -122,6 +130,9 @@ interface Bridge {
   ChooseJournalDir(): Promise<string>
   MakeVoiceFolders(name: string): Promise<VoiceFolders>
   Rescan(): Promise<number>
+  VoiceDirectories(): Promise<string[]>
+  Checklist(voice: string): Promise<Checklist>
+  OpenMomentFolder(voice: string, id: string): Promise<void>
   SetLaunchOnBoot(enabled: boolean): Promise<void>
   MinimiseToTray(): Promise<void>
   RequestQuit(): Promise<void>
@@ -183,6 +194,22 @@ export const api = {
 
   /** Reads the recordings directory again and answers with how many voices it found. */
   rescan: (): Promise<number> => bridge()?.Rescan() ?? Promise.resolve(0),
+
+  /** Every voice folder under the recordings directory, including those still empty. */
+  voiceDirectories: (): Promise<string[]> =>
+    bridge()?.VoiceDirectories() ?? Promise.resolve([]),
+
+  /** What one voice folder still has no recording for, with its progress. */
+  checklist: (voice: string): Promise<Checklist> =>
+    bridge()?.Checklist(voice) ??
+    Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
+
+  /**
+   * Opens the folder a take for one moment belongs in, making it where it is missing. It
+   * rejects with the reason where the folder cannot be made or shown.
+   */
+  openMomentFolder: (voice: string, id: string): Promise<void> =>
+    bridge()?.OpenMomentFolder(voice, id) ?? Promise.resolve(),
 
   /**
    * Starts or stops the application being launched at sign-in. It rejects rather than

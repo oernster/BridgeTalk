@@ -17,7 +17,7 @@ import { Dialog, ReadingBody } from './dialogs'
  * No name for a group is written here: the heading is generated from the game's own
  * spelling beside the title, which is what keeps a second list of names from existing.
  */
-function grouped(cues: CueEntry[]): [string, CueEntry[]][] {
+export function grouped(cues: CueEntry[]): [string, CueEntry[]][] {
   const order: string[] = []
   const bucket = new Map<string, CueEntry[]>()
   for (const item of cues) {

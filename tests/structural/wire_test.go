@@ -36,6 +36,7 @@ const dtoSuffix = "DTO"
 var wireShapes = map[string]string{
 	"AboutDTO":        "About",
 	"AuditionDTO":     "Audition",
+	"ChecklistDTO":    "Checklist",
 	"CueBreakdownDTO": "CueBreakdown",
 	"CueDTO":          "CueEntry",
 	"GroupDTO":        "Group",

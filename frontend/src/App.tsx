@@ -319,7 +319,9 @@ export function App() {
           />
         )}
         {pane === 'audition' && <AuditionPane cast={state?.voice ?? ''} />}
-        {pane === 'takes' && <MissingTakesPane cast={state?.voice ?? ''} />}
+        {pane === 'takes' && (
+          <MissingTakesPane cast={state?.voice ?? ''} libraryRoot={state?.libraryRoot} />
+        )}
         {pane === 'guide' && <GuidePane />}
       </main>
 

@@ -118,7 +118,7 @@ export function AuditionPane({ cast }: { cast: string }) {
       {none ? (
         <p className="lede">
           No voices found, so there is nothing to audition yet. Choose the directory
-          holding your recordings in Settings.
+          holding your recordings on the Missing takes pane.
         </p>
       ) : groups.length === 0 ? (
         <p className="lede">This voice has nothing to audition.</p>

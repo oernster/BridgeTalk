@@ -84,7 +84,7 @@ guide, under Help, covers the rest.
 ## Running it
 
 Build the setup program as `DEVELOPMENT_README.md` describes, then run it. Once the window opens,
-choose your recordings directory in Settings and cast a voice from the Cast pane. The journal
+choose your recordings directory on the Missing takes pane and cast a voice from the Cast pane. The journal
 directory is found under your own profile until you choose one.
 
 ## Testing

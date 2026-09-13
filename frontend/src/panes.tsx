@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { api, on, type Reaction, type State } from './api'
+import { Chooser, useChooser } from './chooser'
 import { useOverflowStop } from './hooks'
 
 /**
@@ -142,97 +143,17 @@ export function HomePane({ state }: { state: State | null }) {
 
 
 /**
- * Outcome is what a press of Browse came to; null where the row has not answered.
- *
- * Refusal is a field rather than two separate pieces of state, so the pane cannot
- * render a message without knowing which kind it is; that pairing is the whole point,
- * since the fault being fixed was a refusal drawn in the colour of an explanation.
- */
-export type Outcome = { refused: boolean; text: string } | null
-
-/** Row names the two directories, so an answer can be drawn against the right one. */
-type Row = 'library' | 'journal'
-
-/**
- * Chooser is one directory the application reads from: what it is called, where it
- * points now and the button that moves it.
- *
- * The answer is drawn directly beneath its own row. Collected at the foot of the pane
- * instead, a refusal about the recordings sat under the journal directory and read as
- * though the journal were the thing that had gone wrong.
- */
-function Chooser({
-  label,
-  path,
-  outcome,
-  onBrowse,
-}: {
-  label: string
-  path: string
-  outcome: Outcome
-  onBrowse: () => void
-}) {
-  return (
-    <>
-      <div className="row">
-        <span className="grow">
-          {label}
-          <br />
-          <span className="hint">{path}</span>
-        </span>
-        <button className="btn" data-stop type="button" onClick={onBrowse}>
-          Browse
-        </button>
-      </div>
-
-      {outcome !== null && (
-        <p
-          className={outcome.refused ? 'callout refused' : 'callout taken'}
-          role={outcome.refused ? 'alert' : 'status'}
-        >
-          {outcome.text}
-        </p>
-      )}
-    </>
-  )
-}
-
-/**
  * SettingsPane holds what can be changed today and states plainly what cannot yet.
  * An empty pane with no explanation reads as a defect; a short honest note does not.
  *
  * Mute and volume are not here. Both live in the band, which is on screen whichever
  * pane is open, so repeating them here would offer the same control twice with no
- * way to tell which one is authoritative.
+ * way to tell which one is authoritative. The recordings directory is not here either:
+ * it is chosen on the Missing takes pane, beside the voices it holds.
  */
 export function SettingsPane({ state }: { state: State | null }) {
-  // What the last press of Browse did, shown until the next press. Both outcomes are
-  // reported, not only the refusal: a directory holding no voices is kept out; saying
-  // nothing on the way out made the button read as broken rather than strict.
-  // A refusal is drawn as a refusal, since an explanation styled as body prose sits
-  // among the pane's other grey paragraphs and is read as one of them.
-  //
-  // One press speaks at a time and it carries the row it came from, so the answer can
-  // be drawn under the row that was pressed rather than at the foot of the pane.
-  const [spoke, setSpoke] = useState<{ row: Row; outcome: Outcome } | null>(null)
-
-  const choose = (row: Row, pick: () => Promise<string>, what: string) => () => {
-    setSpoke(null)
-    void pick()
-      .then((taken) => {
-        // An empty answer is a cancelled dialog. Nothing changed and the reader knows
-        // they cancelled, so there is nothing to report.
-        if (taken === '') {
-          return
-        }
-        setSpoke({ row, outcome: { refused: false, text: `${what} is now ${taken}` } })
-      })
-      .catch((reason: unknown) =>
-        setSpoke({ row, outcome: { refused: true, text: String(reason) } }),
-      )
-  }
-
-  const spokenFor = (row: Row): Outcome => (spoke?.row === row ? spoke.outcome : null)
+  // What the last press of Browse did, shown under its row until the next press.
+  const [journalSaid, browseJournal] = useChooser(api.chooseJournalDir, 'The journal directory')
 
   // Why the login entry could not be written, where it could not be. The box itself
   // is drawn from the state rather than from a local copy, so a refused change simply
@@ -251,17 +172,10 @@ export function SettingsPane({ state }: { state: State | null }) {
       <p className="lede">Where the application reads from.</p>
 
       <Chooser
-        label="Recordings"
-        path={state?.libraryRoot ?? '...'}
-        outcome={spokenFor('library')}
-        onBrowse={choose('library', api.chooseLibraryRoot, 'The recordings directory')}
-      />
-
-      <Chooser
         label="Journal directory"
         path={state?.journalDir ?? '...'}
-        outcome={spokenFor('journal')}
-        onBrowse={choose('journal', api.chooseJournalDir, 'The journal directory')}
+        outcome={journalSaid}
+        onBrowse={browseJournal}
       />
 
       <div className="row">
@@ -298,11 +212,12 @@ export function SettingsPane({ state }: { state: State | null }) {
       )}
 
       <p className="lede" style={{ marginTop: 18 }}>
-        The journal directory is found under your own profile until you choose one; the
-        recordings directory is yours to choose. Choosing either here takes effect at once
-        and is remembered for next time; the command-line flags do the same job for a
-        single run and win over a choice made here. Choosing an output device is not
-        built: the application speaks through whichever device Windows is set to use.
+        The journal directory is found under your own profile until you choose one.
+        Choosing it here takes effect at once and is remembered for next time; the
+        command-line flag does the same job for a single run and wins over a choice made
+        here. The recordings directory is chosen on the Missing takes pane. Choosing an
+        output device is not built: the application speaks through whichever device
+        Windows is set to use.
       </p>
     </>
   )

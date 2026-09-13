@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react'
 import { api, type Voice, type VoiceFolders } from './api'
 import { MomentsIcon } from './icons'
 import { MomentsDialog } from './moments'
-import type { Outcome } from './panes'
+import type { Outcome } from './chooser'
 
 /** casting is the part every cast voice holds, whoever it is. */
 const casting = "your ship's voice"

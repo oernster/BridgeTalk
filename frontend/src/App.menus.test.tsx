@@ -136,6 +136,8 @@ describe('the menu bar', () => {
 
     expect(await screen.findByRole('heading', { name: 'Missing takes' })).toBeTruthy()
     expect(await screen.findByText('Grace has recordings for 0 of 0 moments.')).toBeTruthy()
+    // The recordings directory is chosen here now, so the pane names the one in use.
+    expect(screen.getByText('D:/Recordings')).toBeTruthy()
   })
 
   // The icon is the state and the name is the action: a muted application shows a

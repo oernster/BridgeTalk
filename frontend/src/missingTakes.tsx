@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { api, type Checklist } from './api'
+import { Chooser, useChooser } from './chooser'
 import { grouped } from './moments'
 
 /**
@@ -17,7 +18,14 @@ import { grouped } from './moments'
  * nothing until its first take is saved, so it is not yet a voice anywhere else in the
  * window; it is also exactly the one that needs this list.
  */
-export function MissingTakesPane({ cast }: { cast: string }) {
+export function MissingTakesPane({
+  cast,
+  libraryRoot,
+}: {
+  cast: string
+  // Undefined until the state arrives; empty where no recordings directory is chosen.
+  libraryRoot?: string
+}) {
   const [folders, setFolders] = useState<string[]>([])
   const [loaded, setLoaded] = useState(false)
   const [voice, setVoice] = useState('')
@@ -67,6 +75,12 @@ export function MissingTakesPane({ cast }: { cast: string }) {
     void api.openMomentFolder(voice, id).catch((reason: unknown) => setProblem(String(reason)))
   }
 
+  // A directory taken here has already been read by the time it is answered, so its
+  // folders are offered straight away rather than after a press of Look again.
+  const [rootSaid, browseRoot] = useChooser(api.chooseLibraryRoot, 'The recordings directory', () =>
+    setLooks((count) => count + 1),
+  )
+
   const empty = loaded && folders.length === 0
 
   return (
@@ -78,6 +92,13 @@ export function MissingTakesPane({ cast }: { cast: string }) {
         opens, ready for the take to be saved into it under any name. Press Look again once
         some are saved.
       </p>
+
+      <Chooser
+        label="Recordings"
+        path={libraryRoot === undefined ? '...' : libraryRoot || 'None chosen yet'}
+        outcome={rootSaid}
+        onBrowse={browseRoot}
+      />
 
       {empty ? (
         <p className="callout">

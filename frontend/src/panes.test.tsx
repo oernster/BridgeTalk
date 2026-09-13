@@ -1,11 +1,11 @@
-// What a press of Browse tells the reader.
+// What the settings pane holds and what a press of Browse tells the reader.
 //
-// The fault these exist to prevent was silence: choosing a directory with no voices in
-// it was refused correctly and said so in the body colour, between two paragraphs of
+// The fault these exist to prevent was silence: choosing a directory that could not be
+// used was refused correctly and said so in the body colour, between two paragraphs of
 // the same colour, so the press read as a button that did nothing. Every outcome is
 // asserted here, including the one that is deliberately quiet.
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 const chooseLibraryRoot = vi.fn<() => Promise<string>>()
@@ -22,77 +22,63 @@ vi.mock('./api', () => ({
 
 const { SettingsPane } = await import('./panes')
 
+// Every spy starts empty, so a count asserted in one test is that test's own presses
+// rather than the running total of every test before it.
+beforeEach(() => {
+  for (const spy of [chooseLibraryRoot, chooseJournalDir, setLaunchOnBoot]) spy.mockReset()
+})
+
 /**
- * browse presses the button on the given row, the library root first.
+ * browse presses the journal directory's Browse button, the only one the pane holds.
  *
  * fireEvent rather than a bare click, so the state the press clears is settled inside
  * act and the run stays free of the warning that hides real ordering faults.
  */
-function browse(row: number) {
-  fireEvent.click(screen.getAllByRole('button', { name: 'Browse' })[row])
+function browse() {
+  fireEvent.click(screen.getByRole('button', { name: 'Browse' }))
 }
 
 describe('the settings pane', () => {
-  it('says why a directory was refused, as a refusal', async () => {
-    chooseLibraryRoot.mockRejectedValue(
-      'no voices in C:\\Recordings: choose the folder that holds one directory per person',
-    )
-    render(<SettingsPane state={null} />)
-    browse(0)
+  // The recordings directory is chosen on the Missing takes pane, beside the voices it
+  // holds; offering it here as well would give one setting two homes.
+  it('holds the journal directory and no recordings directory', () => {
+    render(<SettingsPane state={{ libraryRoot: 'C:\\Sounds', journalDir: 'C:\\Journal' } as never} />)
 
-    const said = await screen.findByRole('alert')
-    expect(said.textContent).toContain('no voices in')
-    expect(said.textContent).toContain('one directory per person')
-    // Drawn as a refusal rather than as another paragraph of explanation.
-    expect(said.className).toContain('refused')
+    expect(screen.getByText('Journal directory')).toBeTruthy()
+    expect(screen.queryByText('Recordings')).toBeNull()
+    expect(screen.queryByText('C:\\Sounds')).toBeNull()
+    expect(screen.getAllByRole('button', { name: 'Browse' })).toHaveLength(1)
   })
 
-  it('answers under the row that was pressed, not at the foot of the pane', async () => {
-    // A refusal about the recordings once sat below the journal row, where it read as
-    // though the journal were the thing that had gone wrong.
-    chooseLibraryRoot.mockRejectedValue('no voices in C:\\Recordings')
-    render(<SettingsPane state={{ libraryRoot: 'C:\\Sounds' } as never} />)
-    browse(0)
-
-    const said = await screen.findByRole('alert')
-    expect(said.previousElementSibling?.textContent).toContain('Recordings')
-  })
-
-  it('answers under the journal row when that is the one pressed', async () => {
+  it('says why a directory was refused, as a refusal under its own row', async () => {
     chooseJournalDir.mockRejectedValue('reading C:\\Nowhere: no such directory')
     render(<SettingsPane state={null} />)
-    browse(1)
+    browse()
 
     const said = await screen.findByRole('alert')
+    expect(said.textContent).toContain('no such directory')
+    // Drawn as a refusal rather than as another paragraph of explanation.
+    expect(said.className).toContain('refused')
     expect(said.previousElementSibling?.textContent).toContain('Journal directory')
   })
 
-  it('confirms the directory it took', async () => {
-    chooseLibraryRoot.mockResolvedValue('C:\\Sounds')
-    render(<SettingsPane state={null} />)
-    browse(0)
-
-    const said = await screen.findByRole('status')
-    expect(said.textContent).toContain('The recordings directory is now C:\\Sounds')
-    expect(said.className).toContain('taken')
-  })
-
-  it('names the journal directory it took, not the library root', async () => {
+  it('names the journal directory it took', async () => {
     chooseJournalDir.mockResolvedValue('C:\\Journal')
     render(<SettingsPane state={null} />)
-    browse(1)
+    browse()
 
     const said = await screen.findByRole('status')
     expect(said.textContent).toContain('The journal directory is now C:\\Journal')
+    expect(said.className).toContain('taken')
   })
 
   it('says nothing at all when the dialog is cancelled', async () => {
-    chooseLibraryRoot.mockResolvedValue('')
+    chooseJournalDir.mockResolvedValue('')
     render(<SettingsPane state={null} />)
-    browse(0)
+    browse()
 
     // Waiting for the promise to settle first, so this cannot pass by being early.
-    await waitFor(() => expect(chooseLibraryRoot).toHaveBeenCalled())
+    await waitFor(() => expect(chooseJournalDir).toHaveBeenCalled())
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByRole('status')).toBeNull()
   })
@@ -137,13 +123,17 @@ describe('the settings pane', () => {
   })
 
   it('clears what the last press said before the next one answers', async () => {
-    chooseLibraryRoot.mockRejectedValue('no voices in C:\\Recordings')
+    chooseJournalDir.mockRejectedValue('reading C:\\Nowhere: no such directory')
     render(<SettingsPane state={null} />)
-    browse(0)
+    browse()
     await screen.findByRole('alert')
 
-    chooseLibraryRoot.mockResolvedValue('C:\\Sounds')
-    browse(0)
+    // The second press is cancelled, so it says nothing of its own; only clearing the
+    // first answer can take the refusal down. A press that succeeded would replace the
+    // refusal with its own answer and pass whether anything was cleared or not.
+    chooseJournalDir.mockResolvedValue('')
+    browse()
+    await waitFor(() => expect(chooseJournalDir).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
   })
 })

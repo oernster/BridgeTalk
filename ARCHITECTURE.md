@@ -190,7 +190,7 @@ found and could not use". At startup it is written to standard error. Voices are
 ignoring case.
 
 The scan reads names and writes nothing; the library is never modified. There is no cache: the scan
-runs at startup and again whenever a recordings directory is chosen in Settings.
+runs at startup and again whenever a recordings directory is chosen on the Missing takes pane.
 
 ## Resolving a cue
 
@@ -304,7 +304,7 @@ page, so nothing on the audio path reaches Wails directly.
 
 ## Choosing where to read from
 
-**Recordings.** Two sources, in order: the `-library` flag, then the directory stored from Settings. There
+**Recordings.** Two sources, in order: the `-library` flag, then the directory stored from Missing takes. There
 is no third. Nothing is detected, because only the user knows where their recordings are. A root that is
 missing, unreadable or holds no voice leaves the application running with nothing cast; the warning goes
 to standard error and the cast pane names where it looked.
@@ -313,7 +313,8 @@ to standard error and the cast pane names where it looked.
 the user's profile. Startup stops with an error, before any window, where that directory cannot be found,
 holds no journal file or has no `Status.json`.
 
-**Changing either in Settings.** Each Browse opens the system's directory chooser and takes effect at
+**Changing either.** The recordings directory is chosen on the Missing takes pane and the journal directory
+in Settings. Each Browse opens the system's directory chooser and takes effect at
 once. A recordings directory is rescanned and refused, with the reason drawn in the alert colour, when it
 holds no voice; otherwise the cast voice is re-cast by name where it survives the move and falls back to
 the first voice where it does not. A journal directory is refused unless both sources can be built over
@@ -603,8 +604,9 @@ journal reader tests a read error's text against `"EOF"`.
 - **Recorded in the reaction list:** a repeat inside the dedupe window, a cue in cooldown, a cue the voice
   has no takes for and a request dropped by the mute or by the priority policy, beside what was queued and
   what played.
-- **Refused in Settings with the reason:** a recordings directory with no voice, a journal directory the
-  sources cannot be built over and a login entry that could not be written.
+- **Refused with the reason, beneath the control that was pressed:** on the Missing takes pane, a
+  recordings directory with no voice; in Settings, a journal directory the sources cannot be built over
+  and a login entry that could not be written.
 
 ## Quality enforcement
 

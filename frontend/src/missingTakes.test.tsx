@@ -12,6 +12,7 @@ const voiceDirectories = vi.fn<() => Promise<string[]>>()
 const checklist = vi.fn<(voice: string) => Promise<Checklist>>()
 const openMomentFolder = vi.fn<(voice: string, id: string) => Promise<void>>()
 const rescan = vi.fn<() => Promise<number>>()
+const chooseLibraryRoot = vi.fn<() => Promise<string>>()
 
 vi.mock('./api', () => ({
   api: {
@@ -19,6 +20,7 @@ vi.mock('./api', () => ({
     checklist: (voice: string) => checklist(voice),
     openMomentFolder: (voice: string, id: string) => openMomentFolder(voice, id),
     rescan: () => rescan(),
+    chooseLibraryRoot: () => chooseLibraryRoot(),
   },
 }))
 
@@ -41,11 +43,89 @@ const progress = (voice: string): Checklist => ({
 })
 
 beforeEach(() => {
-  for (const spy of [voiceDirectories, checklist, openMomentFolder, rescan]) spy.mockReset()
+  for (const spy of [voiceDirectories, checklist, openMomentFolder, rescan, chooseLibraryRoot]) {
+    spy.mockReset()
+  }
   voiceDirectories.mockResolvedValue(['Grace', 'Oliver'])
   checklist.mockImplementation((voice) => Promise.resolve(progress(voice)))
   openMomentFolder.mockResolvedValue(undefined)
   rescan.mockResolvedValue(1)
+  chooseLibraryRoot.mockResolvedValue('')
+})
+
+/** browse presses the recordings row's Browse button. */
+function browse() {
+  fireEvent.click(screen.getByRole('button', { name: 'Browse' }))
+}
+
+// The recordings directory lives here rather than in Settings, beside the voices it holds.
+describe('the recordings directory on the missing takes pane', () => {
+  it('shows the directory it reads from', () => {
+    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+
+    expect(screen.getByText('D:/Recordings')).toBeTruthy()
+  })
+
+  it('says when no directory is chosen and waits while the state is on its way', () => {
+    const { unmount } = render(<MissingTakesPane cast="Oliver" libraryRoot="" />)
+    expect(screen.getByText('None chosen yet')).toBeTruthy()
+    unmount()
+
+    render(<MissingTakesPane cast="Oliver" />)
+    expect(screen.getByText('...')).toBeTruthy()
+  })
+
+  it('confirms the directory it took, then reads its folders at once', async () => {
+    chooseLibraryRoot.mockResolvedValue('D:/Takes')
+    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    await waitFor(() => expect(voiceDirectories).toHaveBeenCalledTimes(1))
+
+    browse()
+
+    const said = await screen.findByRole('status')
+    expect(said.textContent).toContain('The recordings directory is now D:/Takes')
+    expect(said.className).toContain('taken')
+    await waitFor(() => expect(voiceDirectories).toHaveBeenCalledTimes(2))
+  })
+
+  // The fault this guards was silence: a directory with no voices refused in the body
+  // colour read as a button that did nothing.
+  it('says why a directory was refused, as a refusal under its own row', async () => {
+    chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
+    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+
+    browse()
+
+    const said = await screen.findByRole('alert')
+    expect(said.textContent).toContain('no voices in D:/Empty')
+    expect(said.className).toContain('refused')
+    expect(said.previousElementSibling?.textContent).toContain('Recordings')
+  })
+
+  it('says nothing at all when the dialog is cancelled', async () => {
+    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    await screen.findByText('Oliver has recordings for 1 of 3 moments.')
+
+    browse()
+
+    // Waiting for the press to settle first, so this cannot pass by being early.
+    await waitFor(() => expect(chooseLibraryRoot).toHaveBeenCalled())
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(voiceDirectories).toHaveBeenCalledTimes(1)
+  })
+
+  it('clears what the last press said before the next one answers', async () => {
+    chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
+    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    browse()
+    await screen.findByRole('alert')
+
+    chooseLibraryRoot.mockResolvedValue('')
+    browse()
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  })
 })
 
 describe('the missing takes pane', () => {

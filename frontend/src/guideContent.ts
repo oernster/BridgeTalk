@@ -62,12 +62,12 @@ export const guideSections: GuideSection[] = [
       {
         icons: [artwork.missingTakes],
         name: 'Missing takes',
-        text: 'the moments a voice has no recording for yet, each with a button that opens the folder its take belongs in. Record the take in a program such as Audacity, save it there, then press Look again.',
+        text: 'where your recordings are, then the moments a voice has no recording for yet, each with a button that opens the folder its take belongs in. Record the take in a program such as Audacity, save it there, then press Look again.',
       },
       {
         icons: [artwork.settings],
         name: 'Settings',
-        text: 'the recordings directory, the journal directory and whether it starts when you sign in.',
+        text: 'the journal directory and whether it starts when you sign in.',
       },
       {
         icons: [artwork.unmute, artwork.mute],

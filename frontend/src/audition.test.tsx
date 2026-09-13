@@ -174,4 +174,35 @@ describe('the audition pane', () => {
     await waitFor(() => expect(voices).toHaveBeenCalled())
     expect(auditionGroups).not.toHaveBeenCalled()
   })
+
+  // An empty chooser shrunk to its arrow read as a fault. With no voice to name it
+  // holds None instead; it is disabled, so the keyboard ring passes over it.
+  it('holds None and stands disabled when no voice exists', async () => {
+    voices.mockResolvedValue([])
+    render(<AuditionPane cast="" />)
+
+    const chooser = (await screen.findByRole('option', { name: 'None' })).closest(
+      'select',
+    ) as HTMLSelectElement
+    expect(chooser.disabled).toBe(true)
+    expect(Array.from(chooser.options).map((option) => option.text)).toEqual(['None'])
+  })
+
+  // No voices at all is a different absence from a voice with no takes, so it says
+  // which it is and where to go about it.
+  it('says no voices were found rather than blaming a voice', async () => {
+    voices.mockResolvedValue([])
+    render(<AuditionPane cast="" />)
+
+    expect(await screen.findByText(/No voices found/)).toBeTruthy()
+    expect(screen.queryByText('This voice has nothing to audition.')).toBeNull()
+  })
+
+  // Until the list arrives the chooser offers nothing it would have to take back.
+  it('offers no None before the voices have been counted', () => {
+    voices.mockReturnValue(new Promise<Voice[]>(() => undefined))
+    render(<AuditionPane cast="" />)
+
+    expect(screen.queryByRole('option', { name: 'None' })).toBeNull()
+  })
 })

@@ -16,13 +16,19 @@ import { PlayIcon } from './icons'
  */
 export function AuditionPane({ cast }: { cast: string }) {
   const [voices, setVoices] = useState<Voice[]>([])
+  // Whether the list has arrived. An empty list and an unanswered one look the same,
+  // so the pane says no voices exist only once it has been told so.
+  const [loaded, setLoaded] = useState(false)
   const [voice, setVoice] = useState(cast)
   const [groups, setGroups] = useState<Group[]>([])
   const [playing, setPlaying] = useState('')
   const [failure, setFailure] = useState('')
 
   useEffect(() => {
-    void api.voices().then(setVoices)
+    void api.voices().then((found) => {
+      setVoices(found)
+      setLoaded(true)
+    })
   }, [])
 
   // The pane opens on whoever is cast. Later changes to the cast do not drag the
@@ -66,6 +72,10 @@ export function AuditionPane({ cast }: { cast: string }) {
   )
 
   const total = groups.reduce((sum, group) => sum + group.clips, 0)
+  // No voice exists to choose. The chooser still stands at its full width holding
+  // None, because an empty control shrunk to its arrow reads as a rendering fault
+  // rather than as an answer.
+  const none = loaded && voices.length === 0
 
   return (
     <>
@@ -83,8 +93,10 @@ export function AuditionPane({ cast }: { cast: string }) {
           <select
             data-stop
             value={voice}
+            disabled={none}
             onChange={(event) => setVoice(event.target.value)}
           >
+            {none && <option value="">None</option>}
             {voices.map((item) => (
               <option key={item.name} value={item.name}>
                 {item.name}
@@ -103,7 +115,12 @@ export function AuditionPane({ cast }: { cast: string }) {
         />
       </div>
 
-      {groups.length === 0 ? (
+      {none ? (
+        <p className="lede">
+          No voices found, so there is nothing to audition yet. Choose the directory
+          holding your recordings in Settings.
+        </p>
+      ) : groups.length === 0 ? (
         <p className="lede">This voice has nothing to audition.</p>
       ) : (
         <>

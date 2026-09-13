@@ -16,7 +16,22 @@
   color: var(--text);
 }
 
+/* The column floor is measured, not chosen: a card holds the 113px play icon, an 11px
+   gap, the label and 12px of padding each side, so at the shipped type sizes the
+   longest label the cue vocabulary produces ("Supercruise") first fits without
+   clipping at a column of 230px. The floor is set above that so a longer group name
+   than any in the table today, roughly three more characters, still fits rather than
+   being cut off.
+
+   The chooser reads the same floor as its least width. Sized to its contents it shrank
+   to its arrow whenever there was no voice to name, which read as a rendering fault;
+   one figure read by both also stands it level with the first card beneath it. */
+:root {
+  --audition-column: 260px;
+}
+
 .field select {
+  min-width: var(--audition-column);
   height: var(--control-height);
   padding: 6px 9px;
   border: 2px solid transparent;
@@ -33,14 +48,17 @@
   border-color: var(--ring);
 }
 
-/* The floor is measured, not chosen: a card holds the 113px play icon, an 11px gap,
-   the label and 12px of padding each side, so at the shipped type sizes the longest
-   label the cue vocabulary produces ("Supercruise") first fits without clipping at a
-   column of 230px. The floor is set above that so a longer group name than any in the
-   table today, roughly three more characters, still fits rather than being cut off. */
+/* A chooser with nothing to choose is quiet rather than red. It is not refusing
+   anything the reader asked for, so the danger border a disabled button wears would
+   read as a fault where there is only an absence. */
+.field select:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
 .groups {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--audition-column), 1fr));
   gap: 10px;
   margin-top: 12px;
 }

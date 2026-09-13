@@ -58,6 +58,13 @@ describe('the cast pane', () => {
     expect(screen.getByText('40 usable recordings')).toBeTruthy()
   })
 
+  // One recording is a recording, not recordings (Oliver, 2026-09-13).
+  it('names a single usable recording in the singular', async () => {
+    await show([{ name: 'Oliver', inUse: 1 }])
+
+    expect(screen.getByText('1 usable recording')).toBeTruthy()
+  })
+
   // A row that could not be pressed would need a reason, which nothing on the wire can
   // supply; so no row is ever drawn disabled and every one offers its breakdown.
   it('offers every voice it lists, refusing none', async () => {
@@ -193,7 +200,7 @@ describe('making a voice', () => {
     const said = await screen.findByRole('status')
     expect(makeVoiceFolders).toHaveBeenCalledWith('Oliver')
     expect(said.textContent).toMatch(/^Made 256 folders in D:\/Recordings\/Oliver/)
-    expect(said.textContent).toMatch(/then press Look again\.$/)
+    expect(said.textContent).toMatch(/then press Refresh\.$/)
   })
 
   it('makes them on Enter in the name box as well', async () => {
@@ -252,7 +259,7 @@ describe('making a voice', () => {
     render(<CastPane active="" libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
     await screen.findByText('No voices found.')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Found 1 voice.')).toBeTruthy()
     expect(await screen.findByRole('button', { name: /^Cast Grace/ })).toBeTruthy()
@@ -262,7 +269,7 @@ describe('making a voice', () => {
     rescan.mockResolvedValue(0)
     await show([])
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect((await screen.findByRole('status')).textContent).toMatch(
       /once one of its folders holds a recording/,
@@ -273,7 +280,7 @@ describe('making a voice', () => {
     rescan.mockRejectedValue('no recordings directory is chosen yet')
     await show([])
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/no recordings directory/)
   })

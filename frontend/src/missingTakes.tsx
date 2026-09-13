@@ -72,7 +72,7 @@ export function MissingTakesPane({
   }
 
   // A directory taken here has already been read by the time it is answered, so its
-  // folders are offered straight away rather than after a press of Look again.
+  // folders are offered straight away rather than after a press of Refresh.
   const [rootSaid, browseRoot] = useChooser(api.chooseLibraryRoot, 'The recordings directory', () =>
     setLooks((count) => count + 1),
   )
@@ -91,7 +91,7 @@ export function MissingTakesPane({
       <p className="lede">
         Record in any program you like, such as Audacity; save each take as WAV, MP3,
         FLAC or Ogg. Choose a voice, then press Open folder beside a moment: its folder
-        opens, ready for the take to be saved into it under any name. Press Look again once
+        opens, ready for the take to be saved into it under any name. Press Refresh once
         some are saved.
       </p>
 
@@ -123,7 +123,7 @@ export function MissingTakesPane({
           </select>
         </label>
         <button className="btn" data-stop type="button" onClick={look}>
-          Look again
+          Refresh
         </button>
       </div>
 

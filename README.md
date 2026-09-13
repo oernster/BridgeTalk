@@ -42,7 +42,7 @@ saying happens, it plays one of your own recordings for that moment. It ships no
 
 The quickest way is to let it name them. On the Cast pane, type a voice's name and press Make
 folders: that voice gets a folder for every moment, each already named. Put each recording in the
-folder for its moment (any file name will do), then press Look again. Where no recordings directory
+folder for its moment (any file name will do), then press Refresh. Where no recordings directory
 is chosen yet, it makes them in its own `Recordings` folder (`%LOCALAPPDATA%\BridgeTalk\Recordings` on
 Windows) and uses that folder from then on; setup never removes it.
 

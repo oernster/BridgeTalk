@@ -28,7 +28,7 @@ function castLabel(voice: Voice, cast: boolean): string {
 
 /** counted names a number of things, in the singular where there is one. */
 function counted(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`
+  return `${count.toLocaleString()} ${count === 1 ? one : many}`
 }
 
 /**
@@ -44,7 +44,7 @@ function madeText(answer: VoiceFolders): string {
   }
   return (
     `Made ${counted(answer.made, 'folder', 'folders')} in ${answer.path}, one for each ` +
-    'moment. Put each recording in the folder for its moment, then press Look again.'
+    'moment. Put each recording in the folder for its moment, then press Refresh.'
   )
 }
 
@@ -80,7 +80,7 @@ function VoiceRow({
       >
         <span className="name">{castLabel(voice, cast)}</span>
         <br />
-        <span className="meta">{`${voice.inUse.toLocaleString()} usable recordings`}</span>
+        <span className="meta">{counted(voice.inUse, 'usable recording', 'usable recordings')}</span>
       </button>
       <span className="coverage">
         {/* An icon rather than words, so it reads as a control at the end of the row
@@ -216,7 +216,7 @@ export function CastPane({
       <p className="lede">
         Type a name and press Make folders. That voice gets a folder for every moment,
         each already named for it. Put each recording in the folder for its moment (any
-        file name will do), then press Look again.
+        file name will do), then press Refresh.
       </p>
       <div className="row">
         <input
@@ -238,7 +238,7 @@ export function CastPane({
           Make folders
         </button>
         <button className="btn" data-stop type="button" onClick={look}>
-          Look again
+          Refresh
         </button>
       </div>
       {outcome !== null && (

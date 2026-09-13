@@ -254,7 +254,7 @@ describe('the missing takes pane', () => {
     await screen.findByText('Hugo has recordings for 0 of 3 moments.')
     fixture.Hugo = [docked, hyperspace]
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Hugo has recordings for 1 of 3 moments.')).toBeTruthy()
     expect(screen.getByRole<HTMLSelectElement>('combobox').value).toBe('Hugo')
@@ -266,7 +266,7 @@ describe('the missing takes pane', () => {
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = []
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Hugo has recordings for 0 of 3 moments.')).toBeTruthy()
     expect(Array.from((await chooser()).options).map((option) => option.value)).toEqual(['Hugo'])
@@ -320,7 +320,7 @@ describe('the missing takes pane', () => {
     render(<MissingTakesPane cast="Oliver" />)
     await screen.findByRole('alert')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Oliver has recordings for 1 of 3 moments.')).toBeTruthy()
     expect(screen.queryByRole('alert')).toBeNull()
@@ -345,7 +345,7 @@ describe('the missing takes pane', () => {
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = [hyperspace]
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Oliver has recordings for 2 of 3 moments.')).toBeTruthy()
     expect(rescan).toHaveBeenCalled()
@@ -358,7 +358,7 @@ describe('the missing takes pane', () => {
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = [hyperspace]
 
-    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
 
     expect(await screen.findByText('Oliver has recordings for 2 of 3 moments.')).toBeTruthy()
   })

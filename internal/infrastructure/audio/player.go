@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gopxl/beep/v2"
-	"github.com/gopxl/beep/v2/speaker"
 )
 
 // deviceSampleRate is the rate the output device runs at. Clips recorded at another
@@ -22,22 +21,13 @@ import (
 // reopening between clips would click.
 const deviceSampleRate beep.SampleRate = 44100
 
-// bufferDivisor sets the device buffer as a fraction of a second.
+// bufferDivisor sets, as a fraction of a second, the audio this package reasons in: half a second,
+// of which the player holds a quarter against a late refill (speaker.go).
 //
-// Read what beep does with it before changing it: Init SPLITS the figure in half,
-// giving one half to the driver and one to the player, so the cushion against a late
-// refill is half of what this asks for. A tenth of a second therefore left fifty
-// milliseconds; fifty milliseconds is not a cushion at all on a machine running
-// a game. The refill happens on an ordinary goroutine at ordinary priority, competing
-// for the processor and for pages with everything the game is doing; on a launch, the
-// busiest moment there is, it lost that race often enough to break the speech up. A
-// music player beside the same game does not, because it holds hundreds of
-// milliseconds rather than fifty.
-//
-// A second's worth split in half is a quarter of a second each side. What it costs is
-// interruption: an alert cutting in cannot be heard until the audio already handed to
-// the device has played, so it arrives up to that much later. Half a second of delay
-// on an alert is not something anybody notices; speech breaking up on every launch is.
+// A tenth of a second once left fifty milliseconds in the player, which is no cushion at all on a
+// machine running a game. The refill happens on an ordinary goroutine at ordinary priority,
+// competing for the processor and for pages with everything the game is doing; on a launch, the
+// busiest moment there is, it lost that race often enough to break the speech up.
 const bufferDivisor = 2
 
 // stallInterval is how long a silence between two requests for samples has to run
@@ -83,6 +73,12 @@ type Player struct {
 	finished chan struct{}
 	silent   bool
 	volume   float64
+	out      *speaker
+
+	// When the current clip was first asked for and how much audio sat ahead of it then, which
+	// is what the latency benchmark reads (NFR-P-202).
+	firstPull   time.Time
+	queuedAhead time.Duration
 
 	// What the device asked for and when, so a refill that arrived too late can be
 	// counted rather than guessed at. lastPull is zero between clips, where a long
@@ -99,11 +95,12 @@ type Player struct {
 // refusing to start on a machine with no sound.
 func NewPlayer() (*Player, error) {
 	player := &Player{finished: make(chan struct{}, 1), volume: fullVolume}
-	err := speaker.Init(deviceSampleRate, deviceSampleRate.N(time.Second/bufferDivisor))
+	out, err := openSpeaker()
 	if err != nil {
 		player.silent = true
 		return player, fmt.Errorf("opening audio device: %w", err)
 	}
+	player.out = out
 	return player, nil
 }
 
@@ -170,7 +167,7 @@ func (p *Player) Play(clips []string, gap time.Duration) error {
 		close(replaced)
 	}
 	if !p.silent {
-		speaker.Clear()
+		p.out.stop()
 	}
 	p.launch(clips, gap, cancel)
 	return nil
@@ -248,16 +245,17 @@ func (p *Player) playOne(path string, cancel chan struct{}) bool {
 
 	p.beginClip()
 	ended := make(chan struct{})
-	speaker.Play(beep.Seq(
+	p.out.add(beep.Seq(
 		levelled{source: source, player: p, clock: time.Now},
 		beep.Callback(func() { close(ended) }),
 	))
 
+	// A cancel needs nothing dropped here: Play and Stop have already dropped this clip along
+	// with the audio queued behind it; dropping again could take the take that replaced it.
 	select {
 	case <-ended:
 		return true
 	case <-cancel:
-		speaker.Clear()
 		return false
 	}
 }
@@ -306,16 +304,16 @@ func (p *Player) Stop() {
 		close(cancel)
 	}
 	if !p.silent {
-		speaker.Clear()
+		p.out.stop()
 	}
 }
 
-// Close stops playback and releases the device.
+// Close stops playback and releases the player's hold on the device.
 func (p *Player) Close() error {
 	p.Stop()
 	if p.silent {
 		return nil
 	}
-	speaker.Close()
+	p.out.close()
 	return nil
 }

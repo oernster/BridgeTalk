@@ -307,10 +307,13 @@ goroutine, resampled to the device rate, before the speaker is given any of it. 
 its next buffer is then a copy out of memory rather than a decode, where being slow would be heard
 rather than merely slow. One clip is loaded at a time.
 
-**The device buffer is half what it is asked for.** The player asks for half a second of buffer; the
-speaker library splits that figure between the driver and the player, leaving a quarter of a second on
-each side. What it costs is interruption, since a clip cutting in cannot be heard until the audio already
-handed to the device has played.
+**The player owns its speaker (`speaker.go`).** beep's speaker package kept its oto player to itself, so
+audio queued ahead of a new take could never be dropped: measured on 2026-09-13, 240 ms sat ahead of
+every take. The player now holds a quarter of a second against a late refill and asks Windows for
+100 ms. Stop and a take that cuts in both drop what is queued; a take that starts after silence drops
+the queued silence; a take that follows another closely waits for its end rather than cutting it off.
+oto opens its device once per process, so that context is the one package-level value in the package.
+`TestPlaybackBeginsWithinTheLatencyBudget` holds NFR-P-202 on a real device.
 
 **A late refill is counted.** `levelled.go` times the interval between the device's requests for
 samples; one longer than half a second means the buffer emptied before it was refilled. The count and

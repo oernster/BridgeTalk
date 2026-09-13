@@ -37,6 +37,11 @@ func (p *Player) beginClip() {
 func (p *Player) observePull(at time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.lastPull.IsZero() && p.out != nil {
+		// The clip's first request: note it and what sits ahead of it (NFR-P-202).
+		p.firstPull = at
+		p.queuedAhead = p.out.queued()
+	}
 	if !p.lastPull.IsZero() {
 		if waited := at.Sub(p.lastPull); waited > stallInterval {
 			p.stalls++

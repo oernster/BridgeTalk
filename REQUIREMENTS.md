@@ -754,9 +754,20 @@ reference machine in section 2.3, measured by a benchmark in the scanner package
 
 **NFR-P-202 Playback latency**
 Priority: Must.
-Not measured today: no player benchmark exists.
-When a cue fires, the application shall begin audio output within 150 milliseconds
-at the 95th percentile, measured over 100 firings in the player benchmark.
+When a cue fires, the application shall begin audio output within 150 milliseconds at the 95th
+percentile, measured over 100 firings in the player benchmark on a machine with an audio device.
+Output is counted from the call that plays the take to its first samples being taken, plus the audio
+queued ahead of them in the player at that moment, plus the Windows audio buffer at its full size,
+since how full that buffer is cannot be read. The journal poll before a cue fires (FR-615) is not
+counted (Oliver, 2026-09-13).
+Note: Stop and a take that interrupts another both drop the audio still queued, so the cut is heard at
+once. A take that starts after silence drops the queued silence. A take that follows another closely
+waits for the end of the one before it rather than cutting it off.
+Verified by: `TestPlaybackBeginsWithinTheLatencyBudget` in
+`internal/infrastructure/audio/latency_test.go`, which read 100.5 milliseconds at the 95th
+percentile on 2026-09-13, almost all of it the Windows buffer counted at its full 100 milliseconds;
+it skips on a machine with no audio device. Not verified by a test: a game launch with the Windows
+buffer at 100 milliseconds, read off the stall count on the Status pane (FR-616).
 
 ---
 
@@ -1421,7 +1432,6 @@ headless test is how it gets tested.
 | **OQ-10** | A take cut short still reports that it finished, so the scheduler stops counting the alert that replaced it as speaking. A `flavour` cue arriving then is queued behind the alert rather than let go. Read in the source, not reproduced. | FR-612 | Claude, to reproduce |
 | **OQ-12** | The tray's hover text is refreshed only after a choice from the tray menu, so muting or casting from the window leaves it describing the state before. Read in the source, not reproduced. | FR-710 | Claude, to reproduce |
 | **OQ-16** | Shortcut paths reach PowerShell quoted by Go's `%q`, which doubles every backslash; a `$` in a path would also be read by PowerShell. What either does to the shortcut is not measured. | FR-802, FR-804 | Claude, to measure |
-| **OQ-17** | NFR-P-202 asks for sound within 150 milliseconds at the 95th percentile. The journal is asked every 250 milliseconds (FR-615) and the audio device holds half a second of buffer, so the figure cannot be met as built. Read in the source. Build towards it, demote it or retire it? | NFR-P-202 | Oliver |
 
 ---
 

@@ -42,7 +42,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 84.1% | 80% | `test.ps1` |
+| `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 69.1% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 22.4% | 22% | `test.ps1` |
@@ -50,7 +50,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-421 test functions, which expand to 478 runs once their subtests are counted.
+422 test functions, which expand to 479 runs once their subtests are counted.
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on

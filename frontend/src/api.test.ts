@@ -231,8 +231,8 @@ describe('with no window bridge at all', () => {
     expect(await api.requestQuit()).toBeUndefined()
   })
 
-  // Making folders with no bridge makes none, in the shape a cancelled question has,
-  // so the Cast pane reads it as nothing done rather than as a folder at an empty path.
+  // Making folders with no bridge makes none and answers with an empty path, so the Cast
+  // pane reads it as nothing done rather than as a folder at an empty path.
   it('answers making folders with nothing made', async () => {
     removeBridge()
     expect(await api.makeVoiceFolders('Alpha')).toEqual({ path: '', made: 0 })

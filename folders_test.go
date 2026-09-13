@@ -2,7 +2,8 @@ package main
 
 // Making a voice's folders and looking again, through the facade. The folder rules
 // themselves are held in the library package; these hold what the window does around
-// them: asking where, keeping the answer and taking what a second look finds.
+// them: using the product's own recordings directory where none is chosen, keeping it
+// and taking what a second look finds.
 
 import (
 	"errors"
@@ -29,15 +30,22 @@ func dataHome(t *testing.T) string {
 	return start
 }
 
+// neverAsked fails the test if a directory dialog opens, since making folders asks
+// nothing.
+func neverAsked(t *testing.T, app *App) {
+	t.Helper()
+	app.chooseDir = func(string, string) (string, error) {
+		t.Fatal("a dialog opened for Make folders")
+		return "", nil
+	}
+}
+
 // FR-223 through the facade: the folders land under the recordings directory already
 // chosen, one per moment, with nothing asked.
 func TestFoldersAreMadeUnderTheChosenRecordingsDirectory(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	app.libraryRoot = t.TempDir()
-	app.chooseDir = func(string, string) (string, error) {
-		t.Fatal("asked where, with a recordings directory already chosen")
-		return "", nil
-	}
+	neverAsked(t, app)
 
 	made, err := app.MakeVoiceFolders("Oliver")
 	if err != nil {
@@ -51,34 +59,55 @@ func TestFoldersAreMadeUnderTheChosenRecordingsDirectory(t *testing.T) {
 	}
 }
 
-// FR-226: with no recordings directory there is no other way for a new user to name one,
-// since choosing one that holds no voices is refused. So this asks; it keeps the answer.
-func TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer(t *testing.T) {
+// FR-228: with no recordings directory the folders go in the product's own, which is then
+// kept. No dialog opens.
+func TestWithNoRecordingsDirectoryTheFoldersGoInTheDefaultOne(t *testing.T) {
 	app, _, log := fixtureApp(t)
 	store := &fakeSettings{}
 	app.settings = store
 	app.libraryRoot = ""
-	dataHome(t)
-	where := t.TempDir()
-	answering(app, where, nil)
+	want := dataHome(t)
+	neverAsked(t, app)
 
 	made, err := app.MakeVoiceFolders("Oliver")
 	if err != nil {
 		t.Fatalf("making folders: %v", err)
 	}
-	if _, err := os.Stat(made.Path); err != nil {
+	if made.Path != filepath.Join(want, "Oliver") || made.Made != app.session.table.Len() {
+		t.Fatalf("made %d under %q, want one per moment under %q", made.Made, made.Path, want)
+	}
+	if info, err := os.Stat(made.Path); err != nil || !info.IsDir() {
 		t.Fatalf("no voice folder at %q: %v", made.Path, err)
 	}
-	if app.libraryRoot != where || store.held.LibraryRoot != where {
-		t.Fatalf("root %q, stored %q; want both %q", app.libraryRoot, store.held.LibraryRoot, where)
+	if app.libraryRoot != want || store.held.LibraryRoot != want {
+		t.Fatalf("root %q, stored %q; want both %q", app.libraryRoot, store.held.LibraryRoot, want)
 	}
 	if log.countEmitted(stateEvent) == 0 {
 		t.Fatal("the page was not told there is now a recordings directory")
 	}
 }
 
-// FR-227: with nothing chosen, both questions about the recordings directory open in the
-// product's own recordings folder, which exists by the time they do, rather than
+// FR-228: a default that cannot be made is reported, makes nothing and changes nothing.
+func TestADefaultThatCannotBeMadeIsReported(t *testing.T) {
+	app, _, log := fixtureApp(t)
+	app.libraryRoot = ""
+	file := filepath.Join(t.TempDir(), "plain")
+	writeClip(t, file)
+	t.Setenv("LOCALAPPDATA", file)
+	t.Setenv("XDG_DATA_HOME", file)
+	neverAsked(t, app)
+
+	made, err := app.MakeVoiceFolders("Oliver")
+	if err == nil || made.Path != "" {
+		t.Fatalf("got %v, %v; want the reason and nothing made", made, err)
+	}
+	if app.libraryRoot != "" || log.countEmitted(stateEvent) != 0 {
+		t.Fatal("a default that could not be made changed something")
+	}
+}
+
+// FR-227: with nothing chosen, the question of where the recordings are opens in the
+// product's own recordings folder, which exists by the time it does, rather than
 // wherever the system dialog was last pointed.
 func TestTheRecordingsQuestionOpensInTheProductsOwnFolder(t *testing.T) {
 	app, _, _ := fixtureApp(t)
@@ -90,17 +119,14 @@ func TestTheRecordingsQuestionOpensInTheProductsOwnFolder(t *testing.T) {
 		return "", nil
 	}
 
-	if _, err := app.MakeVoiceFolders("Oliver"); err != nil {
-		t.Fatalf("making folders: %v", err)
-	}
 	if _, err := app.ChooseLibraryRoot(); err != nil {
 		t.Fatalf("choosing: %v", err)
 	}
-	if len(starts) != 2 || starts[0] != want || starts[1] != want {
-		t.Fatalf("the questions opened at %q, want both at %q", starts, want)
+	if len(starts) != 1 || starts[0] != want {
+		t.Fatalf("the question opened at %q, want %q", starts, want)
 	}
 	if info, err := os.Stat(want); err != nil || !info.IsDir() {
-		t.Fatalf("the folder a question opened in does not exist: %v", err)
+		t.Fatalf("the folder the question opened in does not exist: %v", err)
 	}
 }
 
@@ -121,8 +147,8 @@ func TestTheRecordingsQuestionOpensWhereTheRecordingsAre(t *testing.T) {
 	}
 }
 
-// A default that cannot be made leaves the opening folder to the system rather than
-// refusing to ask.
+// A default that cannot be made leaves the question's opening folder to the system rather
+// than refusing to ask.
 func TestADefaultThatCannotBeMadeStillAsks(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	app.libraryRoot = ""
@@ -136,55 +162,38 @@ func TestADefaultThatCannotBeMadeStillAsks(t *testing.T) {
 		return "", nil
 	}
 
-	if _, err := app.MakeVoiceFolders("Oliver"); err != nil {
-		t.Fatalf("making folders: %v", err)
+	if _, err := app.ChooseLibraryRoot(); err != nil {
+		t.Fatalf("choosing: %v", err)
 	}
 	if !asked || start != "" {
 		t.Fatalf("asked %v at %q; want the question asked with no folder given", asked, start)
 	}
 }
 
-// Cancelling the question makes nothing and changes nothing.
-func TestCancellingWhereTheFoldersGoChangesNothing(t *testing.T) {
-	app, _, log := fixtureApp(t)
-	app.libraryRoot = ""
-	dataHome(t)
-	answering(app, "", nil)
-
-	made, err := app.MakeVoiceFolders("Oliver")
-	if err != nil || made.Path != "" {
-		t.Fatalf("cancelling answered %v, %v; want nothing at all", made, err)
-	}
-	if app.libraryRoot != "" || log.countEmitted(stateEvent) != 0 {
-		t.Fatal("cancelling changed something")
-	}
-}
-
-// FR-225: a name that would be refused is refused before any dialog opens.
-func TestABadNameIsRefusedBeforeAnythingIsAsked(t *testing.T) {
+// FR-225: a name that would be refused is refused before anything is made.
+func TestABadNameIsRefusedBeforeAnythingIsMade(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	app.libraryRoot = ""
-	app.chooseDir = func(string, string) (string, error) {
-		t.Fatal("a dialog opened for a name that is refused anyway")
-		return "", nil
-	}
+	want := dataHome(t)
+	neverAsked(t, app)
 
 	if _, err := app.MakeVoiceFolders("a/b"); !errors.Is(err, library.ErrVoiceName) {
 		t.Fatalf("got %v, want the name refused", err)
 	}
+	if entries, err := os.ReadDir(want); err != nil || len(entries) != 0 {
+		t.Fatalf("the recordings directory holds %v, %v; want nothing made", entries, err)
+	}
+	if app.libraryRoot != "" {
+		t.Fatal("a refused name set a recordings directory")
+	}
 }
 
-// A failed dialog and a directory the folders cannot go in are both reported.
+// A recordings directory the folders cannot go in is reported.
 func TestWhereTheFoldersCannotGoIsReported(t *testing.T) {
 	app, _, _ := fixtureApp(t)
-	app.libraryRoot = ""
-	dataHome(t)
-	answering(app, "", errors.New("the dialog would not open"))
-	if _, err := app.MakeVoiceFolders("Oliver"); err == nil {
-		t.Fatal("a failed dialog reported success")
-	}
-
 	app.libraryRoot = filepath.Join(t.TempDir(), "gone")
+	neverAsked(t, app)
+
 	if _, err := app.MakeVoiceFolders("Oliver"); err == nil {
 		t.Fatal("folders were reported made under a directory that is not there")
 	}

@@ -187,9 +187,9 @@ export const api = {
     bridge()?.ChooseJournalDir() ?? Promise.resolve(''),
 
   /**
-   * Makes a voice's folders, one per moment, asking where first when no recordings
-   * directory is chosen. It rejects a name that cannot be a folder; a cancelled
-   * question answers with an empty path instead, for the reason the choosers do.
+   * Makes a voice's folders, one per moment, in the product's own recordings directory
+   * when none is chosen yet. It rejects a name that cannot be a folder. With no bridge it
+   * makes nothing and answers with an empty path.
    */
   makeVoiceFolders: (name: string): Promise<VoiceFolders> =>
     bridge()?.MakeVoiceFolders(name) ?? Promise.resolve({ path: '', made: 0 }),

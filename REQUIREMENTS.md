@@ -432,24 +432,31 @@ a refused name never opens a dialog.
 Verified by: `TestANameThatCannotBeAFolderIsRefused`;
 `TestABadNameIsRefusedBeforeAnythingIsAsked`.
 
-**FR-226 While no library root is chosen, ask where the folders go**
+**FR-226 withdrawn on 2026-09-13.** It had Make folders ask where the folders go while no
+library root was chosen. Pressed, the button opened a folder picker instead of making folders;
+the picker refused the voice's name typed into it because that folder did not exist yet.
+FR-228 replaces it. FR-226 is retired and is not reused.
+
+**FR-228 While no library root is chosen, make the folders in the default recordings directory**
 Priority: Must.
-While no library root is chosen, when the user asks for a voice's folders, the
-application shall take the directory the user then chooses as the library root.
-Rationale: FR-201's chooser refuses a directory holding no voices, which is all a new
-user has; without this there is no way for them to name one.
-Acceptance: Given no library root, when the user makes the folders for `Oliver` and
-chooses `D:\Recordings`, then `D:\Recordings\Oliver\` exists and `D:\Recordings` is
-the stored library root. Given no library root, when the user cancels the question,
-then nothing is created and nothing changes.
-Verified by: `TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer`;
-`TestCancellingWhereTheFoldersGoChangesNothing`.
+While no library root is chosen, when the user asks for a voice's folders, the application
+shall make them in the default recordings directory of FR-227 without asking anything and shall
+take that directory as the library root. If the default recordings directory cannot be worked
+out or made, then the application shall report the reason and make nothing.
+Rationale: a button called Make folders makes folders (Oliver, 2026-09-13). FR-201's chooser
+refuses a directory holding no voices, which is all a new user has, so without this a new user
+has no way to name a library root.
+Acceptance: Given no library root on Windows, when the user makes the folders for `Oliver`, then
+`%LOCALAPPDATA%\BridgeTalk\Recordings\Oliver\` holds one folder per cue, no dialog opens and
+`%LOCALAPPDATA%\BridgeTalk\Recordings` is the stored library root.
+Verified by: `TestWithNoRecordingsDirectoryTheFoldersGoInTheDefaultOne`;
+`TestADefaultThatCannotBeMadeIsReported` in `folders_test.go`.
 
 **FR-227 The recordings question opens in the product's own folder**
 Priority: Must.
-While no library root is chosen, when the application asks where the recordings are
-or where a voice's folders go, the application shall open that question in the
-default recordings directory, creating the directory where it is missing.
+While no library root is chosen, when the application asks where the recordings are, the
+application shall open that question in the default recordings directory, creating the
+directory where it is missing.
 The default recordings directory is `%LOCALAPPDATA%\BridgeTalk\Recordings` on
 Windows. Elsewhere it is `BridgeTalk/Recordings` under `$XDG_DATA_HOME`, which falls
 back to `~/.local/share` where it is unset.
@@ -458,9 +465,9 @@ game's folder, where a user's recordings do not belong. Of the folders the produ
 owns this is the one setup never removes: uninstall deletes the install directory;
 forgetting settings deletes the window state and the settings file. It is local
 rather than roaming, because hours of audio do not belong in a roaming profile.
-Acceptance: Given no library root on Windows, when the user presses Make folders,
-then the folder question opens in `%LOCALAPPDATA%\BridgeTalk\Recordings`, which
-exists. Given a library root, when the user presses Browse for the recordings, then
+Acceptance: Given no library root on Windows, when the user presses Browse for the
+recordings, then the folder question opens in `%LOCALAPPDATA%\BridgeTalk\Recordings`,
+which exists. Given a library root, when the user presses Browse for the recordings, then
 the question opens in that root.
 Verified by: `TestTheDefaultRecordingsDirectoryBelongsToTheProduct` in
 `internal/infrastructure/library/root_test.go`;
@@ -646,7 +653,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227, FR-228, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

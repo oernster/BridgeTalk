@@ -149,8 +149,8 @@ export function CastPane({
     void api
       .makeVoiceFolders(name)
       .then((answer) => {
-        // An empty path is a cancelled question: nothing was made, the reader knows
-        // they cancelled, so there is nothing to report.
+        // An empty path means nothing was made, which only happens outside the window
+        // where no bridge stands behind the page; there is nothing to report.
         if (answer.path === '') return
         setOutcome({ refused: false, text: madeText(answer) })
       })

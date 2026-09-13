@@ -222,8 +222,8 @@ describe('making a voice', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/which a folder name cannot/)
   })
 
-  // A cancelled question made nothing and the reader knows they cancelled.
-  it('says nothing after the question of where was cancelled', async () => {
+  // Outside the window no bridge stands behind the page, so nothing is made; nothing is said.
+  it('says nothing when nothing was made', async () => {
     makeVoiceFolders.mockResolvedValue({ path: '', made: 0 })
     await show([])
 

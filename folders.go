@@ -14,27 +14,27 @@ import (
 
 // MakeVoiceFolders makes a folder for the named voice holding one folder per moment.
 //
-// Where no recordings directory is chosen yet it asks where the folders should go and
-// keeps that directory as the recordings directory. Nothing else could set one for a
-// new user: ChooseLibraryRoot refuses a directory holding no voices, which is exactly
-// what a new user has.
+// Where no recordings directory is chosen yet the folders go in the product's own
+// recordings directory, which is then kept as the recordings directory (FR-228). Nothing
+// is asked: a button called Make folders makes folders. It used to open a folder picker
+// here, which refused a voice's name typed into it because that folder did not exist yet.
+// Nothing else could set a recordings directory for a new user either: ChooseLibraryRoot
+// refuses a directory holding no voices, which is exactly what a new user has.
 //
-// The name is checked before anything is asked, so a name that would be refused never
-// opens a dialog first. An empty path in the answer means the dialog was cancelled:
-// nothing was made and nothing changed.
+// The name is checked before anything is made, so a refused name touches nothing.
 func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 	if err := library.CheckVoiceName(name); err != nil {
 		return VoiceFoldersDTO{}, err
 	}
 
 	root := a.libraryRoot
-	asked := root == ""
-	if asked {
-		chosen, err := a.chooseDir("Where your recordings will live", a.recordingsStart())
-		if chosen == "" || err != nil {
-			return VoiceFoldersDTO{}, err
+	adopted := root == ""
+	if adopted {
+		fallback, err := library.DefaultRoot()
+		if err != nil {
+			return VoiceFoldersDTO{}, fmt.Errorf("making the default recordings directory: %w", err)
 		}
-		root = chosen
+		root = fallback
 	}
 
 	dir, made, err := library.MakeVoiceFolders(root, name, a.session.table)
@@ -42,7 +42,7 @@ func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 		return VoiceFoldersDTO{}, err
 	}
 	answer := VoiceFoldersDTO{Path: dir, Made: made}
-	if !asked {
+	if !adopted {
 		return answer, nil
 	}
 
@@ -78,7 +78,7 @@ func (a *App) recordingsStart() string {
 // rather than the window being left with no voice for a directory that is mid-copy.
 func (a *App) Rescan() (int, error) {
 	if a.libraryRoot == "" {
-		return 0, fmt.Errorf("%w yet: choose one in Settings or make a voice's folders here", library.ErrNoRoot)
+		return 0, fmt.Errorf("%w yet: choose one on the Missing takes pane or make a voice's folders here", library.ErrNoRoot)
 	}
 	found, _, err := library.Scan(a.libraryRoot, a.session.table)
 	if err != nil {

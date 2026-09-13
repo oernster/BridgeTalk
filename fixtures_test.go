@@ -54,14 +54,14 @@ func libraryRootFixture(t *testing.T) string {
 func fixtureTable(t *testing.T) cue.Table {
 	t.Helper()
 	built := make([]cue.Cue, 0, 4)
-	for _, each := range []struct{ id, source, event string }{
-		{"ShieldState.ShieldsUp.false", "journal", "ShieldState"},
-		{"Docked", "journal", "Docked"},
-		{"zz.silent", "journal", "NobodyRecordsThis"},
-		{"Cast.Confirmed", "application", "cast"},
+	for _, each := range []struct{ id, source, event, purpose string }{
+		{"ShieldState.ShieldsUp.false", "journal", "ShieldState", "When the shields fail."},
+		{"Docked", "journal", "Docked", "When the ship docks."},
+		{"zz.silent", "journal", "NobodyRecordsThis", "When nothing ever happens."},
+		{"Cast.Confirmed", "application", "cast", "When this voice is cast."},
 	} {
 		one, err := cue.New(cue.Definition{
-			ID: each.id, Source: each.source, Event: each.event,
+			ID: each.id, Source: each.source, Event: each.event, Purpose: each.purpose,
 		})
 		if err != nil {
 			t.Fatalf("building cue %q: %v", each.id, err)

@@ -416,6 +416,21 @@ folder name with another id, so a folder could no longer be read back as exactly
 Verified by: a structural test over `cues.toml`, proved by planting a violating id; a test
 that `cue.New` refuses such an id.
 
+**FR-231 Every cue carries a written purpose**
+Priority: Must.
+Every cue in the cue table shall carry a purpose: one sentence, written by hand, saying when
+the cue is heard. If a table holds a cue whose purpose is missing, empty or only spaces,
+then the application shall refuse the table, naming the cue.
+Rationale: a title is read from the cue id, so it can only restate the id. Someone recording a
+take needs to know when it will be heard, which the id cannot say (Oliver, 2026-09-13). Titles
+stay generated; the purpose is the one piece of reader facing text the table writes.
+Acceptance: Given a table whose `Docked` entry has no `purpose`, when it is loaded, then loading
+fails with an error naming `Docked`. Given the shipped table, when it is loaded, then every one
+of its 256 cues has a purpose.
+Verified by: `TestACueWithNoPurposeIsRefusedByName` and `TestEveryShippedCueHasAPurpose` in
+`internal/infrastructure/config/loader_test.go`; `TestAPurposeIsCarriedAsWritten` in
+`internal/domain/cue/cue_test.go`.
+
 **FR-223 Make a voice's folders**
 Priority: Must.
 When the user asks for the folders of a named voice, the application shall create
@@ -517,6 +532,17 @@ assemble a sequence of files into one utterance.
 Rationale: a long line is one long file. The person recording decides where a line
 ends.
 
+**FR-232 Casting a voice plays its confirmation**
+Priority: Must.
+When the user casts a voice, the application shall play one take of `Cast.Confirmed` from that
+voice, chosen at random among its takes. If the voice has no take for `Cast.Confirmed`, the
+output is muted or no audio device is open, then the cast shall succeed with nothing played.
+Acceptance: Given `Ivy/` with two takes for `Cast.Confirmed`, when Ivy is cast, then one of the
+two plays. Given `Ivy/` with none, when Ivy is cast, then the cast succeeds and nothing plays.
+Verified by: `TestCastingAVoiceIsConfirmedInThatVoice` and `TestCastingAVoiceWhileMutedSaysNothing`
+in `cast_test.go`; `TestTheAcknowledgementIsFoundByItsSource` and
+`TestAnAcknowledgementNobodyRecordedIsSilence` in `internal/infrastructure/library/catalogue_test.go`.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**
@@ -560,6 +586,21 @@ shown with `<library root>\Oliver\Undocked` as its folder.
 Verified by: `TestMissingListsWhatAVoiceHasNoTakeFor` in
 `internal/infrastructure/library/checklist_test.go`; `TestTheChecklistCountsWhatIsRecorded`
 in `checklist_test.go`; `frontend/src/missingTakes.test.tsx`.
+
+**FR-318 Show when each missing take will be heard**
+Priority: Must.
+When the Missing takes pane lists a cue, it shall show the cue's purpose (FR-231) on the line
+beneath its title and above its folder path, in the theme's secondary text colour, so the
+purpose reads apart from both. That colour shall measure a contrast of at least 7 to 1 against
+the page and panel backgrounds in both the light theme and the dark one.
+Rationale: the list is useful to someone recording only if it says when each take will be heard
+(Oliver, 2026-09-13).
+Acceptance: Given `Oliver/` with no take for `Cast.Confirmed`, when Oliver is chosen, then the
+row reads "Cast confirmed", then the purpose of `Cast.Confirmed`, then
+`<library root>\Oliver\Cast_Confirmed`, the purpose drawn in the secondary colour.
+Verified by: `frontend/src/missingTakes.test.tsx` for the line and its place in the row;
+`TestTheChecklistCountsWhatIsRecorded` for the purpose reaching the page;
+`TestThePurposeLineContrastsInBothThemes` in `tests/structural/contrast_test.go` for the colour.
 
 **FR-316 Offer only the voices still missing takes**
 Priority: Must.
@@ -680,7 +721,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-230, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-232, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

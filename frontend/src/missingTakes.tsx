@@ -153,7 +153,7 @@ export function MissingTakesPane({
             {`${list.voice} has recordings for ${list.recorded} of ${list.total} moments.`}
           </p>
           <p className="lede">
-            Each moment below needs one audio file saved in the folder shown beneath its name.
+            Each moment below says when it is heard, then the folder its audio file is saved in.
           </p>
           {grouped(list.missing).map(([group, entries]) => (
             <section key={group}>
@@ -162,6 +162,9 @@ export function MissingTakesPane({
                 <div className="row" key={item.id}>
                   <span className="grow">
                     {item.title}
+                    <br />
+                    {/* FR-318: when the take will be heard, between the title and its folder. */}
+                    <span className="purpose">{item.purpose}</span>
                     <br />
                     <span className="hint">{`${list.folder}${item.folder}`}</span>
                   </span>

@@ -8,6 +8,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -19,9 +20,11 @@ var embeddedCues []byte
 
 // cueFile is the shape of cues.toml.
 //
-// There is no title. The words a reader sees are generated from the id, so a table that
-// writes one is refused along with any other key this shape does not hold, rather than
-// the key being dropped in silence and the table appearing to say something it does not.
+// There is no title. A title is generated from the id, so a table that writes one is
+// refused along with any other key this shape does not hold, rather than the key being
+// dropped in silence and the table appearing to say something it does not. The purpose is
+// the exception: it says when the cue is heard, which no id can, so it is written by hand
+// and every cue must carry one (FR-231).
 type cueFile struct {
 	Cue []struct {
 		ID       string            `toml:"id"`
@@ -32,6 +35,7 @@ type cueFile struct {
 		Match    map[string]string `toml:"match"`
 		Priority string            `toml:"priority"`
 		Cooldown int               `toml:"cooldown"`
+		Purpose  string            `toml:"purpose"`
 	} `toml:"cue"`
 }
 
@@ -66,9 +70,16 @@ func LoadCueTable(override string) (cue.Table, error) {
 			Match:    entry.Match,
 			Priority: entry.Priority,
 			Cooldown: time.Duration(entry.Cooldown) * time.Second,
+			Purpose:  entry.Purpose,
 		})
 		if err != nil {
 			return cue.Table{}, err
+		}
+		if strings.TrimSpace(entry.Purpose) == "" {
+			return cue.Table{}, fmt.Errorf(
+				"%w: %s has no purpose, the sentence saying when the cue is heard",
+				cue.ErrInvalidCue, entry.ID,
+			)
 		}
 		cues = append(cues, built)
 	}

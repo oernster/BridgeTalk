@@ -75,6 +75,7 @@ type Cue struct {
 	match    map[string]string
 	priority Priority
 	cooldown time.Duration
+	purpose  string
 }
 
 // Definition is the unvalidated shape a cue arrives in from the cue table.
@@ -87,6 +88,7 @@ type Definition struct {
 	Match    map[string]string
 	Priority string
 	Cooldown time.Duration
+	Purpose  string
 }
 
 // endsInDigits reports whether an id's final segment is made of digits alone (FR-219).
@@ -203,6 +205,7 @@ func New(definition Definition) (Cue, error) {
 		match:    copied,
 		priority: priority,
 		cooldown: definition.Cooldown,
+		purpose:  definition.Purpose,
 	}, nil
 }
 
@@ -211,6 +214,10 @@ func (c Cue) ID() ID { return c.id }
 
 // Title returns the cue in words, for a reader rather than for the code.
 func (c Cue) Title() string { return c.id.Title() }
+
+// Purpose returns when the cue is heard, as the cue table writes it (FR-231). It is the one
+// piece of reader facing text written by hand rather than generated from the id.
+func (c Cue) Purpose() string { return c.purpose }
 
 // Source returns which event source can drive this cue.
 func (c Cue) Source() event.Source { return c.source }

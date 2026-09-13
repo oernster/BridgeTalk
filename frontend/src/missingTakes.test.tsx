@@ -33,6 +33,7 @@ const docked: CueEntry = {
   group: 'Docked',
   heading: 'Docked at a station',
   folder: 'Docked',
+  purpose: 'When the ship docks.',
 }
 const undocked: CueEntry = {
   id: 'Undocked',
@@ -40,6 +41,7 @@ const undocked: CueEntry = {
   group: 'Undocked',
   heading: 'Undocked',
   folder: 'Undocked',
+  purpose: 'When the ship leaves its pad.',
 }
 const hyperspace: CueEntry = {
   id: 'StartJump.JumpType.Hyperspace',
@@ -47,6 +49,13 @@ const hyperspace: CueEntry = {
   group: 'StartJump',
   heading: 'Start jump',
   folder: 'StartJump_JumpType_Hyperspace',
+  purpose: 'When a hyperspace jump to another system begins.',
+}
+
+/** renderedPurpose opens the pane on Oliver and returns the hyperspace moment's purpose. */
+const renderedPurpose = async () => {
+  render(<MissingTakesPane cast="Oliver" />)
+  return screen.findByText(hyperspace.purpose)
 }
 
 /** progress builds a voice's checklist over a vocabulary of three moments. */
@@ -192,6 +201,17 @@ describe('the missing takes pane', () => {
     // FR-229: the folder writes each dot of the id as an underscore.
     expect(screen.getByText('D:\\Recordings\\Oliver\\StartJump_JumpType_Hyperspace')).toBeTruthy()
     expect(screen.queryByText('D:\\Recordings\\Oliver\\Undocked')).toBeNull()
+  })
+
+  // FR-318: each missing moment says when it is heard, drawn as a purpose between its title
+  // and its folder.
+  it('says when each missing take is heard, between its title and its folder', async () => {
+    const purpose = await renderedPurpose()
+    expect(purpose.className).toBe('purpose')
+    const row = purpose.parentElement?.textContent ?? ''
+    const order = [hyperspace.title, hyperspace.purpose, hyperspace.folder].map((part) => row.indexOf(part))
+    expect(order).not.toContain(-1)
+    expect(order).toEqual([...order].sort((first, second) => first - second))
   })
 
   // FR-314. The button pressed is the second moment's, so one wired to whichever moment

@@ -29,6 +29,14 @@
   color: var(--muted);
 }
 
+/* A cue's purpose on the Missing takes pane: when the take will be heard, standing between
+   the title and the folder path. The secondary colour sets it apart from both; a
+   structural test holds that colour to 7 to 1 against every ground in each theme (FR-318). */
+.row .purpose {
+  font-size: 15px;
+  color: var(--secondary);
+}
+
 /* A box standing on a row, sized against the row's own control height rather than
    left at the browser's default, which is drawn small enough to be hard to hit. The
    accent is the brand one because a tick is the control's state rather than its

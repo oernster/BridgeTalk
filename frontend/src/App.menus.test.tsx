@@ -45,7 +45,14 @@ vi.mock('./api', () => ({
         recorded: 1,
         total: 2,
         missing: [
-          { id: 'Docked', title: 'Docked', group: 'Docked', heading: 'Docked at a station', folder: 'Docked' },
+          {
+            id: 'Docked',
+            title: 'Docked',
+            group: 'Docked',
+            heading: 'Docked at a station',
+            folder: 'Docked',
+            purpose: 'When the ship docks.',
+          },
         ],
         folder: `D:/Recordings/${voice}/`,
       }),

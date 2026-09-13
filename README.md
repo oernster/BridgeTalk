@@ -49,7 +49,8 @@ Windows) and uses that folder from then on; setup never removes it.
 Record each take in any program you like, such as Audacity (free, from
 https://www.audacityteam.org/), saving it as WAV, MP3, FLAC or Ogg.
 The Missing takes pane lists every voice still missing a recording. For the one chosen it shows each
-missing moment with the folder its audio file belongs in; Open folder beside one opens that folder.
+missing moment with a line saying when it is heard, then the folder its audio file belongs in; Open
+folder beside one opens that folder.
 
 To name them by hand instead: every moment is named in the game's own words, as the journal and
 the status file spell it. A

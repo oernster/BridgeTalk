@@ -348,3 +348,14 @@ func TestAnApplicationCueStillNeedsAName(t *testing.T) {
 		t.Fatal("an application cue with no moment named was accepted")
 	}
 }
+
+// FR-231: the purpose is written by hand, so it is carried exactly as the table wrote it.
+func TestAPurposeIsCarriedAsWritten(t *testing.T) {
+	const written = "When you cast this voice, to confirm it is now the one speaking."
+	built := mustCue(t, cue.Definition{
+		ID: "Cast.Confirmed", Source: "application", Event: "cast", Purpose: written,
+	})
+	if built.Purpose() != written {
+		t.Fatalf("Purpose() = %q, want %q", built.Purpose(), written)
+	}
+}

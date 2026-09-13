@@ -100,6 +100,7 @@ func cueLines(cues []cue.Cue) []CueDTO {
 			Group:   item.ID().Group(),
 			Heading: item.ID().Heading(),
 			Folder:  item.ID().Folder(),
+			Purpose: item.Purpose(),
 		})
 	}
 	return out

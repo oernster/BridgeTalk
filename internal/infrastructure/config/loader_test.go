@@ -46,6 +46,7 @@ id = "test.only"
 source = "journal"
 event = "FSDJump"
 priority = "notice"
+purpose = "When a test says so."
 `)
 	table, err := config.LoadCueTable(path)
 	if err != nil {
@@ -86,6 +87,7 @@ func TestAnOverrideHoldingAnIdEndingInDigitsFailsToLoad(t *testing.T) {
 id = "DockingGranted.2"
 source = "journal"
 event = "DockingGranted"
+purpose = "When a test says so."
 `)
 
 	_, err := config.LoadCueTable(path)
@@ -105,6 +107,7 @@ func TestAnOverrideHoldingAnIdEndingInASpaceFailsToLoad(t *testing.T) {
 id = "DockingGranted "
 source = "journal"
 event = "DockingGranted"
+purpose = "When a test says so."
 `)
 
 	_, err := config.LoadCueTable(path)
@@ -125,12 +128,14 @@ id = "same.id"
 source = "journal"
 event = "FSDJump"
 priority = "notice"
+purpose = "When a test says so."
 
 [[cue]]
 id = "same.id"
 source = "journal"
 event = "Docked"
 priority = "notice"
+purpose = "When a test says so."
 `)
 	_, err := config.LoadCueTable(path)
 	if err == nil {
@@ -149,9 +154,10 @@ id = "bad.priority"
 source = "journal"
 event = "FSDJump"
 priority = "screaming"
+purpose = "When a test says so."
 `)
-	if _, err := config.LoadCueTable(path); err == nil {
-		t.Fatal("a cue with an unknown priority was accepted")
+	if _, err := config.LoadCueTable(path); !errorMentions(err, "screaming") {
+		t.Fatalf("err = %v, want the unknown priority refused by name", err)
 	}
 }
 
@@ -166,10 +172,49 @@ func TestAKeyTheTableDoesNotHoldIsRefusedByName(t *testing.T) {
 id = "FSDJump"
 source = "journal"
 event = "FSDJump"
+purpose = "When a test says so."
 `+key+` = "5"
 `)
 		if _, err := config.LoadCueTable(path); !errorMentions(err, key) {
 			t.Errorf("a table writing %q gave %v, want it refused naming the key", key, err)
+		}
+	}
+}
+
+// FR-231: every cue says when it is heard. A purpose left out, left empty or made of spaces
+// alone stops the load naming the cue, since a take recorded for it would be recorded
+// without anyone knowing when it plays.
+func TestACueWithNoPurposeIsRefusedByName(t *testing.T) {
+	t.Parallel()
+	for name, line := range map[string]string{
+		"missing": "",
+		"empty":   `purpose = ""`,
+		"spaces":  `purpose = "   "`,
+	} {
+		path := overrideFile(t, "cues.toml", `
+[[cue]]
+id = "Docked"
+source = "journal"
+event = "Docked"
+`+line+`
+`)
+		if _, err := config.LoadCueTable(path); !errorMentions(err, "Docked") || !errorMentions(err, "purpose") {
+			t.Errorf("a %s purpose gave %v, want the load refused naming the cue", name, err)
+		}
+	}
+}
+
+// FR-231: the shipped table is held to the same rule, so every cue it ships says when it
+// is heard.
+func TestEveryShippedCueHasAPurpose(t *testing.T) {
+	t.Parallel()
+	table, err := config.LoadCueTable("")
+	if err != nil {
+		t.Fatalf("loading the shipped table: %v", err)
+	}
+	for _, item := range table.All() {
+		if strings.TrimSpace(item.Purpose()) == "" {
+			t.Errorf("%s ships with no purpose", item.ID())
 		}
 	}
 }

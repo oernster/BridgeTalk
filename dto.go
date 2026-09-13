@@ -88,12 +88,16 @@ type AboutDTO struct {
 //
 // Folder is the name of the folder that holds the cue's takes, worked out on this side so
 // the page never keeps the rule that writes a dot as an underscore (FR-229).
+//
+// Purpose is the sentence saying when the cue is heard, written in the cue table by hand
+// (FR-231) and shown beneath the title on the Missing takes pane (FR-318).
 type CueDTO struct {
 	ID      string `json:"id"`
 	Title   string `json:"title"`
 	Group   string `json:"group"`
 	Heading string `json:"heading"`
 	Folder  string `json:"folder"`
+	Purpose string `json:"purpose"`
 }
 
 // CueBreakdownDTO is one voice's whole relationship with the cue table.

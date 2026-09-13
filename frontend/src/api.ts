@@ -73,6 +73,8 @@ export interface CueEntry {
   heading: string
   /** The name of the folder holding the cue's takes, dots written as underscores on the Go side. */
   folder: string
+  /** When the cue is heard, written by hand in the cue table (FR-231). */
+  purpose: string
 }
 
 /** CueBreakdown is one voice's whole relationship with the cue table. */

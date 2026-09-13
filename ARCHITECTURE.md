@@ -100,12 +100,14 @@ cooldown lets the cue fire as often as its event does.
 ```toml
 [[cue]]
 id = "Cast.Confirmed"
+purpose = "When you cast this voice, to confirm it is now the one speaking."
 source = "application"
 event = "cast"
 priority = "notice"
 
 [[cue]]
 id = "StartJump.JumpType.Hyperspace"
+purpose = "When a hyperspace jump to another system begins."
 source = "journal"
 event = "StartJump"
 match = { JumpType = "Hyperspace" }
@@ -113,6 +115,7 @@ priority = "notice"
 
 [[cue]]
 id = "LightsOn.Cleared"
+purpose = "When the ship's lights are switched off."
 source = "status"
 flag = "LightsOn"
 edge = "falling"
@@ -126,11 +129,17 @@ The one cue with no name from the game is the application's own `Cast.Confirmed`
 therefore the moment the cue listens for. It is the only grouping the vocabulary needs: the audition
 pane and the breakdown dialog both read it rather than keeping a second taxonomy in step.
 
-**The words a reader sees are generated, never written.** `cue.ID.Title` reads an id as words: each
-segment breaks where its capitals begin a new word, a run of capitals stays an initialism and whatever
-narrows the moment follows a colon, so `StartJump.JumpType.Hyperspace` reads "Start jump: jump type
-hyperspace". `cue.ID.Heading` reads the group the same way. The table has no title key. A table that
-writes one is refused by name, as is a table writing any other key the loader does not hold.
+**The words a reader sees are generated, with one exception.** `cue.ID.Title` reads an id as words:
+each segment breaks where its capitals begin a new word, a run of capitals stays an initialism and
+whatever narrows the moment follows a colon, so `StartJump.JumpType.Hyperspace` reads "Start jump: jump
+type hyperspace". `cue.ID.Heading` reads the group the same way. The table has no title key. A table
+that writes one is refused by name, as is a table writing any other key the loader does not hold.
+
+**The exception is the purpose (FR-231).** A title can only restate its id, which does not tell someone
+recording a take when it will be heard. Each cue therefore carries one sentence saying so, written in the
+table by hand; `cue.Cue.Purpose` returns it unchanged. The Missing takes pane shows it beneath each title
+in the secondary colour (FR-318), which `tests/structural/contrast_test.go` holds to 7 to 1 against
+every ground in both themes.
 
 **The shipped set.** The journal cues are every event present in a real commander's journals except the
 snapshots the game writes at login or when a screen opens (`Cargo`, `Loadout`, `Market` and the like)
@@ -143,7 +152,7 @@ Every table is built through `cue.New`, which refuses a definition it cannot hon
 unknown source or edge, a journal or application cue naming no event, a status cue naming no flag, an
 unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below) or an id
 ending in a dot or a space (FR-222, below).
-`config.LoadCueTable` also refuses a duplicate id and a key it does not hold. It accepts a path to a table on disk, which would
+`config.LoadCueTable` also refuses a duplicate id, a key it does not hold and a cue whose purpose is missing or blank (FR-231). It accepts a path to a table on disk, which would
 replace the shipped one whole under exactly the same rules; no flag supplies such a path today, so the
 running application always loads the embedded table and only the tests exercise the other route.
 

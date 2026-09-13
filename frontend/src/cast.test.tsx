@@ -126,6 +126,7 @@ describe('the breakdown behind a row', () => {
           group: 'StartJump',
           heading: 'Start jump',
           folder: 'StartJump_JumpType_Hyperspace',
+          purpose: 'When a hyperspace jump to another system begins.',
         },
       ],
       unserved: [
@@ -135,6 +136,7 @@ describe('the breakdown behind a row', () => {
           group: 'Disembark',
           heading: 'Disembark on foot',
           folder: 'Disembark',
+          purpose: 'When you step out onto foot.',
         },
       ],
     })

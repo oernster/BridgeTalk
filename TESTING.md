@@ -46,8 +46,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 
-362 test functions, which expand to 415 runs once their subtests are counted.
-Seventeen of them are the structural tests in `tests/structural`, which assert the
+366 test functions, which expand to 419 runs once their subtests are counted.
+Eighteen of them are the structural tests in `tests/structural`, which assert the
 architecture itself rather than any behaviour: layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band and the rule
 that the product is named in exactly one place.
@@ -75,7 +75,7 @@ that the product is named in exactly one place.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.2%** | **95.6%** |
 
-173 tests across 15 files, run under Vitest with jsdom.
+174 tests across 15 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being wrong.
 `missingTakes.tsx` read 100% while six of its behaviours could be broken with every test still

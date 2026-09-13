@@ -122,7 +122,8 @@ describe('the recordings directory on the missing takes pane', () => {
     browse()
 
     const said = await screen.findByRole('status')
-    expect(said.textContent).toContain('The recordings directory is now D:/Takes')
+    // FR-234: the row shows the path, so the message does not repeat it.
+    expect(said.textContent).toBe('The recordings directory was changed.')
     expect(said.className).toContain('taken')
     await waitFor(() => expect(voiceDirectories).toHaveBeenCalledTimes(2))
   })
@@ -292,7 +293,9 @@ describe('the missing takes pane', () => {
     expect(Array.from(select.options).map((option) => option.textContent)).toEqual([
       'Every voice is complete',
     ])
-    expect(screen.getByText('Every voice is complete.')).toBeTruthy()
+    // FR-234: the note beneath does not say again what the chooser says.
+    expect(screen.getByText('Each one has a recording for every moment.')).toBeTruthy()
+    expect(screen.getAllByText(/Every voice is complete/)).toHaveLength(1)
     expect(screen.queryByText(/has recordings for/)).toBeNull()
   })
 

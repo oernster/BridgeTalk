@@ -76,6 +76,10 @@ describe('the cast pane', () => {
       screen.getByRole('button', { name: /Grace is cast as your ship's voice/ }),
     ).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Cast Kate/ })).toBeTruthy()
+    // FR-234: no tooltip repeats the words the row already shows.
+    for (const row of screen.getAllByRole('button', { name: /^(Grace is cast|Cast Kate)/ })) {
+      expect(row.getAttribute('title')).toBeNull()
+    }
   })
 
   it('casts the voice whose row is pressed', async () => {

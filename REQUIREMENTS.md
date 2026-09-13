@@ -557,6 +557,21 @@ Verified by: `frontend/src/missingTakes.test.tsx` and `frontend/src/cast.test.ts
 when a heading is drawn above a title; `TestTheBreakdownAnswersForAVoiceThatIsNotCast` in
 `cast_test.go` for the full title reaching the page.
 
+**FR-234 Nothing is shown twice in a row**
+Priority: Must.
+The application shall never show the same text twice in succession: no line, label, message or
+tooltip shall repeat, word for word, text standing directly before it or beside it.
+Rationale: a repeat tells the reader nothing new and makes the window look broken (Oliver,
+2026-09-13).
+Acceptance: A decision in the reaction log that played nothing names its cue once, with no event
+name repeating the start of the id. With every voice complete, the voice chooser says "Every voice
+is complete" and the note beneath it does not say it again. After Browse, the new path is shown
+once, in its row; the message beneath does not repeat it. A cast row carries no tooltip
+repeating its own words.
+Verified by: `frontend/src/shell.test.tsx` for the reaction log; `frontend/src/missingTakes.test.tsx`
+for the complete note and the recordings message; `frontend/src/panes.test.tsx` for the journal
+message; `frontend/src/cast.test.tsx` for the cast rows. Each failed with its repeat put back.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**
@@ -636,11 +651,13 @@ Priority: Must.
 The Missing takes pane shall always show its voice chooser. While the library root holds no
 voice folder, the chooser shall hold one entry saying there are no voices yet and the pane shall
 say how to make one. While every voice folder has a take for every cue, the chooser shall hold
-one entry saying every voice is complete and the pane shall say so.
+one entry saying every voice is complete and the pane shall add that each one has a recording for
+every moment, without saying again what the chooser says (FR-234).
 Rationale: a control that is there in some states and gone in others makes the pane a different
 window each time it is opened (Oliver, 2026-09-13).
 Acceptance: Given no voice folder, the chooser shows "No voices yet" and cannot be changed.
-Given only complete voices, the chooser shows "Every voice is complete" and so does the pane.
+Given only complete voices, the chooser shows "Every voice is complete" and the pane beneath it
+says "Each one has a recording for every moment."
 Verified by: `frontend/src/missingTakes.test.tsx`.
 
 **FR-313 Show progress**
@@ -735,7 +752,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-233, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-234, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

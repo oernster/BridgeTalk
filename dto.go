@@ -29,11 +29,12 @@ type VoiceDTO struct {
 // It carried the cue's source and its priority for a while and the log never showed
 // either, so both crossed on every reaction and were read by nothing. A field the
 // page does not render is not diagnostic information, it is only the appearance of
-// it. Either belongs back here the day a column wants it, which is one line.
+// it. Either belongs back here the day a column wants it, which is one line. The event
+// name is not coming back: every cue id begins with it, so a column showing it only
+// repeated the id beside it (FR-234).
 type ReactionDTO struct {
 	At      string `json:"at"`
 	Cue     string `json:"cue"`
-	Event   string `json:"event"`
 	Clip    string `json:"clip"`
 	Outcome string `json:"outcome"`
 }

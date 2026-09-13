@@ -118,7 +118,6 @@ func (r *ReactionService) report(matched cue.Cue, candidate event.Event, clip, o
 	r.reporter.Report(ports.Reaction{
 		At:      candidate.At(),
 		Cue:     matched.ID(),
-		Event:   candidate.Name(),
 		Clip:    clip,
 		Outcome: outcome,
 	})

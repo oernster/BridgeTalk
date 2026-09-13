@@ -148,7 +148,6 @@ func (a *App) record(reaction ports.Reaction) {
 	line := ReactionDTO{
 		At:      reaction.At.Format("15:04:05"),
 		Cue:     string(reaction.Cue),
-		Event:   reaction.Event,
 		Clip:    baseName(reaction.Clip),
 		Outcome: reaction.Outcome,
 	}

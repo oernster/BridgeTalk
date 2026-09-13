@@ -136,7 +136,8 @@ export function MissingTakesPane({
 
       {allComplete && (
         <p className="callout">
-          <b>Every voice is complete.</b> Each one has a recording for every moment.
+          {/* FR-234: the chooser above already says every voice is complete. */}
+          Each one has a recording for every moment.
         </p>
       )}
 

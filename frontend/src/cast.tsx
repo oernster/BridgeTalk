@@ -76,7 +76,6 @@ function VoiceRow({
         className="pick"
         data-stop
         type="button"
-        title={castLabel(voice, cast)}
         onClick={() => onSelect(voice.name)}
       >
         <span className="name">{castLabel(voice, cast)}</span>

@@ -68,7 +68,8 @@ describe('the settings pane', () => {
     browse()
 
     const said = await screen.findByRole('status')
-    expect(said.textContent).toContain('The journal directory is now C:\\Journal')
+    // FR-234: the row shows the path, so the message does not repeat it.
+    expect(said.textContent).toBe('The journal directory was changed.')
     expect(said.className).toContain('taken')
   })
 

@@ -44,14 +44,12 @@ const watching: State = {
 const played: Reaction = {
   at: '09:30:00',
   cue: 'StartJump',
-  event: 'StartJump',
   clip: 'a.mp3',
   outcome: 'played',
 }
 const dropped: Reaction = {
   at: '09:30:01',
   cue: 'ShieldState.ShieldsUp.false',
-  event: 'ShieldState',
   clip: '',
   outcome: 'dropped',
 }
@@ -129,9 +127,9 @@ describe('the home pane', () => {
     ).toBeTruthy()
   })
 
-  // The silent outcomes are the point. A cue that produced no sound is recorded with
-  // the event that raised it, so a cue that never fires can be diagnosed by
-  // looking rather than by guessing.
+  // The silent outcomes are the point. A cue that produced no sound is recorded under
+  // its cue with the reason, so a cue that never fires can be diagnosed by looking
+  // rather than by guessing.
   it('records the decisions that produced no sound as well as the ones that did', async () => {
     reactions.mockResolvedValue([played, dropped])
     render(<HomePane state={watching} />)
@@ -142,8 +140,9 @@ describe('the home pane', () => {
 
     expect(screen.getByText('ShieldState.ShieldsUp.false')).toBeTruthy()
     expect(screen.getByText('dropped')).toBeTruthy()
-    // With no clip to name, the event that raised the cue stands in its place.
-    expect(screen.getByText('ShieldState')).toBeTruthy()
+    // FR-234: with no clip to name, nothing stands in its place, so the cue is shown once.
+    expect(screen.getAllByText('ShieldState.ShieldsUp.false')).toHaveLength(1)
+    expect(screen.queryByText('ShieldState')).toBeNull()
   })
 
   it('adds each new decision as it is announced', async () => {

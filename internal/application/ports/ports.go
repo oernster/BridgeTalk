@@ -90,11 +90,12 @@ type SettingsStore interface {
 // It carries what the log shows and no more. The cue's source and its priority were
 // filled in by both reporters and read only on the way to a wire field the page never
 // rendered, so the whole chain was write-only. Both are still on the cue itself, which
-// is where a reader that wants them should ask.
+// is where a reader that wants them should ask. The name of the event that raised the cue
+// went the same way: every cue id begins with it, so the log only ever repeated the id
+// (FR-234).
 type Reaction struct {
 	At      time.Time
 	Cue     cue.ID
-	Event   string
 	Clip    string
 	Outcome string
 }

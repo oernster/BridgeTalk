@@ -131,7 +131,9 @@ export function HomePane({ state }: { state: State | null }) {
                   {entry.outcome}
                 </span>
                 <span className="cue">{entry.cue}</span>
-                <span className="clip">{entry.clip || entry.event}</span>
+                {/* FR-234: the clip alone, with nothing standing in for a missing one. An
+                    event name here only repeated the start of the cue id beside it. */}
+                <span className="clip">{entry.clip}</span>
               </div>
             ))
           )}

@@ -39,7 +39,9 @@ export function useChooser(
         if (taken === '') {
           return
         }
-        setOutcome({ refused: false, text: `${what} is now ${taken}` })
+        // FR-234: the row above already shows the new path, since both choosers announce
+        // the new state before they answer; saying it again here would repeat it.
+        setOutcome({ refused: false, text: `${what} was changed.` })
         onTaken?.()
       })
       .catch((reason: unknown) => setOutcome({ refused: true, text: String(reason) }))

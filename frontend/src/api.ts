@@ -53,7 +53,6 @@ export interface Audition {
 export interface Reaction {
   at: string
   cue: string
-  event: string
   clip: string
   outcome: string
 }

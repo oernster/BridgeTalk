@@ -127,7 +127,6 @@ func (s *Scheduler) report(request Request, outcome string) {
 	s.reporter.Report(ports.Reaction{
 		At:      s.clock.Now(),
 		Cue:     request.Cue.ID(),
-		Event:   request.Cue.Name(),
 		Clip:    clip,
 		Outcome: outcome,
 	})

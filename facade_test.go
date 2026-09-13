@@ -21,7 +21,6 @@ func TestADecisionIsRecordedAndAnnounced(t *testing.T) {
 	reporter{app: app}.Report(ports.Reaction{
 		At:      time.Date(2026, 8, 26, 9, 30, 0, 0, time.UTC),
 		Cue:     "ShieldState.ShieldsUp.false",
-		Event:   "ShieldState",
 		Clip:    filepath.Join("C:", "Recordings", "a.mp3"),
 		Outcome: "played",
 	})
@@ -34,8 +33,8 @@ func TestADecisionIsRecordedAndAnnounced(t *testing.T) {
 	if line.At != "09:30:00" {
 		t.Errorf("at = %q, want the time of day alone", line.At)
 	}
-	if line.Cue != "ShieldState.ShieldsUp.false" || line.Event != "ShieldState" {
-		t.Errorf("line = %+v, want the cue and event carried through", line)
+	if line.Cue != "ShieldState.ShieldsUp.false" {
+		t.Errorf("line = %+v, want the cue carried through", line)
 	}
 	if line.Clip != "a.mp3" {
 		t.Errorf("clip = %q, want the file name alone", line.Clip)

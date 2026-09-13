@@ -33,6 +33,8 @@ project.
   its recording belongs in.
 - Auditioning, casting a voice, settings and a tray presence.
 - A setup program that installs, updates, repairs and removes the application for one user.
+- Machine voices: the 28 English voices of the Kokoro model, cast apart from recorded voices,
+  speaking one shared script and made on the user's own machine (section 6.1; not built today).
 - An extension point through which an additional audio source may be supplied
   (section 6; not built today).
 - Windows and Linux, decided by Oliver on 2026-09-13. Linux work comes after
@@ -44,8 +46,12 @@ project.
 |---|---|
 | Controlling the game in any way | The application has no input path to the game and will not acquire one |
 | Speech recognition or spoken commands | Not what this is for |
-| Text to speech synthesis | Recorded audio only |
-| Shipping any audio with the application | The application plays what the user provides |
+| Speaking a line as its event fires | Making a line takes 204 to 348 ms, over the 150 ms of NFR-P-202; every line is made ahead of play (FR-511) |
+| Shipping recordings with the application | The application ships the files machine voices are made from, never recordings |
+| Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
+| Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
+| Changing a machine voice's speed or pitch | Every line is made at the model's own speed |
+| Working out a word's part of speech to choose its pronunciation | A line whose word is misread is put right in the script; see OQ-19 |
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
@@ -58,7 +64,12 @@ project.
 |---|---|
 | **Cue** | One thing the application can play, plus the game condition that triggers it. Identified by a stable id spelled in the game's own words, such as `StartJump.JumpType.Hyperspace`. Defined in `cues.toml`. |
 | **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 256. |
-| **Voice** | One person's recordings, selectable as a whole. A directory under the library root that yields at least one take. |
+| **Voice** | A recorded voice or a machine voice, selectable as a whole. |
+| **Recorded voice** | One person's recordings: a directory under the library root that yields at least one take. Sections 3 and 4 say voice for a recorded voice. |
+| **Machine voice** | One of the 28 English voices of the Kokoro model shipped with the application, identified by the model's own id, such as `bf_emma`. Its takes are made lines (section 6.1). |
+| **Script** | `script.toml`: the words each cue is spoken with, shared by every machine voice. |
+| **Line** | One entry in the script for a cue. A cue in the script has three. |
+| **Made line** | An audio file the application made from one line for one machine voice. |
 | **Library root** | One directory the user chooses, holding one subdirectory per voice. |
 | **Manifest** | `voice.toml` in a voice directory. Optional; it may carry the name a voice is shown by, a credit and takes the convention cannot find (FR-210). |
 | **Take** | One audio file answering one cue. A cue may have several takes. |
@@ -88,6 +99,8 @@ graph LR
   REC["Recording program<br/>outside the application"] -->|saves takes| ROOT
   DROP["Drop in a folder<br/>of audio files"] --> ROOT
   PORT["Audio source port<br/>section 6, not built"] -.optional.-> CAT
+  MV["Machine voices<br/>section 6.1, not built"] -.-> PORT
+  SCRIPT["script.toml"] -.-> MV
 ```
 
 The cue engine asks the catalogue for a take for a cue id and gets a path or
@@ -107,7 +120,9 @@ A single person is usually both.
 Windows. Go with Wails hosting a React and TypeScript front end. No CGO: `build.ps1`
 sets `CGO_ENABLED` to `0`. Elite Dangerous journal files in their standard location
 unless another directory is chosen in Settings or passed with `-journal`. No network
-dependency at runtime: the application makes no outbound request.
+dependency at runtime: the application makes no outbound request. Machine voices run on the
+processor alone through two native libraries loaded with cgo disabled, ONNX Runtime and eSpeak NG
+(CON-8).
 
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
 built yet and comes after all other work. The library
@@ -121,9 +136,10 @@ schema in section 3 is already portable, so nothing there changes either way.
 | CON-2 | Every Go source file, every front end source file and every file of the setup program's page stays at or below 400 lines; one landing between 381 and 400 lines is reduced to 350 or fewer. Build and packaging scripts are not counted. |
 | CON-3 | The coverage floor over `internal/domain` and `internal/application` stays at 100 percent. |
 | CON-4 | `VERSION` is the single source of truth for the version. No version literal elsewhere. |
-| CON-5 | No audio ships inside the application or its setup program. |
+| CON-5 | No recording ships inside the application or its setup program. The files a machine voice is made from do (FR-524); amended on 2026-09-14. |
 | CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
+| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. A word's speech sounds come from misaki's English dictionaries, with eSpeak NG for a word they lack. No Python runs; no network is used. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1. |
 
 ### 2.5 Assumptions
 
@@ -132,6 +148,8 @@ schema in section 3 is already portable, so nothing there changes either way.
 | ASM-1 | The 256 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
 | ASM-2 | Recordings are made with ordinary consumer microphones in untreated rooms, so their quality is not controllable by the application. | Oliver | Before recordings are made in earnest |
 | ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
+| ASM-4 | The development machine, 12 logical processors with no graphics card used, is close enough to a player's machine to set NFR-P-203. | Oliver | Before the first release with machine voices |
+| ASM-5 | The Apache-2.0 licence the Kokoro-82M model repository declares covers its voice style files, which it does not license separately. | Oliver | Before the first release with machine voices |
 
 ---
 
@@ -889,13 +907,15 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 - The application does not verify who a recording is of or who owns it.
 - The application does not record, process, clean up or improve audio.
 - The application cannot control the game.
+- A machine voice does not work out a word's part of speech, so a word whose sound depends on it can be
+  misread; the script is where such a line is put right.
 
 ---
 
 ## 6. The audio source port
 
 **FR-501 The audio source is a port**
-Priority: Should.
+Priority: Must. Raised from Should on 2026-09-14: machine voices are its first implementation.
 Not built today: no audio source interface is declared and `library.Catalogue` is built
 directly over a scanned `library.Voice`. The reaction service does depend on the
 `VoiceCatalogue` port.
@@ -911,6 +931,218 @@ Priority: Must.
 Not built today: there is no port for an implementation to supply.
 An implementation of the port shall supply takes for cue ids and nothing else. It
 shall not add cues, alter the cue table or change playback behaviour.
+
+### 6.1 Machine voices
+
+**Amended on 2026-09-14.** Text to speech synthesis stood out of scope until Oliver brought it in
+on 2026-09-14. His rulings that day: a machine voice is cast apart from a recorded voice; the voices
+live inside the application rather than in a separate program; every machine voice speaks one shared
+script holding three lines a cue; the setup program carries the files they are made from. This
+answers OQ-6: the additional source is built in behind the section 6 port rather than supplied by an
+extension, so FR-501 is raised to Must.
+
+Measured before any of this was written, on the development machine, processor only:
+
+- Making one short line through the Kokoro-82M model took 204 to 348 ms from Go through ONNX Runtime,
+  against 228 to 341 ms from Python through PyTorch. Loading the model took 539 ms. The 8-bit model
+  took 946 to 1,528 ms a line, so it is not used.
+- Over the purposes of all 256 cues, speech sounds taken from misaki's English dictionaries, with
+  eSpeak NG for a word they lack, matched misaki's own on 99.4 percent of words in each accent.
+  eSpeak NG alone matched 81.0 percent British and 77.1 percent American.
+- The files a machine voice is made from sum to about 370 MB: the model 310.5 MB, eSpeak NG's data
+  17.5 MB, the 28 voice style files 14.6 MB, ONNX Runtime 14.2 MB, misaki's four English
+  dictionaries 12.0 MB and eSpeak NG's library 0.4 MB.
+
+The script, `script.toml`, sits beside `cues.toml`:
+
+```toml
+# The words each moment is spoken with, shared by every machine voice.
+[lines]
+"Docked" = ["Docking complete.", "We're down safely.", "Docked and secure, commander."]
+```
+
+**FR-503 The script**
+Priority: Must.
+The application shall make every machine voice's lines from `script.toml`: one `[lines]` table
+whose keys are cue ids, each holding a list of lines.
+Rationale: one set of words for every machine voice, edited as a file (Oliver, 2026-09-14). TOML for
+the reasons section 3.3 gives.
+Acceptance: Given `script.toml` holding three lines for `Docked`, when a machine voice is cast, then
+that voice's takes for `Docked` are made from exactly those three lines.
+Verified by: not built.
+
+**FR-504 If the script names something that is not a cue, then the build fails**
+Priority: Must.
+If `script.toml` holds a key that is not a cue id in `cues.toml`, then a structural test shall fail
+naming that key.
+Acceptance: Given `script.toml` holding `"Dockd"`, when the structural tests run, then one fails
+naming `Dockd`.
+Verified by: not built.
+
+**FR-505 A cue in the script holds three lines**
+Priority: Must.
+For each cue it names, `script.toml` shall hold exactly three distinct lines, none of them empty.
+Rationale: three so an event heard often does not sound the same each time (Oliver, 2026-09-14);
+FR-610 already keeps the same take from playing twice running.
+Acceptance: Given `"Docked"` holding two lines, when the structural tests run, then one fails naming
+`Docked`.
+Verified by: not built.
+
+**FR-506 A line fits the model**
+Priority: Must.
+Each line in `script.toml` shall come to no more than 510 speech-sound symbols in either accent.
+Rationale: the model reads at most 510 symbols; Kokoro cuts a longer string short.
+Verified by: not built.
+
+**FR-507 Every cue has lines**
+Priority: Should (OQ-21).
+`script.toml` shall hold lines for every cue id in `cues.toml`.
+Note: until it does, a machine voice is silent for a cue with no lines, as FR-220 says of a recorded
+voice.
+Verified by: not built.
+
+**FR-508 The machine voices offered**
+Priority: Must.
+The Cast pane shall offer 28 machine voices, listed apart from the recorded voices. British female:
+`bf_alice`, `bf_emma`, `bf_isabella`, `bf_lily`. British male: `bm_daniel`, `bm_fable`, `bm_george`,
+`bm_lewis`. American female: `af_alloy`, `af_aoede`, `af_bella`, `af_heart`, `af_jessica`, `af_kore`,
+`af_nicole`, `af_nova`, `af_river`, `af_sarah`, `af_sky`. American male: `am_adam`, `am_echo`,
+`am_eric`, `am_fenrir`, `am_liam`, `am_michael`, `am_onyx`, `am_puck`, `am_santa`.
+Rationale: machine voices and recorded voices are cast separately (Oliver, 2026-09-14). How each is
+named on screen is OQ-18.
+Acceptance: Given a library root holding `Alice/`, when the Cast pane opens, then Alice is listed
+among the recorded voices and the 28 machine voices are listed apart from her.
+Verified by: not built.
+
+**FR-509 The tray offers the machine voices**
+Priority: Should.
+The tray icon's Voice menu (FR-710) shall list the machine voices after the recorded voices.
+Verified by: not built.
+
+**FR-510 A machine voice speaks with its own accent**
+Priority: Must.
+The application shall make a British machine voice's lines with British English pronunciation and
+an American machine voice's lines with American English pronunciation.
+Acceptance: Given the line "Fuel reserves are running low, commander.", when it is made for
+`bf_emma`, then its last word reads `kəmˈɑːndə`; when made for `am_michael`, `kəmˈændəɹ`. Both
+were measured on 2026-09-14.
+Verified by: not built.
+
+**FR-511 Casting a machine voice makes its missing lines**
+Priority: Must.
+When a machine voice is cast, the application shall make every line of the script that voice has
+no current made line for (FR-513).
+Rationale: making a line takes longer than the 150 ms NFR-P-202 allows between an event and its
+speech, so every line is made before it is needed.
+Acceptance: Given `bf_emma` with no made lines, when she is cast, then making starts; once it ends,
+every line in the script has a current made line for her.
+Verified by: not built.
+
+**FR-512 Starting with a machine voice cast makes its missing lines**
+Priority: Must.
+When the application starts with a machine voice cast, the application shall make every line of
+the script that voice has no current made line for.
+Verified by: not built.
+
+**FR-513 A made line is current only while what it was made from is unchanged**
+Priority: Must.
+The application shall treat a made line as current only while its line's text, its voice's style
+file and the model file are the ones it was made from.
+Rationale: an edited line, a new voice file or a new model arriving in an update must be heard,
+rather than an old rendering of it.
+Acceptance: Given current made lines for `bf_emma`, when the line "Docking complete." is changed to
+"Docked." and the application starts, then that line is made again and no other line is.
+Verified by: not built.
+
+**FR-514 While lines are being made, the voice speaks what is made**
+Priority: Must.
+While a machine voice's lines are being made, the application shall play that voice's current made
+lines for the cues that fire; a cue with none yet shall be silent.
+Verified by: not built.
+
+**FR-515 Show how far making has got**
+Priority: Must.
+While a machine voice's lines are being made, the Cast pane shall show how many of that voice's
+lines are current out of how many lines the script holds.
+Acceptance: Given a script of 768 lines, when `bf_emma` is cast with 100 current, then the pane
+reads 100 of 768 and the figure rises as lines are made.
+Verified by: not built.
+
+**FR-516 Casting another voice stops making**
+Priority: Must.
+When another voice is cast while a machine voice's lines are being made, the application shall stop
+making them, keeping every made line written so far.
+Note: whether made lines are kept once their voice is no longer cast is OQ-20.
+Verified by: not built.
+
+**FR-517 A made line is written whole or not at all**
+Priority: Must.
+If making a line is interrupted, by the application closing or the machine stopping, then the
+application shall leave either the whole made line or no file for it.
+Verified by: not built.
+
+**FR-518 If a line cannot be made, then say why and carry on**
+Priority: Must.
+If a line cannot be made, then the application shall report the cue and the reason on the Cast pane
+and go on to the next line.
+Verified by: not built.
+
+**FR-519 If a machine voice's files are missing, then refuse the cast**
+Priority: Must.
+If a file a machine voice is made from is missing or cannot be read, then the application shall
+refuse to cast that voice, changing nothing, with a reason that names the file once (FR-237).
+Rationale: a damaged install is put right by Repair (FR-804); saying which file is gone says so.
+Verified by: not built.
+
+**FR-520 If a made line cannot be written, then stop and say why**
+Priority: Must.
+If a made line cannot be written, whether for want of space or permission, then the application
+shall stop making that voice's lines and show the reason on the Cast pane.
+Verified by: not built.
+
+**FR-521 Casting a machine voice plays its confirmation**
+Priority: Must.
+When a machine voice is cast, the application shall play one current made line of `Cast.Confirmed`
+from that voice, as FR-232 does for a recorded voice. If none is current yet, the output is muted
+or no audio device is open, then the cast shall succeed with nothing played.
+Verified by: not built.
+
+**FR-522 A machine voice's completeness**
+Priority: Should.
+The Cast pane shall show, for a machine voice, the number of cues with at least one current made
+line out of the size of the cue vocabulary.
+Verified by: not built.
+
+**FR-523 Made lines live apart from recordings**
+Priority: Must.
+The application shall write made lines under its own per user data directory, never under the
+library root.
+Rationale: CON-7. A made line is the application's to remake; a recording is the user's.
+Verified by: not built.
+
+**FR-524 Setup installs everything a machine voice is made from**
+Priority: Must.
+When setup writes the application's files (FR-802), it shall write every file a machine voice is
+made from: the model, the 28 voice style files, misaki's English dictionaries, ONNX Runtime plus
+eSpeak NG with its data. Nothing shall be downloaded.
+Rationale: the setup program carries the model files (Oliver, 2026-09-14), so NFR-S-1 holds.
+Verified by: not built.
+
+**FR-525 Uninstall removes the made lines**
+Priority: Must.
+When Uninstall is confirmed, setup shall delete every made line.
+Rationale: made lines are the application's own and can be made again. FR-805's rule that setup
+never touches the recordings still holds, since a made line is not one.
+Verified by: not built.
+
+### 6.2 Machine voices, non-functional
+
+| ID | Requirement | Method |
+|---|---|---|
+| NFR-P-203 | Making all 768 lines of a complete script for one machine voice takes no more than 10 minutes on the development machine | A benchmark test that makes the script for one voice and fails over the limit; it skips where the model files are absent. Basis: 204 to 348 ms a short line, which projects to about 4 minutes |
+| NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated |
+| NFR-Q-501 | Over the purposes of every cue in `cues.toml`, at least 99 percent of words receive the speech sounds misaki 0.9.4 gives them, in each accent | A test against a reference file made once with misaki and committed. Measured on 2026-09-14: 99.4 percent in each accent |
+| NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 370 MB |
 
 ---
 
@@ -1434,7 +1666,10 @@ headless test is how it gets tested.
 
 | ID | Question | Blocks | Owner |
 |---|---|---|---|
-| **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
+| **OQ-18** | How is a machine voice named on screen? The model's ids read `bf_emma`. Recommendation: the name capitalised with its accent and sex, as "Emma (British, female)". | FR-508, FR-509 | Oliver, with a recommendation from Claude |
+| **OQ-19** | How does the script put right a word misaki's dictionaries misread for its line, such as a word whose sound depends on its part of speech? Recommendation: reword the line; where no rewording serves, give that word's speech sounds inside the line. | NFR-Q-501 | Oliver, with a recommendation from Claude |
+| **OQ-20** | Are a machine voice's made lines kept once another voice is cast? Keeping them makes casting that voice again immediate; each voice's lines take about 95 MB, an estimate from the length of the probe clips rather than a measurement over a script. Recommendation: keep them. | FR-516 | Oliver, with a recommendation from Claude |
+| **OQ-21** | Must the script hold lines for every cue before machine voices ship? Recommendation: yes, which makes FR-507 a Must. | FR-507 | Oliver |
 
 ---
 
@@ -1442,10 +1677,10 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-502, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, FR-616, FR-703, FR-707, FR-712, NFR-P-201 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-506, FR-508, FR-510 to FR-521, FR-523 to FR-525, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-Q-501, NFR-C-501 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-507, FR-509, FR-522, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
-| **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
+| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out a word's part of speech to choose its pronunciation; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

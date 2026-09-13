@@ -6,6 +6,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { State } from './api'
+import { layOut, unlayOut } from './testLayout'
+import { watching } from './testState'
 
 const state = vi.fn<() => Promise<State | null>>()
 const setMuted = vi.fn<(muted: boolean) => Promise<void>>()
@@ -65,20 +67,6 @@ vi.mock('./api', () => ({
 
 const { App } = await import('./App')
 
-const watching: State = {
-  voice: 'Grace',
-  bound: 40,
-  total: 60,
-  muted: false,
-  silent: false,
-  journalDir: 'D:/Journals',
-  statusPath: 'D:/Journals/Status.json',
-  libraryRoot: 'D:/Recordings',
-  version: '9.9.9',
-  launchOnBoot: false,
-  stalls: 0,
-  worstStall: 0,
-}
 
 beforeEach(() => {
   handlers.clear()
@@ -230,5 +218,52 @@ describe('the menu bar', () => {
     expect(title.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(title)
     expect(title.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  // A dialog hands focus back to what opened it, so the ring carries on from there. Opened
+  // from a menu, that is the menu's title; the item itself is gone with its menu (FR-713).
+  it('hands focus back to the menu title a dialog was opened from', async () => {
+    await show()
+    const help = inMenuBar().getByRole('button', { name: 'Help' })
+
+    fireEvent.click(help)
+    fireEvent.click(inMenuBar().getByRole('button', { name: 'Licence' }))
+    await screen.findByText('the full terms')
+    fireEvent.keyDown(window, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(document.activeElement).toBe(help)
+  })
+
+  // With a menu down, stepping the ring on to the next title drops that title's menu too,
+  // with its first item under the keyboard. Past the last title the menu closes and the ring
+  // moves on, so the bar never holds it (FR-713).
+  it('carries an open menu along the bar and lets it go at the end', async () => {
+    layOut()
+    try {
+      await show()
+      const title = (name: string) => inMenuBar().getByRole('button', { name })
+
+      fireEvent.keyDown(document, { key: 'Tab' })
+      fireEvent.keyDown(title('File'), { key: 'ArrowDown' })
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+
+      await waitFor(() => expect(title('Audio').getAttribute('aria-expanded')).toBe('true'))
+      expect(title('File').getAttribute('aria-expanded')).toBe('false')
+      await waitFor(() => expect(document.activeElement?.textContent).toBe('Cast'))
+
+      // On to Settings, then to Help, then off the end of the bar.
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+      await waitFor(() => expect(title('Help').getAttribute('aria-expanded')).toBe('true'))
+      fireEvent.keyDown(document, { key: 'ArrowRight' })
+
+      await waitFor(() =>
+        expect(inMenuBar().queryAllByRole('button', { expanded: true })).toHaveLength(0),
+      )
+      expect(document.querySelector('.menubar')?.contains(document.activeElement)).toBe(false)
+    } finally {
+      unlayOut()
+    }
   })
 })

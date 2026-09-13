@@ -14,10 +14,8 @@ import (
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
-	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
-	"github.com/oernster/bridge-talk/internal/infrastructure/status"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -50,7 +48,7 @@ func (a *App) ChooseLibraryRoot() (string, error) {
 	a.libraryRoot = chosen
 	a.adopt(found)
 
-	if err := a.remember(); err != nil {
+	if err := a.rememberLibraryRoot(chosen); err != nil {
 		return "", err
 	}
 	a.emitState()
@@ -90,26 +88,17 @@ func (a *App) ChooseJournalDir() (string, error) {
 		return "", err
 	}
 
-	// Each source names the directory itself (FR-237), so it is not named here again.
-	journalSource, err := journal.NewSource(chosen, systemClock{}.Now)
-	if err != nil {
-		return "", err
-	}
-	statusSource, err := status.NewWatcher(chosen, systemClock{}.Now)
+	watched, err := watchJournal(chosen)
 	if err != nil {
 		return "", err
 	}
 
 	// Nothing is changed until both sources exist. A directory that yields one and
-	// not the other would otherwise leave the application half moved.
-	a.mu.Lock()
-	a.sources = []ports.EventSource{journalSource, statusSource}
-	a.mu.Unlock()
+	// not the other would otherwise leave the application half moved; one that yields
+	// both takes down whatever startup said was wrong (FR-238).
+	a.watch(watched)
 
-	a.journalDir = chosen
-	a.statusPath = statusSource.Path()
-
-	if err := a.remember(); err != nil {
+	if err := a.rememberJournalDir(chosen); err != nil {
 		return "", err
 	}
 	a.emitState()
@@ -182,16 +171,21 @@ func (a *App) pickDirectory(title, start string) (string, error) {
 	return chosen, nil
 }
 
-// remember writes both directories down, so the choice outlives the run.
+// rememberLibraryRoot writes the recordings directory down, so the choice outlives the run.
 //
-// Only what has been chosen is stored. The detected paths are deliberately not
-// written: recording a guess would freeze it, so a profile that later moves would keep
-// pointing at where it used to be rather than being detected again.
-func (a *App) remember() error {
-	return a.keep(func(held *ports.Settings) {
-		held.LibraryRoot = a.libraryRoot
-		held.JournalDir = a.journalDir
-	})
+// Each directory has a writer of its own, called only once that directory has been taken.
+// A single writer for both kept whatever the other one held at the time: a journal
+// directory detected, given on the command line for one run or missing altogether was
+// frozen into Settings by choosing the recordings directory (FR-711). Recording a guess keeps
+// a profile that later moves pointing at where it used to be.
+func (a *App) rememberLibraryRoot(dir string) error {
+	return a.keep(func(held *ports.Settings) { held.LibraryRoot = dir })
+}
+
+// rememberJournalDir writes the journal directory down, for the reason
+// rememberLibraryRoot writes the recordings directory: it alone was chosen.
+func (a *App) rememberJournalDir(dir string) error {
+	return a.keep(func(held *ports.Settings) { held.JournalDir = dir })
 }
 
 // rememberVoice writes the cast voice's name down, so the voice outlives the run.

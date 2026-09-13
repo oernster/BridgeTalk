@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
@@ -33,9 +34,9 @@ func wrongFolders(t *testing.T) (empty, missing, journalOnly, plainFile string) 
 			t.Fatalf("making %s: %v", dir, err)
 		}
 	}
-	writeClip(t, filepath.Join(journalOnly, "Journal.2026-08-26T090000.01.log"))
+	writeJournal(t, journalOnly)
 	plainFile = filepath.Join(base, "plain.txt")
-	writeClip(t, plainFile)
+	audiotest.WriteFile(t, plainFile, audiotest.NotARecording)
 	return empty, filepath.Join(base, "Missing Folder"), journalOnly, plainFile
 }
 

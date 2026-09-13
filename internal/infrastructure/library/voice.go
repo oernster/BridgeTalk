@@ -8,26 +8,27 @@
 // answer. It also means a directory of audio organised for some other purpose
 // contributes nothing by accident, which is what makes it safe to point the
 // application at a directory and simply see what happens.
+//
+// A name is not enough to offer a take, though. Every take is decoded at its start before
+// it is offered, so a file that will not play is reported where it was found rather than
+// discovered at the moment it should have spoken (FR-204).
+//
+// A voice may also hold a manifest, voice.toml, giving it the name it is shown by and takes its
+// names cannot reach (FR-210). manifest.go reads it.
 package library
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
-
-// audioExtensions are the formats the player can decode.
-var audioExtensions = map[string]struct{}{
-	".mp3":  {},
-	".wav":  {},
-	".flac": {},
-	".ogg":  {},
-}
 
 // lister reads the entries of one directory. Scan and ScanVoice pass os.ReadDir.
 //
@@ -37,14 +38,34 @@ var audioExtensions = map[string]struct{}{
 // merge hands the scan a tree held in memory instead.
 type lister func(dir string) ([]os.DirEntry, error)
 
+// disk is what a scan asks of the file system: what a directory holds, what a file says and
+// whether a take plays. A tree held in memory can answer the first and not the others, which
+// is why all three are handed in together.
+type disk struct {
+	read     lister
+	readFile func(path string) ([]byte, error)
+	playable func(path string) error
+}
+
+// onDisk is the real file system, which Scan and ScanVoice read.
+var onDisk = disk{read: os.ReadDir, readFile: os.ReadFile, playable: audio.Playable}
+
 // Voice is one person's recordings, indexed by the cue each answers.
 type Voice struct {
-	// Name is the voice as a reader meets it: the directory's own name.
+	// Name is the voice's identity: the directory's own name. Settings stores it and -voice
+	// matches it, whatever a manifest says (FR-210).
 	Name string
+	// display is the name its manifest gives; empty where there is none. Display reads it.
+	display string
+	// Credit is the manifest's credit line; empty where there is none.
+	Credit string
 	// Root is the directory the recordings sit in.
 	Root string
 	// Takes counts the playable files resolved to a cue.
 	Takes int
+	// Present counts the recordings under the directory at any depth: every file with a
+	// recognised extension, whether it answers a cue or plays at all (FR-215).
+	Present int
 
 	byCue map[cue.ID][]string
 }
@@ -83,11 +104,17 @@ type Report struct {
 	// Duplicated names cue directories that differ only by case, which one machine
 	// permits and another refuses.
 	Duplicated []Reason
+	// Undecodable names takes named for a cue that will not play.
+	Undecodable []Reason
+	// Manifest names what a voice's manifest held that could not be used: the whole file where
+	// it is malformed (FR-211); one entry where only that entry is (FR-210).
+	Manifest []Reason
 }
 
 // Any reports whether the scan passed anything over.
 func (r Report) Any() bool {
-	return len(r.Unmatched) > 0 || len(r.Empty) > 0 || len(r.Duplicated) > 0
+	return len(r.Unmatched) > 0 || len(r.Empty) > 0 || len(r.Duplicated) > 0 ||
+		len(r.Undecodable) > 0 || len(r.Manifest) > 0
 }
 
 // index maps a cue id lowered to the id itself, which is how an exact but case
@@ -120,11 +147,11 @@ func folderIndex(table cue.Table) map[string]cue.ID {
 // directory holding no recognised name and a directory holding none of the right
 // names look identical from the outside.
 func Scan(root string, table cue.Table) ([]Voice, Report, error) {
-	return scan(root, table, os.ReadDir)
+	return scan(root, table, onDisk)
 }
 
-func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
-	entries, err := read(root)
+func scan(root string, table cue.Table, from disk) ([]Voice, Report, error) {
+	entries, err := from.read(root)
 	if err != nil {
 		return nil, Report{}, fmt.Errorf("reading %s: %w", root, refusal.Reason(err))
 	}
@@ -138,9 +165,11 @@ func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 		if !entry.IsDir() {
 			continue
 		}
-		voice, found := scanVoice(filepath.Join(root, entry.Name()), lookup, folders, read)
+		voice, found := scanVoice(filepath.Join(root, entry.Name()), lookup, folders, from)
 		report.Unmatched = append(report.Unmatched, prefix(entry.Name(), found.Unmatched)...)
 		report.Duplicated = append(report.Duplicated, prefix(entry.Name(), found.Duplicated)...)
+		report.Undecodable = append(report.Undecodable, prefix(entry.Name(), found.Undecodable)...)
+		report.Manifest = append(report.Manifest, prefix(entry.Name(), found.Manifest)...)
 		if voice.Takes == 0 {
 			report.Empty = append(report.Empty, Reason{
 				Path: entry.Name(),
@@ -151,8 +180,14 @@ func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 		voices = append(voices, voice)
 	}
 
+	// Listed by the name each is shown by, since that is the list a reader sees; two shown
+	// alike keep one order between them by their directories (FR-210).
 	sort.Slice(voices, func(a, b int) bool {
-		return strings.ToLower(voices[a].Name) < strings.ToLower(voices[b].Name)
+		left, right := strings.ToLower(voices[a].Display()), strings.ToLower(voices[b].Display())
+		if left != right {
+			return left < right
+		}
+		return voices[a].Name < voices[b].Name
 	})
 	return voices, report, nil
 }
@@ -170,14 +205,14 @@ func prefix(dir string, reasons []Reason) []Reason {
 // ScanVoice reads one voice directory. It is exported so a caller holding a directory
 // rather than a library root can index it without inventing a parent.
 func ScanVoice(dir string, table cue.Table) (Voice, Report) {
-	return scanVoice(dir, index(table), folderIndex(table), os.ReadDir)
+	return scanVoice(dir, index(table), folderIndex(table), onDisk)
 }
 
-func scanVoice(dir string, lookup, folders map[string]cue.ID, read lister) (Voice, Report) {
+func scanVoice(dir string, lookup, folders map[string]cue.ID, from disk) (Voice, Report) {
 	voice := Voice{Name: filepath.Base(dir), Root: dir, byCue: map[cue.ID][]string{}}
 	var report Report
 
-	entries, err := read(dir)
+	entries, err := from.read(dir)
 	if err != nil {
 		return voice, report
 	}
@@ -203,29 +238,43 @@ func scanVoice(dir string, lookup, folders map[string]cue.ID, read lister) (Voic
 				})
 			}
 			seen[id] = name
-			voice.byCue[id] = append(voice.byCue[id], takesIn(filepath.Join(dir, name), read)...)
+			clips, refused := from.takesIn(dir, name)
+			voice.byCue[id] = append(voice.byCue[id], clips...)
+			report.Undecodable = append(report.Undecodable, refused...)
 			continue
 		}
 		if id, ok := flatTake(name, lookup); ok {
+			if reason, refused := from.refuse(dir, name); refused {
+				report.Undecodable = append(report.Undecodable, reason)
+				continue
+			}
 			voice.byCue[id] = append(voice.byCue[id], filepath.Join(dir, name))
 			continue
 		}
-		if _, audio := audioExtensions[strings.ToLower(filepath.Ext(name))]; audio {
+		if audio.Recognised(name) {
 			report.Unmatched = append(report.Unmatched, Reason{
 				Path: name, Why: "this is no cue's name, so it is never played",
 			})
 		}
 	}
 
+	shape, unusable := from.manifest(dir)
+	report.Manifest = append(report.Manifest, unusable...)
+	reached := from.declare(dir, shape, lookup, &voice, &report)
+	report.Unmatched = unclaimed(report.Unmatched, reached)
+
 	for id, clips := range voice.byCue {
 		if len(clips) == 0 {
 			delete(voice.byCue, id)
 			continue
 		}
+		// A take the manifest declares where the names already found it is one take.
 		sort.Strings(clips)
+		clips = slices.Compact(clips)
 		voice.byCue[id] = clips
 		voice.Takes += len(clips)
 	}
+	voice.Present = from.recordingsUnder(dir)
 	return voice, report
 }
 
@@ -237,8 +286,7 @@ func scanVoice(dir string, lookup, folders map[string]cue.ID, read lister) (Voic
 // digits, which is a property of the vocabulary rather than a law, so a structural
 // test holds it.
 func flatTake(name string, lookup map[string]cue.ID) (cue.ID, bool) {
-	extension := strings.ToLower(filepath.Ext(name))
-	if _, ok := audioExtensions[extension]; !ok {
+	if !audio.Recognised(name) {
 		return "", false
 	}
 	base := strings.TrimSuffix(name, filepath.Ext(name))
@@ -265,21 +313,58 @@ func allDigits(text string) bool {
 	return true
 }
 
-// takesIn returns the playable files directly inside a directory. Nothing deeper is
-// read: a cue's takes are its own files, so a folder inside one is not a take.
-func takesIn(dir string, read lister) []string {
-	entries, err := read(dir)
+// takesIn returns the takes that play directly inside a cue folder, with a reason for each
+// one that will not. Nothing deeper is read: a cue's takes are its own files, so a folder
+// inside one is not a take.
+func (from disk) takesIn(voiceDir, folder string) ([]string, []Reason) {
+	entries, err := from.read(filepath.Join(voiceDir, folder))
 	if err != nil {
-		return nil
+		return nil, nil
 	}
 	var clips []string
+	var refused []Reason
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if entry.IsDir() || !audio.Recognised(entry.Name()) {
 			continue
 		}
-		if _, ok := audioExtensions[strings.ToLower(filepath.Ext(entry.Name()))]; ok {
-			clips = append(clips, filepath.Join(dir, entry.Name()))
+		found := filepath.Join(folder, entry.Name())
+		if reason, bad := from.refuse(voiceDir, found); bad {
+			refused = append(refused, reason)
+			continue
+		}
+		clips = append(clips, filepath.Join(voiceDir, found))
+	}
+	return clips, refused
+}
+
+// refuse asks whether a take plays, answering with the reason when it does not. found is
+// where the take sits inside the voice's directory, which is how the report names it.
+func (from disk) refuse(voiceDir, found string) (Reason, bool) {
+	err := from.playable(filepath.Join(voiceDir, found))
+	if err == nil {
+		return Reason{}, false
+	}
+	return Reason{Path: found, Why: fmt.Sprintf("this will not play (%v), so it is left out", err)}, true
+}
+
+// recordingsUnder counts the files with a recognised extension under a directory at any
+// depth. It is the second figure's measure of what is there (FR-215), so it counts what the
+// scan passed over as well as what it took: a recording nothing reaches is the shortfall
+// that figure exists to show.
+func (from disk) recordingsUnder(dir string) int {
+	entries, err := from.read(dir)
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			count += from.recordingsUnder(filepath.Join(dir, entry.Name()))
+			continue
+		}
+		if audio.Recognised(entry.Name()) {
+			count++
 		}
 	}
-	return clips
+	return count
 }

@@ -82,17 +82,18 @@ func NewCooldownGate() *CooldownGate {
 	return &CooldownGate{lastFired: make(map[cue.ID]time.Time)}
 }
 
-// Allow reports whether a cue may fire at now, recording the firing when it may.
-//
-// A cue with no cooldown always passes and is still recorded, so that adding a
-// cooldown later needs no special first-run case.
-func (g *CooldownGate) Allow(item cue.Cue, now time.Time) bool {
+// Open reports whether a cue may fire at now. It records nothing: a firing counts against
+// the cooldown only once Record is told it was handed over to be spoken, so a firing nobody
+// heard holds nothing back. A cue with no cooldown is always open.
+func (g *CooldownGate) Open(item cue.Cue, now time.Time) bool {
 	previous, seen := g.lastFired[item.ID()]
-	if seen && item.Cooldown() > 0 && now.Sub(previous) < item.Cooldown() {
-		return false
-	}
-	g.lastFired[item.ID()] = now
-	return true
+	return !seen || item.Cooldown() <= 0 || now.Sub(previous) >= item.Cooldown()
+}
+
+// Record notes that a cue fired at now. A cue with no cooldown is recorded too, so that
+// adding a cooldown later needs no special first-run case.
+func (g *CooldownGate) Record(id cue.ID, now time.Time) {
+	g.lastFired[id] = now
 }
 
 // Reset clears every recorded firing.
@@ -115,12 +116,15 @@ func NewDedupeWindow(window time.Duration) *DedupeWindow {
 	return &DedupeWindow{window: window, seen: make(map[cue.ID]time.Time)}
 }
 
-// Fresh reports whether a cue is not a repeat of one just seen.
+// Fresh reports whether a cue is not a repeat of one marked inside the window. It records
+// nothing; Mark does, for the reason Open records nothing.
 func (d *DedupeWindow) Fresh(id cue.ID, now time.Time) bool {
 	previous, ok := d.seen[id]
-	if ok && now.Sub(previous) < d.window {
-		return false
-	}
+	return !ok || now.Sub(previous) >= d.window
+}
+
+// Mark notes that a cue was handed over to be spoken at now, opening the window against
+// its repeats.
+func (d *DedupeWindow) Mark(id cue.ID, now time.Time) {
 	d.seen[id] = now
-	return true
 }

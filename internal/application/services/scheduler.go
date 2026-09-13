@@ -35,33 +35,35 @@ func NewScheduler(player ports.AudioPlayer, reporter ports.Reporter, clock ports
 	return &Scheduler{player: player, reporter: reporter, clock: clock}
 }
 
-// Submit applies the priority policy to a new request.
+// Submit applies the priority policy to a new request, answering whether it was taken:
+// queued or started rather than let go.
 //
 // The policy is what separates a voice worth listening to from a slot machine:
-//   - an alert interrupts whatever is speaking and goes to the front;
+//   - an alert interrupts whatever less urgent is speaking and waits ahead of everything
+//     less urgent, behind any alert that arrived before it;
 //   - a notice queues;
 //   - an ambient queues only when nothing is already waiting;
 //   - a flavour is discarded whenever anything at all is pending.
-func (s *Scheduler) Submit(request Request) {
+func (s *Scheduler) Submit(request Request) bool {
 	switch request.Cue.Priority() {
 	case cue.PriorityAlert:
 		if s.current != nil && s.current.Cue.Priority() < cue.PriorityAlert {
 			s.player.Stop()
 			s.current = nil
 		}
-		s.queue = append([]Request{request}, s.queue...)
+		fallthrough
 	case cue.PriorityNotice:
 		s.queue = append(s.queue, request)
 	case cue.PriorityAmbient:
 		if len(s.queue) > 0 {
 			s.report(request, ports.OutcomeDropped)
-			return
+			return false
 		}
 		s.queue = append(s.queue, request)
 	default:
 		if len(s.queue) > 0 || s.current != nil {
 			s.report(request, ports.OutcomeDropped)
-			return
+			return false
 		}
 		s.queue = append(s.queue, request)
 	}
@@ -69,6 +71,7 @@ func (s *Scheduler) Submit(request Request) {
 	if s.current != nil {
 		s.report(request, ports.OutcomeQueued)
 	}
+	return true
 }
 
 // sortQueue keeps the queue in descending priority while preserving the arrival

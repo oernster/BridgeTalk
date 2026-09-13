@@ -45,13 +45,18 @@ function Half({ title, lede, cues }: { title: string; lede: string; cues: CueEnt
  * read through rather than one to act on: the lists run past a screen for every voice
  * in the library root; a reader who opened it to see what a voice covers should not
  * have to drive it. Any key or pointer of their own suspends that and hands it back.
+ *
+ * voice identifies whose coverage is asked for; shown is the name they are shown by, which is
+ * the one the words use (FR-210).
  */
 export function MomentsDialog({
   voice,
+  shown,
   open,
   onClose,
 }: {
   voice: string
+  shown: string
   open: boolean
   onClose: () => void
 }) {
@@ -66,16 +71,16 @@ export function MomentsDialog({
   }, [open, voice])
 
   return (
-    <Dialog title={`What ${voice} speaks for`} open={open} onClose={onClose}>
+    <Dialog title={`What ${shown} speaks for`} open={open} onClose={onClose}>
       <ReadingBody ready={breakdown !== null}>
         <Half
           title="Moments spoken for"
-          lede={`Moments ${voice} has a recording for.`}
+          lede={`Moments ${shown} has a recording for.`}
           cues={breakdown?.served ?? []}
         />
         <Half
           title="Moments with no lines"
-          lede={`Never recorded for ${voice}, so each one stays quiet.`}
+          lede={`Never recorded for ${shown}, so each one stays quiet.`}
           cues={breakdown?.unserved ?? []}
         />
       </ReadingBody>

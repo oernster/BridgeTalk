@@ -50,8 +50,9 @@ export function App() {
 
   const shell = useRef<HTMLDivElement>(null)
   const sink = useRef<HTMLDivElement>(null)
-  const modalOpen = about || licence
-  useRing(shell, !modalOpen)
+  // One ring over the window. Every dialog holds a ring of its own; this one stands aside
+  // while any scrim is over the window, so no dialog has to be listed here.
+  useRing(shell)
 
   const refresh = useCallback(() => {
     void api.state().then(setState)
@@ -314,6 +315,7 @@ export function App() {
         {pane === 'cast' && (
           <CastPane
             active={state?.voice ?? ''}
+            total={state?.total ?? 0}
             libraryRoot={state?.libraryRoot ?? ''}
             onSelect={selectVoice}
           />

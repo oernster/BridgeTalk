@@ -1,0 +1,341 @@
+/* Bridge Talk site styles.
+
+   The palette is Bridge Talk's own, taken from frontend/src/theme.css rather than
+   picked again here, so the site and the application cannot come to disagree about
+   what colour Bridge Talk is. Elite Dangerous is black and orange, so orange is the
+   accent; lavender is the contrast; green is the focus ring, as it is in the window.
+
+   Light and dark carry their own tokens, as the application's do; the site
+   follows the reader's system setting. The type is the window's own system stack, so
+   nothing is fetched from anywhere else.
+*/
+
+:root {
+  --surface: #f6f4f1;
+  --panel: #ffffff;
+  --raised: #eae6e0;
+  --border: #d6d0c8;
+  --text: #1c1a18;
+  --muted: #6b6560;
+  --accent: #b34e00;
+  --accent-soft: #e8dccd;
+  --secondary: #4338ca;
+  --secondary-soft: #e0e0ff;
+  --ring: #047857;
+  --shadow: rgba(28, 26, 24, 0.18);
+  --on-accent: #ffffff;
+  --nav-glass: rgba(246, 244, 241, 0.88);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #0c0c0e;
+    --panel: #16161a;
+    --raised: #202027;
+    --border: #2e2e37;
+    --text: #e9e6e2;
+    --muted: #96918a;
+    --accent: #ff7f11;
+    --accent-soft: #3a2510;
+    --secondary: #b3bcff;
+    --secondary-soft: #23233a;
+    --ring: #34d399;
+    --shadow: rgba(0, 0, 0, 0.55);
+    --on-accent: #0c0c0e;
+    --nav-glass: rgba(12, 12, 14, 0.88);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Navigation */
+nav.site {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--nav-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; }
+.nav-brand img { width: 34px; height: 34px; }
+.nav-brand span { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 1.75rem; }
+.nav-right a.nav-link {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.18s;
+}
+.nav-right a.nav-link:hover { color: var(--text); }
+
+/* Buttons */
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: opacity 0.18s, background 0.18s, transform 0.15s;
+}
+.btn-primary { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-secondary { background: var(--panel); color: var(--text); font-weight: 500; border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--raised); transform: translateY(-1px); }
+
+/* Hero */
+.hero { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem 3rem; text-align: center; }
+.hero-icon {
+  display: block;
+  width: 168px;
+  height: 168px;
+  margin: 0 auto 2rem;
+  filter: drop-shadow(0 22px 40px var(--shadow));
+}
+
+/* The product's own name, as the largest thing on the page, so the first thing read
+   is the thing being named. The gradient is applied only where the clip is
+   supported; without the guard an unsupported browser would keep the transparent
+   fill and the name would vanish. */
+.wordmark {
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  margin: 0 0 1.5rem;
+  color: var(--accent);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .wordmark {
+    background: linear-gradient(100deg, var(--accent), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.9rem;
+  border-radius: 99px;
+  margin-bottom: 2rem;
+  letter-spacing: 0.04em;
+}
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+h1 {
+  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  margin-bottom: 1.4rem;
+}
+h1 .accent { color: var(--accent); }
+
+.hero-desc {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 620px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.75;
+}
+.hero-desc strong { color: var(--text); font-weight: 600; }
+
+.hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem; }
+.hero-cta .btn-primary, .hero-cta .btn-secondary { font-size: 1rem; padding: 0.7rem 1.75rem; }
+
+/* Screenshots. No dimensions are stated, so a picture keeps its own proportions;
+   until one exists the frame holds its alt text, set in the muted colour so the
+   page still reads as a page rather than as a fault. */
+.shot {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow: 0 30px 70px var(--shadow);
+}
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0;
+}
+.hero-shot { max-width: 960px; margin: 0 auto; }
+.shot-caption { text-align: center; font-size: 0.85rem; color: var(--muted); margin-top: 0.85rem; }
+
+/* Stats bar: a grid, so the two rows share their columns. */
+.stats-bar { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.stats-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+.stat { text-align: center; padding: 0 1rem; }
+.stat-value { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; color: var(--accent); line-height: 1.1; margin-bottom: 0.4rem; }
+.stat-label { font-size: 0.8rem; color: var(--muted); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+
+/* Sections */
+.section { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
+.section-label {
+  display: inline-block;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+.section-title { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; margin-bottom: 1rem; }
+.section-sub { font-size: 1.05rem; color: var(--muted); max-width: 640px; line-height: 1.75; margin-bottom: 3rem; }
+.section-sub a, .split-text a, .steps a { color: var(--accent); }
+
+.band { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+/* Text beside a screenshot. Started at the top rather than centred, so a heading
+   lines up with the top of its picture however long the text runs. */
+.split-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5rem; align-items: start; }
+.split-grid + .split-grid { margin-top: 4.5rem; }
+.split-text h3 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.015em; margin-bottom: 0.9rem; }
+.split-text p { color: var(--muted); font-size: 1rem; line-height: 1.75; margin-bottom: 1.1rem; }
+.split-text ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
+.split-text li { font-size: 0.95rem; color: var(--muted); line-height: 1.6; padding-left: 1.5rem; position: relative; }
+.split-text li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.split-text strong { color: var(--text); font-weight: 600; }
+
+/* Card grid */
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+.feat {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.6rem;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.band .feat { background: var(--surface); }
+.feat:hover { border-color: var(--accent); transform: translateY(-3px); }
+.feat h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+.feat p { font-size: 0.92rem; color: var(--muted); line-height: 1.65; }
+.subhead { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.015em; margin: 4.5rem 0 1.5rem; }
+
+/* Numbered steps */
+.steps { list-style: none; counter-reset: step; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.25rem; }
+.steps li {
+  counter-increment: step;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.steps li::before {
+  content: counter(step);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 0.9rem;
+}
+.steps strong { display: block; color: var(--text); font-weight: 600; margin-bottom: 0.35rem; }
+
+.cta-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+/* Footer */
+footer { border-top: 1px solid var(--border); padding: 3rem 2rem; }
+.footer-inner { max-width: 1100px; margin: 0 auto; }
+.footer-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; }
+.footer-brand { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; }
+.footer-brand img { width: 26px; height: 26px; }
+.footer-brand span { font-size: 1rem; font-weight: 700; color: var(--text); }
+.footer-links { display: flex; gap: 1.75rem; flex-wrap: wrap; }
+.footer-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color 0.18s; }
+.footer-links a:hover { color: var(--text); }
+.footer-bottom { border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.footer-bottom p { font-size: 0.82rem; color: var(--muted); }
+
+/* Responsive */
+@media (min-width: 769px) {
+  .split-grid.flip .split-text { order: 2; }
+}
+@media (max-width: 900px) {
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .split-grid { grid-template-columns: 1fr; gap: 2rem; }
+}
+@media (max-width: 640px) {
+  nav.site { padding: 0 1rem; }
+  .nav-right .nav-link { display: none; }
+  .hero { padding: 3rem 1.25rem 2rem; }
+  .section { padding: 3.5rem 1.25rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: 1fr; gap: 1.25rem; }
+}
+
+/* Entrance animation, left out for a reader who has asked for less motion. */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.fade { animation: fadeUp 0.52s ease both; }
+.d1 { animation-delay: 0.08s; }
+.d2 { animation-delay: 0.18s; }
+.d3 { animation-delay: 0.28s; }
+.d4 { animation-delay: 0.38s; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .fade { animation: none; }
+  .feat:hover, .btn-primary:hover, .btn-secondary:hover { transform: none; }
+}

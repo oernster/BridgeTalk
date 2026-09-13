@@ -121,19 +121,18 @@ func (s *Source) newestPath() (string, error) {
 	return matches[len(matches)-1], nil
 }
 
-// StandardLocation returns the game's usual journal location for this user.
+// StandardLocation returns where the game keeps its journal for this user.
+//
+// It names the place without looking there. Whether the directory exists is asked by
+// NewSource, which words the answer for the reader (FR-237); asking here as well gave a
+// machine where the game has never run a second refusal, naming the path twice with
+// every separator doubled.
 func StandardLocation() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolving home directory: %w", err)
 	}
-	candidate := filepath.Join(
-		home, "Saved Games", "Frontier Developments", "Elite Dangerous",
-	)
-	if _, err := os.Stat(candidate); err != nil {
-		return "", fmt.Errorf("journal directory not found at %q: %w", candidate, err)
-	}
-	return candidate, nil
+	return filepath.Join(home, "Saved Games", "Frontier Developments", "Elite Dangerous"), nil
 }
 
 // IsJournalFile reports whether a name looks like a journal file, used by tests and

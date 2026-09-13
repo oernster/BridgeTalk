@@ -12,18 +12,20 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
+	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
-// playable returns the names of the voices found, which the tray offers.
+// playable returns the voices found as the tray offers them: each under the name it is shown
+// by, chosen by the name that identifies it (FR-210).
 //
 // Every voice in the list holds at least one take, since that is what made it a voice
 // during the scan, so there is nothing further to filter out here.
-func playable(found []library.Voice) []string {
-	var names []string
+func playable(found []library.Voice) []taskbar.Choice {
+	var choices []taskbar.Choice
 	for _, candidate := range found {
-		names = append(names, candidate.Name)
+		choices = append(choices, taskbar.Choice{Name: candidate.Name, Label: candidate.Display()})
 	}
-	return names
+	return choices
 }
 
 // preferred answers with the first choice that was actually made.
@@ -112,7 +114,9 @@ func scanLibrary(root string, table cue.Table) ([]library.Voice, library.Report)
 // A misspelled folder name and a directory holding no recordings both leave an empty
 // list otherwise; the reader cannot tell which they are looking at.
 func warnAbout(report library.Report) {
-	groups := [][]library.Reason{report.Empty, report.Unmatched, report.Duplicated}
+	groups := [][]library.Reason{
+		report.Empty, report.Unmatched, report.Duplicated, report.Undecodable, report.Manifest,
+	}
 	for _, group := range groups {
 		for _, reason := range group {
 			fmt.Fprintf(os.Stderr, "note: %s: %s\n", reason.Path, reason.Why)

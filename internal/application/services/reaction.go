@@ -73,7 +73,7 @@ func (r *ReactionService) Handle(candidate event.Event) {
 		r.report(matched, candidate, "", ports.OutcomeDuplicate)
 		return
 	}
-	if !r.cooldown.Allow(matched, now) {
+	if !r.cooldown.Open(matched, now) {
 		r.report(matched, candidate, "", ports.OutcomeCooldown)
 		return
 	}
@@ -92,7 +92,14 @@ func (r *ReactionService) Handle(candidate event.Event) {
 	// The picker declines only an empty list; an empty list has already been answered
 	// above, so there is nothing left here to decline.
 	chosen, _ := r.picker.Pick(matched.ID(), performance.Clips)
-	r.scheduler.Submit(Request{Cue: matched, Clips: []string{chosen}})
+
+	// A firing counts against the repeat window and the cooldown only once the scheduler
+	// takes it. One that was muted, had no take or was let go was never heard, so it holds
+	// back nothing that follows it (Oliver, 2026-09-13).
+	if r.scheduler.Submit(Request{Cue: matched, Clips: []string{chosen}}) {
+		r.dedupe.Mark(matched.ID(), now)
+		r.cooldown.Record(matched.ID(), now)
+	}
 }
 
 // HandleAll processes a batch in arrival order, then lets the scheduler start

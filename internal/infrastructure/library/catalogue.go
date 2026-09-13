@@ -45,8 +45,8 @@ func NewCatalogue(voice Voice, table cue.Table, chooser selection.Chooser) *Cata
 	return &Catalogue{voice: voice, table: table, chooser: chooser}
 }
 
-// ActiveVoice returns the display name of the voice in use.
-func (c *Catalogue) ActiveVoice() string { return c.voice.Name }
+// ActiveVoice returns the name the voice in use is shown by (FR-210).
+func (c *Catalogue) ActiveVoice() string { return c.voice.Display() }
 
 // Clips returns the takes recorded for a cue; false when this voice has none.
 func (c *Catalogue) Clips(id cue.ID) (ports.Performance, bool) {
@@ -84,21 +84,22 @@ func (c *Catalogue) Coverage() (int, int) {
 	return served, c.table.Len()
 }
 
-// Files reports the takes this voice holds and how many of them are reachable.
+// Files reports the distinct files this voice uses against the recordings present in its
+// directory (FR-215).
 //
 // The two numbers are expected to be equal, since a voice is recorded against the
-// vocabulary and every file it holds should answer a cue. They are reported as a pair
-// because they fail differently: a shortfall in Coverage means lines were never
-// recorded, while a gap here means files are present that nothing can reach, which is
-// a naming mistake rather than a missing performance.
-func (c *Catalogue) Files() (reachable int, held int) {
+// vocabulary and every file it holds should answer a cue. They are reported beside
+// Coverage because they fail differently: a shortfall in Coverage means lines were never
+// recorded, while a gap here means files are present that nothing can reach, which is a
+// naming mistake rather than a missing performance.
+func (c *Catalogue) Files() (used int, present int) {
 	seen := map[string]struct{}{}
 	for _, clips := range c.voice.byCue {
 		for _, clip := range clips {
 			seen[clip] = struct{}{}
 		}
 	}
-	return len(seen), c.voice.Takes
+	return len(seen), c.voice.Present
 }
 
 // Served lists the cues this voice can serve, sorted by id.

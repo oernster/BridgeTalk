@@ -49,8 +49,8 @@ func InstallDir() (string, error) {
 // StateDir returns the folder WebView2 creates for the application's window state
 // and theme choice. The application sets no WebviewUserDataPath, so WebView2 falls
 // back to %APPDATA% joined with the executable's own file name, the .exe suffix
-// included. That folder is the only thing the application writes outside its own
-// install directory, so it is the only thing an uninstall has to consider keeping.
+// included. Uninstall offers to forget it along with the settings file; the recordings
+// directory is never touched.
 func StateDir() (string, error) {
 	base := os.Getenv("APPDATA")
 	if base == "" {

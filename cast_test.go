@@ -1,9 +1,11 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
@@ -33,6 +35,47 @@ func TestTheCastPaneListsEveryVoiceTheScanFound(t *testing.T) {
 	alpha := voiceNamed(t, rows, "Alpha")
 	if alpha.InUse != 3 {
 		t.Errorf("Alpha holds %d takes, want the three it recorded", alpha.InUse)
+	}
+	// FR-215: both figures cross for every voice, cast or not.
+	if alpha.Cues != 3 || alpha.Present != 3 {
+		t.Errorf("Alpha reads %d moments and %d recordings present, want 3 of each", alpha.Cues, alpha.Present)
+	}
+}
+
+// FR-210: the name a manifest gives is what the Cast pane, the Status card and the tray show,
+// while a cast sends back the directory name and that is the name remembered.
+func TestAManifestNameIsShownWhileTheDirectoryStaysTheIdentity(t *testing.T) {
+	app, _, _ := fixtureApp(t, func(root string) {
+		audiotest.WriteFile(t, filepath.Join(root, "Alpha", library.ManifestFile),
+			[]byte("name = \"Alpha Wren\"\ncredit = \"Recorded by Alpha\"\n"))
+	})
+	store := &fakeSettings{}
+	app.settings = store
+
+	rows := app.Voices()
+	if alpha := voiceNamed(t, rows, "Alpha"); alpha.Display != "Alpha Wren" || alpha.Credit != "Recorded by Alpha" {
+		t.Errorf("row = %+v, want Alpha shown as Alpha Wren with her credit", alpha)
+	}
+	if beta := voiceNamed(t, rows, "Beta"); beta.Display != "Beta" || beta.Credit != "" {
+		t.Errorf("row = %+v, want Beta shown by her directory with no credit", beta)
+	}
+
+	if err := app.SelectVoice("Alpha"); err != nil {
+		t.Fatalf("casting Alpha: %v", err)
+	}
+	if store.held.Voice != "Alpha" {
+		t.Errorf("remembered voice is %q, want the directory name Alpha", store.held.Voice)
+	}
+	if state := app.State(); state.Voice != "Alpha" || state.VoiceDisplay != "Alpha Wren" {
+		t.Errorf("state names %q shown as %q, want Alpha shown as Alpha Wren", state.Voice, state.VoiceDisplay)
+	}
+
+	offered := make([]string, 0, len(app.session.available))
+	for _, choice := range playable(app.session.available) {
+		offered = append(offered, choice.Name+" as "+choice.Label)
+	}
+	if got, want := strings.Join(offered, "; "), "Alpha as Alpha Wren; Beta as Beta"; got != want {
+		t.Errorf("tray offers %q, want %q", got, want)
 	}
 }
 
@@ -121,12 +164,12 @@ func TestTheBreakdownOfAVoiceThatIsNotThereIsEmptyRatherThanAnError(t *testing.T
 func TestOnlyDirectoriesHoldingTakesAreOfferedToTheTray(t *testing.T) {
 	current, _ := fixtureSession(t, newFakePlayer())
 
-	names := playable(current.available)
-	if len(names) != 2 {
-		t.Fatalf("got %v, want the two voices holding takes", names)
+	choices := playable(current.available)
+	if len(choices) != 2 {
+		t.Fatalf("got %v, want the two voices holding takes", choices)
 	}
-	for _, name := range names {
-		if name == "Bystander" {
+	for _, choice := range choices {
+		if choice.Name == "Bystander" {
 			t.Errorf("a directory holding no take was offered as a voice")
 		}
 	}

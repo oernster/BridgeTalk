@@ -53,6 +53,10 @@ type App struct {
 	statusPath  string
 	libraryRoot string
 
+	// journalProblem says why the journal directory is not being watched; empty while it
+	// is. The window opens either way, so the panes are where it is said (FR-238).
+	journalProblem string
+
 	// settings keeps the two directory choices between runs. The facade owns the
 	// writing because it owns the act that changes them.
 	settings ports.SettingsStore
@@ -92,24 +96,25 @@ type App struct {
 	// quitting records that a quit has already been decided, so the close dialog is
 	// not raised over the top of the quit it was just asked to perform.
 	quitting atomic.Bool
+
+	// startedHidden records that the run began put away in the notification area.
+	startedHidden bool
 }
 
 // newApp builds the facade over an assembled session.
 func newApp(
 	current *session,
-	sources []ports.EventSource,
-	journalDir, statusPath, libraryRoot string,
+	watched journalWatch,
+	libraryRoot string,
 	settings ports.SettingsStore,
 ) *App {
 	built := &App{
 		session:     current,
-		sources:     sources,
-		journalDir:  journalDir,
-		statusPath:  statusPath,
 		libraryRoot: libraryRoot,
 		settings:    settings,
 		stop:        make(chan struct{}),
 	}
+	built.watch(watched)
 	built.emit = built.emitToWails
 	built.show = built.showInWails
 	built.quit = built.quitWails
@@ -186,7 +191,13 @@ func (a *App) TakeKeyboard() {
 // that never took focus never raises. Without this the first Tab goes to whatever
 // does hold the keyboard and the ring is never reached, which reads as a dead
 // keyboard rather than as a focus that landed elsewhere.
+//
+// A run started hidden is left hidden (FR-704): the tray brings it up with the keyboard
+// when it is wanted.
 func (a *App) domReady(context.Context) {
+	if a.startedHidden {
+		return
+	}
 	a.show()
 }
 
@@ -281,21 +292,23 @@ func (a *App) State() StateDTO {
 	}
 	stalls, worst := a.session.player.Stalls()
 	return StateDTO{
-		Voice:       a.session.active.Name,
-		Bound:       bound,
-		Total:       total,
-		Muted:       a.session.muted,
-		Silent:      a.session.player.Silent(),
-		JournalDir:  a.journalDir,
-		StatusPath:  a.statusPath,
-		LibraryRoot: a.libraryRoot,
-		Version:     version,
+		Voice:        a.session.active.Name,
+		VoiceDisplay: a.session.active.Display(),
+		Bound:        bound,
+		Total:        total,
+		Muted:        a.session.muted,
+		Silent:       a.session.player.Silent(),
+		JournalDir:   a.journalDir,
+		StatusPath:   a.statusPath,
+		LibraryRoot:  a.libraryRoot,
+		Version:      version,
 		// Read at the moment it is asked for rather than held. The entry is one the
 		// setup program writes too, so a copy kept here would go stale the first time
 		// it was changed from there.
-		LaunchOnBoot: setup.IsLaunchOnBoot(),
-		Stalls:       stalls,
-		WorstStall:   int(worst.Milliseconds()),
+		LaunchOnBoot:   setup.IsLaunchOnBoot(),
+		Stalls:         stalls,
+		WorstStall:     int(worst.Milliseconds()),
+		JournalProblem: a.journalProblem,
 	}
 }
 
@@ -342,24 +355,6 @@ func (a *App) Reactions() []ReactionDTO {
 	copy(out, a.history)
 	return out
 }
-
-// About returns the identity and dependency credits for the About dialog.
-func (a *App) About() AboutDTO {
-	return AboutDTO{
-		Name:        appTitle,
-		Tagline:     appTagline,
-		Version:     version,
-		Author:      appAuthor,
-		Copyright:   appCopyright,
-		Authorship:  appAuthorship,
-		Attribution: appAttribution,
-		Licence:     appLicence,
-		Credits:     credits(),
-	}
-}
-
-// Licence returns the full terms for the dialog under Help: the LICENSE file itself.
-func (a *App) Licence() string { return licenceText }
 
 // emitState tells the front end to re-read the state it does not own.
 func (a *App) emitState() {

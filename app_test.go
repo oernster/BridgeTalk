@@ -153,7 +153,7 @@ func newTestApp(t *testing.T, player *fakePlayer) (*App, *recorder) {
 	t.Helper()
 	current := &session{player: player}
 	current.scheduler = services.NewScheduler(player, nil, systemClock{})
-	app := newApp(current, nil, "journal-dir", "status-file", "library-root", nil)
+	app := newApp(current, fixtureWatch, "library-root", nil)
 	log := newRecorder()
 	app.emit = log.emit
 	return app, log
@@ -211,7 +211,7 @@ func TestEmittingBeforeStartupIsDropped(t *testing.T) {
 	player := newFakePlayer()
 	current := &session{player: player}
 	current.scheduler = services.NewScheduler(player, nil, systemClock{})
-	app := newApp(current, nil, "journal-dir", "status-file", "library-root", nil)
+	app := newApp(current, fixtureWatch, "library-root", nil)
 
 	app.emit(playbackEvent, PlaybackDTO{Playing: false})
 }
@@ -228,6 +228,22 @@ func TestTheWindowIsRaisedOnceThePageExists(t *testing.T) {
 
 	if raised != 1 {
 		t.Errorf("the window was raised %d times when the page became ready, want once", raised)
+	}
+}
+
+// FR-704: a run started hidden, as the sign-in entry starts it, stays hidden when its page
+// loads (Oliver, 2026-09-13).
+func TestAWindowStartedHiddenIsNotRaisedWhenThePageLoads(t *testing.T) {
+	player := newFakePlayer()
+	app, _ := newTestApp(t, player)
+	app.startedHidden = true
+	raised := 0
+	app.show = func() { raised++ }
+
+	app.domReady(context.Background())
+
+	if raised != 0 {
+		t.Errorf("the window was raised %d times, want it left in the notification area", raised)
 	}
 }
 
@@ -251,7 +267,7 @@ func TestRaisingBeforeStartupIsDropped(t *testing.T) {
 	player := newFakePlayer()
 	current := &session{player: player}
 	current.scheduler = services.NewScheduler(player, nil, systemClock{})
-	app := newApp(current, nil, "journal-dir", "status-file", "library-root", nil)
+	app := newApp(current, fixtureWatch, "library-root", nil)
 
 	app.show()
 }
@@ -276,7 +292,7 @@ func TestQuittingBeforeStartupIsDropped(t *testing.T) {
 	player := newFakePlayer()
 	current := &session{player: player}
 	current.scheduler = services.NewScheduler(player, nil, systemClock{})
-	app := newApp(current, nil, "journal-dir", "status-file", "library-root", nil)
+	app := newApp(current, fixtureWatch, "library-root", nil)
 
 	app.quit()
 }
@@ -310,7 +326,7 @@ func TestAboutCarriesAuthorshipAndAttribution(t *testing.T) {
 func TestTheFacadeAnswersWithNoVoiceCast(t *testing.T) {
 	player := newFakePlayer()
 	current := &session{player: player}
-	app := newApp(current, nil, "journal-dir", "status-file", "library-root", nil)
+	app := newApp(current, fixtureWatch, "library-root", nil)
 	app.emit = newRecorder().emit
 
 	state := app.State()

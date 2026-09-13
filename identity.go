@@ -38,6 +38,24 @@ const (
 //go:embed LICENSE
 var licenceText string
 
+// About returns the identity and dependency credits for the About dialog.
+func (a *App) About() AboutDTO {
+	return AboutDTO{
+		Name:        appTitle,
+		Tagline:     appTagline,
+		Version:     version,
+		Author:      appAuthor,
+		Copyright:   appCopyright,
+		Authorship:  appAuthorship,
+		Attribution: appAttribution,
+		Licence:     appLicence,
+		Credits:     credits(),
+	}
+}
+
+// Licence returns the full terms for the dialog under Help: the LICENSE file itself.
+func (a *App) Licence() string { return licenceText }
+
 // credits names every dependency the binary ships, with its licence. The list is
 // maintained by hand on purpose: a generated one would list the build graph rather
 // than what is actually linked in; the point is to credit the right people.
@@ -53,7 +71,7 @@ func credits() []string {
 		"go-mp3 - MIT (MP3 decoding)",
 		"oggvorbis - MIT (Ogg Vorbis decoding)",
 		"flac - Unlicense (FLAC decoding)",
-		"BurntSushi/toml - MIT (the cue table)",
+		"BurntSushi/toml - MIT (the cue table and voice manifests)",
 		"golang.org/x/sys - BSD-3-Clause (the Windows tray)",
 	}
 }

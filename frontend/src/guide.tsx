@@ -30,6 +30,7 @@ export function GuidePane() {
 
   return (
     <div
+      className="guide-body"
       ref={bodyRef}
       {...(overflows ? { 'data-stop': true } : {})}
       tabIndex={overflows ? 0 : -1}

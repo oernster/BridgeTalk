@@ -90,13 +90,13 @@ func TestCooldownBlocksASecondFiringInsideTheWindow(t *testing.T) {
 	gate := selection.NewCooldownGate()
 	item := mustCue(t, "Bounty", 20*time.Second)
 
-	if !gate.Allow(item, start) {
+	if !fire(gate, item, start) {
 		t.Fatal("first firing should be allowed")
 	}
-	if gate.Allow(item, start.Add(19*time.Second)) {
+	if fire(gate, item, start.Add(19*time.Second)) {
 		t.Fatal("second firing inside the cooldown should be blocked")
 	}
-	if !gate.Allow(item, start.Add(21*time.Second)) {
+	if !fire(gate, item, start.Add(21*time.Second)) {
 		t.Fatal("firing after the cooldown should be allowed")
 	}
 }
@@ -105,7 +105,7 @@ func TestCooldownOfZeroAlwaysAllows(t *testing.T) {
 	gate := selection.NewCooldownGate()
 	item := mustCue(t, "Died", 0)
 	for offset := range 5 {
-		if !gate.Allow(item, start.Add(time.Duration(offset)*time.Millisecond)) {
+		if !fire(gate, item, start.Add(time.Duration(offset)*time.Millisecond)) {
 			t.Fatalf("a cue with no cooldown was blocked at offset %d", offset)
 		}
 	}
@@ -116,8 +116,8 @@ func TestCooldownIsPerCue(t *testing.T) {
 	first := mustCue(t, "one", time.Minute)
 	second := mustCue(t, "two", time.Minute)
 
-	gate.Allow(first, start)
-	if !gate.Allow(second, start) {
+	fire(gate, first, start)
+	if !fire(gate, second, start) {
 		t.Fatal("one cue's cooldown blocked another cue")
 	}
 }
@@ -125,16 +125,16 @@ func TestCooldownIsPerCue(t *testing.T) {
 func TestDedupeCollapsesRapidRepeats(t *testing.T) {
 	window := selection.NewDedupeWindow(900 * time.Millisecond)
 
-	if !window.Fresh("a", start) {
+	if !seen(window, "a", start) {
 		t.Fatal("first sighting should be fresh")
 	}
-	if window.Fresh("a", start.Add(500*time.Millisecond)) {
+	if seen(window, "a", start.Add(500*time.Millisecond)) {
 		t.Fatal("a repeat inside the window should be collapsed")
 	}
-	if !window.Fresh("a", start.Add(time.Second)) {
+	if !seen(window, "a", start.Add(time.Second)) {
 		t.Fatal("a repeat after the window should be fresh")
 	}
-	if !window.Fresh("b", start) {
+	if !seen(window, "b", start) {
 		t.Fatal("a different cue should not be collapsed")
 	}
 }
@@ -181,16 +181,16 @@ func TestResetClearsEveryRecordedFiring(t *testing.T) {
 	gate := selection.NewCooldownGate()
 	item := mustCue(t, "Bounty", 30*time.Second)
 
-	if !gate.Allow(item, start) {
+	if !fire(gate, item, start) {
 		t.Fatal("the first firing was blocked")
 	}
-	if gate.Allow(item, start.Add(time.Second)) {
+	if fire(gate, item, start.Add(time.Second)) {
 		t.Fatal("a firing inside the cooldown was allowed")
 	}
 
 	gate.Reset()
 
-	if !gate.Allow(item, start.Add(time.Second)) {
+	if !fire(gate, item, start.Add(time.Second)) {
 		t.Error("after Reset the cue was still held by the cleared cooldown")
 	}
 }

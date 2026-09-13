@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/product"
 )
 
@@ -90,7 +91,7 @@ func TestTheDefaultRecordingsDirectoryIsMadeWhereMissing(t *testing.T) {
 // A default that cannot be worked out or cannot be made is reported, not guessed at.
 func TestADefaultThatCannotBeMadeIsReported(t *testing.T) {
 	file := filepath.Join(t.TempDir(), "plain")
-	writeTake(t, file)
+	audiotest.WriteFile(t, file, audiotest.NotARecording)
 	t.Setenv("LOCALAPPDATA", file)
 	t.Setenv("XDG_DATA_HOME", file)
 	if _, err := DefaultRoot(); err == nil {

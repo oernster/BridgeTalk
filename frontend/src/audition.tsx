@@ -95,7 +95,7 @@ export function AuditionPane({ cast }: { cast: string }) {
       <h2>Audition</h2>
       <p className="lede">
         Hear what a voice actually has. Each button plays one sample at random from
-        that part of the game, so pressing it again gives you a different take. This
+        that part of the game, so pressing it again can give you a different take. This
         ignores the mute, which silences reactions to the game rather than the
         application.
       </p>
@@ -112,7 +112,7 @@ export function AuditionPane({ cast }: { cast: string }) {
             {none && <option value="">None</option>}
             {voices.map((item) => (
               <option key={item.name} value={item.name}>
-                {item.name}
+                {item.display}
                 {item.name === cast ? ' (cast)' : ''}
               </option>
             ))}

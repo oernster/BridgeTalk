@@ -36,8 +36,8 @@ vi.mock('./api', () => ({
 
 const { AuditionPane } = await import('./audition')
 
-const grace: Voice = { name: 'Grace', inUse: 100 }
-const kate: Voice = { name: 'Kate', inUse: 12 }
+const grace: Voice = { name: 'Grace', display: 'Grace', credit: '', cues: 90, inUse: 100, present: 100 }
+const kate: Voice = { name: 'Kate', display: 'Kate', credit: '', cues: 10, inUse: 12, present: 12 }
 
 const shields: Group = { key: 'shields', label: 'Shields', clips: 4 }
 const combat: Group = { key: 'combat', label: 'Combat', clips: 1 }
@@ -80,6 +80,16 @@ describe('the audition pane', () => {
     expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('Grace')
     expect(screen.getByRole('option', { name: 'Grace (cast)' })).toBeTruthy()
     expect(screen.getByRole('option', { name: 'Kate' })).toBeTruthy()
+  })
+
+  // FR-210: each voice under the name it is shown by, still chosen by the name that identifies it.
+  it('offers each voice under the name it is shown by', async () => {
+    voices.mockResolvedValue([{ ...grace, display: 'Grace Hart' }, kate])
+    await show()
+
+    const chooser = screen.getByRole('combobox') as HTMLSelectElement
+    expect(Array.from(chooser.options).map((option) => option.value)).toEqual(['Grace', 'Kate'])
+    expect(await screen.findByRole('option', { name: 'Grace Hart (cast)' })).toBeTruthy()
   })
 
   it('counts the groups and the samples between them', async () => {

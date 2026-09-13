@@ -22,6 +22,13 @@ Set-Location $root
 $version = (Get-Content (Join-Path $root 'VERSION')).Trim()
 Write-Host "Building Bridge Talk $version"
 
+# The site shows the version only through delimited tokens, so the build stamps them
+# from VERSION before the gate runs. A site left showing an older number than the setup
+# program it links to is a quiet error that nobody catches by eye.
+Write-Host 'Stamping the version into the site...'
+python stamp_version.py
+if ($LASTEXITCODE -ne 0) { throw "stamp_version.py failed with exit code $LASTEXITCODE" }
+
 # Cgo is pinned off rather than left to whatever the machine happens to default to.
 # The audio path decodes and plays in pure Go and nothing else here wants a C
 # toolchain, so there is nothing to lose by disabling it. Off is already the default

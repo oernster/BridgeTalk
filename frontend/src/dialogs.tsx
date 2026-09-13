@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { api, type About } from './api'
-import { useAutoScroll, useFirstStop, useOverflowStop } from './hooks'
+import { useAutoScroll, useFirstStop, useOverflowStop, useRing } from './hooks'
 import { AppCrest } from './icons'
 
 /**
@@ -72,7 +72,19 @@ export function Dialog({
   actions?: React.ReactNode
 }) {
   const frame = useRef<HTMLDivElement>(null)
+
+  // Whatever held focus when the dialog opened is given it back when the dialog closes, so
+  // the ring carries on from where the reader was. Declared before useFirstStop, which moves
+  // focus into the dialog, so it reads the opener rather than the dialog's own first stop.
+  useEffect(() => {
+    if (!open) return
+    const opener = document.activeElement as HTMLElement | null
+    return () => opener?.focus()
+  }, [open])
+
   useFirstStop(frame, open)
+  // The dialog's own ring. The window's ring stands aside while a scrim is over it.
+  useRing(frame, open)
 
   useEffect(() => {
     if (!open) return

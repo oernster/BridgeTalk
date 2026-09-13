@@ -11,6 +11,8 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { State, Voice } from './api'
+import { layOut, unlayOut } from './testLayout'
+import { watching } from './testState'
 
 const state = vi.fn<() => Promise<State | null>>()
 const setMuted = vi.fn<(muted: boolean) => Promise<void>>()
@@ -59,24 +61,10 @@ vi.mock('./api', () => ({
 
 const { App } = await import('./App')
 
-const watching: State = {
-  voice: 'Grace',
-  bound: 40,
-  total: 60,
-  muted: false,
-  silent: false,
-  journalDir: 'D:/Journals',
-  statusPath: 'D:/Journals/Status.json',
-  libraryRoot: 'D:/Recordings',
-  version: '9.9.9',
-  launchOnBoot: false,
-  stalls: 0,
-  worstStall: 0,
-}
 
 // hugo is one voice, so the cast pane draws a row a test can press. The fixture
 // defaults to no voices at all, which is the state every other test wants.
-const hugo: Voice = { name: 'Hugo', inUse: 1200 }
+const hugo: Voice = { name: 'Hugo', display: 'Hugo', credit: '', cues: 200, inUse: 1200, present: 1200 }
 
 beforeEach(() => {
   handlers.clear()
@@ -142,7 +130,7 @@ describe('the shell', () => {
     await show()
 
     band('Status')
-    expect(await screen.findByRole('heading', { name: 'Monitoring' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Status' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Cast' })).toBeNull()
 
     band('Missing takes')
@@ -230,12 +218,35 @@ describe('what the backend tells the window', () => {
     expect(requestQuit).not.toHaveBeenCalled()
   })
 
+  // A dialog holds the ring while it is open. Tab walks its own buttons and wraps at their
+  // ends; it never reaches the window behind the scrim, which is where it used to go
+  // (FR-713).
+  it('keeps the ring inside a dialog, wrapping at its ends', async () => {
+    layOut()
+    try {
+      await show()
+      act(() => handlers.get('close-request')?.())
+      const dialog = await screen.findByRole('dialog', { name: 'Close the window' })
+
+      const reached: string[] = []
+      for (let press = 0; press < 3; press++) {
+        fireEvent.keyDown(document, { key: 'Tab' })
+        expect(dialog.contains(document.activeElement)).toBe(true)
+        reached.push(document.activeElement?.textContent ?? '')
+      }
+
+      expect(reached).toEqual(['Quit', 'Minimise to the notification area', 'Quit'])
+    } finally {
+      unlayOut()
+    }
+  })
+
   // Hiding the window never reloads the page, so a summoned window would otherwise
   // return to whichever pane was open when it was put away.
   it('opens a summoned window on the cast, whatever pane it was left on', async () => {
     await show()
     band('Status')
-    await screen.findByRole('heading', { name: 'Monitoring' })
+    await screen.findByRole('heading', { name: 'Status' })
 
     act(() => handlers.get('window-shown')?.())
 

@@ -5,7 +5,10 @@
 // rather than a search across components.
 
 export interface State {
+  /** Identifies the cast voice; empty while none is cast. */
   voice: string
+  /** The name the cast voice is shown by: its manifest's name, else its directory's (FR-210). */
+  voiceDisplay: string
   bound: number
   total: number
   muted: boolean
@@ -24,12 +27,26 @@ export interface State {
    */
   stalls: number
   worstStall: number
+  /**
+   * Why the journal directory is not being watched, naming it once; empty while it is.
+   * The window opens either way, so the panes are where it is said (FR-238).
+   */
+  journalProblem: string
 }
 
 export interface Voice {
+  /** Identifies the voice: its directory's name, which a cast sends back. */
   name: string
-  /** Clips the application can actually reach, not the size of the voice. */
+  /** The name the voice is shown by: its manifest's name, else its directory's (FR-210). */
+  display: string
+  /** The manifest's credit line; empty where there is none. */
+  credit: string
+  /** Moments the voice has a recording for (FR-215). */
+  cues: number
+  /** Distinct files the voice uses, not the size of its folder. */
   inUse: number
+  /** Recordings in the voice's folder, whether any moment reaches them or not. */
+  present: number
 }
 
 /** Group is one auditionable area of the game, named by the cue vocabulary itself. */

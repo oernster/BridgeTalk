@@ -17,18 +17,8 @@ import (
 	"testing/fstest"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
-
-// writeTake creates a file of one byte. The scan reads names, never content.
-func writeTake(t *testing.T, path string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("creating %s: %v", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, []byte{0}, 0o644); err != nil {
-		t.Fatalf("writing %s: %v", path, err)
-	}
-}
 
 // newCue builds one valid cue from a given source.
 func newCue(t *testing.T, id string, source string) cue.Cue {
@@ -83,10 +73,10 @@ func paths(reasons []Reason) []string {
 func TestAFolderNamedForACueHoldsThatCuesTakes(t *testing.T) {
 	root := t.TempDir()
 	cueDir := filepath.Join(root, "Alice", "StartJump")
-	writeTake(t, filepath.Join(cueDir, "b.WAV"))
-	writeTake(t, filepath.Join(cueDir, "a.wav"))
-	writeTake(t, filepath.Join(cueDir, "notes.txt"))
-	writeTake(t, filepath.Join(cueDir, "older", "c.wav"))
+	audiotest.WriteTake(t, filepath.Join(cueDir, "b.WAV"))
+	audiotest.WriteTake(t, filepath.Join(cueDir, "a.wav"))
+	audiotest.WriteFile(t, filepath.Join(cueDir, "notes.txt"), audiotest.NotARecording)
+	audiotest.WriteTake(t, filepath.Join(cueDir, "older", "c.wav"))
 
 	voices, report := scanned(t, root, journalTable(t, "StartJump", "DockingGranted"))
 	alice := only(t, voices)
@@ -114,7 +104,7 @@ func TestAFolderNamedForACueHoldsThatCuesTakes(t *testing.T) {
 func TestAFileNamedForACueIsATakeWithDigitsTellingTakesApart(t *testing.T) {
 	root := t.TempDir()
 	for _, name := range []string{"DockingGranted.wav", "DockingGranted.2.wav", "DockingGranted.10.MP3"} {
-		writeTake(t, filepath.Join(root, "Bob", name))
+		audiotest.WriteTake(t, filepath.Join(root, "Bob", name))
 	}
 
 	voices, report := scanned(t, root, journalTable(t, "DockingGranted"))
@@ -134,7 +124,7 @@ func TestOnlyASegmentOfDigitsMarksAnotherTake(t *testing.T) {
 	root := t.TempDir()
 	unmatched := []string{"DockingGranted..wav", "DockingGranted.2x.wav", "DockingGranted.b.wav"}
 	for _, name := range append([]string{"DockingGranted.wav"}, unmatched...) {
-		writeTake(t, filepath.Join(root, "Bob", name))
+		audiotest.WriteTake(t, filepath.Join(root, "Bob", name))
 	}
 
 	voices, report := scanned(t, root, journalTable(t, "DockingGranted"))
@@ -156,8 +146,8 @@ func TestOnlyASegmentOfDigitsMarksAnotherTake(t *testing.T) {
 func TestMatchingIsExactApartFromCase(t *testing.T) {
 	root := t.TempDir()
 	carol := filepath.Join(root, "Carol")
-	writeTake(t, filepath.Join(carol, "startjump", "a.wav"))
-	writeTake(t, filepath.Join(carol, "dockingGRANTED.ogg"))
+	audiotest.WriteTake(t, filepath.Join(carol, "startjump", "a.wav"))
+	audiotest.WriteTake(t, filepath.Join(carol, "dockingGRANTED.Mp3"))
 	nearMisses := []string{
 		"Docking-Granted.wav",
 		"Start Jump",
@@ -167,10 +157,10 @@ func TestMatchingIsExactApartFromCase(t *testing.T) {
 	}
 	for _, name := range nearMisses {
 		if filepath.Ext(name) == ".wav" {
-			writeTake(t, filepath.Join(carol, name))
+			audiotest.WriteTake(t, filepath.Join(carol, name))
 			continue
 		}
-		writeTake(t, filepath.Join(carol, name, "take.wav"))
+		audiotest.WriteTake(t, filepath.Join(carol, name, "take.wav"))
 	}
 
 	voices, report := scanned(t, root, journalTable(t, "StartJump", "DockingGranted"))
@@ -198,6 +188,16 @@ func memoryLister(tree fstest.MapFS) lister {
 	}
 }
 
+// inMemory scans through a lister where every take plays and no voice has a manifest. A file
+// held in memory cannot be decoded; these tests are about names.
+func inMemory(read lister) disk {
+	return disk{
+		read:     read,
+		readFile: func(string) ([]byte, error) { return nil, fs.ErrNotExist },
+		playable: func(string) error { return nil },
+	}
+}
+
 // FR-218: two directories naming the same cue in different cases are one set of takes,
 // with the duplication reported. Linux holds such a pair; Windows refuses the second.
 func TestDirectoriesDifferingOnlyInCaseMergeTheirTakes(t *testing.T) {
@@ -206,7 +206,7 @@ func TestDirectoriesDifferingOnlyInCaseMergeTheirTakes(t *testing.T) {
 		"lib/Dana/DOCKINGGRANTED/b.wav": {},
 	}
 
-	voices, report, err := scan("lib", journalTable(t, "DockingGranted"), memoryLister(tree))
+	voices, report, err := scan("lib", journalTable(t, "DockingGranted"), inMemory(memoryLister(tree)))
 	if err != nil {
 		t.Fatalf("scanning the tree: %v", err)
 	}
@@ -239,7 +239,7 @@ func TestACueFolderThatCannotBeListedContributesNothing(t *testing.T) {
 		return memoryLister(tree)(dir)
 	}
 
-	voices, _, err := scan("lib", journalTable(t, "DockingGranted", "StartJump"), read)
+	voices, _, err := scan("lib", journalTable(t, "DockingGranted", "StartJump"), inMemory(read))
 	if err != nil {
 		t.Fatalf("scanning the tree: %v", err)
 	}
@@ -257,9 +257,9 @@ func TestACueFolderThatCannotBeListedContributesNothing(t *testing.T) {
 // folder named for a cue with no audio inside it.
 func TestADirectoryResolvingNothingIsReportedRatherThanOffered(t *testing.T) {
 	root := t.TempDir()
-	writeTake(t, filepath.Join(root, "Alice", "DockingGranted.wav"))
-	writeTake(t, filepath.Join(root, "Bystander", "holiday snap.mp3"))
-	writeTake(t, filepath.Join(root, "Eve", "DockingGranted", "readme.txt"))
+	audiotest.WriteTake(t, filepath.Join(root, "Alice", "DockingGranted.wav"))
+	audiotest.WriteTake(t, filepath.Join(root, "Bystander", "holiday snap.mp3"))
+	audiotest.WriteFile(t, filepath.Join(root, "Eve", "DockingGranted", "readme.txt"), audiotest.NotARecording)
 
 	voices, report := scanned(t, root, journalTable(t, "DockingGranted"))
 
@@ -276,10 +276,10 @@ func TestADirectoryResolvingNothingIsReportedRatherThanOffered(t *testing.T) {
 func TestNamesMatchingNoCueAreReportedWhereTheyWereFound(t *testing.T) {
 	root := t.TempDir()
 	frank := filepath.Join(root, "Frank")
-	writeTake(t, filepath.Join(frank, "DockingGranted.wav"))
-	writeTake(t, filepath.Join(frank, "not a cue", "x.wav"))
-	writeTake(t, filepath.Join(frank, "typo.wav"))
-	writeTake(t, filepath.Join(frank, "cover.jpg"))
+	audiotest.WriteTake(t, filepath.Join(frank, "DockingGranted.wav"))
+	audiotest.WriteTake(t, filepath.Join(frank, "not a cue", "x.wav"))
+	audiotest.WriteTake(t, filepath.Join(frank, "typo.wav"))
+	audiotest.WriteFile(t, filepath.Join(frank, "cover.jpg"), audiotest.NotARecording)
 
 	_, report := scanned(t, root, journalTable(t, "DockingGranted"))
 
@@ -294,9 +294,9 @@ func TestNamesMatchingNoCueAreReportedWhereTheyWereFound(t *testing.T) {
 func TestATreeNamedInProseResolvesNothing(t *testing.T) {
 	root := t.TempDir()
 	narrator := filepath.Join(root, "Narrator")
-	writeTake(t, filepath.Join(narrator, "Carrier Jump Request", "take.wav"))
-	writeTake(t, filepath.Join(narrator, "Reservoir Replenished.wav"))
-	writeTake(t, filepath.Join(narrator, "Sorted By Hand", "Colonisation Contribution", "one.mp3"))
+	audiotest.WriteTake(t, filepath.Join(narrator, "Carrier Jump Request", "take.wav"))
+	audiotest.WriteTake(t, filepath.Join(narrator, "Reservoir Replenished.wav"))
+	audiotest.WriteTake(t, filepath.Join(narrator, "Sorted By Hand", "Colonisation Contribution", "one.mp3"))
 
 	voices, report := scanned(t, root, journalTable(t, "CarrierJumpRequest", "ReservoirReplenished", "ColonisationContribution"))
 
@@ -313,9 +313,9 @@ func TestATreeNamedInProseResolvesNothing(t *testing.T) {
 func TestVoicesAreListedByNameIgnoringCase(t *testing.T) {
 	root := t.TempDir()
 	for _, name := range []string{"zed", "Alice", "bob"} {
-		writeTake(t, filepath.Join(root, name, "DockingGranted.wav"))
+		audiotest.WriteTake(t, filepath.Join(root, name, "DockingGranted.wav"))
 	}
-	writeTake(t, filepath.Join(root, "stray.wav"))
+	audiotest.WriteTake(t, filepath.Join(root, "stray.wav"))
 
 	voices, _ := scanned(t, root, journalTable(t, "DockingGranted"))
 
@@ -346,7 +346,7 @@ func TestARootThatCannotBeReadIsAnError(t *testing.T) {
 // read is a voice with nothing in it, named for the directory asked about.
 func TestScanVoiceIndexesOneDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "Hana")
-	writeTake(t, filepath.Join(dir, "DockingGranted.flac"))
+	audiotest.WriteTake(t, filepath.Join(dir, "DockingGranted.wav"))
 	table := journalTable(t, "DockingGranted")
 
 	if hana, _ := ScanVoice(dir, table); hana.Takes != 1 || hana.Name != "Hana" {

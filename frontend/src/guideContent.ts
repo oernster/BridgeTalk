@@ -139,7 +139,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'A recording is found by its name.',
-        text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Refresh. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name, each dot written as an underscore, holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played.",
+        text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Refresh. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name, each dot written as an underscore, holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played. A voice may also hold a voice.toml giving the name it is shown by, a credit line and recordings its names do not reach; one that cannot be read is set aside.",
       },
       {
         title: 'Record in a program built for it.',
@@ -151,7 +151,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Quiet is often the right answer.',
-        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings, the game restating itself within a second collapses into one line and a cue the voice has no recording for stays silent rather than borrowing another. While muted, nothing plays in answer to the game. The Status pane logs each of these decisions with its reason.',
+        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings. The game restating itself within 900 milliseconds collapses into one line; a cue the voice has no recording for stays silent rather than borrowing another. While muted, nothing plays in answer to the game. The Status pane logs each of these decisions with its reason.',
       },
       {
         title: 'Your recordings are never changed.',

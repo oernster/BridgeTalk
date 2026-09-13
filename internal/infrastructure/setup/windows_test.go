@@ -16,8 +16,24 @@ package setup
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+// under reports whether a path sits inside a directory, which is what proves a
+// redirection took. It answers false rather than guessing: an empty path, an unrelated
+// one and a sibling whose name merely starts the same way are all outside. Case is
+// folded because the paths come from Windows.
+func under(path, dir string) bool {
+	if path == "" || dir == "" {
+		return false
+	}
+	relative, err := filepath.Rel(strings.ToLower(dir), strings.ToLower(path))
+	if err != nil {
+		return false
+	}
+	return relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
+}
 
 // redirectUserDirectories points the Desktop and Start Menu lookups into a temporary
 // tree and proves it worked, so nothing below can reach the real ones.
@@ -161,6 +177,7 @@ func TestApplyingShortcutsWithNowhereToPutThemIsNotAFailure(t *testing.T) {
 func TestTheRegistryReadsAnswerWithoutFailing(t *testing.T) {
 	_ = SystemPrefersDark()
 	_ = IsLaunchOnBoot()
+	_ = HasLaunchOnBootEntry()
 
 	if version, installed := InstalledVersion(); installed && version == "" {
 		t.Fatal("the application reported as installed with no version")

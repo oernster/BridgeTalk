@@ -4,6 +4,7 @@ package library
 // requirement in REQUIREMENTS.md section 3.4 it holds.
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
 // FR-223: one folder per cue id, each of them the folder form, so a take dropped into
@@ -44,15 +46,15 @@ func TestMakingAVoicesFoldersMakesOneForEveryCue(t *testing.T) {
 	if voices, _ := scanned(t, root, table); len(voices) != 0 {
 		t.Fatalf("a voice of empty folders was offered: %v", voices)
 	}
-	writeTake(t, filepath.Join(dir, "DockingGranted", "any name at all.wav"))
+	audiotest.WriteTake(t, filepath.Join(dir, "DockingGranted", "any name at all.wav"))
 	voices, _ := scanned(t, root, table)
 	if len(voices) != 1 || voices[0].Takes != 1 {
 		t.Fatalf("got %v, want Oliver with the one take dropped in", voices)
 	}
 
 	// FR-229: a take in the underscore folder resolves; a folder named with dots is no cue's.
-	writeTake(t, filepath.Join(dir, "StartJump.JumpType.Hyperspace", "dotted.wav"))
-	writeTake(t, filepath.Join(dir, "StartJump_JumpType_Hyperspace", "take.wav"))
+	audiotest.WriteTake(t, filepath.Join(dir, "StartJump.JumpType.Hyperspace", "dotted.wav"))
+	audiotest.WriteTake(t, filepath.Join(dir, "StartJump_JumpType_Hyperspace", "take.wav"))
 	voices, _ = scanned(t, root, table)
 	if len(voices) != 1 || voices[0].Takes != 2 {
 		t.Fatalf("got %v, want the underscore folder's take counted and the dotted folder's ignored", voices)
@@ -69,7 +71,7 @@ func TestMakingFoldersAgainAddsOnlyWhatIsMissing(t *testing.T) {
 	root := t.TempDir()
 	table := journalTable(t, "Docked", "Undocked", "Liftoff")
 	take := filepath.Join(root, "Oliver", "Docked", "a.wav")
-	writeTake(t, take)
+	audiotest.WriteTake(t, take)
 	standing := filepath.Join(root, "Oliver", "Undocked")
 	if err := os.WriteFile(standing, []byte("mine"), 0o644); err != nil {
 		t.Fatalf("writing %s: %v", standing, err)
@@ -85,7 +87,7 @@ func TestMakingFoldersAgainAddsOnlyWhatIsMissing(t *testing.T) {
 	if held, err := os.ReadFile(standing); err != nil || string(held) != "mine" {
 		t.Fatalf("the file standing where a folder would go was changed: %q, %v", held, err)
 	}
-	if held, err := os.ReadFile(take); err != nil || len(held) != 1 {
+	if held, err := os.ReadFile(take); err != nil || !bytes.Equal(held, audiotest.Recording(t, ".wav")) {
 		t.Fatalf("the recording already there was changed: %v", err)
 	}
 
@@ -148,7 +150,7 @@ func TestFoldersNeedARootThatIsADirectory(t *testing.T) {
 		t.Error("a root that is not there was used")
 	}
 	file := filepath.Join(t.TempDir(), "plain")
-	writeTake(t, file)
+	audiotest.WriteFile(t, file, audiotest.NotARecording)
 	if _, _, err := MakeVoiceFolders(file, "Oliver", table); err == nil {
 		t.Error("a file was used as the root")
 	}
@@ -157,7 +159,7 @@ func TestFoldersNeedARootThatIsADirectory(t *testing.T) {
 // A file already holding the voice's name leaves nowhere to put its folders.
 func TestAFileInTheVoicesPlaceIsReported(t *testing.T) {
 	root := t.TempDir()
-	writeTake(t, filepath.Join(root, "Oliver"))
+	audiotest.WriteFile(t, filepath.Join(root, "Oliver"), audiotest.NotARecording)
 
 	if _, _, err := MakeVoiceFolders(root, "Oliver", journalTable(t, "Docked")); err == nil {
 		t.Fatal("folders were reported made inside a file")

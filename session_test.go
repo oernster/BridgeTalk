@@ -14,7 +14,10 @@ import (
 // touches no message loop. Its state is atomics and a channel, which is exactly the
 // part the facade talks to, so it stands in for the real icon without one.
 func idleTray() *taskbar.Tray {
-	return taskbar.New(taskbar.Options{Title: appTitle, Voices: []string{"Alpha", "Beta"}})
+	return taskbar.New(taskbar.Options{Title: appTitle, Voices: []taskbar.Choice{
+		{Name: "Alpha", Label: "Alpha"},
+		{Name: "Beta", Label: "Beta"},
+	}})
 }
 
 // The tray menu shows the cast voice and the mute state, so both have to be pushed to

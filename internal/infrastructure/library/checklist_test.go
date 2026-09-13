@@ -4,11 +4,14 @@ package library
 // the requirement in REQUIREMENTS.md section 4 it holds.
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
 // makeDir creates a directory a test needs to exist.
@@ -22,9 +25,9 @@ func makeDir(t *testing.T, path string) {
 // FR-316: a folder holding nothing yet is listed beside one with takes; a file is not.
 func TestVoiceDirsListsEveryFolderRecordedOrNot(t *testing.T) {
 	root := t.TempDir()
-	writeTake(t, filepath.Join(root, "Grace", "Docked", "a.wav"))
+	audiotest.WriteTake(t, filepath.Join(root, "Grace", "Docked", "a.wav"))
 	makeDir(t, filepath.Join(root, "Oliver"))
-	writeTake(t, filepath.Join(root, "notes.txt"))
+	audiotest.WriteFile(t, filepath.Join(root, "notes.txt"), audiotest.NotARecording)
 
 	got, err := VoiceDirs(root)
 	if err != nil || !reflect.DeepEqual(got, []string{"Grace", "Oliver"}) {
@@ -60,8 +63,8 @@ func TestVoiceDirsNeedsARootThatCanBeRead(t *testing.T) {
 func TestMissingListsWhatAVoiceHasNoTakeFor(t *testing.T) {
 	root := t.TempDir()
 	table := journalTable(t, "Docked", "Undocked", "Liftoff")
-	writeTake(t, filepath.Join(root, "Oliver", "Docked", "a.wav"))
-	writeTake(t, filepath.Join(root, "Oliver", "Liftoff.wav"))
+	audiotest.WriteTake(t, filepath.Join(root, "Oliver", "Docked", "a.wav"))
+	audiotest.WriteTake(t, filepath.Join(root, "Oliver", "Liftoff.wav"))
 	makeDir(t, filepath.Join(root, "Oliver", "Undocked"))
 
 	missing, recorded, err := Missing(root, "Oliver", table)
@@ -99,12 +102,12 @@ func TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot(t *testing.T) {
 		t.Fatalf("got %q, %v; want the Docked folder inside Oliver", dir, err)
 	}
 	take := filepath.Join(dir, "a.wav")
-	writeTake(t, take)
+	audiotest.WriteTake(t, take)
 
 	if _, err := MomentFolder(root, "Oliver", "Docked", table); err != nil {
 		t.Fatalf("a folder already there was refused: %v", err)
 	}
-	if held, err := os.ReadFile(take); err != nil || len(held) != 1 {
+	if held, err := os.ReadFile(take); err != nil || !bytes.Equal(held, audiotest.Recording(t, ".wav")) {
 		t.Fatalf("the take already there was changed: %v", err)
 	}
 }
@@ -121,12 +124,12 @@ func TestAMomentFolderThatCannotBeMadeIsReported(t *testing.T) {
 	if _, err := MomentFolder(root, "Oliver", "Nope", table); !errors.Is(err, ErrUnknownCue) {
 		t.Errorf("an unknown moment: got %v", err)
 	}
-	writeTake(t, filepath.Join(root, "Oliver", "Docked"))
+	audiotest.WriteFile(t, filepath.Join(root, "Oliver", "Docked"), audiotest.NotARecording)
 	if _, err := MomentFolder(root, "Oliver", "Docked", table); err == nil {
 		t.Error("a folder was reported made where a file stands")
 	}
 
-	writeTake(t, filepath.Join(root, "Plain"))
+	audiotest.WriteFile(t, filepath.Join(root, "Plain"), audiotest.NotARecording)
 	if _, _, err := Missing(root, "Plain", table); err == nil {
 		t.Error("a file was read as a voice folder")
 	}

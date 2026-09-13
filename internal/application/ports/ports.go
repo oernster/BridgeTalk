@@ -120,6 +120,4 @@ const (
 	OutcomeUnbound = "unbound"
 	// OutcomeDropped means a low-priority request was discarded while busy.
 	OutcomeDropped = "dropped"
-	// OutcomeNoCue means no cue in the table claimed the event.
-	OutcomeNoCue = "no cue"
 )

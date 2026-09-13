@@ -62,6 +62,8 @@ export function MenuTitle({
       <button
         className="menutitle"
         data-stop
+        // Stepping the ring onto this title out of an open menu drops this menu too.
+        data-drops
         ref={title}
         type="button"
         aria-expanded={open}
@@ -78,7 +80,11 @@ export function MenuTitle({
       {open && (
         <div
           className="menupopup"
+          data-popup
           ref={popup}
+          // Choosing an item hands the keyboard back to this title before the item acts, so
+          // a dialog the item opens returns focus here rather than to an item that is gone.
+          onClickCapture={() => title.current?.focus()}
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
               event.preventDefault()
@@ -140,9 +146,9 @@ export function NavButton({
  * Volume is the playback slider in the nav band.
  *
  * It is a native range input, so it arrives with the keyboard and the screen reader
- * already working. That also means it keeps the horizontal arrows for its own value
- * rather than stepping the ring, which is why the ring hook lists it among the
- * elements that own their arrows: Tab still leaves it in both directions.
+ * already working. Up and Down move its value. Left and Right step the ring, as they do
+ * at every other stop: the ring hook takes them back from the slider, which would
+ * otherwise hold the ring on itself.
  */
 export function Volume({ level, onChange }: { level: number; onChange: (level: number) => void }) {
   const percent = Math.round(level * 100)

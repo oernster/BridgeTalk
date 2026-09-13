@@ -6,7 +6,6 @@ package main
 
 import (
 	"math/rand"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -14,21 +13,21 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
 // fixtureSeed fixes the chooser so a test that plays a clip gets the same one twice.
 const fixtureSeed = 1
 
-// writeClip creates a file with a byte of content, which is enough for the scanner.
-func writeClip(t *testing.T, path string) {
+// journalName is a journal file named the way the game names one.
+const journalName = "Journal.2026-08-26T090000.01.log"
+
+// writeJournal puts an empty journal in a directory, which is all a journal source needs
+// to be built over.
+func writeJournal(t *testing.T, dir string) {
 	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatalf("creating %s: %v", filepath.Dir(path), err)
-	}
-	if err := os.WriteFile(path, []byte{0}, 0o644); err != nil {
-		t.Fatalf("writing %s: %v", path, err)
-	}
+	audiotest.WriteFile(t, filepath.Join(dir, journalName), nil)
 }
 
 // libraryRootFixture builds a library root holding one voice that covers both fixture
@@ -41,11 +40,11 @@ func writeClip(t *testing.T, path string) {
 func libraryRootFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeClip(t, filepath.Join(root, "Alpha", "ShieldState_ShieldsUp_false", "a.mp3"))
-	writeClip(t, filepath.Join(root, "Alpha", "Docked", "b.mp3"))
-	writeClip(t, filepath.Join(root, "Alpha", "Cast_Confirmed", "yes.mp3"))
-	writeClip(t, filepath.Join(root, "Beta", "ShieldState.ShieldsUp.false.mp3"))
-	writeClip(t, filepath.Join(root, "Bystander", "holiday snap.mp3"))
+	audiotest.WriteTake(t, filepath.Join(root, "Alpha", "ShieldState_ShieldsUp_false", "a.mp3"))
+	audiotest.WriteTake(t, filepath.Join(root, "Alpha", "Docked", "b.mp3"))
+	audiotest.WriteTake(t, filepath.Join(root, "Alpha", "Cast_Confirmed", "yes.mp3"))
+	audiotest.WriteTake(t, filepath.Join(root, "Beta", "ShieldState.ShieldsUp.false.mp3"))
+	audiotest.WriteTake(t, filepath.Join(root, "Bystander", "holiday snap.mp3"))
 	return root
 }
 
@@ -71,10 +70,14 @@ func fixtureTable(t *testing.T) cue.Table {
 	return cue.NewTable(built)
 }
 
-// fixtureSession assembles a session over the fixture voices with none cast yet.
-func fixtureSession(t *testing.T, player audioPlayer) (*session, string) {
+// fixtureSession assembles a session over the fixture voices with none cast yet. Each prepare
+// runs over the library root before it is scanned, which is how a test adds to the fixture.
+func fixtureSession(t *testing.T, player audioPlayer, prepare ...func(root string)) (*session, string) {
 	t.Helper()
 	root := libraryRootFixture(t)
+	for _, each := range prepare {
+		each(root)
+	}
 	table := fixtureTable(t)
 	found, report, err := library.Scan(root, table)
 	if err != nil {
@@ -96,12 +99,16 @@ func fixtureSession(t *testing.T, player audioPlayer) (*session, string) {
 	}, root
 }
 
+// fixtureWatch is a journal watch over nothing, with names a test can tell apart from the
+// facade's other directories.
+var fixtureWatch = journalWatch{directory: "journal-dir", statusPath: "status-file"}
+
 // fixtureApp assembles a facade over the fixture session, with the emitter captured.
-func fixtureApp(t *testing.T) (*App, *fakePlayer, *recorder) {
+func fixtureApp(t *testing.T, prepare ...func(root string)) (*App, *fakePlayer, *recorder) {
 	t.Helper()
 	player := newFakePlayer()
-	current, root := fixtureSession(t, player)
-	app := newApp(current, nil, "journal-dir", "status-file", root, nil)
+	current, root := fixtureSession(t, player, prepare...)
+	app := newApp(current, fixtureWatch, root, nil)
 	app.reveal = func(string) error { return nil }
 	log := newRecorder()
 	app.emit = log.emit

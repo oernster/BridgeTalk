@@ -156,12 +156,15 @@ func (a *App) Install(choices OptionsDTO) error {
 // Repair re-extracts and re-registers the application, leaving every option exactly
 // as it stands. It is the quick fix for a damaged install, as distinct from a
 // reinstall, which asks for the options again.
+//
+// The sign-in entry is kept wherever it exists, not only where it names a program that is
+// there: the program being missing is what a damaged install is (FR-804).
 func (a *App) Repair() error {
 	shortcuts := setup.CurrentShortcuts()
 	return a.write(OptionsDTO{
 		StartMenu:    shortcuts.StartMenu,
 		Desktop:      shortcuts.Desktop,
-		LaunchOnBoot: setup.IsLaunchOnBoot(),
+		LaunchOnBoot: setup.HasLaunchOnBootEntry(),
 	})
 }
 

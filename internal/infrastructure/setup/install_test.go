@@ -1,7 +1,7 @@
 package setup
 
-// These tests are inside the package so they can reach the unexported helpers the
-// leftover scan is built from. Nothing here writes to the registry, creates a
+// These tests are inside the package so they can reach its unexported helpers.
+// Nothing here writes to the registry, creates a
 // shortcut or starts a process: those live in the Windows files beside this one and
 // act on the machine itself, which a test must not.
 
@@ -33,33 +33,6 @@ func archiveOf(t *testing.T, entries map[string]string) []byte {
 		t.Fatalf("closing the archive: %v", err)
 	}
 	return buffer.Bytes()
-}
-
-// This is what decides that a shortcut is ours, so it answers false rather than
-// guessing. The comparison folds case because the paths come from Windows.
-func TestOnlyRealChildrenOfADirectoryCountAsUnderIt(t *testing.T) {
-	t.Parallel()
-	base := filepath.Join("C:", "Users", "Someone", "Desktop")
-	cases := []struct {
-		path, dir string
-		want      bool
-	}{
-		{filepath.Join(base, "Shortcut.lnk"), base, true},
-		{filepath.Join(base, "nested", "Shortcut.lnk"), base, true},
-		{strings.ToUpper(filepath.Join(base, "Shortcut.lnk")), base, true},
-		{base, base, true},
-		{filepath.Join("C:", "Users", "Someone", "Documents", "x.lnk"), base, false},
-		{base + "Extra", base, false},
-		{"", base, false},
-		{filepath.Join(base, "x.lnk"), "", false},
-		// One path absolute and the other relative cannot be compared at all.
-		{filepath.Join("relative", "x.lnk"), base, false},
-	}
-	for _, each := range cases {
-		if got := under(each.path, each.dir); got != each.want {
-			t.Errorf("under(%q, %q) = %v, want %v", each.path, each.dir, got, each.want)
-		}
-	}
 }
 
 // Installing under the local application data is what keeps the whole flow free of an

@@ -48,7 +48,7 @@ func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 
 	a.libraryRoot = root
 	a.emitState()
-	return answer, a.remember()
+	return answer, a.rememberLibraryRoot(root)
 }
 
 // recordingsStart is where a question about the recordings directory opens (FR-227).

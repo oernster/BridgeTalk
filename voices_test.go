@@ -38,9 +38,10 @@ func captureStderr(t *testing.T, work func()) string {
 // so a misspelled folder and an empty directory never look like the same silence.
 func TestEverythingAScanPassedOverIsNamed(t *testing.T) {
 	report := library.Report{
-		Empty:      []library.Reason{{Path: "Nobody", Why: "nothing to play"}},
-		Unmatched:  []library.Reason{{Path: "Alpha/holiday.mp3", Why: "no cue's name"}},
-		Duplicated: []library.Reason{{Path: "Alpha/DOCKED", Why: "differs only in case"}},
+		Empty:       []library.Reason{{Path: "Nobody", Why: "nothing to play"}},
+		Unmatched:   []library.Reason{{Path: "Alpha/holiday.mp3", Why: "no cue's name"}},
+		Duplicated:  []library.Reason{{Path: "Alpha/DOCKED", Why: "differs only in case"}},
+		Undecodable: []library.Reason{{Path: "Alpha/Docked/broken.mp3", Why: "will not play"}},
 	}
 
 	written := captureStderr(t, func() { warnAbout(report) })
@@ -49,6 +50,7 @@ func TestEverythingAScanPassedOverIsNamed(t *testing.T) {
 		"note: Nobody: nothing to play",
 		"note: Alpha/holiday.mp3: no cue's name",
 		"note: Alpha/DOCKED: differs only in case",
+		"note: Alpha/Docked/broken.mp3: will not play",
 	} {
 		if !strings.Contains(written, want) {
 			t.Errorf("stderr = %q, want it to carry %q", written, want)

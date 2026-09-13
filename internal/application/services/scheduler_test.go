@@ -97,6 +97,39 @@ func TestAlertDoesNotInterruptAnotherAlert(t *testing.T) {
 	}
 }
 
+// Alerts waiting together are said in the order they happened, ahead of anything less
+// urgent (Oliver, 2026-09-13).
+func TestAlertsWaitingTogetherPlayInArrivalOrder(t *testing.T) {
+	player := newFakePlayer()
+	scheduler := services.NewScheduler(player, &collector{}, frozenClock{})
+
+	scheduler.Submit(request(t, "notice", "notice", "notice.mp3"))
+	scheduler.Submit(request(t, "first", "alert", "one.mp3"))
+	scheduler.Submit(request(t, "second", "alert", "two.mp3"))
+	scheduler.Advance()
+
+	for index, want := range []string{"one.mp3", "two.mp3", "notice.mp3"} {
+		if len(player.played) != index+1 || player.played[index][0] != want {
+			t.Fatalf("played %v, want %s next", player.played, want)
+		}
+		player.finish()
+		scheduler.Finished()
+	}
+}
+
+// Submit says whether it took a request, which is what decides whether the firing counts
+// against the cooldown.
+func TestSubmitSaysWhetherItTookTheRequest(t *testing.T) {
+	scheduler := services.NewScheduler(newFakePlayer(), &collector{}, frozenClock{})
+
+	if !scheduler.Submit(request(t, "notice", "notice", "notice.mp3")) {
+		t.Fatal("a notice was not taken")
+	}
+	if scheduler.Submit(request(t, "ambient", "ambient", "quiet.mp3")) {
+		t.Fatal("an ambient cue let go behind a waiting notice was reported as taken")
+	}
+}
+
 func TestFlavourIsDroppedWhileAnythingIsPending(t *testing.T) {
 	log := &collector{}
 	player := newFakePlayer()

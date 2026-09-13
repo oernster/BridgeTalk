@@ -11,26 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useRef } from 'react'
 import { useAutoScroll, useFirstStop, useOverflowStop, useRing } from './hooks'
-
-/**
- * layOut makes attached elements report an offset parent.
- *
- * The ring skips a stop that is not on screen, which it reads from offsetParent being
- * null. In jsdom that is true of every element, so without this the ring correctly
- * finds nothing and no test of it can say anything.
- */
-function layOut() {
-  Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
-    configurable: true,
-    get(this: HTMLElement) {
-      return this.parentElement
-    },
-  })
-}
-
-function unlayOut() {
-  delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetParent
-}
+import { layOut, unlayOut } from './testLayout'
 
 /** Ringed renders a container of stops with the ring installed over it. */
 function Ringed({ enabled = true }: { enabled?: boolean }) {

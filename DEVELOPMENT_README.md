@@ -19,14 +19,14 @@ the start.
 | Wails CLI | v2.12.0, which `go.mod` requires | packages the Go binary and the web assets into one executable |
 | WebView2 runtime | any current | the window the front end is drawn in |
 
-Python 3 is optional. It is needed only to regenerate the icons, which are committed
-already; nothing in the ordinary build path uses it.
+Python 3 with Pillow is optional. It is needed only to regenerate the icons, which are
+committed already; nothing in the ordinary build path uses it.
 
 ### Go
 
 Install it from [go.dev/dl](https://go.dev/dl/), then check it:
 
-```bash
+```powershell
 go version
 ```
 
@@ -36,15 +36,15 @@ The module declares `go 1.26.3`.
 
 Install the LTS release from [nodejs.org](https://nodejs.org/) or with winget:
 
-```bash
+```powershell
 winget install OpenJS.NodeJS.LTS
 ```
 
-```bash
+```powershell
 node --version
 ```
 
-```bash
+```powershell
 npm --version
 ```
 
@@ -53,20 +53,20 @@ npm --version
 Wails is a Go program, so it is installed with Go. Install the version the module
 requires:
 
-```bash
+```powershell
 go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 ```
 
 That puts `wails.exe` in `%USERPROFILE%\go\bin`. If the next command is not found,
 that directory is not on the path:
 
-```bash
+```powershell
 wails version
 ```
 
 Add it for the current session with:
 
-```bash
+```powershell
 $env:PATH = "$env:USERPROFILE\go\bin;$env:PATH"
 ```
 
@@ -81,7 +81,7 @@ Where it is missing, install the Evergreen runtime from Microsoft's
 
 `wails doctor` reports on all of the above at once:
 
-```bash
+```powershell
 wails doctor
 ```
 
@@ -90,21 +90,21 @@ wails doctor
 The repository is private. Clone it into your own working directory, not into a
 worktree or a second copy:
 
-```bash
-git clone https://github.com/oernster/bridge-talk.git
+```powershell
+git clone https://github.com/oernster/BridgeTalk.git
 ```
 
-```bash
-cd bridge-talk
+```powershell
+cd BridgeTalk
 ```
 
 Fetch the Go modules and the front-end packages once:
 
-```bash
+```powershell
 go mod download
 ```
 
-```bash
+```powershell
 npm --prefix frontend install
 ```
 
@@ -116,7 +116,7 @@ tools directly.
 
 One command builds everything:
 
-```bash
+```powershell
 ./build.ps1
 ```
 
@@ -142,7 +142,7 @@ It does five things in order and stops at the first failure:
 To stop after the application and skip the setup program, which is the faster loop
 when only the application has changed:
 
-```bash
+```powershell
 ./build.ps1 -SkipInstaller
 ```
 
@@ -173,7 +173,7 @@ have one cannot quietly produce a different binary.
 
 The development loop, with the front end hot-reloading:
 
-```bash
+```powershell
 wails dev
 ```
 
@@ -183,32 +183,45 @@ The reporting flags can be run from a plain Go build. `main.go` embeds
 `frontend/dist`, which is build output and is not committed, so build the front end
 first:
 
-```bash
+```powershell
 npm --prefix frontend run build
 ```
 
-```bash
+```powershell
 go build -o bridge-talk.exe .
 ```
 
-```bash
+```powershell
 ./bridge-talk.exe -list
 ```
 
-`README.md` carries the full flag table. `-list` and `-unbound` print a report and
-exit, so neither opens a window.
+A flag given on the command line wins over the choice stored from the window, for that
+run only.
+
+| Flag | What it does |
+|---|---|
+| `-library <dir>` | the recordings directory |
+| `-journal <dir>` | the journal directory |
+| `-voice <name>` | the voice to cast; a name that is not installed falls back to the first voice with a warning |
+| `-list` | prints the voices found with their takes and moment coverage, then exits |
+| `-unbound` | prints the moments the chosen voice cannot serve, then exits |
+| `-no-tray` | runs without a notification-area icon, so closing the window quits |
+| `-hidden` | starts in the notification area with no window, as the login entry does; ignored with `-no-tray` |
+
+`-list` and `-unbound` open no window and refuse when no voice is found. With
+`-unbound`, a `-voice` that is not installed is refused rather than replaced.
 
 ## Verifying
 
 The backend gate, which `build.ps1` runs for you:
 
-```bash
+```powershell
 ./test.ps1
 ```
 
 The stricter Go analysis, which neither script runs:
 
-```bash
+```powershell
 go run honnef.co/go/tools/cmd/staticcheck@latest (go list ./... | Where-Object { $_ -notmatch '/node_modules/' })
 ```
 
@@ -222,22 +235,22 @@ filters by path instead, because gofmt walks directories rather than packages.
 The front end, from the `frontend` directory. The build runs the first two; nothing
 runs the third for you:
 
-```bash
+```powershell
 npx eslint .
 ```
 
-```bash
+```powershell
 npx tsc --noEmit
 ```
 
-```bash
+```powershell
 npx vitest run
 ```
 
 Front-end coverage, when a figure needs checking. The report carries no threshold, so
 it fails nothing:
 
-```bash
+```powershell
 npx vitest run --coverage
 ```
 
@@ -250,29 +263,29 @@ deliberately not tested and why.
 
 Run the setup program:
 
-```bash
+```powershell
 ./dist-installer/BridgeTalkSetup.exe
 ```
 
 Everything it writes is per user, so Windows never asks for administrator rights: the
-files under `%LOCALAPPDATA%\Programs\BridgeTalk`, the Start Menu entry under
-`%APPDATA%`, the Desktop shortcut on your own Desktop and the install record and login
-entry under `HKEY_CURRENT_USER`. With nothing installed it offers an install. Over an
+files under `%LOCALAPPDATA%\Programs\BridgeTalk` with a copy of itself there as
+`uninstall.exe` plus the install record under `HKEY_CURRENT_USER`. Where you ask for
+them it also writes the Start Menu entry under `%APPDATA%`, the Desktop shortcut on your
+own Desktop and the login entry under `HKEY_CURRENT_USER`. With nothing installed it offers an install. Over an
 older or a newer version it offers the change on one screen. Over the same version it
 opens a manage screen with Repair, Reinstall and Uninstall.
 
-Windows will show a SmartScreen warning: the executable is unsigned. Choose More
-info, then Run anyway.
+Neither executable is signed: `build.ps1` has no signing step.
 
-To uninstall, use the Apps list. The same program is the `uninstall.exe` setup left in
-the install directory. Started with `-uninstall`, as the Apps list starts it, that copy opens on
+To uninstall, use the Apps list. The same program is the `uninstall.exe` in the install
+directory. Started with `-uninstall`, as the Apps list starts it, that copy opens on
 the removal screen; started bare it opens on the manage screen, which offers Uninstall.
 
 ## Regenerating the icons
 
 Only needed after changing an image in `assets/`; the results are committed:
 
-```bash
+```powershell
 python tools/genicons.py
 ```
 
@@ -288,10 +301,13 @@ relying on that would mean deleting and hoping.
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
+| `audition.go`, `cast.go`, `checklist.go`, `folders.go`, `settings.go`, `voices.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
 | `internal/domain` | the cue model, events and selection; no I/O at all |
 | `internal/application` | the reaction and scheduling services, over ports |
 | `internal/infrastructure` | journal, status, library, audio, config, setup, taskbar, window |
 | `internal/product` | the product's name and slug, in one place |
+| `internal/refusal` | the wording of a file-system refusal, so each one names its path once |
 | `frontend/src` | the React front end |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |

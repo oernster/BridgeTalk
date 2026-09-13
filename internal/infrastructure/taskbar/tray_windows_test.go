@@ -2,12 +2,48 @@
 
 package taskbar
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 // newTestTray builds a tray without touching Win32, so the menu logic can be tested
-// without a message loop or a shell.
+// without a message loop or a shell. Each voice is shown by its own name.
 func newTestTray(voices []string, active string) *Tray {
-	return New(Options{Title: "Test", Voices: voices, ActiveVoice: active})
+	choices := make([]Choice, 0, len(voices))
+	for _, name := range voices {
+		choices = append(choices, Choice{Name: name, Label: name})
+	}
+	return New(Options{Title: "Test", Voices: choices, ActiveVoice: active})
+}
+
+// FR-210: the menu and the hover text show each voice by its label, while a choice carries
+// the name that identifies it and the check mark follows that name.
+func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
+	tray := New(Options{Title: "Test", ActiveVoice: "leo", Voices: []Choice{
+		{Name: "grace", Label: "Grace Hart"},
+		{Name: "leo", Label: "Leo Marsh"},
+	}})
+
+	want := []menuVoice{
+		{id: idVoiceBase, label: "Grace Hart", checked: false},
+		{id: idVoiceBase + 1, label: "Leo Marsh", checked: true},
+	}
+	if got := tray.voiceItems(); !reflect.DeepEqual(got, want) {
+		t.Errorf("items = %+v, want %+v", got, want)
+	}
+	if got, want := tray.tooltip(), "Test: Leo Marsh"; got != want {
+		t.Errorf("tooltip = %q, want %q", got, want)
+	}
+	tray.SetActiveVoice("nobody listed")
+	if got, want := tray.tooltip(), "Test: nobody listed"; got != want {
+		t.Errorf("tooltip = %q, want an unlisted name shown as it is", got)
+	}
+
+	tray.dispatch(idVoiceBase)
+	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Voice: "grace"}) {
+		t.Errorf("command = %+v, want grace chosen by the name that identifies her", got)
+	}
 }
 
 func TestDispatchMapsMenuIdentifiers(t *testing.T) {

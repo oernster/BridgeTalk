@@ -30,13 +30,22 @@ type Command struct {
 	Voice string
 }
 
+// Choice is one voice the menu offers: the name that identifies it and the label it is shown
+// by, which differ where the voice's manifest names it (FR-210).
+type Choice struct {
+	// Name identifies the voice; a choice from the menu carries it.
+	Name string
+	// Label is what the menu and the hover text show.
+	Label string
+}
+
 // Options configures a tray at construction.
 type Options struct {
 	// Title is the tooltip shown when hovering the icon.
 	Title string
 	// Voices lists the selectable voices, in the order they appear in the menu.
-	Voices []string
-	// ActiveVoice is the voice shown as chosen.
+	Voices []Choice
+	// ActiveVoice names the voice shown as chosen, by the name that identifies it.
 	ActiveVoice string
 	// Muted is the starting state of the mute item.
 	Muted bool

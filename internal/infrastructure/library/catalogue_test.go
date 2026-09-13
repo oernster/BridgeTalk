@@ -101,18 +101,19 @@ func TestCoverageCountsTheCuesServedOutOfTheTable(t *testing.T) {
 	}
 }
 
-// FR-215, second figure: distinct files reachable against the takes held. One file
-// answering two cues is one file, so the two numbers part company.
-func TestFilesCountDistinctFilesAgainstTakesHeld(t *testing.T) {
+// FR-215, second figure: distinct files used against the recordings present. One file
+// answering two cues is one file used; a recording present that answers nothing is not used.
+func TestFilesCountDistinctFilesUsedAgainstRecordingsPresent(t *testing.T) {
 	voice := voiceOf("Ivy", map[cue.ID][]string{
 		"DockingGranted":              {"shared.wav"},
 		"ShieldState.ShieldsUp.false": {"shared.wav", "own.wav"},
 	})
+	voice.Present = 4
 
-	reachable, held := NewCatalogue(voice, journalTable(t), fixedChooser{}).Files()
+	used, present := NewCatalogue(voice, journalTable(t), fixedChooser{}).Files()
 
-	if reachable != 2 || held != 3 {
-		t.Errorf("files = %d reachable of %d held, want 2 of 3", reachable, held)
+	if used != 2 || present != 4 {
+		t.Errorf("files = %d used of %d present, want 2 of 4", used, present)
 	}
 }
 

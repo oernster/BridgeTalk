@@ -281,14 +281,21 @@ func TestTheStandardLocationIsTheGamesUsualSavedGamesPath(t *testing.T) {
 	}
 }
 
-// A machine where the game has never run has no such directory. That is a condition
-// to report, so the user is asked to point at one rather than left wondering why
-// nothing ever fires.
-func TestTheStandardLocationIsReportedMissingWhenTheGameHasNeverRun(t *testing.T) {
-	t.Setenv(homeVariable(), t.TempDir())
+// A machine where the game has never run has no such directory. The place is still
+// named, so the window can say where it looked; opening a source there is what refuses it.
+func TestTheStandardLocationIsNamedWhereTheGameHasNeverRun(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv(homeVariable(), home)
 
-	if _, err := journal.StandardLocation(); err == nil {
-		t.Fatal("a home directory with no saved games was accepted")
+	got, err := journal.StandardLocation()
+	if err != nil {
+		t.Fatalf("a home directory with no saved games was refused before anything looked: %v", err)
+	}
+	if want := filepath.Join(home, "Saved Games", "Frontier Developments", "Elite Dangerous"); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if _, err := journal.NewSource(got, clock); err == nil {
+		t.Fatal("a source opened over a saved games directory that is not there")
 	}
 }
 

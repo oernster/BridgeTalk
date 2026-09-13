@@ -6,22 +6,28 @@
 
 package main
 
-// VoiceDTO describes one selectable voice for the voice pane.
+// VoiceDTO describes one voice for the Cast pane, with its two completeness figures
+// (FR-215).
 //
-// InUse is the takes the voice holds, every one of which answers a cue: a file that
-// matched no cue id never entered the catalogue and is named in the scan report
-// instead. So this is both what the voice has and what it can reach.
-//
-// The cue coverage is not carried either, for a related reason. The row used to show
-// how many of the game's moments a voice had its own recordings for, out of how many
-// there are. Neither number means anything to somebody who has not read the cue
-// table. The dialog behind the row's mark answers the same question in words.
+// Cues is the moments the voice has a recording for. How many moments there are is the same
+// for every voice and already crosses as StateDTO.Total, so it is not repeated here. InUse
+// is the distinct files the voice uses; Present is the recordings in its directory, whether
+// they answer a moment or play at all. The pane words both figures in moments and
+// recordings: a count of cues meant nothing to somebody who has not read the cue table,
+// which is why the row once dropped its coverage altogether.
 //
 // Nothing says whether a voice can be cast, because every voice can: a directory that
 // resolved no take never became one. A flag that is always true is not information.
+//
+// Name identifies the voice and is what a cast sends back; Display is what the page shows and
+// Credit is the line beneath its figures, both from the voice's manifest (FR-210).
 type VoiceDTO struct {
-	Name  string `json:"name"`
-	InUse int    `json:"inUse"`
+	Name    string `json:"name"`
+	Display string `json:"display"`
+	Credit  string `json:"credit"`
+	Cues    int    `json:"cues"`
+	InUse   int    `json:"inUse"`
+	Present int    `json:"present"`
 }
 
 // ReactionDTO is one line of the reaction log.
@@ -41,15 +47,17 @@ type ReactionDTO struct {
 
 // StateDTO is everything the header and home pane need in one call.
 type StateDTO struct {
-	Voice       string `json:"voice"`
-	Bound       int    `json:"bound"`
-	Total       int    `json:"total"`
-	Muted       bool   `json:"muted"`
-	Silent      bool   `json:"silent"`
-	JournalDir  string `json:"journalDir"`
-	StatusPath  string `json:"statusPath"`
-	LibraryRoot string `json:"libraryRoot"`
-	Version     string `json:"version"`
+	// Voice identifies the cast voice; VoiceDisplay is the name it is shown by (FR-210).
+	Voice        string `json:"voice"`
+	VoiceDisplay string `json:"voiceDisplay"`
+	Bound        int    `json:"bound"`
+	Total        int    `json:"total"`
+	Muted        bool   `json:"muted"`
+	Silent       bool   `json:"silent"`
+	JournalDir   string `json:"journalDir"`
+	StatusPath   string `json:"statusPath"`
+	LibraryRoot  string `json:"libraryRoot"`
+	Version      string `json:"version"`
 	// LaunchOnBoot is read from the login entry itself rather than remembered
 	// separately, so the toggle cannot disagree with what Windows will actually do.
 	LaunchOnBoot bool `json:"launchOnBoot"`
@@ -59,6 +67,9 @@ type StateDTO struct {
 	// only in words at that. A machine that keeps the device fed reports nothing.
 	Stalls     int `json:"stalls"`
 	WorstStall int `json:"worstStall"`
+	// JournalProblem says why the journal directory is not being watched, naming it
+	// once; empty while it is. The window opens either way, so the panes say it (FR-238).
+	JournalProblem string `json:"journalProblem"`
 }
 
 // PlaybackDTO reports whether the output device is sounding anything.

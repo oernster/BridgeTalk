@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
@@ -82,6 +83,9 @@ func TestWithNoRecordingsDirectoryTheFoldersGoInTheDefaultOne(t *testing.T) {
 	if app.libraryRoot != want || store.held.LibraryRoot != want {
 		t.Fatalf("root %q, stored %q; want both %q", app.libraryRoot, store.held.LibraryRoot, want)
 	}
+	if store.held.JournalDir != "" {
+		t.Fatalf("stored journal directory %q, which nobody chose (FR-228)", store.held.JournalDir)
+	}
 	if log.countEmitted(stateEvent) == 0 {
 		t.Fatal("the page was not told there is now a recordings directory")
 	}
@@ -92,7 +96,7 @@ func TestADefaultThatCannotBeMadeIsReported(t *testing.T) {
 	app, _, log := fixtureApp(t)
 	app.libraryRoot = ""
 	file := filepath.Join(t.TempDir(), "plain")
-	writeClip(t, file)
+	audiotest.WriteFile(t, file, audiotest.NotARecording)
 	t.Setenv("LOCALAPPDATA", file)
 	t.Setenv("XDG_DATA_HOME", file)
 	neverAsked(t, app)
@@ -153,7 +157,7 @@ func TestADefaultThatCannotBeMadeStillAsks(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	app.libraryRoot = ""
 	file := filepath.Join(t.TempDir(), "plain")
-	writeClip(t, file)
+	audiotest.WriteFile(t, file, audiotest.NotARecording)
 	t.Setenv("LOCALAPPDATA", file)
 	t.Setenv("XDG_DATA_HOME", file)
 	asked, start := false, "unset"
@@ -203,7 +207,7 @@ func TestWhereTheFoldersCannotGoIsReported(t *testing.T) {
 func TestLookingAgainFindsAVoiceFilledSinceTheStart(t *testing.T) {
 	app, _, log := fixtureApp(t)
 	before := len(app.Voices())
-	writeClip(t, filepath.Join(app.libraryRoot, "Carol", "Docked", "take.wav"))
+	audiotest.WriteTake(t, filepath.Join(app.libraryRoot, "Carol", "Docked", "take.wav"))
 
 	found, err := app.Rescan()
 	if err != nil {

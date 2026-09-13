@@ -15,8 +15,11 @@ import (
 func (a *App) Voices() []VoiceDTO {
 	out := make([]VoiceDTO, 0, len(a.session.available))
 	for _, voice := range a.session.available {
-		_, _, inUse := a.session.coverageOf(voice)
-		out = append(out, VoiceDTO{Name: voice.Name, InUse: inUse})
+		cues, used, present := a.session.coverageOf(voice)
+		out = append(out, VoiceDTO{
+			Name: voice.Name, Display: voice.Display(), Credit: voice.Credit,
+			Cues: cues, InUse: used, Present: present,
+		})
 	}
 	return out
 }

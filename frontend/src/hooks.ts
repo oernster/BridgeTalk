@@ -71,8 +71,13 @@ export function useRing(container: React.RefObject<HTMLElement | null>, enabled 
       const raw =
         found >= 0 ? found + delta : mark.current === null ? neutral : mark.current + delta
       const next = (raw + list.length) % list.length
+      // Leaving an open popup onto a stop that drops one of its own opens that one too, so
+      // a menu bar carries its dropped state along. It happens here, in the press itself:
+      // a handler on the popup would never hear it, since the popup is gone by then.
+      const leavingPopup = active?.closest('[data-popup]') != null
       mark.current = next
       list[next].focus()
+      if (leavingPopup && list[next].hasAttribute('data-drops')) list[next].click()
     },
     [stops],
   )
@@ -80,6 +85,11 @@ export function useRing(container: React.RefObject<HTMLElement | null>, enabled 
   useEffect(() => {
     if (!enabled) return
     const onKey = (event: KeyboardEvent) => {
+      // A ring answers only while its surface is the one on top. A dialog over the window
+      // holds a ring of its own, so the window's must not also move focus behind the scrim.
+      const root = container.current
+      if (root === null || !isTopmostSurface(root)) return
+
       const target = event.target as HTMLElement | null
       const forward = !event.shiftKey && (event.key === 'Tab' || event.key === 'ArrowRight')
       const back = event.key === 'ArrowLeft' || (event.key === 'Tab' && event.shiftKey)
@@ -123,7 +133,7 @@ export function useRing(container: React.RefObject<HTMLElement | null>, enabled 
     // see every press to be the ring.
     document.addEventListener('keydown', onKey, true)
     return () => document.removeEventListener('keydown', onKey, true)
-  }, [step, enabled])
+  }, [container, step, enabled])
 
   return { step, stops }
 }
@@ -240,11 +250,11 @@ export function useAutoScroll(
     // can be a reader of it, while acting on it would corrupt the very state the freeze
     // exists to keep: the phase would come back suspended rather than where it was.
     const onManualInput = () => {
-      if (!isTopmostReadingSurface(element)) return
+      if (!isTopmostSurface(element)) return
       state.current = suspended(state.current)
     }
     const onFocus = () => {
-      if (!isTopmostReadingSurface(element)) return
+      if (!isTopmostSurface(element)) return
       state.current = focused(state.current)
     }
     for (const type of MANUAL_EVENTS) {
@@ -253,7 +263,7 @@ export function useAutoScroll(
     element.addEventListener('focusin', onFocus)
 
     const timer = window.setInterval(() => {
-      if (!isTopmostReadingSurface(element)) return
+      if (!isTopmostSurface(element)) return
       const view = {
         scrollTop: element.scrollTop,
         maxScrollTop: element.scrollHeight - element.clientHeight,
@@ -274,14 +284,15 @@ export function useAutoScroll(
 }
 
 /**
- * isTopmostReadingSurface reports whether the surface is the one being looked at.
+ * isTopmostSurface reports whether the surface is the one being looked at. The window's
+ * ring stands aside by it for a dialog's ring; a surface reading itself freezes by it.
  *
  * Two surfaces reading at once compete for the same eye, which is reachable here: the
  * guide pane reads itself while a dialog opened over it reads itself too. A surface
  * under a modal is FROZEN rather than suspended, its tick skipped whole, so its phase,
  * its position and the rest of its hold are all still there when the modal closes.
  */
-function isTopmostReadingSurface(element: HTMLElement): boolean {
+function isTopmostSurface(element: HTMLElement): boolean {
   const scrims = document.querySelectorAll('.scrim')
   const own = element.closest('.scrim')
   if (!own) return scrims.length === 0

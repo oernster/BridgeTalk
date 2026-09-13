@@ -6,7 +6,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import type { Reaction, State } from './api'
+import type { Reaction } from './api'
+import { watching } from './testState'
 
 const reactions = vi.fn<() => Promise<Reaction[]>>()
 const handlers = new Map<string, (...data: unknown[]) => void>()
@@ -25,21 +26,6 @@ vi.mock('./api', () => ({
 }))
 
 const { HomePane } = await import('./panes')
-
-const watching: State = {
-  voice: 'Grace',
-  bound: 40,
-  total: 60,
-  muted: false,
-  silent: false,
-  journalDir: 'D:/Journals',
-  statusPath: 'D:/Journals/Status.json',
-  libraryRoot: 'D:/Recordings',
-  version: '9.9.9',
-  launchOnBoot: false,
-  stalls: 0,
-  worstStall: 0,
-}
 
 const played: Reaction = {
   at: '09:30:00',
@@ -68,6 +54,14 @@ describe('the home pane', () => {
     expect(screen.getByText('D:/Journals')).toBeTruthy()
     expect(screen.getByText('D:/Journals/Status.json')).toBeTruthy()
     expect(screen.getByText('Playback is live.')).toBeTruthy()
+  })
+
+  // FR-210: the Cast card names the voice as it is shown, not by the directory behind it.
+  it('names the cast voice on the Status pane as it is shown', () => {
+    render(<HomePane state={{ ...watching, voiceDisplay: 'Grace Hart' }} />)
+
+    expect(screen.getByText('Grace Hart')).toBeTruthy()
+    expect(screen.queryByText('Grace')).toBeNull()
   })
 
   // A shortfall is a gap in the recordings rather than a fault in the application. The
@@ -109,6 +103,23 @@ describe('the home pane', () => {
 
     expect(screen.getByText(/Playback is muted\./)).toBeTruthy()
     expect(screen.getByText(/No audio device was available/)).toBeTruthy()
+  })
+
+  // FR-238: the window opens over a journal directory that cannot be watched, so the pane
+  // that says what is watched is where the reader learns that nothing is.
+  it('says why the journal directory is not being watched and where to put it right', () => {
+    const problem = 'reading the journal directory D:/Nowhere: cannot be found'
+    render(<HomePane state={{ ...watching, journalDir: 'D:/Nowhere', journalProblem: problem }} />)
+
+    const said = screen.getByRole('alert')
+    expect(said.textContent).toContain(problem)
+    expect(said.textContent).toContain('Settings pane')
+  })
+
+  it('says nothing about the journal while it is being watched', () => {
+    render(<HomePane state={watching} />)
+
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   // The pane is drawn before the first answer arrives, so every figure needs
@@ -174,6 +185,28 @@ describe('the home pane', () => {
     expect(selected()).toBe(0)
     fireEvent.keyDown(log, { key: 'ArrowUp' })
     expect(selected()).toBe(1)
+  })
+
+  // The arrows are swallowed, so the log would not scroll to the row they reach on its
+  // own. A row walked past the edge of the log is brought back into view.
+  it('brings the row it walks to into view', async () => {
+    const original = Element.prototype.scrollIntoView
+    const scrolled = vi.fn()
+    Element.prototype.scrollIntoView = scrolled
+    try {
+      reactions.mockResolvedValue([played, dropped])
+      render(<HomePane state={watching} />)
+      await screen.findByText('StartJump')
+
+      fireEvent.keyDown(screen.getByRole('listbox', { name: 'Reaction log' }), {
+        key: 'ArrowDown',
+      })
+
+      expect(scrolled).toHaveBeenCalledTimes(1)
+      expect(scrolled.mock.contexts[0]).toBe(screen.getAllByRole('option')[1])
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
   })
 
   it('ignores a key that is not one of its own', async () => {

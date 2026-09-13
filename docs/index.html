@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bridge Talk: a ship's voice for Elite Dangerous</title>
+  <meta name="description" content="A ship's voice for Elite Dangerous, speaking with recordings you supply. It watches the game while you play and answers with your own recordings. It talks and never listens.">
+  <meta name="author" content="Oliver Ernster">
+  <meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Bridge Talk">
+  <meta property="og:title" content="Bridge Talk: a ship's voice for Elite Dangerous">
+  <meta property="og:description" content="A ship's voice for Elite Dangerous, speaking with recordings you supply. It talks and never listens.">
+  <meta property="og:locale" content="en_GB">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Bridge Talk",
+    "operatingSystem": "Windows",
+    "applicationCategory": "GameApplication",
+    "description": "A ship's voice for Elite Dangerous, speaking with recordings you supply.",
+    "downloadUrl": "https://github.com/oernster/BridgeTalk/releases/latest",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "author": {"@type": "Person", "name": "Oliver Ernster", "url": "https://github.com/oernster"}
+  }
+  </script>
+  <link rel="icon" type="image/png" href="application-icon.png">
+  <link rel="apple-touch-icon" href="application-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="site">
+  <a class="nav-brand" href="./">
+    <img src="application-icon.png" alt="Bridge Talk icon">
+    <span>Bridge Talk</span>
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" href="#about">What it is</a>
+    <a class="nav-link" href="#features">What it does</a>
+    <a class="nav-link" href="#recording">Recording</a>
+    <a class="nav-link" href="#setup">Setup</a>
+    <a class="btn-primary" href="https://github.com/oernster/BridgeTalk/releases/latest">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <img class="hero-icon fade" src="application-icon.png" width="168" height="168" alt="Bridge Talk application icon" fetchpriority="high" decoding="async">
+
+  <p class="wordmark fade">Bridge Talk</p>
+
+  <div class="badge fade">
+    <span class="badge-dot"></span>
+    Version <!--VERSION-->1.0.0<!--/VERSION--> for Windows
+  </div>
+
+  <h1 class="fade d1">A ship's voice for Elite Dangerous,<br><span class="accent">speaking with recordings you supply.</span></h1>
+
+  <p class="hero-desc fade d2">
+    Bridge Talk watches the game's journal and status file while you play. When something worth
+    saying happens, it plays <strong>one of your own recordings</strong> for that moment. It
+    <strong>talks and never listens</strong>; it ships <strong>no audio of its own</strong>.
+  </p>
+
+  <div class="hero-cta fade d3">
+    <a class="btn-primary" href="https://github.com/oernster/BridgeTalk/releases/latest">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download for Windows
+    </a>
+    <a class="btn-secondary" href="https://github.com/oernster/BridgeTalk">Source on GitHub</a>
+  </div>
+
+  <figure class="hero-shot fade d4">
+    <div class="shot">
+      <img src="images/cast.png" alt="The Cast pane with a voice cast as the ship's voice, listing each voice found with its two completeness figures beside the Moments spoken for mark at the end of every row" decoding="async">
+    </div>
+    <figcaption class="shot-caption">Press a row on the Cast pane and that voice speaks for your ship.</figcaption>
+  </figure>
+</section>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat"><div class="stat-value">Talks</div><div class="stat-label">It never listens</div></div>
+    <div class="stat"><div class="stat-value">Your voice</div><div class="stat-label">It ships no audio of its own</div></div>
+    <div class="stat"><div class="stat-value">Four formats</div><div class="stat-label">WAV, MP3, FLAC and Ogg</div></div>
+    <div class="stat"><div class="stat-value">Every decision</div><div class="stat-label">Logged with its outcome</div></div>
+    <div class="stat"><div class="stat-value">Per user</div><div class="stat-label">No administrator rights</div></div>
+    <div class="stat"><div class="stat-value">Out of the way</div><div class="stat-label">Waits in the notification area</div></div>
+  </div>
+</div>
+
+<!-- What it is -->
+<div class="band" id="about">
+  <section class="section">
+    <div class="split-grid">
+      <div class="split-text">
+        <div class="section-label">Who it is for</div>
+        <h2 class="section-title">A voice for your ship.<br>Yours to record.</h2>
+        <p>
+          Bridge Talk gives your ship a voice that answers the game. The words are yours: it plays
+          recordings you supply, one for each moment you have recorded.
+        </p>
+        <ul>
+          <li>Commanders playing Elite Dangerous on Windows who hold recordings they may use and want them spoken in answer to the game.</li>
+          <li>Anyone recording a voice for a ship who wants to see exactly which moments a set of recordings covers, then hear it before choosing it.</li>
+        </ul>
+      </div>
+      <div class="split-text">
+        <div class="section-label">Who it is not for</div>
+        <h2 class="section-title">It talks.<br>It never listens.</h2>
+        <p>
+          Worth knowing before you download: Bridge Talk speaks in answer to the game and nothing
+          else.
+        </p>
+        <ul>
+          <li>Anyone wanting voice commands. There is no microphone, no speech recognition and no voice command of any kind.</li>
+          <li>Anyone wanting sound straight away. It ships no audio of its own, so nothing plays until it is pointed at recordings you supply.</li>
+          <li>Anyone hoping one line will cover for another. A moment the voice has no recording for stays silent rather than borrowing a different one.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- What it does -->
+<section class="section" id="features">
+  <div class="section-label">What it does</div>
+  <h2 class="section-title">Cast a voice.<br>It speaks for your ship.</h2>
+  <p class="section-sub">
+    Five panes run along the top of the window: Cast, Audition, Status, Missing takes and Settings.
+    Each one does a single job.
+  </p>
+
+  <div class="split-grid">
+    <div class="split-text">
+      <h3>Cast a voice</h3>
+      <p>
+        Every directory inside your recordings directory is a voice with a row of its own on the Cast
+        pane, showing how many moments it has a recording for and how many of the recordings in its folder it
+        uses. Press a row to cast that voice. It says
+        something as it takes the part, unless the window is muted or the voice has no line for it.
+      </p>
+      <p>The voice you cast is remembered, so the next start opens speaking with the same one.</p>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/cast.png" alt="The Cast pane with one voice cast, above the Make a voice row holding the Make folders and Refresh buttons" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Cast pane.</figcaption>
+    </figure>
+  </div>
+
+  <div class="split-grid flip">
+    <div class="split-text">
+      <h3>See what a voice covers before you cast it</h3>
+      <p>
+        The mark at the end of every row opens the Moments spoken for dialog. It lists every moment
+        that voice has a recording for, then every moment it was never recorded for, each of which
+        stays quiet.
+      </p>
+      <p>It answers for any voice, cast or not, so one can be weighed before it is cast.</p>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/moments-spoken-for.png" alt="The Moments spoken for dialog for one voice, listing the moments it has a recording for above the moments with no lines" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Moments spoken for dialog.</figcaption>
+    </figure>
+  </div>
+
+  <h3 class="subhead">How it decides what to say</h3>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>One recording per moment</h3>
+      <p>Where a voice holds several takes for a moment, one is chosen at random. It is never the take
+      that moment played last time, so a line you have just heard is not repeated straight away.</p>
+    </div>
+    <div class="feat">
+      <h3>Alerts come first</h3>
+      <p>An alert interrupts anything less urgent. A notice waits its turn. An ambient line gives way
+      when something is already waiting; incidental chatter gives way whenever anything is waiting or
+      speaking.</p>
+    </div>
+    <div class="feat">
+      <h3>Quiet when quiet is right</h3>
+      <p>Many moments hold a minimum interval between two firings. The game restating itself within 900
+      milliseconds collapses into one line. A moment the voice has no recording for stays silent.</p>
+    </div>
+    <div class="feat">
+      <h3>Mute when you need to</h3>
+      <p>Mute silences every answer to the game. The Status pane still records each decision, so the
+      ship never goes quiet without a reason you can read.</p>
+    </div>
+  </div>
+
+  <div class="split-grid" style="margin-top:4.5rem;">
+    <div class="split-text">
+      <h3>Every decision explained</h3>
+      <p>
+        The Status pane shows the voice that is cast, how many moments it has a recording for, the
+        journal directory and the status file being watched. It says whether playback is live or muted
+        and warns when no audio device was found.
+      </p>
+      <p>
+        Beneath that is a log of every decision with its outcome: played, queued, dropped, cooldown,
+        duplicate or unbound. The decisions that produced no sound are logged too, so a moment that
+        never speaks explains itself.
+      </p>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/status.png" alt="The Status pane showing the cast voice, the journal directory and status file being watched and the log of decisions with the outcome of each" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Status pane.</figcaption>
+    </figure>
+  </div>
+
+  <div class="split-grid flip">
+    <div class="split-text">
+      <h3>Hear a voice first</h3>
+      <p>
+        Choose any voice on the Audition pane, cast or not. There is one button for each part of the
+        game; a press plays one of that voice's recordings for it at random, so pressing again can give
+        a different take. The square beside the chooser stops a recording part way through.
+      </p>
+      <p>An audition ignores the mute, which silences answers to the game rather than the window.</p>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/audition.png" alt="The Audition pane with a voice chosen, showing one play button for each part of the game beside its number of samples" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Audition pane.</figcaption>
+    </figure>
+  </div>
+
+  <div class="split-grid">
+    <div class="split-text">
+      <h3>Find the takes still missing</h3>
+      <p>
+        The Missing takes pane holds the recordings directory with its Browse button, then offers every
+        voice still missing a recording. For the one chosen it lists each missing moment with a line
+        saying when it is heard, then the folder its audio file belongs in.
+      </p>
+      <ul>
+        <li><strong>Open folder</strong> beside a moment opens its folder, making the folder first where it is not there yet.</li>
+        <li><strong>Make folders</strong> on the Cast pane gives a new voice a folder for every moment, each already named.</li>
+        <li><strong>Refresh</strong> on either pane reads the recordings directory again, so a voice filled in by hand appears without a restart.</li>
+      </ul>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/missing-takes.png" alt="The Missing takes pane with a voice chosen, listing each missing moment with when it is heard, the folder its recording belongs in and an Open folder button" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Missing takes pane.</figcaption>
+    </figure>
+  </div>
+
+  <div class="split-grid flip">
+    <div class="split-text">
+      <h3>Out of sight, still listening</h3>
+      <p>
+        The Settings pane holds the journal directory with its Browse button; it is found under your own
+        profile until you choose one. Tick Start it when I sign in and signing in to Windows starts
+        Bridge Talk hidden in the notification area.
+      </p>
+      <p>
+        Put away, it keeps watching the game and keeps speaking. The cross on the window asks rather
+        than closes: Minimise to the notification area keeps it listening, while Quit stops it. Right
+        click its notification-area icon for the voice to speak with, Open, Mute and Quit.
+      </p>
+    </div>
+    <figure>
+      <div class="shot">
+        <img src="images/settings.png" alt="The Settings pane showing the journal directory with its Browse button and the Start it when I sign in box" loading="lazy" decoding="async">
+      </div>
+      <figcaption class="shot-caption">The Settings pane.</figcaption>
+    </figure>
+  </div>
+
+  <h3 class="subhead">Your recordings stay yours</h3>
+  <div class="features-grid">
+    <div class="feat">
+      <h3>Nothing changed, nothing removed</h3>
+      <p>Bridge Talk never changes or removes anything in the recordings directory you choose. The one
+      thing it writes there is the empty folders you ask for, through Make folders or Open folder.</p>
+    </div>
+    <div class="feat">
+      <h3>Kept through an uninstall</h3>
+      <p>Uninstalling leaves your recordings where they are. That includes the Recordings folder Bridge
+      Talk makes for itself when a voice's folders are made before any directory has been chosen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Recording a voice -->
+<div class="band" id="recording">
+  <section class="section">
+    <div class="section-label">Recording a voice</div>
+    <h2 class="section-title">A folder for every moment.<br>Any file name will do.</h2>
+    <p class="section-sub">
+      Every moment has a folder of its own inside the voice. You never have to type a moment's name:
+      Bridge Talk makes the folders for you.
+    </p>
+    <ol class="steps">
+      <li>
+        <strong>Make the folders</strong>
+        On the Cast pane, type a name for the voice and press Make folders. That voice gets a folder for
+        every moment, each already named. Where no recordings directory has been chosen yet, they are
+        made in a Recordings folder of Bridge Talk's own, which becomes the recordings directory from
+        then on.
+      </li>
+      <li>
+        <strong>Record each take</strong>
+        Use any program you like, such as <a href="https://www.audacityteam.org/">Audacity</a>, which is
+        free. Save each take as WAV, MP3, FLAC or Ogg.
+      </li>
+      <li>
+        <strong>Save it in the folder for its moment</strong>
+        Any file name will do. A folder can hold several takes; each time that moment is spoken one of
+        them is chosen at random.
+      </li>
+      <li>
+        <strong>Press Refresh</strong>
+        A voice appears on the Cast pane once one of its folders holds a recording. The Missing takes
+        pane shows what is still left to record.
+      </li>
+    </ol>
+  </section>
+</div>
+
+<!-- Setup -->
+<section class="section" id="setup">
+  <div>
+    <div class="split-text">
+      <div class="section-label">The setup program</div>
+      <h2 class="section-title" style="margin-bottom:1.25rem;">Installs for you alone.<br>No administrator prompt.</h2>
+      <p>
+        The setup program installs Bridge Talk for your own Windows account, inside your local
+        application data folder, so it never needs administrator rights. The Install screen offers a
+        Start Menu entry, a Desktop shortcut and starting Bridge Talk when you sign in.
+      </p>
+      <ul>
+        <li>Run it again at the same version to <strong>Repair</strong> or <strong>Reinstall</strong>. Repair puts the files back and changes nothing else; Reinstall writes them again with the boxes applied as they stand.</li>
+        <li>A newer setup program offers to <strong>Update</strong>; an older one offers to go back a version. Your recordings and settings are untouched either way.</li>
+        <li><strong>Uninstall</strong> removes the application, its shortcuts and its sign-in entry. Tick Also forget my settings to clear your chosen directories, the voice you cast, the theme and the volume as well. Your recordings are not touched.</li>
+        <li>Bridge Talk appears in the Windows Apps list, where Modify and Repair reopen the setup program.</li>
+        <li>If Bridge Talk is open, setup offers to close it before carrying on.</li>
+      </ul>
+      <div class="cta-row">
+        <a class="btn-primary" href="https://github.com/oernster/BridgeTalk/releases/latest">Download for Windows</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Licence -->
+<div class="band" id="licence">
+  <section class="section">
+    <div class="section-label">Licence and source</div>
+    <h2 class="section-title">Free software under GPL-3.0.</h2>
+    <p class="section-sub">
+      Bridge Talk is released under the GNU General Public License, version 3. Its source code, its
+      licence and every release are on GitHub.
+    </p>
+    <div class="cta-row">
+      <a class="btn-primary" href="https://github.com/oernster/BridgeTalk/releases/latest">Download the latest release</a>
+      <a class="btn-secondary" href="https://github.com/oernster/BridgeTalk">Source on GitHub</a>
+      <a class="btn-secondary" href="https://github.com/oernster/BridgeTalk/blob/main/LICENSE">Read the licence</a>
+    </div>
+  </section>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <a class="footer-brand" href="./">
+        <img src="application-icon.png" alt="Bridge Talk">
+        <span>Bridge Talk</span>
+      </a>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#about">What it is</a>
+        <a href="#features">What it does</a>
+        <a href="#recording">Recording</a>
+        <a href="#setup">Setup</a>
+        <a href="https://github.com/oernster/BridgeTalk/releases">Releases</a>
+        <a href="https://github.com/oernster/BridgeTalk">Source</a>
+        <a href="https://github.com/oernster/BridgeTalk/blob/main/LICENSE">Licence</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>A ship's voice for Elite Dangerous, speaking with recordings you supply.
+      Version <!--VERSION-->1.0.0<!--/VERSION-->, released under GPL-3.0.
+      &copy; Oliver Ernster</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

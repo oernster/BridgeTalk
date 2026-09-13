@@ -288,21 +288,24 @@ func TestAChoiceIsRememberedAndAFailureToRememberIsReported(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 
 	// With no store there is nowhere to remember, which is not a failure.
-	if err := app.remember(); err != nil {
+	if err := app.rememberLibraryRoot("recordings"); err != nil {
 		t.Fatalf("remembering with no store: %v", err)
 	}
 
 	store := &fakeSettings{}
 	app.settings = store
-	if err := app.remember(); err != nil {
-		t.Fatalf("remembering: %v", err)
+	if err := app.rememberLibraryRoot("recordings"); err != nil {
+		t.Fatalf("remembering the recordings directory: %v", err)
 	}
-	if store.held.JournalDir != "journal-dir" || store.held.LibraryRoot != app.libraryRoot {
-		t.Fatalf("remembered %+v, want both chosen directories", store.held)
+	if err := app.rememberJournalDir("journal"); err != nil {
+		t.Fatalf("remembering the journal directory: %v", err)
+	}
+	if store.held.LibraryRoot != "recordings" || store.held.JournalDir != "journal" {
+		t.Fatalf("remembered %+v, want each directory kept by its own writer", store.held)
 	}
 
 	store.failure = errors.New("the disk is full")
-	err := app.remember()
+	err := app.rememberJournalDir("journal")
 	if err == nil {
 		t.Fatal("a failed save reported success")
 	}

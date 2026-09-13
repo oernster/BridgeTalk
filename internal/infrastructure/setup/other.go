@@ -46,6 +46,9 @@ func SetLaunchOnBoot(string, bool) error { return ErrUnsupported }
 // IsLaunchOnBoot reports no login entry off Windows.
 func IsLaunchOnBoot() bool { return false }
 
+// HasLaunchOnBootEntry reports no login entry off Windows.
+func HasLaunchOnBootEntry() bool { return false }
+
 // SystemPrefersDark reports light off Windows, so the setup window has a definite
 // starting theme everywhere.
 func SystemPrefersDark() bool { return false }

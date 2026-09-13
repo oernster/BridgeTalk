@@ -22,7 +22,6 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
-	"github.com/oernster/bridge-talk/internal/infrastructure/status"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 	"github.com/oernster/bridge-talk/internal/product"
 	"github.com/wailsapp/wails/v2"
@@ -159,14 +158,14 @@ func (s *session) voiceNamed(name string) (library.Voice, bool) {
 	return library.Voice{}, false
 }
 
-// coverageOf reports what a voice that is not the cast one could serve: the cues it
-// has recorded, the size of the table and the takes it holds. All three are what the
-// cast pane shows before the user commits to casting it.
+// coverageOf reports what a voice that is not the cast one could serve: the cues it has
+// recorded, the files it uses and the recordings present in its directory. All three are
+// what the cast pane shows before the user commits to casting it (FR-215).
 func (s *session) coverageOf(voice library.Voice) (int, int, int) {
 	catalogue := s.catalogueFor(voice)
-	covered, total := catalogue.Coverage()
-	reachable, _ := catalogue.Files()
-	return covered, total, reachable
+	covered, _ := catalogue.Coverage()
+	used, present := catalogue.Files()
+	return covered, used, present
 }
 
 // run wires everything together and hands the assembled facade to Wails.
@@ -254,29 +253,17 @@ func run() error {
 		current.tray = startTray(found, chosen.Name)
 	}
 
-	directory := preferred(*journalDir, stored.JournalDir)
-	if directory == "" {
-		if directory, err = journal.StandardLocation(); err != nil {
-			return err
-		}
-	}
-	journalSource, err := journal.NewSource(directory, systemClock{}.Now)
-	if err != nil {
-		return err
-	}
-	statusSource, err := status.NewWatcher(directory, systemClock{}.Now)
-	if err != nil {
-		return err
+	// A journal directory that cannot be watched is carried to the window rather than
+	// returned (FR-238). The window is where it can be put right, so ending the run over
+	// it left the one control that could fix it out of reach.
+	watched := openJournal(*journalDir, stored.JournalDir, journal.StandardLocation)
+	if watched.problem != "" {
+		fmt.Fprintf(os.Stderr, "warning: %s (watching nothing)\n", watched.problem)
 	}
 
 	// The facade is the reporter, so every decision reaches the front end. It is
 	// built before the first useVoice call so the very first cue is already logged.
-	app := newApp(
-		current,
-		[]ports.EventSource{journalSource, statusSource},
-		directory, statusSource.Path(), root,
-		settings,
-	)
+	app := newApp(current, watched, root, settings)
 	current.reporter = reporter{app}
 	if len(found) > 0 {
 		current.useVoice(chosen)
@@ -293,6 +280,7 @@ func run() error {
 // Started hidden, the window exists but is not shown: the tray icon summons it, which
 // is what the login entry wants. Anything else opens it as usual.
 func launch(app *App, hidden bool) error {
+	app.startedHidden = hidden
 	err := wails.Run(&options.App{
 		StartHidden:      hidden,
 		Title:            appTitle,

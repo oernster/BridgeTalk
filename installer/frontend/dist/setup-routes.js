@@ -19,7 +19,8 @@ function routeInstall(state) {
 }
 
 // routeChange serves both directions of a version change, because an update and a
-// downgrade differ only in wording and in which button is the safe one.
+// downgrade differ only in wording. Either way the change itself leads: whoever ran an
+// older setup file over a newer install did so to go back.
 function routeChange(state) {
     const goingBack = state.relation === 'older'
     $('update-title').textContent = goingBack ? 'Go back a version?' : 'Update available'
@@ -107,8 +108,11 @@ function routeUninstall(state) {
         },
     ])
     showScreen('uninstall')
+    // Cancel goes back to the screen setup opened on. Opened from the Apps list, that
+    // screen is this one, so there is nothing to go back to: setup closes and leaves the
+    // reader on the list they came from (FR-805).
     setFooter([
-        {label: 'Cancel', onClick: () => state.installed ? route(state) : backend().Quit()},
+        {label: 'Cancel', onClick: () => state.mode === 'manage' ? route(state) : backend().Quit()},
         {
             label: 'Uninstall', kind: 'danger',
             onClick: () => withAppClosed(() => run(

@@ -172,6 +172,7 @@ func (t *Tray) tooltip() string {
 	if voice == "" {
 		return t.options.Title
 	}
+	voice = t.label(voice)
 	if t.muted.Load() {
 		return fmt.Sprintf("%s: %s (muted)", t.options.Title, voice)
 	}
@@ -239,6 +240,40 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 	return ret
 }
 
+// label answers with what a voice is shown by, given the name that identifies it. A name the
+// menu does not hold is shown as it is.
+func (t *Tray) label(name string) string {
+	for _, choice := range t.options.Voices {
+		if choice.Name == name {
+			return choice.Label
+		}
+	}
+	return name
+}
+
+// menuVoice is one entry of the Voice submenu as it is drawn.
+type menuVoice struct {
+	id      uint32
+	label   string
+	checked bool
+}
+
+// voiceItems lists the Voice submenu: each voice under the label it is shown by, the cast one
+// checked by the name that identifies it (FR-210, FR-710). It is apart from showMenu so the
+// entries can be read without a menu to draw them in.
+func (t *Tray) voiceItems() []menuVoice {
+	active, _ := t.activeVoice.Load().(string)
+	items := make([]menuVoice, 0, len(t.options.Voices))
+	for index, choice := range t.options.Voices {
+		items = append(items, menuVoice{
+			id:      uint32(idVoiceBase + index),
+			label:   choice.Label,
+			checked: choice.Name == active,
+		})
+	}
+	return items
+}
+
 // showMenu builds the context menu, tracks it and dispatches what was chosen.
 func (t *Tray) showMenu() {
 	menu, _, _ := procCreatePopupMenu.Call()
@@ -248,13 +283,12 @@ func (t *Tray) showMenu() {
 	defer func() { _, _, _ = procDestroyMenu.Call(menu) }()
 
 	voices, _, _ := procCreatePopupMenu.Call()
-	active, _ := t.activeVoice.Load().(string)
-	for index, name := range t.options.Voices {
+	for _, item := range t.voiceItems() {
 		flags := uintptr(0)
-		if name == active {
+		if item.checked {
 			flags = mfChecked
 		}
-		appendMenuItem(voices, uint32(idVoiceBase+index), name, flags)
+		appendMenuItem(voices, item.id, item.label, flags)
 	}
 	if len(t.options.Voices) > 0 {
 		appendSubmenu(menu, voices, "Voice")
@@ -310,7 +344,7 @@ func (t *Tray) dispatch(chosen uint32) {
 		if index >= len(t.options.Voices) {
 			return
 		}
-		command = Command{Kind: CommandSelectVoice, Voice: t.options.Voices[index]}
+		command = Command{Kind: CommandSelectVoice, Voice: t.options.Voices[index].Name}
 	default:
 		return
 	}

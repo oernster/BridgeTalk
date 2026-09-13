@@ -227,6 +227,38 @@ func TestMutingRecordsWhatWouldHaveBeenSaidWithoutSayingIt(t *testing.T) {
 	}
 }
 
+// A firing never heard holds nothing back: with no take behind it or muted, it starts
+// neither the cooldown nor the repeat window, so the next firing that can be heard is heard
+// at once (Oliver, 2026-09-13).
+func TestAFiringNeverHeardHoldsNothingBack(t *testing.T) {
+	player := newFakePlayer()
+	log := &collector{}
+	moving := &movingClock{now: moment}
+	scheduler := services.NewScheduler(player, log, moving)
+	catalogue := newFakeCatalogue()
+	item := cueFor(t, cue.Definition{
+		ID: "Bounty", Source: "journal", Event: "Bounty", Cooldown: time.Minute,
+	})
+	service := services.NewReactionService(
+		cue.NewTable([]cue.Cue{item}), catalogue, scheduler, firstChooser{}, log, moving,
+	)
+	firing := []event.Event{journalEvent("Bounty", moving.now)}
+
+	service.HandleAll(firing)
+	catalogue.hold("Bounty", "one.mp3")
+	service.SetMuted(true)
+	service.HandleAll(firing)
+	service.SetMuted(false)
+	service.HandleAll(firing)
+
+	if len(player.played) != 1 {
+		t.Fatalf("played %v, want the one firing that could be heard", player.played)
+	}
+	if contains(log.outcomes, ports.OutcomeCooldown) || contains(log.outcomes, ports.OutcomeDuplicate) {
+		t.Errorf("outcomes = %v, want nothing held back by a firing never heard", log.outcomes)
+	}
+}
+
 func TestDescribeNamesTheVoiceAndItsCoverage(t *testing.T) {
 	service, catalogue, _, _ := wiring(t)
 	catalogue.active = "Iris"

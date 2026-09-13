@@ -48,10 +48,10 @@
   border-color: var(--ring);
 }
 
-/* A chooser with nothing to choose is quiet rather than red. It is not refusing
-   anything the reader asked for, so the danger border a disabled button wears would
-   read as a fault where there is only an absence. */
+/* A chooser with nothing to choose wears the danger ring every disabled control wears:
+   present but inert, readable at a glance, the same in every place the window has one. */
 .field select:disabled {
+  border-color: var(--danger);
   color: var(--muted);
   cursor: default;
 }

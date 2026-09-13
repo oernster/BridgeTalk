@@ -108,17 +108,37 @@ func SetLaunchOnBoot(exePath string, enabled bool) error {
 // the worst of both: the setting says yes and Windows disagrees silently. Checking the
 // file means such an entry reads as off; turning it on then rewrites it correctly.
 func IsLaunchOnBoot() bool {
+	value, present := launchEntry()
+	if !present {
+		return false
+	}
+	_, err := os.Stat(runTarget(value))
+	return err == nil
+}
+
+// HasLaunchOnBootEntry reports whether the login entry is present, whatever it names.
+//
+// Repair asks this rather than IsLaunchOnBoot. A damaged install is one whose program is
+// missing; IsLaunchOnBoot reads such an entry as off, so Repair used to put the files
+// back and then remove the entry it was meant to keep (FR-804). Repair rewrites the entry
+// over the program it has just put back, so whatever the old one named does not matter.
+func HasLaunchOnBootEntry() bool {
+	_, present := launchEntry()
+	return present
+}
+
+// launchEntry reads the login entry's value; false when there is none.
+func launchEntry() (string, bool) {
 	key, err := registry.OpenKey(registry.CURRENT_USER, runKeyPath, registry.QUERY_VALUE)
 	if err != nil {
-		return false
+		return "", false
 	}
 	defer key.Close()
 	value, _, err := key.GetStringValue(runValueName)
 	if err != nil {
-		return false
+		return "", false
 	}
-	_, err = os.Stat(runTarget(value))
-	return err == nil
+	return value, true
 }
 
 // SystemPrefersDark reports whether Windows is set to a dark app theme, which is

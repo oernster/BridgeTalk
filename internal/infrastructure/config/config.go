@@ -6,13 +6,14 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/infrastructure/tomlfile"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
@@ -47,12 +48,11 @@ func LoadCueTable(override string) (cue.Table, error) {
 		return cue.Table{}, err
 	}
 	var parsed cueFile
-	meta, err := toml.Decode(string(raw), &parsed)
-	if err != nil {
+	if err := tomlfile.Decode(raw, &parsed); err != nil {
+		if errors.Is(err, tomlfile.ErrUnknownKey) {
+			return cue.Table{}, fmt.Errorf("%w: %v", cue.ErrInvalidCue, err)
+		}
 		return cue.Table{}, fmt.Errorf("parsing cue table: %w", err)
-	}
-	if unknown := meta.Undecoded(); len(unknown) > 0 {
-		return cue.Table{}, fmt.Errorf("%w: unknown key %s", cue.ErrInvalidCue, unknown[0])
 	}
 
 	seen := make(map[string]struct{}, len(parsed.Cue))

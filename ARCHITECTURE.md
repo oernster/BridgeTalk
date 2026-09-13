@@ -19,21 +19,25 @@ exactly like one that holds.
 
 | Invariant | Enforcing test | File |
 |---|---|---|
-| Domain imports nothing from application/infrastructure/ui/wails | `TestDomainHasNoOutwardImports` | `boundary_test.go` |
+| Domain imports nothing from this module outside `internal/domain` | `TestDomainHasNoOutwardImports` | `boundary_test.go` |
 | Domain is pure: no network, filesystem, process or database package; no wall clock or global random source | `TestDomainIsPure` | `boundary_test.go` |
 | Application never imports infrastructure or wails | `TestApplicationDoesNotImportInfrastructure` | `boundary_test.go` |
 | Only the composition root wires the application services to infrastructure | `TestCompositionRootIsWhitelisted` | `boundary_test.go` |
-| No source file exceeds the module-size limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
-| No source file sits in the danger band below the limit | `TestNoFileInDangerBand` | `boundary_test.go` |
+| No source file exceeds the 400-line limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
+| No source file sits in the danger band of 381 to 400 lines | `TestNoFileInDangerBand` | `boundary_test.go` |
 | Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
 | No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
+| The Missing takes purpose line reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestThePurposeLineContrastsInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
+| The setup page applies the boxes it shows and handles the failure of every box that saves at once | `TestSetupAppliesTheBoxesItShows` | `setupchoices_test.go` |
+| The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
 | The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
-| Every cue group has a heading a commander would recognise | `TestEveryCueGroupIsNamed` | `vocabulary_test.go` |
 | Cue ids, journal events and status values stay in the cue table | `TestGameVocabularyStaysInItsHome` | `vocabulary_test.go` |
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
+| No cue id ends in a dot or a space, which Windows strips from a name | `TestNoCueIdEndsInADotOrASpace` | `vocabulary_test.go` |
+| No cue id holds an underscore, which a cue folder writes for a dot | `TestNoCueIdHoldsAnUnderscore` | `vocabulary_test.go` |
 | The wire is stated identically in the DTOs and in `api.ts` | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
 
 ## Layers
@@ -47,12 +51,16 @@ exactly like one that holds.
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
   never imports Infrastructure or the Wails runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
-  reader (`journal`), the status-flag watcher (`status`), the voice library scanner and catalogue
-  (`library`), the audio engine (`audio`), the cue table and the settings store (`config`), the Windows
-  tray (`taskbar`), keyboard focus for the web view (`window`) and the per-user install work behind the
-  setup program (`setup`). Never imported by Domain or Application.
+  reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
+  folder maker (`library`), the audio engine (`audio`), the cue table and the settings store (`config`),
+  the strict reading both TOML files share (`tomlfile`),
+  the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
+  (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
+  Domain or Application.
 - **UI**: the React front end plus a Wails facade in package `main`, which calls the Application
   services and maps what they return into the shapes in `dto.go`.
+- **Outside the layers**: `internal/product` holds the product's name and `internal/refusal` words a
+  refusal over a path. Each is a leaf that several layers read, so it belongs to none of them.
 
 ## Composition root
 
@@ -95,7 +103,7 @@ person's library. The two meet at the cue id and nowhere else.
 **The cue table, `internal/infrastructure/config/cues.toml`, embedded in the binary.** Each entry names
 a source, the journal event or status flag it listens for, an optional edge, an optional predicate over
 the payload, a priority and a cooldown in seconds. A missing priority reads as `ambient`; a missing
-cooldown lets the cue fire as often as its event does.
+cooldown leaves the cue limited by the dedupe window alone.
 
 ```toml
 [[cue]]
@@ -111,7 +119,7 @@ purpose = "When a hyperspace jump to another system begins."
 source = "journal"
 event = "StartJump"
 match = { JumpType = "Hyperspace" }
-priority = "notice"
+priority = "ambient"
 
 [[cue]]
 id = "LightsOn.Cleared"
@@ -124,12 +132,13 @@ priority = "ambient"
 
 **Every id is spelled in the game's own words.** A journal cue's id is the event name, followed by a
 field and a value where one payload field narrows it. A status cue's id is the flag name followed by
-`Set` or `Cleared`; a status value's id is its name followed by what it became (`GuiFocus.GalaxyMap`).
-The one cue with no name from the game is the application's own `Cast.Confirmed`. The first segment is
-therefore the moment the cue listens for. It is the only grouping the vocabulary needs: the audition
-pane reads it rather than keeping a second taxonomy in step. A list of cues does not: the Missing
-takes pane and the breakdown dialog show each cue under its full title alone (FR-233), since a heading
-read from the first segment would repeat the start of every title beneath it.
+`Set` or `Cleared`; a status value's id is its name followed by what it became (`GuiFocus.GalaxyMap`),
+except the fire group, whose one cue is `FireGroup.Changed`. The one cue with no name from the game is
+the application's own `Cast.Confirmed`. The first segment is therefore the moment the cue listens for.
+It is the only grouping the vocabulary needs: the audition pane reads it rather than keeping a second
+taxonomy in step. A list of cues does not: the Missing takes pane and the breakdown dialog show each cue
+under its full title alone (FR-233), since a heading read from the first segment would repeat the start
+of every title beneath it.
 
 **The words a reader sees are generated, with one exception.** `cue.ID.Title` reads an id as words:
 each segment breaks where its capitals begin a new word, a run of capitals stays an initialism and
@@ -141,19 +150,18 @@ that writes one is refused by name, as is a table writing any other key the load
 recording a take when it will be heard. Each cue therefore carries one sentence saying so, written in the
 table by hand; `cue.Cue.Purpose` returns it unchanged. The Missing takes pane shows it beneath each title
 in the secondary colour (FR-318), which `tests/structural/contrast_test.go` holds to 7 to 1 against
-every ground in both themes.
+the surface and panel grounds in both themes.
 
-**The shipped set.** The journal cues are every event present in a real commander's journals except the
-snapshots the game writes at login or when a screen opens (`Cargo`, `Loadout`, `Market` and the like)
-and two bulk listings (`Music`, `FSSSignalDiscovered`). At most one payload field narrows an event,
-taking only the plain values those journals actually carried. The status cues are every flag the status
-watcher decodes on both edges, every `GuiFocus` value, every pip distribution and the fire group.
-`config_test.go` holds every shipped id to that spelling.
+**The shipped set.** The journal cues leave out the snapshots the game writes at login or when a screen
+opens (`Cargo`, `Loadout`, `Market` and the like) and two bulk listings (`Music`,
+`FSSSignalDiscovered`). At most one payload field narrows an event. The status cues are every flag the
+status watcher decodes on both edges, every `GuiFocus` value, every pip distribution and the fire group.
+`config_test.go` holds every shipped id to that spelling: its first segment is what the cue listens for.
 
 Every table is built through `cue.New`, which refuses a definition it cannot honour: an empty id, an
 unknown source or edge, a journal or application cue naming no event, a status cue naming no flag, an
-unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below) or an id
-ending in a dot or a space (FR-222, below).
+unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below), an id
+ending in a dot or a space (FR-222, below) or an id holding an underscore (FR-230, below).
 `config.LoadCueTable` also refuses a duplicate id, a key it does not hold and a cue whose purpose is missing or blank (FR-231). It accepts a path to a table on disk, which would
 replace the shipped one whole under exactly the same rules; no flag supplies such a path today, so the
 running application always loads the embedded table and only the tests exercise the other route.
@@ -161,8 +169,8 @@ running application always loads the embedded table and only the tests exercise 
 ## The voice library
 
 A voice is one person's recordings, held in a directory under a library root the user chooses.
-`internal/infrastructure/library` finds them by scanning. There is no configuration step and no
-mapping file: the names on disk are the whole mapping.
+`internal/infrastructure/library` finds them by scanning. The names on disk are the mapping; an optional
+manifest only adds to it (below).
 
 ```
 <library root>/
@@ -176,7 +184,8 @@ mapping file: the names on disk are the whole mapping.
 ```
 
 - **Every immediate subdirectory of the root is a candidate.** It becomes a voice when at least one take
-  resolves inside it. One that resolves nothing is reported rather than offered.
+  resolves inside it. One that resolves nothing is reported rather than cast; the Missing takes pane
+  still lists it as a folder to record into.
 - **Matching is exact apart from case.** A file name matches a cue id only when the two are equal compared
   case insensitively; a folder name matches only the id with each dot written as an underscore
   (FR-229), compared the same way. `cue.ID.Folder` is the one home of that form. Nothing else is
@@ -196,15 +205,42 @@ mapping file: the names on disk are the whole mapping.
   pair of guards holds it.
 - **No cue id may hold an underscore** (FR-230). A folder writes each dot as an underscore, so an id
   already holding one could share a folder with another id. The same pair of guards holds it.
+- **A voice may hold a manifest**, `voice.toml` (FR-210). It gives the voice the name it is shown by and a
+  credit line; its `[takes]` table declares takes the names cannot reach, each a path inside the voice's
+  directory. The directory name stays the identity: settings store it, `-voice` matches it and a cast
+  sends it back, so `library.Voice` carries `Name` and `Display` apart. The file is read through
+  `tomlfile`, the one home of the rule the cue table follows too: a key the shape does not hold is
+  refused. A manifest that cannot be read or used is set aside whole and reported (FR-211); an entry
+  that cannot be used costs only itself. Nothing the manifest reaches is reported as unmatched.
 
 Every scan returns a report beside the voices, naming what it passed over with the path it was found at
 and the reason: directories and audio files whose names match no cue id, candidates that resolved
-nothing and case duplicates. The report is the difference between "nothing here" and "here is what I
-found and could not use". At startup it is written to standard error. Voices are listed by name,
-ignoring case.
+nothing, case duplicates, takes that will not play and whatever a manifest held that could not be used.
+The report is the difference between "nothing here" and "here is what I found and could not use". At
+startup it is written to standard error. Voices are listed by the name they are shown by, ignoring case.
 
-The scan reads names and writes nothing; the library is never modified. There is no cache: the scan
-runs at startup and again whenever a recordings directory is chosen on the Missing takes pane.
+The scan reads names, decodes the start of every take a name resolves to and writes nothing. A take
+that will not play is left out and named in the report (FR-204). The formats and the decoding belong
+to the audio package; the scan asks it rather than keeping a list of extensions of its own. There is
+no cache: the scan runs at startup, whenever a
+recordings directory is chosen on the Missing takes pane and whenever Refresh is pressed on the Cast or
+Missing takes pane.
+
+**Making folders.** The one write the library performs is making empty folders, on request. Make folders
+on the Cast pane checks the typed name before anything is made: it refuses a blank name, one starting or
+ending with a space, one ending in a dot, one holding a character Windows refuses in a folder name or a
+control character and a name Windows keeps for a device. It then makes the voice's folder under the
+recordings directory plus one folder for every cue id that has none, answering with how many it made. It
+adds and never replaces: a folder already there is left with its recordings, as is a file standing where
+a folder would go. Where no recordings directory is chosen yet the folders go in the default recordings
+directory, which is then kept as the recordings directory and written to the settings file (FR-228).
+Open folder on the Missing takes pane makes the one cue folder a take belongs in where it is missing,
+then opens it in File Explorer. Neither changes or removes a file.
+
+**The default recordings directory** is `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows; elsewhere it
+is `BridgeTalk/Recordings` under `$XDG_DATA_HOME`, else under `~/.local/share`. It is made when Make
+folders needs it and when the recordings Browse opens with no directory chosen, since that dialog opens
+inside it (FR-227).
 
 ## Resolving a cue
 
@@ -276,9 +312,10 @@ speaker library splits that figure between the driver and the player, leaving a 
 each side. What it costs is interruption, since a clip cutting in cannot be heard until the audio already
 handed to the device has played.
 
-**A late refill is counted.** The interval between the device's requests for samples is timed; one longer
-than half a second means the buffer emptied before it was refilled. The count and the longest wait are
-reported on the status pane, only once the count is above zero. The timing restarts with each clip.
+**A late refill is counted.** `levelled.go` times the interval between the device's requests for
+samples; one longer than half a second means the buffer emptied before it was refilled. The count and
+the longest wait are reported on the status pane, only once the count is above zero. The timing restarts
+with each clip.
 
 **An unreadable clip is skipped.** A clip that fails to open or decode plays nothing and raises no error.
 The scheduler has already logged the request as played by then, so the reaction list shows it as played.
@@ -287,16 +324,18 @@ The scheduler has already logged the request as played by then, so the reaction 
 is playing and claims the device under the one lock, so a press while a clip sounds is ignored rather than
 started over it (FR-236). The page is told when something starts as well as when it ends: from an
 audition, from the cast confirmation and from any poll that set a reaction playing. The audition buttons
-are held for as long as anything plays. Casting still ends what is playing through `Play`; so does an
-alert over a reaction of lower priority.
+are held for as long as anything plays; a pane opened part way through a clip asks whether anything is
+playing, so its buttons are held from the start. Casting still ends what is playing through `Play`; so
+does an alert over a reaction of lower priority. Muting stops the player too, as does the audition
+pane's Stop button.
 
 ## Scheduling
 
 Each event goes through one decision in `ReactionService.Handle`, in this order: resolve the cue; drop a
 repeat of the same cue inside the 900 millisecond dedupe window; drop a cue still inside its cooldown;
 ask the catalogue for takes and record the cue as unserved where there are none; drop it while muted;
-pick one take; submit it to the scheduler. Every step that ends in silence is reported to the reaction
-list.
+pick one take; submit it to the scheduler. Every step after the first that ends in silence is reported
+to the reaction list. An event no cue claims is dropped at the first step and leaves no record.
 
 The arithmetic of the cooldown and the dedupe window lives in the Domain (`selection`). The dedupe width
 and the priority policy live in the Application (`services`).
@@ -304,7 +343,9 @@ and the priority policy live in the Application (`services`).
 - **Priority**, in descending order `alert`, `notice`, `ambient`, `flavour`. The queue is kept in
   priority order; equal priorities keep their arrival order.
 - **Policy per priority.** An `alert` stops what is playing when that request is of lower priority, then
-  goes to the front of the queue; a second alert arriving while one plays waits for it. A `notice`
+  joins the queue behind any alert already waiting and ahead of everything less urgent; a second alert
+  arriving while one plays waits for it. A firing counts against its cooldown and the repeat window
+  only once the scheduler takes it. A `notice`
   queues. An `ambient` is dropped when anything is already queued. A `flavour` is dropped when anything is
   queued or playing.
 - **Cooldown per cue**, from the table. A cue that fires again inside its cooldown is dropped.
@@ -315,8 +356,9 @@ Pre-emption is a cut, not a fade. The player stops the current clip outright and
 is no mixer, no ducking and no crossfade. What the player does carry is a single gain applied per audio
 buffer, which is what makes the volume slider audible mid-clip.
 
-An audition and the acknowledgement go to the player directly. Starting either stops whatever the player
-was doing, a scheduled clip included; the cut request is not resumed.
+An audition and the acknowledgement go to the player directly. The acknowledgement starts through `Play`,
+so it stops whatever the player was doing, a scheduled clip included; the cut request is not resumed. An
+audition starts through `PlayIfIdle`, so it never stops anything.
 
 **Threading.** The audio library runs its own output thread and nothing on it touches the UI. The player
 reports completion over a channel. The facade's poll loop selects over that channel, the tray's command
@@ -325,31 +367,41 @@ page, so nothing on the audio path reaches Wails directly.
 
 ## Choosing where to read from
 
-**Recordings.** Two sources, in order: the `-library` flag, then the directory stored from Missing takes. There
+**Recordings.** At startup, two sources in order: the `-library` flag, then the stored directory. There
 is no third. Nothing is detected, because only the user knows where their recordings are. A root that is
-missing, unreadable or holds no voice leaves the application running with nothing cast; the warning goes
-to standard error and the cast pane names where it looked.
+missing or unreadable warns on standard error; a readable root holding no voice notes on standard error
+each directory the scan passed over. Either way the application runs with nothing cast and the cast pane
+names where it looked.
 
 **Journal.** The `-journal` flag, then the stored directory, then the game's saved-games directory under
-the user's profile. Startup stops with an error, before any window, where that directory cannot be found,
-holds no journal file or has no `Status.json`.
+the user's profile. Where that directory cannot be found, cannot be read, holds no journal file or has no
+`Status.json`, the window opens anyway and says why on the Status pane and the Settings pane (FR-238);
+nothing is watched until Browse takes a directory that can be.
 
 **Changing either.** The recordings directory is chosen on the Missing takes pane and the journal directory
 in Settings. Each Browse opens the system's directory chooser and takes effect at
-once. A recordings directory is rescanned and refused, with the reason drawn in the alert colour, when it
-holds no voice; otherwise the cast voice is re-cast by name where it survives the move and falls back to
-the first voice where it does not. A journal directory is refused unless both sources can be built over
-it, then both are swapped in together. Either choice writes both directories to the settings file. Each
-chooser answers with the directory it took, else with nothing where the dialog was cancelled, which is
-what lets the pane tell a cancel from a refusal.
+once; the recordings chooser opens in the chosen directory, else in the default recordings directory. A
+recordings directory is rescanned and refused, with the reason drawn in the alert colour, when it
+cannot be read or holds no voice; otherwise the cast voice is re-cast by name where it survives the move
+and falls back to the first voice where it does not. A journal directory is refused unless both sources
+can be built over it, then both are swapped in together. Either choice writes both directories to the
+settings file. Each chooser answers with the directory it took, else with nothing where the dialog was
+cancelled, which is what lets the pane tell a cancel from a refusal.
+
+**Refresh.** Refresh on the Cast pane and on the Missing takes pane reads the recordings directory again
+without restarting (FR-214). It is refused where no recordings directory is chosen or the directory
+cannot be read. A scan that finds voices takes them and re-casts as a new directory does; one that finds
+none changes nothing. It writes nothing to the settings file.
 
 **The cast voice.** Casting is the one act that writes the voice's name down, so the next run opens
-speaking with it. The re-cast that follows a new recordings directory does not write it. A stored or
-flagged name that is no longer found falls back to the first voice with a warning on standard error.
+speaking with it. The re-cast that follows a new recordings directory or a Refresh does not write it. A
+name is matched case insensitively, whole or as an unambiguous prefix. A stored or flagged name that is
+no longer found falls back to the first voice with a warning on standard error.
 
 **The command line.** `-voice` names a voice for one run; `-list` prints each voice with its takes and
 the cues it covers, then exits; `-unbound` lists the cues the chosen voice cannot serve, then exits;
-`-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window.
+`-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window. `-list`
+and `-unbound` exit with an error where the recordings directory holds no voice.
 
 ## Ambient chatter: not built
 
@@ -378,15 +430,15 @@ so the close is allowed through instead of leaving a running application with no
 summon it.
 
 ```
-+----------------------------------------------------------------------+
-| File   Audio   Settings   Help                                       |
-+----------------------------------------------------------------------+
-| [Cast] [Audition] [Status] [Settings]  [Volume] [Mute] [Theme] [Guide] |
-+----------------------------------------------------------------------+
-|                                                                      |
-|   main pane: a switched view, not a stack of modal dialogs           |
-|                                                                      |
-+----------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------+
+| File   Audio   Settings   Help                                                            |
++-------------------------------------------------------------------------------------------+
+| [Cast] [Audition] [Status] [Missing takes] [Settings]   [Volume] [Mute] [Theme] [Guide]   |
++-------------------------------------------------------------------------------------------+
+|                                                                                           |
+|   main pane: a switched view, not a stack of modal dialogs                                |
+|                                                                                           |
++-------------------------------------------------------------------------------------------+
 ```
 
 The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
@@ -403,24 +455,31 @@ and the terms the source carries cannot differ; About names the licence in a sen
 
 **Status.** The cast voice, how many cues it serves out of the table, the journal directory, the status
 file, whether playback is live or muted, a line where no audio device was found and a line where the
-device has run dry. Beneath them, the reaction list: every decision with its time, its outcome and its cue,
-beside the clip played (the event where no clip was). The facade keeps the last 200. That list is how a
-cue that never speaks gets diagnosed.
+device has run dry. Beneath them, the reaction list: each decision with its time, its outcome and its cue,
+beside the clip's file name, left blank where there was none. The facade keeps the last 200. That list is
+how a cue that never speaks gets diagnosed.
 
 **Casting, not selecting.** Choosing a voice is casting a part, so each row names the act it offers:
 "Cast Iris"; "Grace is cast as your ship's voice" for the one already in the role. Beneath the name
 the row gives the number of recordings the voice holds that answer a cue. Every voice listed can be cast,
 because a directory that resolved no recording never becomes a voice. A button at the end of the row
-opens the breakdown dialog.
+opens the breakdown dialog. Beneath the rows, Make a voice holds a name box with Make folders and Refresh.
+
+**Missing takes.** The recordings directory row with its Browse, then a chooser offering every voice
+folder still missing a recording, empty folders included, since a voice made with Make folders holds
+nothing until its first take (FR-316). It opens on the voice already chosen, else the cast voice, else the
+first. For the voice chosen it lists each missing moment by title, its purpose beneath and the folder its
+take belongs in, with Open folder beside it.
 
 **Audition.** The cast pane says what a voice covers; the audition pane lets it be heard. Groups come
 from the cue vocabulary's own first segment, the moment in the game's own words, so no second taxonomy is
 kept in step with the cue table; a group with no takes is not offered. Each group button plays one clip
 drawn at random from the union of its cues' takes, deduplicated, so one take answering several cues is not
-weighted by them; a press can repeat the previous clip. A Stop button cuts a long clip short. The voice
-being auditioned starts as the cast one but is not tied to it: hearing a voice before committing to it is
-what an audition is for. An audition ignores the mute, which silences reactions to the game rather than
-the application, because answering a deliberate press with silence would read as a fault.
+weighted by them; a press can repeat the previous clip. A Stop button ends whatever is playing, a reaction
+to the game included. The voice being auditioned starts as the cast one but is not tied to it: hearing a
+voice before committing to it is what an audition is for. An audition ignores the mute, which silences
+reactions to the game rather than the application, because answering a deliberate press with silence
+would read as a fault.
 
 **Volume.** A slider in the nav band, from silence to the clip as recorded, in twenty steps. Perceived
 loudness is roughly logarithmic in gain, so the slider position picks a point up to six halvings below
@@ -436,9 +495,9 @@ output is committed, so a clone needs neither Python nor Pillow to build the app
 
 `assets/application-icon.png` is the whole identity. The same script turns it into a multi-size `.ico`
 beside it, a copy for the About crest and the setup page's header mark, alongside the setup page's two
-theme icons. `build.ps1` refuses to start without the `.png` and `.ico`, then copies both onto the
-application and onto the setup program. The shortcuts point their icon at the executable and the tray
-loads its icon out of it.
+theme icons. `build.ps1` stops before building where the `.png` or the `.ico` is missing, then copies both
+onto the application and onto the setup program. The shortcuts point their icon at the executable and the
+tray loads its icon out of it.
 
 The icons are drawn large, which leaves no room for a label beside each one, so the buttons carry the
 artwork alone and the name arrives on hover or focus as a tooltip drawn by the stylesheet from the
@@ -449,7 +508,8 @@ tooltip being seen.
 are enabled, not hidden from assistive technology and actually rendered; the nav button for the pane
 already open stays a stop. Tab and Right step forward; Shift+Tab and Left step back; both wrap. Text
 fields keep their own arrows and leave the ring by Tab; the volume slider gives Left and Right to the
-ring and keeps Up and Down. A scrolling region joins the ring only while it overflows. The reaction list
+ring and keeps Up and Down. A drop-down list opens on Down; Up and Down never change its value with the
+list shut. A scrolling region joins the ring only while it overflows. The reaction list
 is a single stop whose rows are walked with Up and Down. A menu title opens on Down, Enter or Space;
 Up and Down walk its items; Escape closes it back to the title. The main window starts neutral with
 nothing focused and no menu open; every dialog opens focused on its first enabled control and Escape
@@ -510,7 +570,7 @@ wanted to touch, which is a failure mode this design removes rather than manages
 The left button asks for the window on a single click and on a double; the right button opens the menu:
 a Voice submenu, Open, Mute and Quit. The tooltip names the cast voice and says when it is muted. The
 Voice submenu lists the voices found at startup; it is not rebuilt when a new recordings directory is
-chosen.
+chosen or Refresh finds more.
 
 The window comes back centred and on the cast pane, whatever pane it was left on. Centred, because a
 window put away for hours may return to a different arrangement of screens and the middle is the one
@@ -537,8 +597,8 @@ directory, the version comparison, the registry writes, the shortcut handling an
 portable half carries unit tests; the Windows half is behind a build tag with no-op stubs beside it, so
 the package builds and vets on every platform, while its own tests run only on Windows.
 `installer/app.go` is the facade over it and owns the sequencing: the order of the install and uninstall
-steps and their progress figures, the name of the uninstaller copy and the `-uninstall` argument. It has
-no tests of its own.
+steps and their progress figures, the name of the uninstaller copy and reading the `-uninstall`
+argument. It has no tests of its own.
 
 **The setup page names nothing.** The setup front end is hand written with no build step, so nothing
 compiles it and nothing type checks it. The product's name arrives on the state the page is already
@@ -564,10 +624,12 @@ exists and how the payload's version compares with the one recorded there.
 
 Repair and reinstall are genuinely different acts rather than two words for one. Repair writes the files
 again and leaves the shortcuts and the login entry as they stand; reinstall writes them again with the
-choices a fresh install makes, both shortcuts present and the login entry off. Both act on one press and
-both run the same single install path, which is what keeps them from drifting apart. The boxes on the
-manage screen act the moment they change. Every screen that writes files ends with a box, ticked by
-default, that starts the application and closes setup once the work succeeds.
+manage screen's boxes applied as they stand, never a set of choices of its own (FR-235). Both act on one
+press and both run the same single install path, which is what keeps them from drifting apart. The boxes
+on the manage screen act the moment they change; a box whose change fails is put back and the error is
+shown. On the install screen both shortcut boxes start ticked; on the update screen they show the
+shortcuts the machine has. Every screen that writes files ends with a box, ticked by default, that starts
+the application and closes setup once the work succeeds.
 
 Everything is per user, so no step needs administrator rights: the files under
 `%LOCALAPPDATA%\Programs\BridgeTalk`, the Start Menu shortcut under `%APPDATA%`, the Desktop
@@ -577,9 +639,11 @@ rather than leaving a stale one behind. Setup copies itself into the install dir
 `uninstall.exe` and registers that copy as the uninstaller and as the Modify target, with `NoModify` and
 `NoRepair` both zero.
 
-Uninstall removes the shortcuts, the login entry and the install record, optionally the web view's
-folder under `%APPDATA%`, then hands the install directory to a detached shell that deletes it once setup
-has exited. It does not remove the settings file.
+Uninstall removes the shortcuts, the login entry and the install record, then hands the install directory
+to a detached shell that deletes it once setup has exited. Its one box, Also forget my settings, is
+unticked by default; ticked, it also removes the web view's folder under `%APPDATA%`, which holds the
+theme and the volume, plus the settings file and its working file, then the settings directory where
+that leaves it empty. The recordings are never touched, the default recordings directory included.
 
 An install or an uninstall refuses to run while the application is open, because writing over a locked
 executable fails part way and leaves a half-written install. The setup window offers to close it instead.
@@ -596,8 +660,9 @@ directory, so running setup leaves no folder beside the application's.
 | What | Where |
 |---|---|
 | Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile |
-| Recordings | `-library`, else the stored choice; no default |
-| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both; casting writes the voice |
+| Recordings | `-library`, else the stored choice; at startup nothing is detected |
+| Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
 | Cue table | embedded in the binary |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
 | Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
@@ -606,18 +671,23 @@ directory, so running setup leaves no folder beside the application's.
 | Login entry value | the quoted path plus `-hidden`, so a sign-in start waits in the tray |
 | Install record | `HKCU\...\Uninstall\BridgeTalk`, per user |
 
-Nothing is written to the game's directories or to the recordings. The game is the single writer of the
-journal; this application is one of several readers.
+Nothing is written to the game's directories. Under the recordings directory the application writes only
+the empty folders described in Making folders; it never changes or removes a file there. The game is the
+single writer of the journal; this application is one of several readers.
 
 ## Errors
 
 Errors are wrapped with context at each boundary using `%w`. One comparison is made by string: the
 journal reader tests a read error's text against `"EOF"`.
 
-- **Fatal, before any window:** a cue table that fails to load; a journal directory that cannot be found,
-  holds no journal file or has no `Status.json`.
+- **Fatal, before any window:** a cue table that fails to load.
+- **Said in the window, which opens anyway (FR-238):** a journal directory that cannot be found, cannot be
+  read, holds no journal file or has no `Status.json`, the game's usual one included where nothing was
+  chosen. `openJournal` carries the reason rather than returning it; the Status pane and the Journal
+  directory row on the Settings pane show it, standard error prints it and nothing is polled until Browse
+  takes a directory that can be watched.
 - **A warning on standard error, then carry on:** no audio device, which runs silent and says so on the
-  status pane; no tray; a recordings root that is missing, unreadable or empty; a voice name that is not
+  status pane; no tray; a recordings root that is missing or unreadable; a voice name that is not
   found; the scan report.
 - **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
   tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a clip that
@@ -625,25 +695,30 @@ journal reader tests a read error's text against `"EOF"`.
 - **Recorded in the reaction list:** a repeat inside the dedupe window, a cue in cooldown, a cue the voice
   has no takes for and a request dropped by the mute or by the priority policy, beside what was queued and
   what played.
-- **Refused with the reason, beneath the control that was pressed:** on the Missing takes pane, a
-  recordings directory with no voice; in Settings, a journal directory the sources cannot be built over
-  and a login entry that could not be written.
+- **Refused with the reason, beneath the control that was pressed:** on the Cast pane, a voice name Make
+  folders will not use, a folder it cannot make and a Refresh with no readable recordings directory; on
+  the Missing takes pane, a recordings directory that cannot be read or holds no voice and a moment's
+  folder that cannot be made or opened; in Settings, a journal directory the sources cannot be built over
+  and a login entry that could not be written, which includes turning it on from a copy running under the
+  temporary directory.
 
 **A refusal names its path once (FR-237).** A file-system error from the standard library already
 carries the path and the system call behind it, so wrapping one beneath words that name the path showed
 the path twice, with a call such as `GetFileAttributesEx` between. `internal/refusal` is the one home for
 the fix: `Reason` keeps only the system's reason, which the site that names the path wraps with `%w`;
-`Check` is the one statement of the rule, which the facade, setup and settings-store tests all hold their
-refusals to. It sits under `internal` beside `product` for the same reason: every infrastructure package
-and the setup program read it, so it belongs to no layer. Paths are written with `%s`, never `%q`, which
-doubles every Windows separator.
+`Check` is the one statement of the rule, which the facade, setup and config tests all hold their
+refusals to. It sits under `internal` beside `product` for the same reason: the library, config, journal,
+status and setup packages and the facade all read it, so it belongs to no layer. A refusal the window
+shows writes its path with `%s` rather than `%q`, which doubles every Windows separator.
 
 ## Quality enforcement
 
 - Structural tests enforce the layer direction, domain purity, the module-size limit and its danger
-  band, the composition-root whitelist, the documented surface and the rules that keep a value in one
-  home: colours in the theme tokens, the product name in `internal/product`, the game's own words in
-  the cue table. The invariant table above lists every one of them with the test that enforces it.
+  band, the composition-root whitelist, the declared bound surface, the wire contract and the rules that
+  keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
+  game's own words in the cue table. They also hold the shape of every cue id, the purpose line's
+  contrast and the setup page's boxes and header. The invariant table above lists every one of them with
+  the test that enforces it.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
   `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
   output is gitignored and imported by nothing, so it is not the contract and it goes stale silently.
@@ -656,10 +731,11 @@ doubles every Windows separator.
   like one.
 - `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
-  to 100% coverage, then holds each other measured package to a floor of its own: the root package 75%,
-  `audio` 80%, `setup` 61%, `taskbar` 22%, with `config`, `journal`, `library` and `status` at 100%.
-  `internal/infrastructure/window` and `installer` carry no floor, since neither has anything a test can
-  reach without the platform behind it. TESTING.md names what each shortfall is.
+  to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
+  package 75%, `audio` 80%, `audiotest` 86%, `setup` 61%, `taskbar` 22%, with `config`, `journal`, `library`, `status`,
+  `tomlfile` and `internal/refusal` at 100%. `internal/infrastructure/window` and `installer` carry no floor, since
+  neither has anything a test can reach without the platform behind it. TESTING.md names what each
+  shortfall is.
 - `build.ps1` runs `test.ps1` before it builds and offers no switch to skip it. `wails build` runs the
   front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
   error stops the build too.
@@ -672,7 +748,7 @@ doubles every Windows separator.
 |---|---|---|
 | Go with a web front end | A single binary with no runtime to ship; the same web view serves the setup program | A Python and Qt desktop stack |
 | Pure-Go audio, cgo disabled | No system codec, no external process | A system media framework; a bundled transcoder, too heavy for the job |
-| The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no configuration step | A mapping file per voice, kept in step by hand |
+| The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no mapping file | A mapping file per voice, kept in step by hand |
 | One cue plays one file | Every recording answers exactly one moment | Several files played in turn for one moment |
 | No fallback chain | A wrong line delivered confidently is worse than silence | Substituting another cue's take |
 | No cue id ends in digits | The flat form reads a trailing dot and digits as a take number | Letting a file name carry two meanings |

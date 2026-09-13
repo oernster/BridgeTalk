@@ -123,6 +123,22 @@ describe('the settings pane', () => {
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false)
   })
 
+  // FR-238: startup could not watch the directory the row names, so the row says why
+  // before anything is pressed; a press that takes a directory answers in its place.
+  it('carries why startup could not watch the directory until a press answers', async () => {
+    const problem = 'reading the journal directory C:\\Nowhere: cannot be found'
+    chooseJournalDir.mockResolvedValue('C:\\Journal')
+    render(<SettingsPane state={{ journalDir: 'C:\\Nowhere', journalProblem: problem } as never} />)
+
+    const said = screen.getByRole('alert')
+    expect(said.textContent).toBe(problem)
+    expect(said.previousElementSibling?.textContent).toContain('Journal directory')
+
+    browse()
+    expect((await screen.findByRole('status')).textContent).toBe('The journal directory was changed.')
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
   it('clears what the last press said before the next one answers', async () => {
     chooseJournalDir.mockRejectedValue('reading C:\\Nowhere: no such directory')
     render(<SettingsPane state={null} />)

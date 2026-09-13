@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import type { About, State } from './api'
 import { guideSections } from './guideContent'
+import { watching } from './testState'
 
 const about = vi.fn<() => Promise<About | null>>()
 const state = vi.fn<() => Promise<State | null>>()
@@ -55,20 +56,6 @@ const named: About = {
   credits: [],
 }
 
-const watching: State = {
-  voice: 'Grace',
-  bound: 40,
-  total: 60,
-  muted: false,
-  silent: false,
-  journalDir: 'D:/Journals',
-  statusPath: 'D:/Journals/Status.json',
-  libraryRoot: 'D:/Recordings',
-  version: '9.9.9',
-  launchOnBoot: false,
-  stalls: 0,
-  worstStall: 0,
-}
 
 beforeEach(() => {
   window.localStorage.clear()

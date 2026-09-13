@@ -26,8 +26,11 @@ vi.mock('./api', () => ({
 const { CastPane } = await import('./cast')
 
 /** grace and kate are two voices as the scan found them. */
-const grace: Voice = { name: 'Grace', inUse: 1234 }
-const kate: Voice = { name: 'Kate', inUse: 40 }
+const grace: Voice = { name: 'Grace', display: 'Grace', credit: '', cues: 200, inUse: 1234, present: 1234 }
+const kate: Voice = { name: 'Kate', display: 'Kate', credit: '', cues: 12, inUse: 40, present: 41 }
+
+/** moments is how many moments there are, the same for every voice. */
+const moments = 256
 
 beforeEach(() => {
   voices.mockReset()
@@ -41,7 +44,9 @@ beforeEach(() => {
 async function show(found: Voice[], active = '') {
   voices.mockResolvedValue(found)
   const onSelect = vi.fn<(name: string) => void>()
-  render(<CastPane active={active} libraryRoot="D:/Recordings" onSelect={onSelect} />)
+  render(
+    <CastPane active={active} total={moments} libraryRoot="D:/Recordings" onSelect={onSelect} />,
+  )
   if (found.length > 0) {
     // findAllByRole, because every row carries two buttons naming the same voice:
     // the one that casts it and the mark that opens its breakdown.
@@ -51,18 +56,20 @@ async function show(found: Voice[], active = '') {
 }
 
 describe('the cast pane', () => {
-  it('counts the recordings each voice can reach', async () => {
+  // FR-215: the moments recorded out of every moment, then the recordings used out of every
+  // recording present, so a file nothing reaches shows as a shortfall.
+  it('reads both completeness figures for each voice', async () => {
     await show([grace, kate])
 
-    expect(screen.getByText('1,234 usable recordings')).toBeTruthy()
-    expect(screen.getByText('40 usable recordings')).toBeTruthy()
+    expect(screen.getByText('200 of 256 moments recorded; 1,234 of 1,234 recordings used')).toBeTruthy()
+    expect(screen.getByText('12 of 256 moments recorded; 40 of 41 recordings used')).toBeTruthy()
   })
 
   // One recording is a recording, not recordings (Oliver, 2026-09-13).
-  it('names a single usable recording in the singular', async () => {
-    await show([{ name: 'Oliver', inUse: 1 }])
+  it('names a single recording in the singular', async () => {
+    await show([{ name: 'Oliver', display: 'Oliver', credit: '', cues: 1, inUse: 1, present: 1 }])
 
-    expect(screen.getByText('1 usable recording')).toBeTruthy()
+    expect(screen.getByText('1 of 256 moments recorded; 1 of 1 recording used')).toBeTruthy()
   })
 
   // A row that could not be pressed would need a reason, which nothing on the wire can
@@ -89,6 +96,22 @@ describe('the cast pane', () => {
     }
   })
 
+  // FR-210: a voice is shown by the name its manifest gives, with the credit beneath its
+  // figures, while a cast and the breakdown still ask for it by its directory's name.
+  it('shows the name and credit a manifest gives', async () => {
+    const { onSelect } = await show([
+      { ...grace, display: 'Grace Hart', credit: 'Recorded by Grace, 2026' },
+    ])
+
+    expect(screen.getByText('Recorded by Grace, 2026')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^Cast Grace Hart/ }))
+    expect(onSelect).toHaveBeenCalledWith('Grace')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Moments Grace Hart speaks for' }))
+    await waitFor(() => expect(cueBreakdown).toHaveBeenCalledWith('Grace'))
+    expect(await screen.findByText('Moments Grace Hart has a recording for.')).toBeTruthy()
+  })
+
   it('casts the voice whose row is pressed', async () => {
     const { onSelect } = await show([grace, kate])
 
@@ -101,7 +124,7 @@ describe('the cast pane', () => {
   // useful thing it can say is exactly where it looked.
   it('says where it looked when nothing was found', async () => {
     voices.mockResolvedValue([])
-    render(<CastPane active="" libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
 
     await screen.findByText('No voices found.')
     expect(screen.getByText('D:/Recordings')).toBeTruthy()
@@ -112,14 +135,14 @@ describe('the cast pane', () => {
   // saying nothing.
   it('says nothing about an absence until the answer has arrived', () => {
     voices.mockReturnValue(new Promise(() => undefined))
-    render(<CastPane active="" libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
 
     expect(screen.queryByText('No voices found.')).toBeNull()
   })
 
   it('names the directory generically when there is not even a root', async () => {
     voices.mockResolvedValue([])
-    render(<CastPane active="" libraryRoot="" onSelect={vi.fn()} />)
+    render(<CastPane active="" total={moments} libraryRoot="" onSelect={vi.fn()} />)
 
     await screen.findByText('No voices found.')
     expect(screen.getByText('the chosen directory')).toBeTruthy()
@@ -256,7 +279,7 @@ describe('making a voice', () => {
   it('looks again and lists the voices it found', async () => {
     voices.mockResolvedValueOnce([]).mockResolvedValue([grace])
     rescan.mockResolvedValue(1)
-    render(<CastPane active="" libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
     await screen.findByText('No voices found.')
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))

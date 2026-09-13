@@ -10,13 +10,13 @@ package audio
 // device and a real clip to hear. TESTING.md names that as the gap.
 
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
 // silentPlayer builds a player as though the device had refused to open.
@@ -33,41 +33,6 @@ func waitForFinish(t *testing.T, player *Player) bool {
 	case <-time.After(2 * time.Second):
 		return false
 	}
-}
-
-// wavBytes builds the smallest real WAV file: a header the decoder accepts and a few
-// samples behind it. Writing one is cheaper than shipping a binary fixture and it
-// keeps the format the decoder is asked to read visible in the test.
-func wavBytes(t *testing.T, frames int) []byte {
-	t.Helper()
-	const (
-		channels      = 2
-		bitsPerSample = 16
-		sampleRate    = 44100
-	)
-	dataSize := frames * channels * bitsPerSample / 8
-
-	var out bytes.Buffer
-	write := func(values ...any) {
-		for _, value := range values {
-			if err := binary.Write(&out, binary.LittleEndian, value); err != nil {
-				t.Fatalf("building the wav: %v", err)
-			}
-		}
-	}
-	out.WriteString("RIFF")
-	write(uint32(36 + dataSize))
-	out.WriteString("WAVE")
-	out.WriteString("fmt ")
-	write(uint32(16), uint16(1), uint16(channels), uint32(sampleRate))
-	write(uint32(sampleRate*channels*bitsPerSample/8), uint16(channels*bitsPerSample/8))
-	write(uint16(bitsPerSample))
-	out.WriteString("data")
-	write(uint32(dataSize))
-	for index := 0; index < frames*channels; index++ {
-		write(int16(index))
-	}
-	return out.Bytes()
 }
 
 // A press must never cut short what is already sounding (FR-236), so starting only
@@ -233,7 +198,7 @@ func TestAFileWithTheRightNameAndTheWrongContentsFailsToDecode(t *testing.T) {
 func TestARealClipDecodesToAStreamAndItsFormat(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "clip.wav")
-	if err := os.WriteFile(path, wavBytes(t, 64), 0o644); err != nil {
+	if err := os.WriteFile(path, audiotest.WAV(t, 64), 0o644); err != nil {
 		t.Fatalf("planting: %v", err)
 	}
 
@@ -284,7 +249,7 @@ func TestAClipIsReadWholeBeforeItReachesTheDevice(t *testing.T) {
 	const frames = 512
 	dir := t.TempDir()
 	path := filepath.Join(dir, "line.wav")
-	if err := os.WriteFile(path, wavBytes(t, frames), 0o644); err != nil {
+	if err := os.WriteFile(path, audiotest.WAV(t, frames), 0o644); err != nil {
 		t.Fatalf("writing the clip: %v", err)
 	}
 

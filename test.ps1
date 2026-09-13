@@ -78,7 +78,7 @@ try {
 
 # The rest of the tree, each package held at the number it actually reaches.
 #
-# These are floors picked from a measurement, never from an aspiration. Four of the
+# These are floors picked from a measurement, never from an aspiration. Five of the
 # infrastructure packages reach 100%, because everything in them can be exercised over
 # a temporary directory. The four that do not need a machine to go further: audio needs
 # an output device, taskbar needs a Win32 message loop, setup needs to write to the real
@@ -92,12 +92,14 @@ try {
 $measured = [ordered]@{
     '.'                                   = 75
     './internal/infrastructure/audio'     = 80
+    './internal/infrastructure/audio/audiotest' = 86
     './internal/infrastructure/config'    = 100
     './internal/infrastructure/journal'   = 100
     './internal/infrastructure/library'   = 100
     './internal/infrastructure/setup'     = 61
     './internal/infrastructure/status'    = 100
     './internal/infrastructure/taskbar'   = 22
+    './internal/infrastructure/tomlfile'  = 100
     './internal/refusal'                  = 100
 }
 

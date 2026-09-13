@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
 	"github.com/oernster/bridge-talk/internal/infrastructure/status"
 )
@@ -24,7 +25,7 @@ func answering(app *App, chosen string, err error) {
 func journalDirFixture(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
-	writeClip(t, filepath.Join(dir, "Journal.2026-08-26T090000.01.log"))
+	writeJournal(t, dir)
 	if err := os.WriteFile(filepath.Join(dir, "Status.json"),
 		[]byte(`{"Flags":0,"Flags2":0,"GuiFocus":0,"FireGroup":0,"Pips":[4,4,4]}`),
 		0o644); err != nil {
@@ -144,116 +145,13 @@ func TestTheSpeakingVoiceIsRecastUnderANewRoot(t *testing.T) {
 
 	// A root holding nothing by that name falls back to the first voice there is.
 	other := t.TempDir()
-	writeClip(t, filepath.Join(other, "Zeta", "ShieldState_ShieldsUp_false", "z.mp3"))
+	audiotest.WriteTake(t, filepath.Join(other, "Zeta", "ShieldState_ShieldsUp_false", "z.mp3"))
 	answering(app, other, nil)
 	if _, err := app.ChooseLibraryRoot(); err != nil {
 		t.Fatalf("choosing a root holding a different voice: %v", err)
 	}
 	if app.session.active.Name != "Zeta" {
 		t.Fatalf("active voice is %q, want the fallback Zeta", app.session.active.Name)
-	}
-}
-
-// The whole point of remembering a voice: the next run opens speaking with the voice
-// that was cast rather than whichever one sorts first.
-func TestTheCastVoiceIsRemembered(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	store := &fakeSettings{}
-	app.settings = store
-
-	if err := app.SelectVoice("Beta"); err != nil {
-		t.Fatalf("casting Beta: %v", err)
-	}
-	if store.held.Voice != "Beta" {
-		t.Errorf("remembered voice is %q, want Beta", store.held.Voice)
-	}
-
-	// The full name is stored rather than whatever was typed, so a prefix cast from
-	// the command line is not written back as a prefix and left to match a different
-	// voice once another one is installed beside it.
-	if err := app.SelectVoice("Al"); err != nil {
-		t.Fatalf("casting by prefix: %v", err)
-	}
-	if store.held.Voice != "Alpha" {
-		t.Errorf("remembered voice is %q, want the full name Alpha", store.held.Voice)
-	}
-}
-
-// A cast that is refused changes nothing, so it must not overwrite the voice that is
-// still speaking with the name of one that never spoke.
-func TestARefusedCastIsNotRemembered(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	store := &fakeSettings{}
-	app.settings = store
-	if err := app.SelectVoice("Beta"); err != nil {
-		t.Fatalf("casting Beta: %v", err)
-	}
-
-	for _, name := range []string{"Bystander", "a voice nobody owns"} {
-		if err := app.SelectVoice(name); err == nil {
-			t.Fatalf("casting %q reported success", name)
-		}
-		if store.held.Voice != "Beta" {
-			t.Errorf("after refusing %q the remembered voice is %q, want Beta", name, store.held.Voice)
-		}
-	}
-}
-
-// Only a deliberate cast names a voice. A directory chosen in Settings re-casts by
-// name and falls back to whatever voice is there when the stored name is not, so
-// writing the voice from there would freeze a voice nobody picked and go on honouring
-// it every run afterwards.
-func TestChoosingADirectoryDoesNotWriteAVoiceNobodyCast(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	app.settings = &fakeSettings{}
-	answering(app, journalDirFixture(t), nil)
-
-	if _, err := app.ChooseJournalDir(); err != nil {
-		t.Fatalf("choosing a journal directory: %v", err)
-	}
-	if held := app.settings.Load(); held.Voice != "" {
-		t.Errorf("remembered voice is %q, want nothing written", held.Voice)
-	}
-
-	answering(app, libraryRootFixture(t), nil)
-	if _, err := app.ChooseLibraryRoot(); err != nil {
-		t.Fatalf("choosing a library root: %v", err)
-	}
-	if held := app.settings.Load(); held.Voice != "" {
-		t.Errorf("remembered voice is %q, want nothing written", held.Voice)
-	}
-}
-
-// A machine with nowhere to keep settings is a working application that forgets. The
-// cast still happens and is still announced; only the memory of it fails.
-func TestAVoiceThatCannotBeRememberedStillSpeaks(t *testing.T) {
-	app, _, log := fixtureApp(t)
-	app.settings = &fakeSettings{failure: errors.New("the disk is full")}
-
-	if err := app.SelectVoice("Beta"); err == nil {
-		t.Fatal("a cast that could not be remembered reported success")
-	}
-	if app.session.active.Name != "Beta" {
-		t.Errorf("active voice is %q, want Beta cast regardless", app.session.active.Name)
-	}
-	if log.countEmitted(stateEvent) == 0 {
-		t.Error("the window was never told about a cast that happened")
-	}
-}
-
-func TestAChoiceThatCannotBeRememberedIsReported(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	app.settings = &fakeSettings{failure: errors.New("the disk is full")}
-	answering(app, libraryRootFixture(t), nil)
-
-	if _, err := app.ChooseLibraryRoot(); err == nil {
-		t.Fatal("a root that could not be remembered reported success")
-	}
-
-	app.settings = &fakeSettings{failure: errors.New("the disk is full")}
-	answering(app, journalDirFixture(t), nil)
-	if _, err := app.ChooseJournalDir(); err == nil {
-		t.Fatal("a journal directory that could not be remembered reported success")
 	}
 }
 
@@ -309,7 +207,7 @@ func TestADirectoryYieldingOnlyOneSourceChangesNothing(t *testing.T) {
 	t.Run("a journal but no status file", func(t *testing.T) {
 		app, _, _ := fixtureApp(t)
 		half := t.TempDir()
-		writeClip(t, filepath.Join(half, "Journal.2026-08-26T090000.01.log"))
+		writeJournal(t, half)
 		answering(app, half, nil)
 
 		if _, err := app.ChooseJournalDir(); err == nil {

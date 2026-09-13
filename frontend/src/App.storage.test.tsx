@@ -8,6 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { State } from './api'
+import { watching } from './testState'
 
 const state = vi.fn<() => Promise<State | null>>()
 const setVolume = vi.fn<(level: number) => Promise<void>>()
@@ -40,20 +41,6 @@ vi.mock('./api', () => ({
 
 const { App } = await import('./App')
 
-const watching: State = {
-  voice: 'Grace',
-  bound: 40,
-  total: 60,
-  muted: false,
-  silent: false,
-  journalDir: 'D:/Journals',
-  statusPath: 'D:/Journals/Status.json',
-  libraryRoot: 'D:/Recordings',
-  version: '9.9.9',
-  launchOnBoot: false,
-  stalls: 0,
-  worstStall: 0,
-}
 
 beforeEach(() => {
   window.localStorage.clear()

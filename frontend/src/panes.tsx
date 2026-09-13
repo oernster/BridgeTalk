@@ -63,20 +63,25 @@ export function HomePane({ state }: { state: State | null }) {
   const onKey = (event: React.KeyboardEvent) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     event.preventDefault()
+    if (log.length === 0) return
     const delta = event.key === 'ArrowDown' ? 1 : -1
-    setRow((current) => (log.length === 0 ? 0 : (current + delta + log.length) % log.length))
+    const next = (row + delta + log.length) % log.length
+    setRow(next)
+    // The arrows are swallowed above, so the log would not scroll to the row they reach
+    // on its own; a row walked past the edge would be selected out of sight.
+    rowsRef.current?.children[next]?.scrollIntoView?.({ block: 'nearest' })
   }
 
   return (
     <>
-      <h2>Monitoring</h2>
+      <h2>Status</h2>
       <p className="lede">
         The journal and the status file are watched here; every decision is recorded
         below, including the ones that produced no sound.
       </p>
 
       <div className="cards">
-        <Card label="Cast" value={state ? `${state.voice}` : '...'} />
+        <Card label="Cast" value={state ? state.voiceDisplay : '...'} />
         {/* A shortfall is a gap in the recordings rather than a fault in the
             application; the hint says what the missing cues do and where they are
             named, so it is not read as one. */}
@@ -88,6 +93,17 @@ export function HomePane({ state }: { state: State | null }) {
         <Card label="Journal" value={state?.journalDir ?? '...'} plain />
         <Card label="Status file" value={state?.statusPath ?? '...'} plain />
       </div>
+
+      {/* FR-238: the window opens over a journal directory that cannot be watched, so
+          this is where the run says it is hearing nothing from the game. */}
+      {state?.journalProblem ? (
+        <p className="callout refused" role="alert">
+          {state.journalProblem}
+          <br />
+          Nothing the game does will be heard until another journal directory is chosen on
+          the Settings pane.
+        </p>
+      ) : null}
 
       {/* The state, not a second control. Muting is done from the band, which is on
           screen whichever pane is open; what cannot be seen there is whether an audio
@@ -173,10 +189,15 @@ export function SettingsPane({ state }: { state: State | null }) {
       <h2>Settings</h2>
       <p className="lede">Where the application reads from.</p>
 
+      {/* FR-238: until a press answers, the row carries why startup could not watch the
+          directory it names. A press's own answer takes its place. */}
       <Chooser
         label="Journal directory"
         path={state?.journalDir ?? '...'}
-        outcome={journalSaid}
+        outcome={
+          journalSaid ??
+          (state?.journalProblem ? { refused: true, text: state.journalProblem } : null)
+        }
         onBrowse={browseJournal}
       />
 

@@ -23,12 +23,25 @@ const casting = "your ship's voice"
  * the sentence it belongs to rather than carried across with the voice.
  */
 function castLabel(voice: Voice, cast: boolean): string {
-  return cast ? `${voice.name} is cast as ${casting}` : `Cast ${voice.name}`
+  return cast ? `${voice.display} is cast as ${casting}` : `Cast ${voice.display}`
 }
 
 /** counted names a number of things, in the singular where there is one. */
 function counted(count: number, one: string, many: string): string {
   return `${count.toLocaleString()} ${count === 1 ? one : many}`
+}
+
+/**
+ * figures reads a voice's two completeness figures (FR-215): the moments it has a recording
+ * for out of every moment there is, then the recordings it uses out of every recording in
+ * its folder. A complete voice reads `n of n` twice. A shortfall in the first is lines never
+ * recorded; in the second it is files present that nothing reaches.
+ */
+function figures(voice: Voice, total: number): string {
+  return (
+    `${voice.cues.toLocaleString()} of ${counted(total, 'moment', 'moments')} recorded; ` +
+    `${voice.inUse.toLocaleString()} of ${counted(voice.present, 'recording', 'recordings')} used`
+  )
 }
 
 /**
@@ -57,11 +70,13 @@ function madeText(answer: VoiceFolders): string {
  */
 function VoiceRow({
   voice,
+  total,
   cast,
   onSelect,
   onShowMoments,
 }: {
   voice: Voice
+  total: number
   cast: boolean
   onSelect: (name: string) => void
   onShowMoments: (name: string) => void
@@ -80,7 +95,15 @@ function VoiceRow({
       >
         <span className="name">{castLabel(voice, cast)}</span>
         <br />
-        <span className="meta">{counted(voice.inUse, 'usable recording', 'usable recordings')}</span>
+        <span className="meta">{figures(voice, total)}</span>
+        {/* The credit from the voice's manifest, under the figures it belongs beside
+            (FR-210); a voice with none has no line for it. */}
+        {voice.credit !== '' && (
+          <>
+            <br />
+            <span className="meta">{voice.credit}</span>
+          </>
+        )}
       </button>
       <span className="coverage">
         {/* An icon rather than words, so it reads as a control at the end of the row
@@ -92,7 +115,7 @@ function VoiceRow({
           data-stop
           data-label="Moments spoken for"
           type="button"
-          aria-label={`Moments ${voice.name} speaks for`}
+          aria-label={`Moments ${voice.display} speaks for`}
           onClick={() => onShowMoments(voice.name)}
         >
           <MomentsIcon />
@@ -111,10 +134,12 @@ function VoiceRow({
  */
 export function CastPane({
   active,
+  total,
   libraryRoot,
   onSelect,
 }: {
   active: string
+  total: number
   libraryRoot: string
   onSelect: (name: string) => void
 }) {
@@ -201,6 +226,7 @@ export function CastPane({
           <VoiceRow
             key={voice.name}
             voice={voice}
+            total={total}
             cast={voice.name === active}
             onSelect={onSelect}
             onShowMoments={setShowing}
@@ -252,6 +278,7 @@ export function CastPane({
 
       <MomentsDialog
         voice={showing}
+        shown={voices.find((each) => each.name === showing)?.display ?? showing}
         open={showing !== ''}
         onClose={() => setShowing('')}
       />

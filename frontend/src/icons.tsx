@@ -15,6 +15,7 @@ import cast from './assets/icons/cast.png'
 import darkMode from './assets/icons/dark-mode.png'
 import helpInfo from './assets/icons/help-info.png'
 import lightMode from './assets/icons/light-mode.png'
+import missingTakes from './assets/icons/missing-takes.png'
 import moments from './assets/icons/moments.png'
 import mute from './assets/icons/mute.png'
 import play from './assets/icons/play.png'
@@ -34,6 +35,7 @@ function Icon({ src, className }: { src: string; className?: string }) {
 }
 
 export const StatusIcon = () => <Icon src={status} />
+export const MissingTakesIcon = () => <Icon src={missingTakes} />
 export const SettingsIcon = () => <Icon src={settings} />
 export const CastIcon = () => <Icon src={cast} />
 export const AuditionIcon = () => <Icon src={audition} />
@@ -78,6 +80,7 @@ export const artwork = {
   darkMode,
   helpInfo,
   lightMode,
+  missingTakes,
   moments,
   mute,
   play,

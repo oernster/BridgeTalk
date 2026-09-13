@@ -46,15 +46,15 @@ const appTitle = product.Name
 // horizontal scrolling; the minimum is where the nav band stops fitting on one row.
 //
 // The minimum is measured rather than chosen; it is re-measured whenever the band
-// gains a button. The band needs 917 pixels for its seven buttons, the volume slider
+// gains a button. The band needs 1022 pixels for its eight buttons, the volume slider
 // at its full width, the gaps and its own padding, so anything under that squeezes
-// the slider or pushes the last button off the row; 940 leaves the two groups
+// the slider or pushes the last button off the row; 1045 leaves the two groups
 // visibly apart. The default grew with the icons, so a window opened at it has room
 // for the band and a useful pane rather than the band and a sliver.
 const (
 	windowWidth     = 1120
 	windowHeight    = 800
-	windowMinWidth  = 940
+	windowMinWidth  = 1045
 	windowMinHeight = 600
 )
 

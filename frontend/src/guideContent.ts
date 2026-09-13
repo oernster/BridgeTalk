@@ -46,7 +46,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The buttons along the top',
     intro:
-      'The four panes read left to right. The volume slider, Mute, the theme and this guide are held at the far end. Hover any button to see its name.',
+      'The five panes read left to right. The volume slider, Mute, the theme and this guide are held at the far end. Hover any button to see its name.',
     entries: [
       {
         icons: [artwork.cast],
@@ -58,6 +58,11 @@ export const guideSections: GuideSection[] = [
         icons: [artwork.status],
         name: 'Status',
         text: 'what is cast, where it is watching and every decision it has made, including the ones that produced no sound.',
+      },
+      {
+        icons: [artwork.missingTakes],
+        name: 'Missing takes',
+        text: 'the moments a voice has no recording for yet, each with a button that opens the folder its take belongs in. Record the take in a program such as Audacity, save it there, then press Look again.',
       },
       {
         icons: [artwork.settings],

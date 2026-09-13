@@ -46,6 +46,9 @@ vi.mock('./api', () => ({
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
+    voiceDirectories: () => Promise.resolve([]),
+    checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
+    rescan: () => Promise.resolve(0),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -140,6 +143,9 @@ describe('the shell', () => {
     band('Status')
     expect(await screen.findByRole('heading', { name: 'Monitoring' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Cast' })).toBeNull()
+
+    band('Missing takes')
+    expect(await screen.findByRole('heading', { name: 'Missing takes' })).toBeTruthy()
 
     band('Audition')
     expect(await screen.findByRole('heading', { name: 'Audition' })).toBeTruthy()

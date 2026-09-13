@@ -368,8 +368,9 @@ summon it.
 ```
 
 The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
-order. The main pane switches between Cast, Audition, Status, Settings and Guide; it opens on Cast. The
-menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition and Mute; Settings holds the
+order. The main pane switches between Cast, Audition, Status, Missing takes, Settings and Guide; it opens
+on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition, Missing takes and
+Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.
 
 Four surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the

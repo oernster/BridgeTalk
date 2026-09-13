@@ -1,8 +1,7 @@
 // The menu bar: what each menu reaches and how a menu opens and closes.
 //
 // The menus hold what is done now and then rather than every session, so what matters
-// here is that each item reaches the pane or the act it names. Missing takes lives only
-// in Audio; the band has no room for it and no need of it.
+// here is that each item reaches the pane or the act it names.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -124,9 +123,9 @@ describe('the menu bar', () => {
     expect(await screen.findByRole('heading', { name: 'Cast' })).toBeTruthy()
   })
 
-  // Filling in a voice is done now and then rather than every session, so Missing takes
-  // is reached from Audio and takes no room on the band. It opens on the voice cast.
-  it('reaches missing takes from Audio alone, on the cast voice', async () => {
+  // The menu repeats the band's way in, as it does for Cast and Audition. The pane opens
+  // on the voice already cast.
+  it('reaches missing takes from Audio, on the cast voice', async () => {
     state.mockResolvedValue({ ...watching, muted: true })
     await show()
     // The band offers to unmute only once the state has landed, which is where the pane
@@ -137,7 +136,6 @@ describe('the menu bar', () => {
 
     expect(await screen.findByRole('heading', { name: 'Missing takes' })).toBeTruthy()
     expect(await screen.findByText('Grace has recordings for 0 of 0 moments.')).toBeTruthy()
-    expect(inBand().queryByRole('button', { name: 'Missing takes' })).toBeNull()
   })
 
   // The icon is the state and the name is the action: a muted application shows a

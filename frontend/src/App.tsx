@@ -10,6 +10,7 @@ import {
   AuditionIcon,
   CastIcon,
   GuideIcon,
+  MissingTakesIcon,
   MoonIcon,
   MutedIcon,
   SettingsIcon,
@@ -145,9 +146,8 @@ export function App() {
           >
             Audition
           </button>
-          {/* A menu item rather than a band button: the band's width is measured for
-              the buttons it holds; filling in a voice's missing takes is done now and
-              then rather than every session, which is what the band is for. */}
+          {/* Also on the band, between Status and Settings; the menu repeats it as it
+              repeats Cast and Audition. */}
           <button
             className="menuitem"
             type="button"
@@ -262,6 +262,13 @@ export function App() {
           onClick={() => setPane('home')}
         >
           <StatusIcon />
+        </NavButton>
+        <NavButton
+          label="Missing takes"
+          current={pane === 'takes'}
+          onClick={() => setPane('takes')}
+        >
+          <MissingTakesIcon />
         </NavButton>
         <NavButton
           label="Settings"

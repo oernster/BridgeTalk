@@ -122,6 +122,14 @@ body {
     overflow-y: auto;
 }
 
+/* The body is a stop only while it holds more than fits (FR-808). Its ring is drawn inside
+   its edge rather than as a border: the window is sized to its tallest screen, so a border
+   would take room that screen was measured without. */
+.body:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+}
+
 .screen { display: none; }
 
 .screen.active { display: block; }

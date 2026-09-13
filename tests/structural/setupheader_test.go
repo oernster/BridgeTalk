@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-// setupPage is the setup program's hand-written page; setupScripts are the two scripts
-// that fill it.
+// setupPage is the setup program's hand-written page; setupScripts are the scripts that fill
+// it, every one of which the page loads (TestTheSetupPageLoadsEveryScript).
 var (
 	setupPage    = "index.html"
-	setupScripts = []string{"setup-shell.js", "setup-routes.js"}
+	setupScripts = []string{"setup-ring.js", "setup-shell.js", "setup-routes.js"}
 )
 
 // setupHeader captures the page's header block: everything from the header's opening tag

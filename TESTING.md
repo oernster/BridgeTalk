@@ -50,15 +50,16 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-409 test functions, which expand to 462 runs once their subtests are counted.
-Twenty of them are the structural tests in `tests/structural`, which scan the source
+421 test functions, which expand to 478 runs once their subtests are counted.
+Twenty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
 under an identity that is also a valid file name. They also hold the surface the
 facade binds, the wire contract on both sides of it, colours confined to the tokens,
 the contrast of the purpose line in both themes, every style part being read, the
-setup program applying the boxes it shows with a header that repeats no title, game
+setup program applying the boxes it shows with a header that repeats no title, the
+setup page loading every script it has with its body ringed for the keyboard, game
 vocabulary kept in its home and the shape of every cue id.
 
 ### The front end
@@ -84,7 +85,7 @@ vocabulary kept in its home and the shape of every cue id.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.2%** | **95.7%** |
 
-186 tests across 15 files, run under Vitest with jsdom.
+194 tests across 16 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -212,7 +213,8 @@ The same applies to the focus ring. Every element in jsdom reports a null
 `offsetParent`, which the ring correctly reads as "not on screen", so without help it
 finds no stops at all. `hooks.test.tsx` states the shape of the page by making
 attached elements report a parent, then asserts what the ring does with it. What is
-supplied is the page; what is asserted is the behaviour.
+supplied is the page; what is asserted is the behaviour. `setupRing.test.ts` does the
+same for the setup page, whose ring is a script of its own loaded as the page ships it.
 
 ## Running it
 

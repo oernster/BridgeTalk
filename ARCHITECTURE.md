@@ -605,11 +605,16 @@ compiles it and nothing type checks it. The product's name arrives on the state 
 given and the static markup carries none of it. `TestTheProductIsNamedOnce` reads the page's directory to
 hold it to that; the line-limit tests read the same directory for size.
 
-**It is four files.** `index.html` carries the markup, `setup.css` the palette and layout, `setup-shell.js`
-the page plumbing and `setup-routes.js` the screens. No bundler is involved: the whole directory is
-embedded already, so a stylesheet link and two script tags resolve as they stand. The scripts are classic,
-sharing one global scope in load order, which is why the state both halves read is declared in the first
-of them.
+**It is five files.** `index.html` carries the markup, `setup.css` the palette and layout, `setup-ring.js`
+the keyboard ring (FR-808), `setup-shell.js` the page plumbing and `setup-routes.js` the screens. No
+bundler is involved: the whole directory is embedded already, so a stylesheet link and three script tags
+resolve as they stand. The scripts are classic, sharing one global scope in load order, which is why the
+state the screens read is declared in `setup-shell.js` ahead of them.
+
+The ring is the window's keyboard model written again, since the page has no build step to share the
+window's code through. It has no test runner either, so `frontend/src/setupRing.test.ts` loads the script
+the page ships and presses keys against a page shaped like one of its screens;
+`TestTheSetupPageLoadsEveryScript` holds the page to loading it.
 
 Which screen opens is decided by two readings of the machine: whether the uninstall registry entry
 exists and how the payload's version compares with the one recorded there.

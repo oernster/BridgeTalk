@@ -1263,8 +1263,7 @@ never reaches the window behind, close on Escape and give focus back to what ope
 a menu, that is the menu's title. A region that scrolls shall show the ring when the keyboard lands
 on it; a disabled control shall wear the danger ring. Where the window comes up without the
 keyboard, it shall take it.
-Not fully built today: the setup program answers native Tab alone, read from its scripts on
-2026-09-13.
+The setup program answers the same keys under FR-808.
 Verified by: "steps forward on Tab and on Right, from a neutral start", "wraps at both ends", "skips
 a stop that cannot be used" and "takes focus when the dialog opens, skipping a control that cannot
 be used" in `frontend/src/hooks.test.tsx`; "walks its rows with the vertical arrows, wrapping at
@@ -1374,6 +1373,28 @@ If a step setup checks fails, then setup shall show "Something went wrong" with 
 Close button.
 Not verified by a test.
 
+**FR-808 Setup answers the keyboard**
+Priority: Must.
+The setup program shall move focus forward on Tab and on the Right arrow; it shall move focus back
+on Shift+Tab and on the Left arrow. Both directions shall wrap at the ends, passing over any control
+that is disabled or hidden. When Enter is pressed on a focused box, setup shall tick or untick it as
+Space does. While the body of a screen holds more than fits, the body shall be a stop that scrolls on
+Up and Down and shows the ring when the keyboard lands on it. Each screen shall open with focus on
+the action it leads with.
+Rationale: setup is the first thing anybody runs, so a keyboard that does nothing there reads as a
+broken product before the application is ever seen.
+Acceptance: Given the Install screen with Install focused, when Right is pressed, then focus wraps to
+the theme button; when Left is then pressed, focus returns to Install. Given Add a Desktop shortcut
+ticked and focused, when Enter is pressed, then the box is unticked.
+Note: the ring is written for this page rather than shared with the window's, since the page has no
+build step to share it through.
+Verified by: "steps forward on Tab and on Right, wrapping at the end", "steps back on Shift+Tab and
+on Left, wrapping at the start", "passes over a control that is disabled or hidden", "ticks a box on
+Enter as Space does" and "offers the body only while it holds more than fits" in
+`frontend/src/setupRing.test.ts`; `TestTheSetupPageLoadsEveryScript` and
+`TestTheSetupBodyRingsForTheKeyboard` in `tests/structural/setupring_test.go`. Not verified by a
+test: real focus in the setup window; each screen opening on the action it leads with.
+
 ---
 
 ## 10. Build order
@@ -1406,7 +1427,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-502, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-807, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-502, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, FR-616, FR-703, FR-707, FR-712, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

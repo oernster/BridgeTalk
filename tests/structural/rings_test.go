@@ -49,19 +49,40 @@ func themeRules(t *testing.T) []styleRule {
 		if err != nil {
 			t.Fatalf("reading %s: %v", entry.Name(), err)
 		}
-		text := cssComment.ReplaceAllString(string(raw), "")
-		for _, match := range cssRule.FindAllStringSubmatch(text, -1) {
-			var selectors []string
-			for _, selector := range strings.Split(match[1], ",") {
-				selectors = append(selectors, strings.Join(strings.Fields(selector), " "))
-			}
-			rules = append(rules, styleRule{file: entry.Name(), selectors: selectors, body: match[2]})
-		}
+		rules = append(rules, parseRules(entry.Name(), raw)...)
 	}
 	if len(rules) == 0 {
 		t.Fatalf("no rules found under %s, the scan is wrong", filepath.ToSlash(themeDir))
 	}
 	return rules
+}
+
+// parseRules takes one style sheet apart into its rules, so the window's parts and the setup
+// page's sheet are read by the same hand.
+func parseRules(file string, raw []byte) []styleRule {
+	var rules []styleRule
+	text := cssComment.ReplaceAllString(string(raw), "")
+	for _, match := range cssRule.FindAllStringSubmatch(text, -1) {
+		var selectors []string
+		for _, selector := range strings.Split(match[1], ",") {
+			selectors = append(selectors, strings.Join(strings.Fields(selector), " "))
+		}
+		rules = append(rules, styleRule{file: file, selectors: selectors, body: match[2]})
+	}
+	return rules
+}
+
+// ringsOnFocus reports whether a region wears the ring when the keyboard lands on it.
+func ringsOnFocus(rules []styleRule, region string) bool {
+	wanted := region + ":focus-visible"
+	for _, rule := range rules {
+		for _, selector := range rule.selectors {
+			if selector == wanted && strings.Contains(rule.body, "var(--ring)") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // TestEveryDisabledControlWearsTheDangerRing holds the third ring state. A disabled control
@@ -91,16 +112,7 @@ func TestEveryDisabledControlWearsTheDangerRing(t *testing.T) {
 func TestEveryScrollingRegionRingsForTheKeyboard(t *testing.T) {
 	rules := themeRules(t)
 	for _, region := range scrollingRegions {
-		wanted := region + ":focus-visible"
-		ringed := false
-		for _, rule := range rules {
-			for _, selector := range rule.selectors {
-				if selector == wanted && strings.Contains(rule.body, "var(--ring)") {
-					ringed = true
-				}
-			}
-		}
-		if !ringed {
+		if !ringsOnFocus(rules, region) {
 			t.Errorf("%s has no keyboard ring, so focus landing on it shows nothing", region)
 		}
 	}

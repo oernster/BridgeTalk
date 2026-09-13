@@ -41,6 +41,11 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     Licence: record('Licence', 'the terms'),
     ChooseLibraryRoot: record('ChooseLibraryRoot', 'D:/Recordings'),
     ChooseJournalDir: record('ChooseJournalDir', 'D:/Journals'),
+    MakeVoiceFolders: record('MakeVoiceFolders', { path: 'D:/Recordings/Alpha', made: 3 }),
+    Rescan: record('Rescan', 2),
+    VoiceDirectories: record('VoiceDirectories', ['Alpha', 'Beta']),
+    Checklist: record('Checklist', { voice: 'Alpha', recorded: 1, total: 3, missing: [] }),
+    OpenMomentFolder: record('OpenMomentFolder', undefined),
     SetLaunchOnBoot: record('SetLaunchOnBoot', undefined),
     MinimiseToTray: record('MinimiseToTray', undefined),
     RequestQuit: record('RequestQuit', undefined),
@@ -82,6 +87,11 @@ describe('with the window bridge present', () => {
     await api.licence()
     await api.chooseLibraryRoot()
     await api.chooseJournalDir()
+    await api.makeVoiceFolders('Alpha')
+    await api.rescan()
+    await api.voiceDirectories()
+    await api.checklist('Alpha')
+    await api.openMomentFolder('Alpha', 'Docked')
     await api.setLaunchOnBoot(true)
     await api.minimiseToTray()
     await api.requestQuit()
@@ -104,6 +114,11 @@ describe('with the window bridge present', () => {
       'Licence',
       'ChooseLibraryRoot',
       'ChooseJournalDir',
+      'MakeVoiceFolders',
+      'Rescan',
+      'VoiceDirectories',
+      'Checklist',
+      'OpenMomentFolder',
       'SetLaunchOnBoot',
       'MinimiseToTray',
       'RequestQuit',
@@ -119,6 +134,9 @@ describe('with the window bridge present', () => {
     await api.auditionGroups('Beta')
     await api.audition('Beta', 'combat')
     await api.cueBreakdown('Beta')
+    await api.makeVoiceFolders('Beta')
+    await api.checklist('Beta')
+    await api.openMomentFolder('Beta', 'Docked')
     await api.setLaunchOnBoot(false)
 
     expect(calls.map((call) => call.args)).toEqual([
@@ -128,6 +146,9 @@ describe('with the window bridge present', () => {
       ['Beta'],
       ['Beta', 'combat'],
       ['Beta'],
+      ['Beta'],
+      ['Beta'],
+      ['Beta', 'Docked'],
       [false],
     ])
   })
@@ -147,6 +168,15 @@ describe('with the window bridge present', () => {
     expect(await api.about()).toEqual({ name: 'the application' })
     expect(await api.chooseLibraryRoot()).toBe('D:/Recordings')
     expect(await api.chooseJournalDir()).toBe('D:/Journals')
+    expect(await api.makeVoiceFolders('Alpha')).toEqual({ path: 'D:/Recordings/Alpha', made: 3 })
+    expect(await api.rescan()).toBe(2)
+    expect(await api.voiceDirectories()).toEqual(['Alpha', 'Beta'])
+    expect(await api.checklist('Alpha')).toEqual({
+      voice: 'Alpha',
+      recorded: 1,
+      total: 3,
+      missing: [],
+    })
   })
 
   it('subscribes to an event and hands back the way to stop', () => {
@@ -185,9 +215,32 @@ describe('with no window bridge at all', () => {
     expect(await api.quit()).toBeUndefined()
     expect(await api.reactions()).toEqual([])
     expect(await api.about()).toBeNull()
+    expect(await api.licence()).toBeNull()
+    expect(await api.rescan()).toBe(0)
+    expect(await api.voiceDirectories()).toEqual([])
+    expect(await api.openMomentFolder('Alpha', 'Docked')).toBeUndefined()
     expect(await api.setLaunchOnBoot(true)).toBeUndefined()
     expect(await api.minimiseToTray()).toBeUndefined()
     expect(await api.requestQuit()).toBeUndefined()
+  })
+
+  // Making folders with no bridge makes none, in the shape a cancelled question has,
+  // so the Cast pane reads it as nothing done rather than as a folder at an empty path.
+  it('answers making folders with nothing made', async () => {
+    removeBridge()
+    expect(await api.makeVoiceFolders('Alpha')).toEqual({ path: '', made: 0 })
+  })
+
+  // The checklist answers for the voice that was asked about, as the breakdown does, so
+  // the Record pane's count still names a voice.
+  it('answers the checklist for the voice that was asked about', async () => {
+    removeBridge()
+    expect(await api.checklist('Alpha')).toEqual({
+      voice: 'Alpha',
+      recorded: 0,
+      total: 0,
+      missing: [],
+    })
   })
 
   // The volume falls back to full rather than to zero. A slider that opened at

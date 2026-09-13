@@ -46,6 +46,11 @@ vi.mock('./api', () => ({
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
+    // Two folders with the cast voice second, so a pane that ignored the cast and fell
+    // back to the first folder would name the wrong voice.
+    voiceDirectories: () => Promise.resolve(['Hugo', 'Grace']),
+    checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
+    rescan: () => Promise.resolve(0),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -218,6 +223,22 @@ describe('the menu bar', () => {
     expect(await screen.findByRole('heading', { name: 'Cast' })).toBeTruthy()
   })
 
+  // Recording is done now and then rather than every session, so it is reached from
+  // Audio and takes no room on the band. The pane opens on the voice already cast.
+  it('reaches the record pane from Audio alone, on the cast voice', async () => {
+    state.mockResolvedValue({ ...watching, muted: true })
+    await show()
+    // The band offers to unmute only once the state has landed, which is where the pane
+    // reads its cast from; opening it sooner would test the order the promises settle in.
+    await waitFor(() => expect(inBand().getByRole('button', { name: 'Unmute' })).toBeTruthy())
+
+    menuItem('Audio', 'Record')
+
+    expect(await screen.findByRole('heading', { name: 'Record' })).toBeTruthy()
+    expect(await screen.findByText('Grace has recordings for 0 of 0 moments.')).toBeTruthy()
+    expect(inBand().queryByRole('button', { name: 'Record' })).toBeNull()
+  })
+
   // The icon is the state and the name is the action: a muted application shows a
   // silenced speaker and offers to unmute.
   it('offers the mute as the act rather than as the state', async () => {
@@ -257,6 +278,13 @@ describe('the menu bar', () => {
     )
     fireEvent.click(inMenuBar().getByRole('button', { name: 'Settings' }))
     expect(inMenuBar().getByRole('button', { name: 'Dark mode' })).toBeTruthy()
+
+    // The same item takes the window back, so it is a switch in both directions rather
+    // than a way into light mode with no way out from the menu.
+    fireEvent.click(inMenuBar().getByRole('button', { name: 'Dark mode' }))
+    await waitFor(() =>
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark'),
+    )
   })
 
   it('reaches the guide, the licence and the About dialog from Help', async () => {

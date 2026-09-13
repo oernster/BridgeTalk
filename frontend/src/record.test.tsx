@@ -5,7 +5,7 @@
 // that the button opens the folder for the moment it sits beside.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { Checklist, CueEntry } from './api'
 
 const voiceDirectories = vi.fn<() => Promise<string[]>>()
@@ -76,13 +76,18 @@ describe('the record pane', () => {
     expect(screen.getByText('StartJump.JumpType.Hyperspace')).toBeTruthy()
   })
 
-  // FR-314.
+  // FR-314. The button pressed is the second moment's, so one wired to whichever moment
+  // happens to be missing first is caught rather than passing by coincidence.
   it('opens the folder for the moment whose button was pressed', async () => {
     render(<RecordPane cast="Oliver" />)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Open the folder for Docked' }))
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Open the folder for Start jump: jump type hyperspace',
+      }),
+    )
 
-    expect(openMomentFolder).toHaveBeenCalledWith('Oliver', 'Docked')
+    expect(openMomentFolder).toHaveBeenCalledWith('Oliver', 'StartJump.JumpType.Hyperspace')
   })
 
   // FR-315.
@@ -104,6 +109,71 @@ describe('the record pane', () => {
     fireEvent.change(chooser, { target: { value: 'Grace' } })
 
     expect(await screen.findByText('Grace has recordings for 1 of 3 moments.')).toBeTruthy()
+  })
+
+  // A look reads the folders again; it must not move the reader off the voice they chose
+  // back to the cast voice. The folders answer is held until the test releases it, so the
+  // assertion runs after the look has landed rather than before.
+  it('keeps the voice chosen across a look', async () => {
+    render(<RecordPane cast="Oliver" />)
+    const chooser = (await screen.findByRole('option', { name: 'Grace' })).closest(
+      'select',
+    ) as HTMLSelectElement
+    fireEvent.change(chooser, { target: { value: 'Grace' } })
+    await screen.findByText('Grace has recordings for 1 of 3 moments.')
+    let release: (found: string[]) => void = () => undefined
+    voiceDirectories.mockReturnValueOnce(
+      new Promise((resolve) => {
+        release = resolve
+      }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+    await waitFor(() => expect(voiceDirectories).toHaveBeenCalledTimes(2))
+    await act(async () => release(['Grace', 'Oliver']))
+
+    expect(chooser.value).toBe('Grace')
+    expect(checklist).toHaveBeenLastCalledWith('Grace')
+  })
+
+  it('draws voice folders that could not be read as a refusal', async () => {
+    voiceDirectories.mockRejectedValue('the recordings directory could not be read')
+    render(<RecordPane cast="Oliver" />)
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/directory could not be read/)
+  })
+
+  it('draws a checklist that could not be read as a refusal', async () => {
+    checklist.mockRejectedValue('that voice folder could not be read')
+    render(<RecordPane cast="Oliver" />)
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/folder could not be read/)
+  })
+
+  // A refusal belongs to the attempt that met it, so the next attempt takes it down
+  // rather than leaving an old reason on screen beside a list that has since loaded.
+  it('takes a refusal down when the next look begins', async () => {
+    checklist.mockRejectedValueOnce('that voice folder could not be read')
+    render(<RecordPane cast="Oliver" />)
+    await screen.findByRole('alert')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+
+    expect(await screen.findByText('Oliver has recordings for 1 of 3 moments.')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('takes a refusal down when the next open begins', async () => {
+    openMomentFolder.mockRejectedValueOnce('that folder could not be made')
+    render(<RecordPane cast="Oliver" />)
+    const button = await screen.findByRole('button', { name: 'Open the folder for Docked' })
+    fireEvent.click(button)
+    await screen.findByRole('alert')
+
+    fireEvent.click(button)
+
+    await waitFor(() => expect(openMomentFolder).toHaveBeenCalledTimes(2))
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('says so when every moment has a recording', async () => {

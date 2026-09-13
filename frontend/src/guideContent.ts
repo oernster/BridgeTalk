@@ -62,7 +62,7 @@ export const guideSections: GuideSection[] = [
       {
         icons: [artwork.missingTakes],
         name: 'Missing takes',
-        text: 'where your recordings are, then the moments a voice has no recording for yet, each with a button that opens the folder its take belongs in. Record the take in a program such as Audacity, save it there, then press Look again.',
+        text: 'where your recordings are, then every voice still missing a recording. For the one chosen it lists each missing moment with the folder its audio file belongs in and a button that opens that folder. Record the take in a program such as Audacity, save it there, then press Look again.',
       },
       {
         icons: [artwork.settings],
@@ -143,7 +143,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Record in a program built for it.',
-        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Missing takes pane, under Audio, lists the moments a voice has no recording for yet; Open folder beside one opens the folder its take belongs in, ready for the take to be saved there under any name.',
+        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Missing takes pane lists every voice still missing a recording. For the one chosen it shows each missing moment with the folder its audio file belongs in; Open folder beside one opens that folder, ready for the take to be saved there under any name.',
       },
       {
         title: 'Each moment plays one recording.',

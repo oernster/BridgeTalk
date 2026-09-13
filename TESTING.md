@@ -70,12 +70,12 @@ that the product is named in exactly one place.
 | `guide.tsx` | 100% | 89.5% |
 | `moments.tsx` | 100% | 94.1% |
 | `panes.tsx` | 100% | 94.9% |
-| `App.tsx` | 100% | 97.4% |
+| `App.tsx` | 100% | 97.3% |
 | `dialogs.tsx` | 99.2% | 64.5% |
 | `main.tsx` | 0% | 0% |
-| **all files** | **99.2%** | **95.5%** |
+| **all files** | **99.2%** | **95.6%** |
 
-172 tests across 15 files, run under Vitest with jsdom.
+173 tests across 15 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being wrong.
 `missingTakes.tsx` read 100% while six of its behaviours could be broken with every test still

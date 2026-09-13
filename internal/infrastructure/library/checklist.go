@@ -19,7 +19,7 @@ import (
 var ErrUnknownCue = errors.New("no moment by that id")
 
 // VoiceDirs lists every folder directly inside root by name: every voice folder, whether
-// or not it holds a take yet (FR-312). Files beside them are not voices. os.ReadDir
+// or not it holds a take yet (FR-316). Files beside them are not voices. os.ReadDir
 // answers sorted by name, which is the order the page shows them in.
 func VoiceDirs(root string) ([]string, error) {
 	if root == "" {

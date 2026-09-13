@@ -86,6 +86,8 @@ export interface Checklist {
   recorded: number
   total: number
   missing: CueEntry[]
+  /** The voice folder's full path, ending in the separator: a moment's folder is this plus its id. */
+  folder: string
 }
 
 /** VoiceFolders reports what making a voice's folders did; an empty path is a cancel. */
@@ -202,7 +204,7 @@ export const api = {
   /** What one voice folder still has no recording for, with its progress. */
   checklist: (voice: string): Promise<Checklist> =>
     bridge()?.Checklist(voice) ??
-    Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
+    Promise.resolve({ voice, recorded: 0, total: 0, missing: [], folder: '' }),
 
   /**
    * Opens the folder a take for one moment belongs in, making it where it is missing. It

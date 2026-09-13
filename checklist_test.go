@@ -14,7 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
-// FR-312: a folder with nothing in it yet is offered beside the voices.
+// FR-316: a folder with nothing in it yet is among the folders the pane chooses from.
 func TestEveryVoiceFolderIsOfferedRecordedOrNot(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	if err := os.MkdirAll(filepath.Join(app.libraryRoot, "Dora"), 0o755); err != nil {
@@ -45,6 +45,11 @@ func TestTheChecklistCountsWhatIsRecorded(t *testing.T) {
 	}
 	if len(list.Missing) != 1 || list.Missing[0].ID != "zz.silent" {
 		t.Fatalf("missing %v, want the one moment nobody records", list.Missing)
+	}
+	// FR-311: the voice folder ends in the separator, so folder plus id is a moment's folder.
+	wantFolder := filepath.Join(app.libraryRoot, "Alpha") + string(filepath.Separator)
+	if list.Folder != wantFolder {
+		t.Fatalf("folder %q, want %q", list.Folder, wantFolder)
 	}
 	if _, err := app.Checklist("Nobody"); err == nil {
 		t.Fatal("a voice folder that is not there was listed")

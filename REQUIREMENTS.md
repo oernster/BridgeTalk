@@ -509,25 +509,50 @@ with NFR-C-301 to NFR-C-304. Oliver withdrew it in favour of recording in a dedi
 program, which already records WAV and can trim a take or even out its level, where a
 bare recorder here would do neither. Those identifiers are retired and are not reused.
 
+**FR-312 withdrawn on 2026-09-13.** It offered every voice folder, recorded or not. Oliver ruled
+the same day that the chooser is for what still needs recording, so a complete voice has no place in
+it; FR-316 and FR-317 replace it. FR-312 is retired and is not reused.
+
 **FR-311 List what a voice is missing**
 Priority: Must.
 When the user chooses a voice folder on the Missing takes pane, the application shall list
 every cue that voice has no take for, grouped under each cue's heading and showing each
-cue's title and id.
+cue's title with the full path of the folder an audio file for it belongs in.
+Rationale: what a voice is missing is audio files in particular folders, so the list says
+where each one goes rather than leaving the reader to work out a path from a cue id.
 Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 256
-cues, when Oliver is chosen, then 255 cues are listed and `Docked` is not.
+cues, when Oliver is chosen, then 255 cues are listed and `Docked` is not; `Undocked` is
+shown with `<library root>\Oliver\Undocked` as its folder.
 Verified by: `TestMissingListsWhatAVoiceHasNoTakeFor` in
 `internal/infrastructure/library/checklist_test.go`; `TestTheChecklistCountsWhatIsRecorded`
 in `checklist_test.go`; `frontend/src/missingTakes.test.tsx`.
 
-**FR-312 Offer every voice folder, recorded or not**
+**FR-316 Offer only the voices still missing takes**
 Priority: Must.
-The Missing takes pane shall offer every immediate subdirectory of the library root as a voice
-folder, including one that holds no take yet.
-Rationale: a voice made under FR-223 holds no take until the first is saved, so under
-FR-209 it is not yet a voice; it is exactly the one that needs the list.
-Verified by: `TestVoiceDirsListsEveryFolderRecordedOrNot`;
-`TestEveryVoiceFolderIsOfferedRecordedOrNot`.
+The Missing takes pane shall offer in its voice chooser every immediate subdirectory of the
+library root that has no take for at least one cue, including one that holds no take at all,
+each named with how many cues it is missing. A voice folder with a take for every cue shall not
+be offered.
+Rationale: the chooser is for what still needs recording (Oliver, 2026-09-13). A voice made
+under FR-223 holds no take until the first is saved, so under FR-209 it is not yet a voice; it
+is exactly the one that needs the list.
+Acceptance: Given `Grace/` with a take for every cue, `Oliver/` with a take for `Docked` alone
+and an empty `Hugo/`, when the pane opens, then the chooser offers Hugo and Oliver, each with
+its count of missing cues; it does not offer Grace.
+Verified by: `frontend/src/missingTakes.test.tsx`; `TestVoiceDirsListsEveryFolderRecordedOrNot`
+and `TestEveryVoiceFolderIsOfferedRecordedOrNot` for the folders the pane chooses among.
+
+**FR-317 The voice chooser is always shown**
+Priority: Must.
+The Missing takes pane shall always show its voice chooser. While the library root holds no
+voice folder, the chooser shall hold one entry saying there are no voices yet and the pane shall
+say how to make one. While every voice folder has a take for every cue, the chooser shall hold
+one entry saying every voice is complete and the pane shall say so.
+Rationale: a control that is there in some states and gone in others makes the pane a different
+window each time it is opened (Oliver, 2026-09-13).
+Acceptance: Given no voice folder, the chooser shows "No voices yet" and cannot be changed.
+Given only complete voices, the chooser shows "Every voice is complete" and so does the pane.
+Verified by: `frontend/src/missingTakes.test.tsx`.
 
 **FR-313 Show progress**
 Priority: Should.
@@ -621,7 +646,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-311, FR-312, FR-314, FR-315, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

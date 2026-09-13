@@ -44,7 +44,13 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     MakeVoiceFolders: record('MakeVoiceFolders', { path: 'D:/Recordings/Alpha', made: 3 }),
     Rescan: record('Rescan', 2),
     VoiceDirectories: record('VoiceDirectories', ['Alpha', 'Beta']),
-    Checklist: record('Checklist', { voice: 'Alpha', recorded: 1, total: 3, missing: [] }),
+    Checklist: record('Checklist', {
+      voice: 'Alpha',
+      recorded: 1,
+      total: 3,
+      missing: [],
+      folder: 'D:/Recordings/Alpha/',
+    }),
     OpenMomentFolder: record('OpenMomentFolder', undefined),
     SetLaunchOnBoot: record('SetLaunchOnBoot', undefined),
     MinimiseToTray: record('MinimiseToTray', undefined),
@@ -176,6 +182,7 @@ describe('with the window bridge present', () => {
       recorded: 1,
       total: 3,
       missing: [],
+      folder: 'D:/Recordings/Alpha/',
     })
   })
 
@@ -240,6 +247,7 @@ describe('with no window bridge at all', () => {
       recorded: 0,
       total: 0,
       missing: [],
+      folder: '',
     })
   })
 

@@ -19,7 +19,7 @@ func makeDir(t *testing.T, path string) {
 	}
 }
 
-// FR-312: a folder holding nothing yet is offered beside one with takes; a file is not.
+// FR-316: a folder holding nothing yet is listed beside one with takes; a file is not.
 func TestVoiceDirsListsEveryFolderRecordedOrNot(t *testing.T) {
 	root := t.TempDir()
 	writeTake(t, filepath.Join(root, "Grace", "Docked", "a.wav"))

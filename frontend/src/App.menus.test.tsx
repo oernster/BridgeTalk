@@ -38,7 +38,15 @@ vi.mock('./api', () => ({
     // Two folders with the cast voice second, so a pane that ignored the cast and fell
     // back to the first folder would name the wrong voice.
     voiceDirectories: () => Promise.resolve(['Hugo', 'Grace']),
-    checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
+    // One moment of two still missing, so each voice is offered by the pane.
+    checklist: (voice: string) =>
+      Promise.resolve({
+        voice,
+        recorded: 1,
+        total: 2,
+        missing: [{ id: 'Docked', title: 'Docked', group: 'Docked', heading: 'Docked at a station' }],
+        folder: `D:/Recordings/${voice}/`,
+      }),
     rescan: () => Promise.resolve(0),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
@@ -135,7 +143,7 @@ describe('the menu bar', () => {
     menuItem('Audio', 'Missing takes')
 
     expect(await screen.findByRole('heading', { name: 'Missing takes' })).toBeTruthy()
-    expect(await screen.findByText('Grace has recordings for 0 of 0 moments.')).toBeTruthy()
+    expect(await screen.findByText('Grace has recordings for 1 of 2 moments.')).toBeTruthy()
     // The recordings directory is chosen here now, so the pane names the one in use.
     expect(screen.getByText('D:/Recordings')).toBeTruthy()
   })

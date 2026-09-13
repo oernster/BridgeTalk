@@ -44,13 +44,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
-| `internal/infrastructure/setup` | 69.1% | 61% | `test.ps1` |
+| `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 22% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-424 test functions, which expand to 481 runs once their subtests are counted.
+427 test functions, which expand to 486 runs once their subtests are counted.
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
@@ -160,7 +160,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (69.5% overall).**
+- **The registry writes in `internal/infrastructure/setup` (72.5% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -173,9 +173,6 @@ release is for.
   deleting the install directory through a detached shell that outlives the setup
   program. Enumerating processes is tested: `processIDs` must find the test binary by
   its own name, which is the one process a test can be certain is running.
-- **`createShortcut`.** Shells out to the Windows Script Host to write a `.lnk`. The
-  REMOVING half of `ApplyShortcuts` is tested, through `RemoveShortcuts`, against
-  redirected directories.
 
 ### It could not happen, so it is gone
 

@@ -73,5 +73,6 @@ func credits() []string {
 		"flac - Unlicense (FLAC decoding)",
 		"BurntSushi/toml - MIT (the cue table and voice manifests)",
 		"golang.org/x/sys - BSD-3-Clause (the Windows tray)",
+		"go-ole - MIT (writing the Start Menu and Desktop shortcuts)",
 	}
 }

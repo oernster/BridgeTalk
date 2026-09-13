@@ -1328,12 +1328,15 @@ Priority: Must.
 When Install, Update, Go back or Reinstall is confirmed, setup shall write the application's files
 under `%LOCALAPPDATA%\Programs\BridgeTalk`, place a copy of itself there as `uninstall.exe` and
 record the application in the Apps list. It shall then apply the boxes as they stand (FR-235). Where
-the box to start the application is ticked, setup shall start it and close. A file an earlier
-version had that this one does not is left in place.
+the box to start the application is ticked, setup shall start it and close. Each shortcut setup writes
+shall name the program, its icon and its working directory exactly as those paths are spelled,
+whatever characters they hold. A file an earlier version had that this one does not is left in place.
 Verified by: `TestExtractZipWritesEveryEntry` and `TestTheUninstallEntryNamesTheRealPath` in
 `internal/infrastructure/setup/setup_test.go`; `TestTheSetupProgramIsCopiedBesideTheInstall` and
 `TestTheInstallAndStateDirectoriesComeFromTheEnvironment` in
-`internal/infrastructure/setup/install_test.go`. Not verified by a test: the order of the steps; the
+`internal/infrastructure/setup/install_test.go`; `TestAShortcutKeepsEveryPathExactlyAsGiven` and
+`TestAShortcutIsWrittenOnAThreadWithCOMAlreadyRunning` in
+`internal/infrastructure/setup/shortcut_windows_test.go`. Not verified by a test: the order of the steps; the
 Apps list beyond its uninstall and modify commands; starting the application. No test drives setup's
 own facade.
 
@@ -1432,7 +1435,6 @@ headless test is how it gets tested.
 | ID | Question | Blocks | Owner |
 |---|---|---|---|
 | **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
-| **OQ-16** | Shortcut paths reach PowerShell quoted by Go's `%q`, which doubles every backslash; a `$` in a path would also be read by PowerShell. What either does to the shortcut is not measured. | FR-802, FR-804 | Claude, to measure |
 
 ---
 

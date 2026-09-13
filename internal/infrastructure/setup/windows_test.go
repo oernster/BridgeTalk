@@ -139,9 +139,29 @@ func TestTheShortcutBoxesReadEmptyWhereThereAreNoDirectories(t *testing.T) {
 	}
 }
 
+// Ticking a box places a shortcut to the installed program in that location; the location
+// whose box is unticked is left without one.
+func TestTickingAShortcutPlacesIt(t *testing.T) {
+	desktop, startMenu := redirectUserDirectories(t)
+	program := filepath.Join(t.TempDir(), ExeName)
+	if err := os.WriteFile(program, nil, 0o644); err != nil {
+		t.Fatalf("writing %q: %v", program, err)
+	}
+	workDir := filepath.Dir(program)
+
+	ApplyShortcuts(program, workDir, Shortcuts{StartMenu: true})
+
+	want := shortcutFields{target: program, icon: program + iconIndexSuffix, workDir: workDir}
+	if got := readShortcut(t, filepath.Join(startMenu, shortcutName)); got != want {
+		t.Fatalf("the Start Menu shortcut read back %+v, want %+v", got, want)
+	}
+	if _, err := os.Stat(filepath.Join(desktop, shortcutName)); err == nil {
+		t.Error("a Desktop shortcut was placed with its box unticked")
+	}
+}
+
 // Unticking a box on a reinstall has to take the shortcut away rather than leaving a
-// stale one behind; an uninstall removes both. Only the removing half is
-// exercised here: creating one shells out to the Windows Script Host.
+// stale one behind; an uninstall removes both.
 func TestUntickingAShortcutRemovesIt(t *testing.T) {
 	desktop, startMenu := redirectUserDirectories(t)
 	for _, dir := range []string{desktop, startMenu} {

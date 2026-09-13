@@ -5,7 +5,6 @@ package setup
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"syscall"
 
@@ -155,21 +154,6 @@ func SystemPrefersDark() bool {
 		return false
 	}
 	return value == 0
-}
-
-// createShortcut writes a .lnk through the Windows Script Host, which avoids
-// handling COM directly for one call.
-func createShortcut(linkPath, target, workDir string) error {
-	script := fmt.Sprintf(
-		`$s=(New-Object -ComObject WScript.Shell).CreateShortcut(%q);`+
-			`$s.TargetPath=%q;$s.IconLocation=%q;$s.WorkingDirectory=%q;$s.Save()`,
-		linkPath, target, target, workDir)
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
-	cmd.SysProcAttr = hidden()
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("creating the shortcut %s: %w: %s", linkPath, err, string(out))
-	}
-	return nil
 }
 
 // Shortcuts says which shortcuts the user asked for on the install screen.

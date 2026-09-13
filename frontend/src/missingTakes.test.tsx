@@ -27,13 +27,26 @@ vi.mock('./api', () => ({
 
 const { MissingTakesPane } = await import('./missingTakes')
 
-const docked: CueEntry = { id: 'Docked', title: 'Docked', group: 'Docked', heading: 'Docked at a station' }
-const undocked: CueEntry = { id: 'Undocked', title: 'Undocked', group: 'Undocked', heading: 'Undocked' }
+const docked: CueEntry = {
+  id: 'Docked',
+  title: 'Docked',
+  group: 'Docked',
+  heading: 'Docked at a station',
+  folder: 'Docked',
+}
+const undocked: CueEntry = {
+  id: 'Undocked',
+  title: 'Undocked',
+  group: 'Undocked',
+  heading: 'Undocked',
+  folder: 'Undocked',
+}
 const hyperspace: CueEntry = {
   id: 'StartJump.JumpType.Hyperspace',
   title: 'Start jump: jump type hyperspace',
   group: 'StartJump',
   heading: 'Start jump',
+  folder: 'StartJump_JumpType_Hyperspace',
 }
 
 /** progress builds a voice's checklist over a vocabulary of three moments. */
@@ -176,7 +189,8 @@ describe('the missing takes pane', () => {
 
     expect(await screen.findByText('Oliver has recordings for 1 of 3 moments.')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Start jump' })).toBeTruthy()
-    expect(screen.getByText('D:\\Recordings\\Oliver\\StartJump.JumpType.Hyperspace')).toBeTruthy()
+    // FR-229: the folder writes each dot of the id as an underscore.
+    expect(screen.getByText('D:\\Recordings\\Oliver\\StartJump_JumpType_Hyperspace')).toBeTruthy()
     expect(screen.queryByText('D:\\Recordings\\Oliver\\Undocked')).toBeNull()
   })
 

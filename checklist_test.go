@@ -46,6 +46,10 @@ func TestTheChecklistCountsWhatIsRecorded(t *testing.T) {
 	if len(list.Missing) != 1 || list.Missing[0].ID != "zz.silent" {
 		t.Fatalf("missing %v, want the one moment nobody records", list.Missing)
 	}
+	// FR-229: the page is sent the moment's folder name with its dot written as an underscore.
+	if list.Missing[0].Folder != "zz_silent" {
+		t.Fatalf("folder %q, want zz_silent", list.Missing[0].Folder)
+	}
 	// FR-311: the voice folder ends in the separator, so folder plus id is a moment's folder.
 	wantFolder := filepath.Join(app.libraryRoot, "Alpha") + string(filepath.Separator)
 	if list.Folder != wantFolder {

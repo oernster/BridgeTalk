@@ -71,6 +71,8 @@ export interface CueEntry {
   group: string
   /** The group in words, generated on the Go side so the page keeps no list of names. */
   heading: string
+  /** The name of the folder holding the cue's takes, dots written as underscores on the Go side. */
+  folder: string
 }
 
 /** CueBreakdown is one voice's whole relationship with the cue table. */

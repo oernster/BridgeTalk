@@ -139,7 +139,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'A recording is found by its name.',
-        text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Look again. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played.",
+        text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Look again. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name, each dot written as an underscore, holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played.",
       },
       {
         title: 'Record in a program built for it.',

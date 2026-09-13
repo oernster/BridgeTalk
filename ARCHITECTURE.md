@@ -166,10 +166,11 @@ mapping file: the names on disk are the whole mapping.
 
 - **Every immediate subdirectory of the root is a candidate.** It becomes a voice when at least one take
   resolves inside it. One that resolves nothing is reported rather than offered.
-- **Matching is exact apart from case.** A directory or file name matches a cue id only when the two
-  strings are equal compared case insensitively. Nothing is normalised, so a folder named in prose or
-  spelled with underscores for dots resolves nothing, which is what makes it safe to point the
-  application at a directory and simply see what happens.
+- **Matching is exact apart from case.** A file name matches a cue id only when the two are equal compared
+  case insensitively; a folder name matches only the id with each dot written as an underscore
+  (FR-229), compared the same way. `cue.ID.Folder` is the one home of that form. Nothing else is
+  normalised, so a folder named in prose or named with dots resolves nothing, which is what makes it
+  safe to point the application at a directory and simply see what happens.
 - **Four formats are recognised**, `.wav`, `.mp3`, `.flac` and `.ogg`, matched case insensitively.
   Every other file is ignored without a word.
 - **Nothing deeper than a cue folder is read.** A folder inside a cue folder is not a take.
@@ -182,6 +183,8 @@ mapping file: the names on disk are the whole mapping.
 - **No cue id may end in a dot or a space** (FR-222). Windows strips either from the end of a name as it is
   created, so a folder made for such an id would arrive under another name and never be found. The same
   pair of guards holds it.
+- **No cue id may hold an underscore** (FR-230). A folder writes each dot as an underscore, so an id
+  already holding one could share a folder with another id. The same pair of guards holds it.
 
 Every scan returns a report beside the voices, naming what it passed over with the path it was found at
 and the reason: directories and audio files whose names match no cue id, candidates that resolved

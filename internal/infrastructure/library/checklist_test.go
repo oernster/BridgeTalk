@@ -32,6 +32,21 @@ func TestVoiceDirsListsEveryFolderRecordedOrNot(t *testing.T) {
 	}
 }
 
+// FR-229: a moment's folder writes each dot of its id as an underscore.
+func TestAMomentFolderWritesEachDotAsAnUnderscore(t *testing.T) {
+	root := t.TempDir()
+	table := journalTable(t, "StartJump.JumpType.Hyperspace")
+	makeDir(t, filepath.Join(root, "Oliver"))
+
+	dir, err := MomentFolder(root, "Oliver", "StartJump.JumpType.Hyperspace", table)
+	if err != nil {
+		t.Fatalf("making the moment's folder: %v", err)
+	}
+	if want := filepath.Join(root, "Oliver", "StartJump_JumpType_Hyperspace"); dir != want {
+		t.Fatalf("got %q, want %q", dir, want)
+	}
+}
+
 func TestVoiceDirsNeedsARootThatCanBeRead(t *testing.T) {
 	if _, err := VoiceDirs(""); !errors.Is(err, ErrNoRoot) {
 		t.Errorf("no root: got %v", err)

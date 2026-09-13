@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 )
 
 // FR-223: one folder per cue id, each of them the folder form, so a take dropped into
@@ -28,10 +30,14 @@ func TestMakingAVoicesFoldersMakesOneForEveryCue(t *testing.T) {
 		t.Fatalf("made %d folders, want one for each of %d cues", made, table.Len())
 	}
 	for _, item := range table.All() {
-		info, err := os.Stat(filepath.Join(dir, string(item.ID())))
+		info, err := os.Stat(filepath.Join(dir, item.ID().Folder()))
 		if err != nil || !info.IsDir() {
 			t.Errorf("no folder for %s: %v", item.ID(), err)
 		}
+	}
+	// FR-229: the folder writes each dot as an underscore, so no dotted folder is made.
+	if _, err := os.Stat(filepath.Join(dir, "StartJump.JumpType.Hyperspace")); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("a dotted folder was made: %v", err)
 	}
 
 	// Empty folders are no voice yet (FR-209); one take makes it one.
@@ -42,6 +48,18 @@ func TestMakingAVoicesFoldersMakesOneForEveryCue(t *testing.T) {
 	voices, _ := scanned(t, root, table)
 	if len(voices) != 1 || voices[0].Takes != 1 {
 		t.Fatalf("got %v, want Oliver with the one take dropped in", voices)
+	}
+
+	// FR-229: a take in the underscore folder resolves; a folder named with dots is no cue's.
+	writeTake(t, filepath.Join(dir, "StartJump.JumpType.Hyperspace", "dotted.wav"))
+	writeTake(t, filepath.Join(dir, "StartJump_JumpType_Hyperspace", "take.wav"))
+	voices, _ = scanned(t, root, table)
+	if len(voices) != 1 || voices[0].Takes != 2 {
+		t.Fatalf("got %v, want the underscore folder's take counted and the dotted folder's ignored", voices)
+	}
+	want := filepath.Join(dir, "StartJump_JumpType_Hyperspace", "take.wav")
+	if clips, ok := voices[0].Lookup(cue.ID("StartJump.JumpType.Hyperspace")); !ok || len(clips) != 1 || clips[0] != want {
+		t.Fatalf("got %v, want only %s", clips, want)
 	}
 }
 

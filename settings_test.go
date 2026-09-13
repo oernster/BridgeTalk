@@ -144,7 +144,7 @@ func TestTheSpeakingVoiceIsRecastUnderANewRoot(t *testing.T) {
 
 	// A root holding nothing by that name falls back to the first voice there is.
 	other := t.TempDir()
-	writeClip(t, filepath.Join(other, "Zeta", "ShieldState.ShieldsUp.false", "z.mp3"))
+	writeClip(t, filepath.Join(other, "Zeta", "ShieldState_ShieldsUp_false", "z.mp3"))
 	answering(app, other, nil)
 	if _, err := app.ChooseLibraryRoot(); err != nil {
 		t.Fatalf("choosing a root holding a different voice: %v", err)

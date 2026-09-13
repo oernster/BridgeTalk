@@ -85,11 +85,15 @@ type AboutDTO struct {
 // the reaction log reports ids, so a silence seen there has something to match. The
 // heading is the group in words, generated beside the title so the page never keeps a
 // second list of names for the groups.
+//
+// Folder is the name of the folder that holds the cue's takes, worked out on this side so
+// the page never keeps the rule that writes a dot as an underscore (FR-229).
 type CueDTO struct {
 	ID      string `json:"id"`
 	Title   string `json:"title"`
 	Group   string `json:"group"`
 	Heading string `json:"heading"`
+	Folder  string `json:"folder"`
 }
 
 // CueBreakdownDTO is one voice's whole relationship with the cue table.

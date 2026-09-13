@@ -115,7 +115,7 @@ func makeVoiceFolders(root, name string, table cue.Table, mkdir maker) (string, 
 
 	made := 0
 	for _, item := range table.All() {
-		target := filepath.Join(dir, string(item.ID()))
+		target := filepath.Join(dir, item.ID().Folder())
 		err := mkdir(target, folderPerm)
 		if errors.Is(err, fs.ErrExist) {
 			continue

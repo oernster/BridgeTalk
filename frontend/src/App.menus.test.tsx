@@ -44,7 +44,9 @@ vi.mock('./api', () => ({
         voice,
         recorded: 1,
         total: 2,
-        missing: [{ id: 'Docked', title: 'Docked', group: 'Docked', heading: 'Docked at a station' }],
+        missing: [
+          { id: 'Docked', title: 'Docked', group: 'Docked', heading: 'Docked at a station', folder: 'Docked' },
+        ],
         folder: `D:/Recordings/${voice}/`,
       }),
     rescan: () => Promise.resolve(0),

@@ -182,6 +182,37 @@ func TestNoCueIdEndsInADotOrASpace(t *testing.T) {
 	}
 }
 
+// TestNoCueIdHoldsAnUnderscore holds FR-230.
+//
+// A cue folder's name writes each dot as an underscore (FR-229). An id already holding an
+// underscore could share a folder name with another id, so a folder could no longer be
+// read back as exactly one cue. The domain refuses such an id when a table loads; this
+// names it against the shipped table before anything has to run.
+//
+// Proved by planting such an id in the cue table and reading the exit code.
+func TestNoCueIdHoldsAnUnderscore(t *testing.T) {
+	root := repoRoot(t)
+
+	table, err := os.ReadFile(filepath.Join(root, cueTable))
+	if err != nil {
+		t.Fatalf("reading %s: %v", filepath.ToSlash(cueTable), err)
+	}
+	ids := cueID.FindAllStringSubmatch(string(table), -1)
+	if len(ids) == 0 {
+		t.Fatalf("no cue ids found in %s, the pattern is wrong", filepath.ToSlash(cueTable))
+	}
+
+	for _, match := range ids {
+		if strings.Contains(match[1], "_") {
+			t.Errorf(
+				"cue id %q holds an underscore, which a cue folder's name writes for a dot: "+
+					"two ids could share one folder (FR-230)",
+				match[1],
+			)
+		}
+	}
+}
+
 // finalDigits matches an id whose last dot separated segment is made of digits alone.
 var finalDigits = regexp.MustCompile(`(^|\.)[0-9]+$`)
 

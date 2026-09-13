@@ -63,3 +63,32 @@ func TestASpaceOrDotBeforeTheEndIsAccepted(t *testing.T) {
 		}
 	}
 }
+
+// FR-230: an id holding an underscore is refused, naming the reason.
+func TestAnIdHoldingAnUnderscoreIsRefused(t *testing.T) {
+	for _, id := range []string{"Cast_Confirmed", "_Docked", "Docked.Set_Now"} {
+		t.Run(id, func(t *testing.T) {
+			_, err := cue.New(cue.Definition{ID: id, Source: "journal", Event: "X"})
+			if !errors.Is(err, cue.ErrInvalidCue) || !strings.Contains(err.Error(), "underscore") {
+				t.Fatalf("New(%q) = %v, want ErrInvalidCue saying it holds an underscore", id, err)
+			}
+		})
+	}
+}
+
+// FR-229: a cue folder's name is the id with every dot written as an underscore.
+func TestAFolderNameWritesEachDotAsAnUnderscore(t *testing.T) {
+	cases := []struct {
+		id   cue.ID
+		want string
+	}{
+		{id: "Cast.Confirmed", want: "Cast_Confirmed"},
+		{id: "Synthesis.Name.Repair Basic", want: "Synthesis_Name_Repair Basic"},
+		{id: "Docked", want: "Docked"},
+	}
+	for _, each := range cases {
+		if got := each.id.Folder(); got != each.want {
+			t.Errorf("%q.Folder() = %q, want %q", each.id, got, each.want)
+		}
+	}
+}

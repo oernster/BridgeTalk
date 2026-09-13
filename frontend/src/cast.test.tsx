@@ -125,10 +125,17 @@ describe('the breakdown behind a row', () => {
           title: 'Start jump: jump type hyperspace',
           group: 'StartJump',
           heading: 'Start jump',
+          folder: 'StartJump_JumpType_Hyperspace',
         },
       ],
       unserved: [
-        { id: 'Disembark', title: 'Disembark', group: 'Disembark', heading: 'Disembark on foot' },
+        {
+          id: 'Disembark',
+          title: 'Disembark',
+          group: 'Disembark',
+          heading: 'Disembark on foot',
+          folder: 'Disembark',
+        },
       ],
     })
     await show([grace])

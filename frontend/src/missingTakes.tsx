@@ -163,7 +163,7 @@ export function MissingTakesPane({
                   <span className="grow">
                     {item.title}
                     <br />
-                    <span className="hint">{`${list.folder}${item.id}`}</span>
+                    <span className="hint">{`${list.folder}${item.folder}`}</span>
                   </span>
                   <button
                     className="btn"

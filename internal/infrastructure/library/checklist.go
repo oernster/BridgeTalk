@@ -70,7 +70,7 @@ func MomentFolder(root, name, id string, table cue.Table) (string, error) {
 		if string(item.ID()) != id {
 			continue
 		}
-		target := filepath.Join(dir, id)
+		target := filepath.Join(dir, item.ID().Folder())
 		if err := os.MkdirAll(target, folderPerm); err != nil {
 			return "", fmt.Errorf("making %s: %w", target, err)
 		}

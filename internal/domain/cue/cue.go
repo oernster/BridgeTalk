@@ -121,6 +121,16 @@ func endsInStrippedCharacter(id string) bool {
 	return strings.ContainsRune(strippedEndings, rune(id[len(id)-1]))
 }
 
+// folderSeparator is what a cue folder's name carries in place of each dot (FR-229).
+const folderSeparator = '_'
+
+// Folder returns the name of the folder that holds this cue's takes: the id with every dot
+// written as an underscore (FR-229). It is the one place that form is worked out. No id
+// holds an underscore (FR-230), so each folder name belongs to exactly one id.
+func (id ID) Folder() string {
+	return strings.ReplaceAll(string(id), string(groupSeparator), string(folderSeparator))
+}
+
 // New validates a definition into a Cue.
 //
 // A journal cue names an event; a status cue names a flag and may name an edge.
@@ -137,6 +147,12 @@ func New(definition Definition) (Cue, error) {
 	if endsInStrippedCharacter(definition.ID) {
 		return Cue{}, fmt.Errorf(
 			"%w: %q ends in a dot or a space, which Windows strips from a file name",
+			ErrInvalidCue, definition.ID,
+		)
+	}
+	if strings.ContainsRune(definition.ID, folderSeparator) {
+		return Cue{}, fmt.Errorf(
+			"%w: %q holds an underscore, which a cue folder's name writes in place of a dot",
 			ErrInvalidCue, definition.ID,
 		)
 	}

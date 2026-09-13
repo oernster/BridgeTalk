@@ -24,7 +24,6 @@ func TestACueReadsItsOwnIdInWords(t *testing.T) {
 		"SRVDestroyed":                  "SRV destroyed",
 		"SAASignalsFound":               "SAA signals found",
 		"Synthesis.Name.Repair Basic":   "Synthesis: name repair basic",
-		"under_score":                   "Under score",
 		"Fire2Group":                    "Fire2 group",
 	}
 	for id, want := range cases {

@@ -54,12 +54,13 @@ missing moment with the folder its audio file belongs in; Open folder beside one
 To name them by hand instead: every moment is named in the game's own words, as the journal and
 the status file spell it. A
 journal moment is the event name, followed by a field and a value where one field narrows it. A
-status moment is the flag name followed by `Set` or `Cleared`.
+status moment is the flag name followed by `Set` or `Cleared`. A folder for a moment writes each
+dot as an underscore; a file named for a moment keeps the dots.
 
 ```
 <recordings directory>/
   Alice/
-    StartJump.JumpType.Hyperspace/   a folder holding any number of takes
+    StartJump_JumpType_Hyperspace/   a folder holding any number of takes, dots written as _
       first.wav
       second.wav
   Bob/

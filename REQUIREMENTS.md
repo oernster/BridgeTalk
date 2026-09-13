@@ -154,9 +154,10 @@ schema in section 3 is already portable, so nothing there changes either way.
 **Rule 1, the voice.** Each immediate subdirectory of the library root is a
 candidate voice. It becomes a voice when at least one take resolves inside it.
 
-**Rule 2, the folder form.** A subdirectory whose name is exactly a cue id holds
-takes. Every recognised audio file directly inside it is one take. File names
-carry no meaning.
+**Rule 2, the folder form.** A subdirectory whose name is exactly a cue id with every
+dot written as an underscore holds takes, so `Cast_Confirmed` is the folder for
+`Cast.Confirmed`. A subdirectory named with dots is no cue's folder. Every recognised
+audio file directly inside it is one take. File names carry no meaning.
 
 **Rule 3, the flat form.** An audio file whose name, with its extension removed,
 is exactly a cue id is a take for that cue. A trailing dot plus digits before the
@@ -164,8 +165,10 @@ extension distinguishes takes, so `StartJump.2.wav` is a second take of
 `StartJump`.
 
 **Rule 4, exact literal matching.** A name matches a cue id only when the two
-strings are equal, compared case insensitively and in no other way. No
-normalisation, no punctuation folding, no fuzzy or nearest match, ever.
+strings are equal, compared case insensitively and in no other way. For a folder the
+string compared is the cue id with every dot written as an underscore (FR-229); that is
+the one derivation, it runs from id to name only and it is never applied to a name.
+No normalisation, no punctuation folding, no fuzzy or nearest match, ever.
 
 **Rule 5, the optional manifest.** `voice.toml` is not required and most voices
 will not have one. Where present it may set a display name, a credit line and
@@ -181,7 +184,9 @@ simply see what happens.
 
 ### 3.2 Naming on disk
 
-The cue id is the on-disk name unchanged, with no derivation step between them.
+A file in the flat form is named with the cue id unchanged. A cue folder is named with
+the cue id with every dot written as an underscore; nothing else is changed (FR-229). No
+cue id holds an underscore (FR-230), so each folder name belongs to exactly one id.
 
 Checked against all 256 cue ids: every id uses only letters, digits, `.` and a
 space inside a segment, which five ids carry; none begins with a dot, which would
@@ -388,6 +393,28 @@ to load with the reason.
 Verified by: a structural test over `cues.toml`, proved by planting a violating id
 and reading a non-zero exit code; plus tests that `cue.New` refuses such an id and
 that an override holding one fails to load.
+
+**FR-229 A cue folder writes each dot as an underscore**
+Priority: Must.
+The application shall name every cue folder it makes, lists or opens with the cue id
+with every dot written as an underscore. The scanner shall take a subdirectory of a voice
+as a cue's folder only when its name equals that form, compared case insensitively.
+Rationale: there are no dotted folder names (Oliver, 2026-09-13). The flat form keeps
+the dots, since a trailing dot and digits number its takes (rule 3).
+Acceptance: Given the cue `Cast.Confirmed`, when the folders for `Oliver` are made, then
+`Oliver/Cast_Confirmed/` exists and `Oliver/Cast.Confirmed/` does not; a take in
+`Oliver/Cast_Confirmed/` resolves for `Cast.Confirmed`; a take in `Oliver/Cast.Confirmed/`
+resolves for nothing.
+Verified by: the folder form tests in `internal/infrastructure/library`.
+
+**FR-230 No cue id may contain an underscore**
+Priority: Must.
+The cue vocabulary shall contain no id holding an underscore. A cue table holding such an
+id, whether shipped or supplied by the user, shall fail to load with the reason.
+Rationale: FR-229 writes dots as underscores. An id already holding one could share a
+folder name with another id, so a folder could no longer be read back as exactly one cue.
+Verified by: a structural test over `cues.toml`, proved by planting a violating id; a test
+that `cue.New` refuses such an id.
 
 **FR-223 Make a voice's folders**
 Priority: Must.
@@ -653,7 +680,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227, FR-228, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-230, FR-311, FR-314 to FR-317, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

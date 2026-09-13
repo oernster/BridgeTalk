@@ -41,9 +41,9 @@ func writeClip(t *testing.T, path string) {
 func libraryRootFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
-	writeClip(t, filepath.Join(root, "Alpha", "ShieldState.ShieldsUp.false", "a.mp3"))
+	writeClip(t, filepath.Join(root, "Alpha", "ShieldState_ShieldsUp_false", "a.mp3"))
 	writeClip(t, filepath.Join(root, "Alpha", "Docked", "b.mp3"))
-	writeClip(t, filepath.Join(root, "Alpha", "Cast.Confirmed", "yes.mp3"))
+	writeClip(t, filepath.Join(root, "Alpha", "Cast_Confirmed", "yes.mp3"))
 	writeClip(t, filepath.Join(root, "Beta", "ShieldState.ShieldsUp.false.mp3"))
 	writeClip(t, filepath.Join(root, "Bystander", "holiday snap.mp3"))
 	return root

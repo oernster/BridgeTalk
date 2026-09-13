@@ -99,6 +99,18 @@ func index(table cue.Table) map[string]cue.ID {
 	return out
 }
 
+// folderIndex maps a cue folder's name lowered to the id it belongs to (FR-229). A folder
+// is matched on the id with its dots written as underscores, so a folder named with dots
+// is no cue's folder. The flat form keeps the dotted id, which index holds.
+func folderIndex(table cue.Table) map[string]cue.ID {
+	all := table.All()
+	out := make(map[string]cue.ID, len(all))
+	for _, item := range all {
+		out[strings.ToLower(item.ID().Folder())] = item.ID()
+	}
+	return out
+}
+
 // Scan reads a library root and returns the voices in it.
 //
 // Every immediate subdirectory is a candidate. One becomes a voice when at least one
@@ -116,6 +128,7 @@ func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 	}
 
 	lookup := index(table)
+	folders := folderIndex(table)
 	var voices []Voice
 	var report Report
 
@@ -123,7 +136,7 @@ func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 		if !entry.IsDir() {
 			continue
 		}
-		voice, found := scanVoice(filepath.Join(root, entry.Name()), lookup, read)
+		voice, found := scanVoice(filepath.Join(root, entry.Name()), lookup, folders, read)
 		report.Unmatched = append(report.Unmatched, prefix(entry.Name(), found.Unmatched)...)
 		report.Duplicated = append(report.Duplicated, prefix(entry.Name(), found.Duplicated)...)
 		if voice.Takes == 0 {
@@ -155,10 +168,10 @@ func prefix(dir string, reasons []Reason) []Reason {
 // ScanVoice reads one voice directory. It is exported so a caller holding a directory
 // rather than a library root can index it without inventing a parent.
 func ScanVoice(dir string, table cue.Table) (Voice, Report) {
-	return scanVoice(dir, index(table), os.ReadDir)
+	return scanVoice(dir, index(table), folderIndex(table), os.ReadDir)
 }
 
-func scanVoice(dir string, lookup map[string]cue.ID, read lister) (Voice, Report) {
+func scanVoice(dir string, lookup, folders map[string]cue.ID, read lister) (Voice, Report) {
 	voice := Voice{Name: filepath.Base(dir), Root: dir, byCue: map[cue.ID][]string{}}
 	var report Report
 
@@ -171,7 +184,7 @@ func scanVoice(dir string, lookup map[string]cue.ID, read lister) (Voice, Report
 	for _, entry := range entries {
 		name := entry.Name()
 		if entry.IsDir() {
-			id, ok := lookup[strings.ToLower(name)]
+			id, ok := folders[strings.ToLower(name)]
 			if !ok {
 				report.Unmatched = append(report.Unmatched, Reason{
 					Path: name, Why: "this is no cue's name, so nothing inside it is reachable",

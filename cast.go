@@ -99,6 +99,7 @@ func cueLines(cues []cue.Cue) []CueDTO {
 			Title:   item.Title(),
 			Group:   item.ID().Group(),
 			Heading: item.ID().Heading(),
+			Folder:  item.ID().Folder(),
 		})
 	}
 	return out

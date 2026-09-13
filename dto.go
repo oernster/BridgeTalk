@@ -102,3 +102,10 @@ type CueBreakdownDTO struct {
 	Served   []CueDTO `json:"served"`
 	Unserved []CueDTO `json:"unserved"`
 }
+
+// VoiceFoldersDTO reports what making a voice's folders did: where the voice is and how
+// many folders were made. An empty path means the question of where was cancelled.
+type VoiceFoldersDTO struct {
+	Path string `json:"path"`
+	Made int    `json:"made"`
+}

@@ -7,15 +7,19 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { CueBreakdown, Voice } from './api'
+import type { CueBreakdown, Voice, VoiceFolders } from './api'
 
 const voices = vi.fn<() => Promise<Voice[]>>()
 const cueBreakdown = vi.fn<(name: string) => Promise<CueBreakdown>>()
+const makeVoiceFolders = vi.fn<(name: string) => Promise<VoiceFolders>>()
+const rescan = vi.fn<() => Promise<number>>()
 
 vi.mock('./api', () => ({
   api: {
     voices: () => voices(),
     cueBreakdown: (name: string) => cueBreakdown(name),
+    makeVoiceFolders: (name: string) => makeVoiceFolders(name),
+    rescan: () => rescan(),
   },
 }))
 
@@ -28,6 +32,8 @@ const kate: Voice = { name: 'Kate', inUse: 40 }
 beforeEach(() => {
   voices.mockReset()
   cueBreakdown.mockReset()
+  makeVoiceFolders.mockReset()
+  rescan.mockReset()
   cueBreakdown.mockResolvedValue({ voice: '', served: [], unserved: [] })
 })
 
@@ -157,5 +163,109 @@ describe('the breakdown behind a row', () => {
 
     await screen.findByRole('heading', { name: 'Moments spoken for (0)' })
     expect(screen.getAllByText('Nothing here.')).toHaveLength(2)
+  })
+})
+
+describe('making a voice', () => {
+  const typeName = (name: string) =>
+    fireEvent.change(screen.getByRole('textbox', { name: 'Voice name' }), {
+      target: { value: name },
+    })
+
+  // FR-223: the folders are made for the name typed; the answer says how many and where,
+  // then what to do with them.
+  it('makes the folders for the name typed and says where they went', async () => {
+    makeVoiceFolders.mockResolvedValue({ path: 'D:/Recordings/Oliver', made: 256 })
+    await show([])
+
+    typeName('Oliver')
+    fireEvent.click(screen.getByRole('button', { name: 'Make folders' }))
+
+    const said = await screen.findByRole('status')
+    expect(makeVoiceFolders).toHaveBeenCalledWith('Oliver')
+    expect(said.textContent).toMatch(/^Made 256 folders in D:\/Recordings\/Oliver/)
+    expect(said.textContent).toMatch(/then press Look again\.$/)
+  })
+
+  it('makes them on Enter in the name box as well', async () => {
+    makeVoiceFolders.mockResolvedValue({ path: 'D:/Recordings/Oliver', made: 1 })
+    await show([])
+
+    typeName('Oliver')
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Voice name' }), { key: 'Enter' })
+
+    expect((await screen.findByRole('status')).textContent).toMatch(/^Made 1 folder in/)
+  })
+
+  // Pressing it again for a voice that has every folder is harmless, so it says so
+  // rather than replying as though something had been made twice.
+  it('says plainly when every folder was already there', async () => {
+    makeVoiceFolders.mockResolvedValue({ path: 'D:/Recordings/Oliver', made: 0 })
+    await show([grace])
+
+    typeName('Oliver')
+    fireEvent.click(screen.getByRole('button', { name: 'Make folders' }))
+
+    const said = await screen.findByRole('status')
+    expect(said.textContent).toMatch(/already there/)
+    expect(said.textContent).not.toMatch(/^Made/)
+  })
+
+  // FR-225: a refused name is drawn as a refusal, not as body prose.
+  it('draws a refused name as a refusal', async () => {
+    makeVoiceFolders.mockRejectedValue('"a/b" holds \'/\', which a folder name cannot')
+    await show([])
+
+    typeName('a/b')
+    fireEvent.click(screen.getByRole('button', { name: 'Make folders' }))
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/which a folder name cannot/)
+  })
+
+  // A cancelled question made nothing and the reader knows they cancelled.
+  it('says nothing after the question of where was cancelled', async () => {
+    makeVoiceFolders.mockResolvedValue({ path: '', made: 0 })
+    await show([])
+
+    typeName('Oliver')
+    fireEvent.click(screen.getByRole('button', { name: 'Make folders' }))
+
+    await waitFor(() => expect(makeVoiceFolders).toHaveBeenCalled())
+    await new Promise((settle) => setTimeout(settle, 0))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  // FR-214: a voice filled by hand appears on a look, with no restart.
+  it('looks again and lists the voices it found', async () => {
+    voices.mockResolvedValueOnce([]).mockResolvedValue([grace])
+    rescan.mockResolvedValue(1)
+    render(<CastPane active="" libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    await screen.findByText('No voices found.')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+
+    expect(await screen.findByText('Found 1 voice.')).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /^Cast Grace/ })).toBeTruthy()
+  })
+
+  it('says what a look that found nothing means', async () => {
+    rescan.mockResolvedValue(0)
+    await show([])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+
+    expect((await screen.findByRole('status')).textContent).toMatch(
+      /once one of its folders holds a recording/,
+    )
+  })
+
+  it('draws a look that could not be taken as a refusal', async () => {
+    rescan.mockRejectedValue('no recordings directory is chosen yet')
+    await show([])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Look again' }))
+
+    expect((await screen.findByRole('alert')).textContent).toMatch(/no recordings directory/)
   })
 })

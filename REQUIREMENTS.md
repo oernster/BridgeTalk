@@ -33,6 +33,8 @@ project.
   against the cue vocabulary.
 - Auditioning, casting a voice, settings and a tray presence.
 - An extension point through which an additional audio source may be supplied.
+- Windows and Linux, decided by Oliver on 2026-09-13. What Linux still needs is in
+  OQ-12.
 
 **Out of scope:**
 
@@ -45,7 +47,7 @@ project.
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
-| Cross platform builds | Windows for now; Linux is under consideration in OQ-11 |
+| macOS | Not asked for; Windows and Linux are the platforms in scope |
 
 ### 1.4 Definitions
 
@@ -105,7 +107,8 @@ needs no exception to it, see NFR-C-304. Elite Dangerous journal files in their
 standard location. No network dependency at runtime: the application makes no
 outbound request.
 
-**Linux is under consideration and is not yet in scope.** See OQ-11. The library
+**Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
+built yet; OQ-12 holds the one part nothing has been measured for. The library
 schema in section 3 is already portable, so nothing there changes either way.
 
 ### 2.4 Constraints
@@ -320,6 +323,10 @@ Priority: Must.
 When the user requests a rescan, the application shall re-read the library root
 and update the voice list, the completeness figures and the cast voice's catalogue
 without a restart.
+Note: a rescan that finds no voice leaves the voices already known in place. The
+tray's voice menu is built at startup and is not refreshed by a rescan.
+Verified by: `TestLookingAgainFindsAVoiceFilledSinceTheStart`;
+`TestLookingAgainWithNothingToFindChangesNothing`.
 
 **FR-215 Report both completeness figures**
 Priority: Must.
@@ -340,11 +347,12 @@ Priority: Must.
 When the user selects a cue for the cast voice and requests an audition, the
 application shall play one take for that cue.
 
-**FR-217 The library is read only, with two named exceptions**
+**FR-217 The library is read only, with three named exceptions**
 Priority: Must.
 The application shall never write to, move, rename or delete a file under the
-library root, except the recorder writing a take, plus FR-212 writing a
-`voice.toml`. Both are confined to the voice directory being targeted.
+library root, except the recorder writing a take, FR-212 writing a `voice.toml`
+plus FR-223 making a voice's empty folders. All three are confined to the voice
+directory being targeted.
 
 **FR-218 If two directories differ only in case, then merge their takes**
 Priority: Must.
@@ -380,6 +388,62 @@ to load with the reason.
 Verified by: a structural test over `cues.toml`, proved by planting a violating id
 and reading a non-zero exit code; plus tests that `cue.New` refuses such an id and
 that an override holding one fails to load.
+
+**FR-223 Make a voice's folders**
+Priority: Must.
+When the user asks for the folders of a named voice, the application shall create
+`<library root>/<name>/` holding one empty subdirectory named for each cue id in
+the vocabulary.
+Rationale: a folder named for its cue is the folder form of rule 2, so a person
+filling a voice by hand puts each recording in the folder for its moment and never
+types a cue id. The recorder writes into the same folders under FR-304.
+Acceptance: Given an empty library root and a vocabulary of 256 cues, when the user
+makes the folders for `Oliver`, then `Oliver/` holds 256 empty subdirectories, one
+per cue id; a take then placed in `Oliver/DockingGranted/` under any file name
+resolves for `DockingGranted` on the next scan.
+Verified by: `TestMakingAVoicesFoldersMakesOneForEveryCue` in
+`internal/infrastructure/library/folders_test.go`;
+`TestFoldersAreMadeUnderTheChosenRecordingsDirectory` in `folders_test.go`.
+
+**FR-224 Making a voice's folders never replaces anything**
+Priority: Must.
+When the user asks for a voice's folders, the application shall leave every entry
+already under that voice directory unchanged.
+Acceptance: Given `Oliver/Docked/a.wav` and a file named `Oliver/Undocked`, when the
+folders are made, then both are unchanged and only the missing folders are created;
+a second run creates none.
+Verified by: `TestMakingFoldersAgainAddsOnlyWhatIsMissing`.
+
+**FR-225 If a voice name cannot be a folder name, then refuse it**
+Priority: Must.
+If the name given for a voice breaks one of the rules below, then the application
+shall refuse it with the rule it broke, creating nothing.
+
+- It is empty or only spaces.
+- It begins or ends with a space.
+- It ends with a dot.
+- It holds one of `< > : " / \ | ? *` or a control character.
+- Before its first dot it is a device name Windows keeps: `con`, `prn`, `aux`,
+  `nul`, `com1` to `com9`, `lpt1` to `lpt9`.
+
+Rationale: a library is expected to move between Windows and Linux, so the rules of
+the stricter platform hold on both. The name is checked before anything is asked, so
+a refused name never opens a dialog.
+Verified by: `TestANameThatCannotBeAFolderIsRefused`;
+`TestABadNameIsRefusedBeforeAnythingIsAsked`.
+
+**FR-226 While no library root is chosen, ask where the folders go**
+Priority: Must.
+While no library root is chosen, when the user asks for a voice's folders, the
+application shall take the directory the user then chooses as the library root.
+Rationale: FR-201's chooser refuses a directory holding no voices, which is all a new
+user has; without this there is no way for them to name one.
+Acceptance: Given no library root, when the user makes the folders for `Oliver` and
+chooses `D:\Recordings`, then `D:\Recordings\Oliver\` exists and `D:\Recordings` is
+the stored library root. Given no library root, when the user cancels the question,
+then nothing is created and nothing changes.
+Verified by: `TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer`;
+`TestCancellingWhereTheFoldersGoChangesNothing`.
 
 **FR-220 If a voice has no take for a cue, then the cue is silent and the gap is reported**
 Priority: Must.
@@ -582,7 +646,7 @@ headless test is how it gets tested.
 | ID | Question | Blocks | Owner |
 |---|---|---|---|
 | **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
-| **OQ-11** | **Does Linux come into scope? And when?** Measured: only 8 of the 85 Go files carry a `//go:build windows` tag, confined to three infrastructure packages, `setup`, `taskbar` and `window`, so the platform surface is already isolated behind the layering rather than spread through it. Audio output is already portable, since `oto` and `beep` support Linux and macOS. What is genuinely missing is a Linux capture backend, because the measured path is WASAPI and is Windows only; a tray and window integration; an install and update story that is not the registry; and journal discovery under Proton. The capture backend is the one that may reopen the no-CGO question on Linux; nothing has been measured there yet, so nothing is claimed. This wants deciding before the recorder is built rather than after. | The recorder | Oliver |
+| **OQ-12** | **How does the recorder capture audio on Linux with no CGO?** Linux is in scope alongside Windows, decided by Oliver on 2026-09-13; the recorder is used by whoever runs the application. The measured capture path, WASAPI under NFR-C-304, is Windows only. Nothing has been measured on Linux, so whether a capture backend exists there without CGO is unknown and nothing is claimed. The rest of what Linux needs is known and unbuilt: a tray and window integration, an install and update story that is not the registry and journal discovery under Proton. | The recorder on Linux | Claude to measure a capture spike; Oliver to decide on the result |
 
 ---
 
@@ -590,7 +654,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-222, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-226, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
 | **Should** | FR-206, FR-210, FR-212, FR-307, FR-309, FR-501, NFR-P-201 |
 | **Could** | FR-308 |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface |

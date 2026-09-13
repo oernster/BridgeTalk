@@ -80,6 +80,12 @@ export interface CueBreakdown {
   unserved: CueEntry[]
 }
 
+/** VoiceFolders reports what making a voice's folders did; an empty path is a cancel. */
+export interface VoiceFolders {
+  path: string
+  made: number
+}
+
 export interface About {
   name: string
   tagline: string
@@ -114,6 +120,8 @@ interface Bridge {
   Licence(): Promise<string>
   ChooseLibraryRoot(): Promise<string>
   ChooseJournalDir(): Promise<string>
+  MakeVoiceFolders(name: string): Promise<VoiceFolders>
+  Rescan(): Promise<number>
   SetLaunchOnBoot(enabled: boolean): Promise<void>
   MinimiseToTray(): Promise<void>
   RequestQuit(): Promise<void>
@@ -164,6 +172,17 @@ export const api = {
   chooseLibraryRoot: (): Promise<string> => bridge()?.ChooseLibraryRoot() ?? Promise.resolve(''),
   chooseJournalDir: (): Promise<string> =>
     bridge()?.ChooseJournalDir() ?? Promise.resolve(''),
+
+  /**
+   * Makes a voice's folders, one per moment, asking where first when no recordings
+   * directory is chosen. It rejects a name that cannot be a folder; a cancelled
+   * question answers with an empty path instead, for the reason the choosers do.
+   */
+  makeVoiceFolders: (name: string): Promise<VoiceFolders> =>
+    bridge()?.MakeVoiceFolders(name) ?? Promise.resolve({ path: '', made: 0 }),
+
+  /** Reads the recordings directory again and answers with how many voices it found. */
+  rescan: (): Promise<number> => bridge()?.Rescan() ?? Promise.resolve(0),
 
   /**
    * Starts or stops the application being launched at sign-in. It rejects rather than

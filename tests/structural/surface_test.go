@@ -20,8 +20,8 @@ import (
 // against this.
 var boundSurface = []string{
 	"About", "Audition", "AuditionGroups", "ChooseJournalDir", "ChooseLibraryRoot",
-	"CueBreakdown", "Licence", "MinimiseToTray", "Muted", "Quit", "Reactions", "RequestQuit",
-	"SelectVoice", "SetLaunchOnBoot",
+	"CueBreakdown", "Licence", "MakeVoiceFolders", "MinimiseToTray", "Muted", "Quit",
+	"Reactions", "RequestQuit", "Rescan", "SelectVoice", "SetLaunchOnBoot",
 	"SetMuted",
 	"SetVolume", "State", "StopAudition", "TakeKeyboard", "Voices", "Volume",
 }

@@ -47,16 +47,7 @@ func (a *App) ChooseLibraryRoot() (string, error) {
 	}
 
 	a.libraryRoot = chosen
-	a.session.available = found
-	// The voice that was speaking may not exist under the new root, so the voice is
-	// re-cast by name where it survives and falls back to the first one where it does
-	// not. Leaving a catalogue pointing into the old directory would fail silently at
-	// the next cue rather than here, where it can be said.
-	next, err := pick(found, a.session.active.Name)
-	if err != nil {
-		next = found[0]
-	}
-	a.session.useVoice(next)
+	a.adopt(found)
 
 	if err := a.remember(); err != nil {
 		return "", err

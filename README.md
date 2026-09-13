@@ -34,12 +34,19 @@ saying happens, it plays one of your own recordings for that moment. It ships no
 - **Auditions a voice** before it is cast.
 - **Stays out of the way.** Put away, it keeps listening from the notification area and it can
   start when you sign in to Windows.
-- **Leaves your recordings alone.** It only ever reads the directory you choose and makes no
+- **Leaves your recordings alone.** It never changes or removes anything in the directory you
+  choose; the one thing it writes there is the empty folders you ask it to make. It makes no
   network requests of its own.
 
 ## Naming recordings
 
-Every moment is named in the game's own words, as the journal and the status file spell it. A
+The quickest way is to let it name them. On the Cast pane, type a voice's name and press Make
+folders: that voice gets a folder for every moment, each already named. Put each recording in the
+folder for its moment (any file name will do), then press Look again. Where no recordings directory
+is chosen yet, it asks where the folders should go first.
+
+To name them by hand instead: every moment is named in the game's own words, as the journal and
+the status file spell it. A
 journal moment is the event name, followed by a field and a value where one field narrows it. A
 status moment is the flag name followed by `Set` or `Cleared`.
 

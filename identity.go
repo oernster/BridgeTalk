@@ -29,7 +29,8 @@ const (
 const (
 	appAuthorship  = "This application is the sole work of Oliver Ernster."
 	appAttribution = "This application ships no audio. It plays recordings you " +
-		"supply, from a directory you choose. It never writes to them."
+		"supply, from a directory you choose. It never changes or removes them; " +
+		"the one thing it writes there is empty folders you ask it to make."
 	appLicence = "Free software under the GNU General Public License, version 3. " +
 		"Help, then Licence, shows the full terms."
 )

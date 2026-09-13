@@ -148,7 +148,7 @@ export function HomePane({ state }: { state: State | null }) {
  * render a message without knowing which kind it is; that pairing is the whole point,
  * since the fault being fixed was a refusal drawn in the colour of an explanation.
  */
-type Outcome = { refused: boolean; text: string } | null
+export type Outcome = { refused: boolean; text: string } | null
 
 /** Row names the two directories, so an answer can be drawn against the right one. */
 type Row = 'library' | 'journal'

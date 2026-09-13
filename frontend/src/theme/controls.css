@@ -74,3 +74,29 @@
   font-weight: 600;
 }
 
+/* A text box standing on a row. It wears the selector's frame so the two read as one
+   family of control, stands at the row's control height and takes the ring on hover
+   and focus the way every other stop does. The browser's own outline is removed only
+   because the border already is the ring. */
+.textbox {
+  height: var(--control-height);
+  min-width: 0;
+  padding: 6px 9px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.textbox::placeholder {
+  color: var(--muted);
+}
+
+.textbox:enabled:hover,
+.textbox:enabled:focus {
+  border-color: var(--ring);
+  outline: none;
+}
+

@@ -43,6 +43,7 @@ var wireShapes = map[string]string{
 	"ReactionDTO":     "Reaction",
 	"StateDTO":        "State",
 	"VoiceDTO":        "Voice",
+	"VoiceFoldersDTO": "VoiceFolders",
 }
 
 // tsInterface captures one interface and its body; tsField matches one field inside

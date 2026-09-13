@@ -129,7 +129,7 @@ func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 		if voice.Takes == 0 {
 			report.Empty = append(report.Empty, Reason{
 				Path: entry.Name(),
-				Why:  "no file here is named for a cue, so there is nothing to play",
+				Why:  "no recording here is named for a cue or sits in a folder that is, so there is nothing to play",
 			})
 			continue
 		}

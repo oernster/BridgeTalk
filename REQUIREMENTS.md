@@ -574,6 +574,18 @@ for the complete note and the recordings message; `frontend/src/panes.test.tsx` 
 message; `frontend/src/cast.test.tsx` for the cast rows; `TestTheSetupHeaderRepeatsNoTitle` in
 `tests/structural/setupheader_test.go` for the setup header. Each failed with its repeat put back.
 
+**FR-235 Setup applies the boxes it shows**
+Priority: Must.
+Whenever setup writes the application, it shall apply the Start Menu, Desktop and sign-in boxes as
+they stand on screen; no action shall substitute choices of its own. If a box that saves at once
+fails to save, then setup shall put the box back as it was and show the reason.
+Rationale: Reinstall applied sign-in off beneath a ticked box, so the application opened with its
+own box unticked (Oliver, 2026-09-13).
+Acceptance: Given the Installed screen with "Start it when I sign in" ticked, when Reinstall is
+pressed, then the sign-in entry exists and the application's Settings box reads ticked.
+Verified by: `TestSetupAppliesTheBoxesItShows` in `tests/structural/setupchoices_test.go`. The
+entry and the Settings box after a real Reinstall are checked by hand, since no test runs setup.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**
@@ -754,7 +766,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-234, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-235, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

@@ -49,21 +49,27 @@ function routeChange(state) {
 // so closing setup from here has already applied them.
 function routeManage(state) {
     $('manage-title').textContent = `${appName} ${state.installedVersion} is installed`
-    const live = () => backend().SetShortcuts(read('startMenu'), read('desktop'))
+    // A box that saves at once and fails is put back and says why, so no box stands
+    // ticked over a choice that was never saved (FR-235).
+    const undo = (box, on, error) => {
+        box.checked = !on
+        showError(String(error))
+    }
+    const live = (on, box) => backend().SetShortcuts(read('startMenu'), read('desktop')).catch((e) => undo(box, on, e))
     const read = renderOptions($('manage-options'), [
         {
             key: 'startMenu', label: 'Add a Start Menu entry',
-            checked: state.startMenu, onChange: () => live(),
+            checked: state.startMenu, onChange: (on, box) => live(on, box),
         },
         {
             key: 'desktop', label: 'Add a Desktop shortcut',
-            checked: state.desktop, onChange: () => live(),
+            checked: state.desktop, onChange: (on, box) => live(on, box),
         },
         {
             key: 'boot', label: 'Start it when I sign in',
             hint: 'It waits quietly in the notification area until the game runs.',
             checked: state.launchOnBoot,
-            onChange: (on) => backend().SetLaunchOnBoot(on),
+            onChange: (on, box) => backend().SetLaunchOnBoot(on).catch((e) => undo(box, on, e)),
         },
         launchOption(),
     ])
@@ -72,10 +78,15 @@ function routeManage(state) {
         {label: 'Uninstall', kind: 'danger', onClick: () => routeUninstall(state)},
         {label: 'Close', onClick: () => backend().Quit()},
         {
+            // FR-235: the boxes as they stand, never a set of choices of its own.
             label: 'Reinstall', onClick: () => finish(
-                () => backend().Install(freshChoices), read('launch'),
+                () => backend().Install({
+                    startMenu: read('startMenu'),
+                    desktop: read('desktop'),
+                    launchOnBoot: read('boot'),
+                }), read('launch'),
                 `Reinstalling ${appName}`, `${appName} is reinstalled`,
-                'The files were written again and the shortcuts put back as a new install would leave them.'),
+                'The files were written again with the boxes above applied as they stood.'),
         },
         {
             label: 'Repair', kind: 'primary',

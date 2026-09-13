@@ -97,7 +97,7 @@ function renderOptions(container, specs) {
         const input = document.createElement('input')
         input.type = 'checkbox'
         input.checked = !!spec.checked
-        if (spec.onChange) input.onchange = () => spec.onChange(input.checked)
+        if (spec.onChange) input.onchange = () => spec.onChange(input.checked, input)
         const tick = document.createElement('span')
         tick.className = 'check'
         const text = document.createElement('span')
@@ -117,13 +117,6 @@ function renderOptions(container, specs) {
     })
     return (key) => boxes[key].checked
 }
-
-// freshChoices are what a first install applies. Reinstall reuses them, which is
-// the whole of the difference from a repair: a repair leaves every choice alone,
-// a reinstall puts the install back to how a new one would look. Both act on one
-// press; making either open a second screen of the same boxes already on this one
-// would be a step that asks nothing new.
-const freshChoices = {startMenu: true, desktop: true, launchOnBoot: false}
 
 // launchOption finishes every screen that writes files. Setup's job is done once
 // the application is running, so the same tick that starts it also closes setup:

@@ -40,13 +40,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 80.4% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 78.7% | 75% | `test.ps1` |
+| the root package (the Wails facade) | 79% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 67.3% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 22.4% | 22% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 
-340 test functions, which expand to 390 runs once their subtests are counted.
+348 test functions, which expand to 398 runs once their subtests are counted.
 Sixteen of them are the structural tests in `tests/structural`, which assert the
 architecture itself rather than any behaviour: layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band and the rule

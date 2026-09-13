@@ -43,7 +43,8 @@ saying happens, it plays one of your own recordings for that moment. It ships no
 The quickest way is to let it name them. On the Cast pane, type a voice's name and press Make
 folders: that voice gets a folder for every moment, each already named. Put each recording in the
 folder for its moment (any file name will do), then press Look again. Where no recordings directory
-is chosen yet, it asks where the folders should go first.
+is chosen yet, it asks where the folders should go first, opening in its own `Recordings` folder
+(`%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows), which setup never removes.
 
 To name them by hand instead: every moment is named in the game's own words, as the journal and
 the status file spell it. A

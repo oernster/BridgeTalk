@@ -30,7 +30,7 @@ func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 	root := a.libraryRoot
 	asked := root == ""
 	if asked {
-		chosen, err := a.chooseDir("Where your recordings will live", "")
+		chosen, err := a.chooseDir("Where your recordings will live", a.recordingsStart())
 		if chosen == "" || err != nil {
 			return VoiceFoldersDTO{}, err
 		}
@@ -49,6 +49,24 @@ func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 	a.libraryRoot = root
 	a.emitState()
 	return answer, a.remember()
+}
+
+// recordingsStart is where a question about the recordings directory opens (FR-227).
+//
+// The directory already chosen where there is one; otherwise the product's own
+// recordings directory. Given no folder at all, the system dialog chooses for itself
+// and it opened in the game's folder, the one place a voice's recordings do not belong.
+// A default that cannot be worked out or made leaves the choice to the system rather
+// than refusing to ask at all.
+func (a *App) recordingsStart() string {
+	if a.libraryRoot != "" {
+		return a.libraryRoot
+	}
+	start, err := library.DefaultRoot()
+	if err != nil {
+		return ""
+	}
+	return start
 }
 
 // Rescan reads the recordings directory again and takes what it finds, answering with

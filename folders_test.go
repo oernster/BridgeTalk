@@ -13,6 +13,22 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
+// dataHome points the product's data folder at a temporary directory for one test and
+// answers with the default recordings directory that results. Any test that can reach
+// the default calls it, so the default is made there rather than on the machine running
+// the test.
+func dataHome(t *testing.T) string {
+	t.Helper()
+	base := t.TempDir()
+	t.Setenv("LOCALAPPDATA", base)
+	t.Setenv("XDG_DATA_HOME", base)
+	start, err := library.DefaultRoot()
+	if err != nil {
+		t.Fatalf("working out the default recordings directory: %v", err)
+	}
+	return start
+}
+
 // FR-223 through the facade: the folders land under the recordings directory already
 // chosen, one per moment, with nothing asked.
 func TestFoldersAreMadeUnderTheChosenRecordingsDirectory(t *testing.T) {
@@ -42,6 +58,7 @@ func TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer(t *testing.T) {
 	store := &fakeSettings{}
 	app.settings = store
 	app.libraryRoot = ""
+	dataHome(t)
 	where := t.TempDir()
 	answering(app, where, nil)
 
@@ -60,10 +77,78 @@ func TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer(t *testing.T) {
 	}
 }
 
+// FR-227: with nothing chosen, both questions about the recordings directory open in the
+// product's own recordings folder, which exists by the time they do, rather than
+// wherever the system dialog was last pointed.
+func TestTheRecordingsQuestionOpensInTheProductsOwnFolder(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	app.libraryRoot = ""
+	want := dataHome(t)
+	var starts []string
+	app.chooseDir = func(_ string, start string) (string, error) {
+		starts = append(starts, start)
+		return "", nil
+	}
+
+	if _, err := app.MakeVoiceFolders("Oliver"); err != nil {
+		t.Fatalf("making folders: %v", err)
+	}
+	if _, err := app.ChooseLibraryRoot(); err != nil {
+		t.Fatalf("choosing: %v", err)
+	}
+	if len(starts) != 2 || starts[0] != want || starts[1] != want {
+		t.Fatalf("the questions opened at %q, want both at %q", starts, want)
+	}
+	if info, err := os.Stat(want); err != nil || !info.IsDir() {
+		t.Fatalf("the folder a question opened in does not exist: %v", err)
+	}
+}
+
+// Once a recordings directory is chosen, the question opens where the recordings are.
+func TestTheRecordingsQuestionOpensWhereTheRecordingsAre(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	var start string
+	app.chooseDir = func(_ string, given string) (string, error) {
+		start = given
+		return "", nil
+	}
+
+	if _, err := app.ChooseLibraryRoot(); err != nil {
+		t.Fatalf("choosing: %v", err)
+	}
+	if start != app.libraryRoot {
+		t.Fatalf("the question opened at %q, want the chosen %q", start, app.libraryRoot)
+	}
+}
+
+// A default that cannot be made leaves the opening folder to the system rather than
+// refusing to ask.
+func TestADefaultThatCannotBeMadeStillAsks(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	app.libraryRoot = ""
+	file := filepath.Join(t.TempDir(), "plain")
+	writeClip(t, file)
+	t.Setenv("LOCALAPPDATA", file)
+	t.Setenv("XDG_DATA_HOME", file)
+	asked, start := false, "unset"
+	app.chooseDir = func(_ string, given string) (string, error) {
+		asked, start = true, given
+		return "", nil
+	}
+
+	if _, err := app.MakeVoiceFolders("Oliver"); err != nil {
+		t.Fatalf("making folders: %v", err)
+	}
+	if !asked || start != "" {
+		t.Fatalf("asked %v at %q; want the question asked with no folder given", asked, start)
+	}
+}
+
 // Cancelling the question makes nothing and changes nothing.
 func TestCancellingWhereTheFoldersGoChangesNothing(t *testing.T) {
 	app, _, log := fixtureApp(t)
 	app.libraryRoot = ""
+	dataHome(t)
 	answering(app, "", nil)
 
 	made, err := app.MakeVoiceFolders("Oliver")
@@ -93,6 +178,7 @@ func TestABadNameIsRefusedBeforeAnythingIsAsked(t *testing.T) {
 func TestWhereTheFoldersCannotGoIsReported(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	app.libraryRoot = ""
+	dataHome(t)
 	answering(app, "", errors.New("the dialog would not open"))
 	if _, err := app.MakeVoiceFolders("Oliver"); err == nil {
 		t.Fatal("a failed dialog reported success")

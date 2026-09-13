@@ -33,7 +33,7 @@ import (
 // exactly as it was. Returning nothing at all made those two outcomes identical on
 // screen, which is what made a refusal read as the button doing nothing.
 func (a *App) ChooseLibraryRoot() (string, error) {
-	chosen, err := a.chooseDir("Where your recordings are", a.libraryRoot)
+	chosen, err := a.chooseDir("Where your recordings are", a.recordingsStart())
 	if chosen == "" || err != nil {
 		return "", err
 	}

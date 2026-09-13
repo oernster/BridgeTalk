@@ -445,6 +445,28 @@ then nothing is created and nothing changes.
 Verified by: `TestWithNoRecordingsDirectoryItAsksWhereAndKeepsTheAnswer`;
 `TestCancellingWhereTheFoldersGoChangesNothing`.
 
+**FR-227 The recordings question opens in the product's own folder**
+Priority: Must.
+While no library root is chosen, when the application asks where the recordings are
+or where a voice's folders go, the application shall open that question in the
+default recordings directory, creating the directory where it is missing.
+The default recordings directory is `%LOCALAPPDATA%\BridgeTalk\Recordings` on
+Windows. Elsewhere it is `BridgeTalk/Recordings` under `$XDG_DATA_HOME`, which falls
+back to `~/.local/share` where it is unset.
+Rationale: given no folder, the system dialog chose for itself and opened in the
+game's folder, where a user's recordings do not belong. Of the folders the product
+owns this is the one setup never removes: uninstall deletes the install directory;
+forgetting settings deletes the window state and the settings file. It is local
+rather than roaming, because hours of audio do not belong in a roaming profile.
+Acceptance: Given no library root on Windows, when the user presses Make folders,
+then the folder question opens in `%LOCALAPPDATA%\BridgeTalk\Recordings`, which
+exists. Given a library root, when the user presses Browse for the recordings, then
+the question opens in that root.
+Verified by: `TestTheDefaultRecordingsDirectoryBelongsToTheProduct` in
+`internal/infrastructure/library/root_test.go`;
+`TestTheRecordingsQuestionOpensInTheProductsOwnFolder` and
+`TestTheRecordingsQuestionOpensWhereTheRecordingsAre` in `folders_test.go`.
+
 **FR-220 If a voice has no take for a cue, then the cue is silent and the gap is reported**
 Priority: Must.
 If the cast voice has no take for a fired cue, then the application shall play
@@ -654,7 +676,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-226, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-227, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
 | **Should** | FR-206, FR-210, FR-212, FR-307, FR-309, FR-501, NFR-P-201 |
 | **Could** | FR-308 |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface |

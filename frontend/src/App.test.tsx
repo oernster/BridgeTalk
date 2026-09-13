@@ -1,5 +1,5 @@
-// The shell: which pane is showing, what the menus do and how the window behaves when
-// the backend speaks to it.
+// The shell: which pane is showing and how the window behaves when the backend speaks
+// to it. What the menu bar reaches is in App.menus.test.tsx.
 //
 // Three things here are worth guarding above the rest. The window opens on the cast,
 // because choosing a voice is the first thing anybody does. A band button PICKS a pane
@@ -46,11 +46,6 @@ vi.mock('./api', () => ({
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
-    // Two folders with the cast voice second, so a pane that ignored the cast and fell
-    // back to the first folder would name the wrong voice.
-    voiceDirectories: () => Promise.resolve(['Hugo', 'Grace']),
-    checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
-    rescan: () => Promise.resolve(0),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -114,8 +109,8 @@ async function show() {
 }
 
 // The menu bar and the nav band deliberately share names: the band's Settings button
-// and the Settings menu open the same pane. Every query below is scoped to one of the
-// two, so a test says which surface it is pressing rather than relying on there being
+// and the Settings menu open the same pane. Every band query below is scoped to the
+// band, so a test says which surface it is pressing rather than relying on there being
 // only one control by that name.
 
 /** inBand queries within the nav band alone. */
@@ -123,20 +118,9 @@ function inBand() {
   return within(document.querySelector('.navband') as HTMLElement)
 }
 
-/** inMenuBar queries within the menu bar alone. */
-function inMenuBar() {
-  return within(document.querySelector('.menubar') as HTMLElement)
-}
-
 /** band presses one nav-band button by its label. */
 function band(label: string) {
   fireEvent.click(inBand().getByRole('button', { name: label }))
-}
-
-/** menuItem opens a menu title and presses one of its items. */
-function menuItem(title: string, item: string) {
-  fireEvent.click(inMenuBar().getByRole('button', { name: title }))
-  fireEvent.click(inMenuBar().getByRole('button', { name: item }))
 }
 
 describe('the shell', () => {
@@ -201,118 +185,6 @@ describe('the shell', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^Cast Hugo/ }))
 
     await waitFor(() => expect(state.mock.calls.length).toBeGreaterThan(before))
-  })
-})
-
-describe('the menu bar', () => {
-  it('ends the application from File', async () => {
-    await show()
-
-    menuItem('File', 'Quit')
-
-    expect(quit).toHaveBeenCalled()
-  })
-
-  it('reaches the cast and the audition from Audio', async () => {
-    await show()
-
-    menuItem('Audio', 'Audition')
-    expect(await screen.findByRole('heading', { name: 'Audition' })).toBeTruthy()
-
-    menuItem('Audio', 'Cast')
-    expect(await screen.findByRole('heading', { name: 'Cast' })).toBeTruthy()
-  })
-
-  // Recording is done now and then rather than every session, so it is reached from
-  // Audio and takes no room on the band. The pane opens on the voice already cast.
-  it('reaches the record pane from Audio alone, on the cast voice', async () => {
-    state.mockResolvedValue({ ...watching, muted: true })
-    await show()
-    // The band offers to unmute only once the state has landed, which is where the pane
-    // reads its cast from; opening it sooner would test the order the promises settle in.
-    await waitFor(() => expect(inBand().getByRole('button', { name: 'Unmute' })).toBeTruthy())
-
-    menuItem('Audio', 'Record')
-
-    expect(await screen.findByRole('heading', { name: 'Record' })).toBeTruthy()
-    expect(await screen.findByText('Grace has recordings for 0 of 0 moments.')).toBeTruthy()
-    expect(inBand().queryByRole('button', { name: 'Record' })).toBeNull()
-  })
-
-  // The icon is the state and the name is the action: a muted application shows a
-  // silenced speaker and offers to unmute.
-  it('offers the mute as the act rather than as the state', async () => {
-    await show()
-
-    menuItem('Audio', 'Mute')
-    expect(setMuted).toHaveBeenCalledWith(true)
-
-    state.mockResolvedValue({ ...watching, muted: true })
-    act(() => handlers.get('state')?.())
-    await waitFor(() =>
-      expect(inBand().getByRole('button', { name: 'Unmute' })).toBeTruthy(),
-    )
-
-    fireEvent.click(inBand().getByRole('button', { name: 'Unmute' }))
-    await waitFor(() => expect(setMuted).toHaveBeenLastCalledWith(false))
-  })
-
-  it('opens the settings pane from Settings', async () => {
-    await show()
-
-    menuItem('Settings', 'Open settings')
-
-    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeTruthy()
-  })
-
-  // One item, not two: it names the theme it would switch to, so there is never a
-  // choice between the mode you are in and the one you are not.
-  it('names the theme it would switch to rather than the one in use', async () => {
-    await show()
-
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
-    menuItem('Settings', 'Light mode')
-
-    await waitFor(() =>
-      expect(document.documentElement.getAttribute('data-theme')).toBe('light'),
-    )
-    fireEvent.click(inMenuBar().getByRole('button', { name: 'Settings' }))
-    expect(inMenuBar().getByRole('button', { name: 'Dark mode' })).toBeTruthy()
-
-    // The same item takes the window back, so it is a switch in both directions rather
-    // than a way into light mode with no way out from the menu.
-    fireEvent.click(inMenuBar().getByRole('button', { name: 'Dark mode' }))
-    await waitFor(() =>
-      expect(document.documentElement.getAttribute('data-theme')).toBe('dark'),
-    )
-  })
-
-  it('reaches the guide, the licence and the About dialog from Help', async () => {
-    await show()
-
-    menuItem('Help', 'Guide')
-    expect(await screen.findByRole('heading', { name: 'The buttons along the top' }))
-      .toBeTruthy()
-
-    menuItem('Help', 'Licence')
-    expect(await screen.findByText('the full terms')).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-
-    menuItem('Help', 'About')
-    expect(await screen.findByRole('dialog', { name: 'About' })).toBeTruthy()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'About' })).toBeNull())
-  })
-
-  it('closes a menu that is open when its own title is pressed again', async () => {
-    await show()
-    const title = inMenuBar().getByRole('button', { name: 'File' })
-
-    fireEvent.click(title)
-    expect(title.getAttribute('aria-expanded')).toBe('true')
-    fireEvent.click(title)
-    expect(title.getAttribute('aria-expanded')).toBe('false')
   })
 })
 

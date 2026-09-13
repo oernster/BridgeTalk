@@ -118,7 +118,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The menus',
     paragraphs: [
-      'File holds Quit. Audio opens Cast, Audition or Record and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
+      'File holds Quit. Audio opens Cast, Audition or Missing takes and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
     ],
   },
   {
@@ -138,7 +138,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Record in a program built for it.',
-        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Record pane, under Audio, lists the moments a voice has no recording for yet; Open folder beside one opens the folder its take belongs in, ready for the take to be saved there under any name.',
+        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Missing takes pane, under Audio, lists the moments a voice has no recording for yet; Open folder beside one opens the folder its take belongs in, ready for the take to be saved there under any name.',
       },
       {
         title: 'Each moment plays one recording.',

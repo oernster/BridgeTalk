@@ -1,6 +1,6 @@
 package library
 
-// The checklist behind the Record pane, over real temporary directories. Each test names
+// The checklist behind the Missing takes pane, over real temporary directories. Each test names
 // the requirement in REQUIREMENTS.md section 4 it holds.
 
 import (

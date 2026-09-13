@@ -232,7 +232,7 @@ describe('with no window bridge at all', () => {
   })
 
   // The checklist answers for the voice that was asked about, as the breakdown does, so
-  // the Record pane's count still names a voice.
+  // the Missing takes pane's count still names a voice.
   it('answers the checklist for the voice that was asked about', async () => {
     removeBridge()
     expect(await api.checklist('Alpha')).toEqual({

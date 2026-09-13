@@ -48,7 +48,7 @@ is chosen yet, it asks where the folders should go first, opening in its own `Re
 
 Record each take in any program you like, such as Audacity (free, from
 https://www.audacityteam.org/), saving it as WAV, MP3, FLAC or Ogg.
-The Record pane, under Audio, lists the moments a voice has no recording for yet; Open folder
+The Missing takes pane, under Audio, lists the moments a voice has no recording for yet; Open folder
 beside one opens the folder its take belongs in.
 
 To name them by hand instead: every moment is named in the game's own words, as the journal and

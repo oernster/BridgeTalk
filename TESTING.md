@@ -64,7 +64,7 @@ that the product is named in exactly one place.
 | `guideContent.ts` | 100% | 100% |
 | `icons.tsx` | 100% | 100% |
 | `preferences.ts` | 100% | 100% |
-| `record.tsx` | 100% | 100% |
+| `missingTakes.tsx` | 100% | 100% |
 | `hooks.ts` | 100% | 94.6% |
 | `guide.tsx` | 100% | 89.5% |
 | `moments.tsx` | 100% | 94.1% |
@@ -74,10 +74,10 @@ that the product is named in exactly one place.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.2%** | **95.5%** |
 
-168 tests across 14 files, run under Vitest with jsdom.
+168 tests across 15 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being wrong.
-`record.tsx` read 100% while six of its behaviours could be broken with every test still
+`missingTakes.tsx` read 100% while six of its behaviours could be broken with every test still
 passing. The pane, the menu item that reaches it, the theme item beside it and the bridge
 calls in `api.ts` were then proved by planting a violation for each behaviour and reading
 the exit code: 43 plants in all, every one caught.

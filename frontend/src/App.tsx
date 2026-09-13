@@ -20,10 +20,10 @@ import {
 import { AuditionPane } from './audition'
 import { CastPane } from './cast'
 import { GuidePane } from './guide'
+import { MissingTakesPane } from './missingTakes'
 import { HomePane, SettingsPane } from './panes'
-import { RecordPane } from './record'
 
-type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'record' | 'guide'
+type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'takes' | 'guide'
 type Menu = 'file' | 'audio' | 'settings' | 'help' | null
 
 // How long the keyboard is given to settle on the window before the page decides
@@ -146,17 +146,17 @@ export function App() {
             Audition
           </button>
           {/* A menu item rather than a band button: the band's width is measured for
-              the buttons it holds; recording is done now and then rather than
-              every session, which is what the band is for. */}
+              the buttons it holds; filling in a voice's missing takes is done now and
+              then rather than every session, which is what the band is for. */}
           <button
             className="menuitem"
             type="button"
             onClick={() => {
-              setPane('record')
+              setPane('takes')
               setMenu(null)
             }}
           >
-            Record
+            Missing takes
           </button>
           <button
             className="menuitem"
@@ -312,7 +312,7 @@ export function App() {
           />
         )}
         {pane === 'audition' && <AuditionPane cast={state?.voice ?? ''} />}
-        {pane === 'record' && <RecordPane cast={state?.voice ?? ''} />}
+        {pane === 'takes' && <MissingTakesPane cast={state?.voice ?? ''} />}
         {pane === 'guide' && <GuidePane />}
       </main>
 

@@ -1,4 +1,5 @@
-// The record pane: what a voice still has no recording for, with the way to its folder.
+// The Missing takes pane: what a voice still has no recording for, with the way to its
+// folder.
 //
 // Recording itself happens in a program built for it. What only this application knows
 // is which moments a voice is missing and exactly which folder each take belongs in, so
@@ -9,14 +10,14 @@ import { api, type Checklist } from './api'
 import { grouped } from './moments'
 
 /**
- * RecordPane lists the moments a voice folder has no recording for, each beside the
+ * MissingTakesPane lists the moments a voice folder has no recording for, each beside the
  * button that opens the folder its take belongs in.
  *
  * Every voice folder is offered, recorded or not. A voice made with Make folders holds
  * nothing until its first take is saved, so it is not yet a voice anywhere else in the
  * window; it is also exactly the one that needs this list.
  */
-export function RecordPane({ cast }: { cast: string }) {
+export function MissingTakesPane({ cast }: { cast: string }) {
   const [folders, setFolders] = useState<string[]>([])
   const [loaded, setLoaded] = useState(false)
   const [voice, setVoice] = useState('')
@@ -70,7 +71,7 @@ export function RecordPane({ cast }: { cast: string }) {
 
   return (
     <>
-      <h2>Record</h2>
+      <h2>Missing takes</h2>
       <p className="lede">
         Record in any program you like, such as Audacity; save each take as WAV, MP3,
         FLAC or Ogg. Choose a voice, then press Open folder beside a moment: its folder

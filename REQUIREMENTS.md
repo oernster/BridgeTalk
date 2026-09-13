@@ -396,7 +396,7 @@ When the user asks for the folders of a named voice, the application shall creat
 the vocabulary.
 Rationale: a folder named for its cue is the folder form of rule 2, so a person
 filling a voice by hand puts each recording in the folder for its moment and never
-types a cue id. The Record pane opens the same folders under FR-314.
+types a cue id. The Missing takes pane opens the same folders under FR-314.
 Acceptance: Given an empty library root and a vocabulary of 256 cues, when the user
 makes the folders for `Oliver`, then `Oliver/` holds 256 empty subdirectories, one
 per cue id; a take then placed in `Oliver/DockingGranted/` under any file name
@@ -511,18 +511,18 @@ bare recorder here would do neither. Those identifiers are retired and are not r
 
 **FR-311 List what a voice is missing**
 Priority: Must.
-When the user chooses a voice folder on the Record pane, the application shall list
+When the user chooses a voice folder on the Missing takes pane, the application shall list
 every cue that voice has no take for, grouped under each cue's heading and showing each
 cue's title and id.
 Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 256
 cues, when Oliver is chosen, then 255 cues are listed and `Docked` is not.
 Verified by: `TestMissingListsWhatAVoiceHasNoTakeFor` in
 `internal/infrastructure/library/checklist_test.go`; `TestTheChecklistCountsWhatIsRecorded`
-in `checklist_test.go`; `frontend/src/record.test.tsx`.
+in `checklist_test.go`; `frontend/src/missingTakes.test.tsx`.
 
 **FR-312 Offer every voice folder, recorded or not**
 Priority: Must.
-The Record pane shall offer every immediate subdirectory of the library root as a voice
+The Missing takes pane shall offer every immediate subdirectory of the library root as a voice
 folder, including one that holds no take yet.
 Rationale: a voice made under FR-223 holds no take until the first is saved, so under
 FR-209 it is not yet a voice; it is exactly the one that needs the list.
@@ -531,7 +531,7 @@ Verified by: `TestVoiceDirsListsEveryFolderRecordedOrNot`;
 
 **FR-313 Show progress**
 Priority: Should.
-While a voice folder is chosen, the Record pane shall show how many cues of the
+While a voice folder is chosen, the Missing takes pane shall show how many cues of the
 vocabulary it has at least one take for.
 Verified by: `TestTheChecklistCountsWhatIsRecorded`.
 
@@ -549,8 +549,8 @@ a test, since a test opens no window.
 **FR-315 If a moment's folder cannot be opened, then say why**
 Priority: Must.
 If the cue is not in the vocabulary, the voice folder does not exist or the folder
-cannot be made or shown, then the application shall report the reason on the Record
-pane without opening anything.
+cannot be made or shown, then the application shall report the reason on the Missing
+takes pane without opening anything.
 Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 `TestAMomentFolderThatCannotBeOpenedIsReported`.
 

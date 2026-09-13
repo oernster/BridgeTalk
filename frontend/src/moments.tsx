@@ -10,27 +10,12 @@ import { api, type CueBreakdown, type CueEntry } from './api'
 import { Dialog, ReadingBody } from './dialogs'
 
 /**
- * grouped gathers cues under the moment in the game they belong to.
+ * Half renders one side of the breakdown; or says that it is empty.
  *
- * The backend already decided each cue's group and its heading in words; each list also
- * arrives sorted by id, so this only has to keep first-seen order rather than sort again.
- * No name for a group is written here: the heading is generated from the game's own
- * spelling beside the title, which is what keeps a second list of names from existing.
+ * Each cue stands under its full title alone (FR-233). A heading read from the id's first
+ * segment would repeat the start of every title beneath it, word for word wherever the id
+ * has only the one segment. The list arrives sorted by id, so related cues still sit together.
  */
-export function grouped(cues: CueEntry[]): [string, CueEntry[]][] {
-  const order: string[] = []
-  const bucket = new Map<string, CueEntry[]>()
-  for (const item of cues) {
-    if (!bucket.has(item.group)) {
-      order.push(item.group)
-      bucket.set(item.group, [])
-    }
-    bucket.get(item.group)?.push(item)
-  }
-  return order.map((group) => [group, bucket.get(group) ?? []])
-}
-
-/** Half renders one side of the breakdown, grouped; or says that it is empty. */
 function Half({ title, lede, cues }: { title: string; lede: string; cues: CueEntry[] }) {
   return (
     <>
@@ -42,14 +27,9 @@ function Half({ title, lede, cues }: { title: string; lede: string; cues: CueEnt
         <p className="empty">Nothing here.</p>
       ) : (
         <div className="cuelist">
-          {grouped(cues).map(([group, entries]) => (
-            <div className="cuegroup" key={group}>
-              <div className="grouphead">{entries[0].heading}</div>
-              {entries.map((item) => (
-                <div className="cuerow" key={item.id}>
-                  {item.title}
-                </div>
-              ))}
+          {cues.map((item) => (
+            <div className="cuerow" key={item.id}>
+              {item.title}
             </div>
           ))}
         </div>

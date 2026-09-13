@@ -123,8 +123,6 @@ describe('the breakdown behind a row', () => {
         {
           id: 'StartJump.JumpType.Hyperspace',
           title: 'Start jump: jump type hyperspace',
-          group: 'StartJump',
-          heading: 'Start jump',
           folder: 'StartJump_JumpType_Hyperspace',
           purpose: 'When a hyperspace jump to another system begins.',
         },
@@ -133,8 +131,6 @@ describe('the breakdown behind a row', () => {
         {
           id: 'Disembark',
           title: 'Disembark',
-          group: 'Disembark',
-          heading: 'Disembark on foot',
           folder: 'Disembark',
           purpose: 'When you step out onto foot.',
         },
@@ -148,9 +144,9 @@ describe('the breakdown behind a row', () => {
     expect(await screen.findByText('Start jump: jump type hyperspace')).toBeTruthy()
     expect(screen.getByText('Disembark')).toBeTruthy()
 
-    // The group headings are the ones the backend generated rather than the id's segment.
-    expect(screen.getByText('Start jump')).toBeTruthy()
-    expect(screen.getByText('Disembark on foot')).toBeTruthy()
+    // FR-233: each cue under its full title alone, with no group heading repeating its words.
+    expect(screen.queryByText('Start jump')).toBeNull()
+    expect(screen.getAllByText('Disembark')).toHaveLength(1)
 
     // Each half is counted in its own heading, so the pair reads as a whole.
     expect(screen.getByRole('heading', { name: 'Moments spoken for (1)' })).toBeTruthy()

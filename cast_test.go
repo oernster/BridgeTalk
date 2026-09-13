@@ -96,10 +96,9 @@ func TestTheBreakdownAnswersForAVoiceThatIsNotCast(t *testing.T) {
 	if breakdown.Unserved[0].Title != "Zz: silent" {
 		t.Fatalf("title = %q, want the id read as words", breakdown.Unserved[0].Title)
 	}
-	shields := breakdown.Served[2]
-	if shields.Group != "ShieldState" || shields.Heading != "Shield state" {
-		t.Fatalf("group %q headed %q, want the id's first segment and it in words",
-			shields.Group, shields.Heading)
+	// FR-233: a cue travels under its full title alone, with no group heading beside it.
+	if shields := breakdown.Served[2]; shields.Title != "Shield state: shields up false" {
+		t.Fatalf("title = %q, want the whole id read as words", shields.Title)
 	}
 }
 

@@ -8,7 +8,6 @@
 import { useEffect, useState } from 'react'
 import { api, type Checklist } from './api'
 import { Chooser, useChooser } from './chooser'
-import { grouped } from './moments'
 
 /** stillMissing keeps the checklists with at least one moment unrecorded, in folder order. */
 const stillMissing = (lists: Checklist[]) => lists.filter((list) => list.missing.length > 0)
@@ -155,31 +154,27 @@ export function MissingTakesPane({
           <p className="lede">
             Each moment below says when it is heard, then the folder its audio file is saved in.
           </p>
-          {grouped(list.missing).map(([group, entries]) => (
-            <section key={group}>
-              <h3>{entries[0].heading}</h3>
-              {entries.map((item) => (
-                <div className="row" key={item.id}>
-                  <span className="grow">
-                    {item.title}
-                    <br />
-                    {/* FR-318: when the take will be heard, between the title and its folder. */}
-                    <span className="purpose">{item.purpose}</span>
-                    <br />
-                    <span className="hint">{`${list.folder}${item.folder}`}</span>
-                  </span>
-                  <button
-                    className="btn"
-                    data-stop
-                    type="button"
-                    aria-label={`Open the folder for ${item.title}`}
-                    onClick={() => open(item.id)}
-                  >
-                    Open folder
-                  </button>
-                </div>
-              ))}
-            </section>
+          {/* FR-233: each moment under its full title alone, so no words are shown twice. */}
+          {list.missing.map((item) => (
+            <div className="row" key={item.id}>
+              <span className="grow">
+                {item.title}
+                <br />
+                {/* FR-318: when the take will be heard, between the title and its folder. */}
+                <span className="purpose">{item.purpose}</span>
+                <br />
+                <span className="hint">{`${list.folder}${item.folder}`}</span>
+              </span>
+              <button
+                className="btn"
+                data-stop
+                type="button"
+                aria-label={`Open the folder for ${item.title}`}
+                onClick={() => open(item.id)}
+              >
+                Open folder
+              </button>
+            </div>
           ))}
         </>
       )}

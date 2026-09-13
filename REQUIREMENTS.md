@@ -543,6 +543,20 @@ Verified by: `TestCastingAVoiceIsConfirmedInThatVoice` and `TestCastingAVoiceWhi
 in `cast_test.go`; `TestTheAcknowledgementIsFoundByItsSource` and
 `TestAnAcknowledgementNobodyRecordedIsSilence` in `internal/infrastructure/library/catalogue_test.go`.
 
+**FR-233 Each listed cue is named once**
+Priority: Must.
+Wherever the application lists cues, on the Missing takes pane and in the breakdown dialog behind
+a cast row, it shall show each cue under its full title alone, with no group heading above it.
+Rationale: a heading is read from the first segment of the id and a title from the whole id, so a
+heading repeats the start of every title beneath it; for 112 of the 256 cues the two are the same
+words (Oliver, 2026-09-13).
+Acceptance: Given `CarrierDepositFuel` and `StartJump.JumpType.Hyperspace` listed, then "Carrier
+deposit fuel" is shown once and "Start jump: jump type hyperspace" is shown with no "Start jump"
+standing on its own above it.
+Verified by: `frontend/src/missingTakes.test.tsx` and `frontend/src/cast.test.tsx`, each failing
+when a heading is drawn above a title; `TestTheBreakdownAnswersForAVoiceThatIsNotCast` in
+`cast_test.go` for the full title reaching the page.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**
@@ -576,8 +590,8 @@ it; FR-316 and FR-317 replace it. FR-312 is retired and is not reused.
 **FR-311 List what a voice is missing**
 Priority: Must.
 When the user chooses a voice folder on the Missing takes pane, the application shall list
-every cue that voice has no take for, grouped under each cue's heading and showing each
-cue's title with the full path of the folder an audio file for it belongs in.
+every cue that voice has no take for, each under its full title alone (FR-233), with the full
+path of the folder an audio file for it belongs in.
 Rationale: what a voice is missing is audio files in particular folders, so the list says
 where each one goes rather than leaving the reader to work out a path from a cue id.
 Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 256
@@ -596,7 +610,7 @@ the page and panel backgrounds in both the light theme and the dark one.
 Rationale: the list is useful to someone recording only if it says when each take will be heard
 (Oliver, 2026-09-13).
 Acceptance: Given `Oliver/` with no take for `Cast.Confirmed`, when Oliver is chosen, then the
-row reads "Cast confirmed", then the purpose of `Cast.Confirmed`, then
+row reads "Cast: confirmed", then the purpose of `Cast.Confirmed`, then
 `<library root>\Oliver\Cast_Confirmed`, the purpose drawn in the secondary colour.
 Verified by: `frontend/src/missingTakes.test.tsx` for the line and its place in the row;
 `TestTheChecklistCountsWhatIsRecorded` for the purpose reaching the page;
@@ -721,7 +735,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-232, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-233, FR-311, FR-314 to FR-318, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-501, NFR-P-201 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

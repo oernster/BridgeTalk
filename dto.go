@@ -82,9 +82,8 @@ type AboutDTO struct {
 //
 // The title is what reaches the screen, since an id is a name for the code rather
 // than for a commander. The id travels with it because it keys the list and because
-// the reaction log reports ids, so a silence seen there has something to match. The
-// heading is the group in words, generated beside the title so the page never keeps a
-// second list of names for the groups.
+// the reaction log reports ids, so a silence seen there has something to match. No group
+// or heading travels with it: a list shows each cue under its full title alone (FR-233).
 //
 // Folder is the name of the folder that holds the cue's takes, worked out on this side so
 // the page never keeps the rule that writes a dot as an underscore (FR-229).
@@ -94,8 +93,6 @@ type AboutDTO struct {
 type CueDTO struct {
 	ID      string `json:"id"`
 	Title   string `json:"title"`
-	Group   string `json:"group"`
-	Heading string `json:"heading"`
 	Folder  string `json:"folder"`
 	Purpose string `json:"purpose"`
 }

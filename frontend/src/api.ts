@@ -68,9 +68,6 @@ export interface Reaction {
 export interface CueEntry {
   id: string
   title: string
-  group: string
-  /** The group in words, generated on the Go side so the page keeps no list of names. */
-  heading: string
   /** The name of the folder holding the cue's takes, dots written as underscores on the Go side. */
   folder: string
   /** When the cue is heard, written by hand in the cue table (FR-231). */

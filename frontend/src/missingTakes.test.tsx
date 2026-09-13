@@ -2,7 +2,7 @@
 //
 // What these guard is that only a voice still missing a take is offered, an empty one
 // included; that the chooser is there whatever the directory holds; that the list says
-// what is missing under the moment's own heading with the folder its file belongs in;
+// what is missing, each moment under its full title alone, with the folder its file belongs in;
 // that the button opens the folder for the moment it sits beside.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,24 +30,18 @@ const { MissingTakesPane } = await import('./missingTakes')
 const docked: CueEntry = {
   id: 'Docked',
   title: 'Docked',
-  group: 'Docked',
-  heading: 'Docked at a station',
   folder: 'Docked',
   purpose: 'When the ship docks.',
 }
 const undocked: CueEntry = {
   id: 'Undocked',
   title: 'Undocked',
-  group: 'Undocked',
-  heading: 'Undocked',
   folder: 'Undocked',
   purpose: 'When the ship leaves its pad.',
 }
 const hyperspace: CueEntry = {
   id: 'StartJump.JumpType.Hyperspace',
   title: 'Start jump: jump type hyperspace',
-  group: 'StartJump',
-  heading: 'Start jump',
   folder: 'StartJump_JumpType_Hyperspace',
   purpose: 'When a hyperspace jump to another system begins.',
 }
@@ -192,12 +186,15 @@ describe('the missing takes pane', () => {
     expect((await chooser()).value).toBe('Hugo')
   })
 
-  // FR-311 and FR-313: each missing moment says where its audio file goes.
-  it('lists what is missing under its heading with the folder each file belongs in', async () => {
+  // FR-311 and FR-313: each missing moment says where its audio file goes. FR-233: under its
+  // full title alone, with no heading repeating the start of that title.
+  it('lists each missing moment under its full title with the folder its file belongs in', async () => {
     render(<MissingTakesPane cast="Oliver" />)
 
     expect(await screen.findByText('Oliver has recordings for 1 of 3 moments.')).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Start jump' })).toBeTruthy()
+    expect(screen.getByText(hyperspace.title)).toBeTruthy()
+    expect(screen.queryByText('Start jump')).toBeNull()
+    expect(screen.queryAllByRole('heading', { level: 3 })).toHaveLength(0)
     // FR-229: the folder writes each dot of the id as an underscore.
     expect(screen.getByText('D:\\Recordings\\Oliver\\StartJump_JumpType_Hyperspace')).toBeTruthy()
     expect(screen.queryByText('D:\\Recordings\\Oliver\\Undocked')).toBeNull()

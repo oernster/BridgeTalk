@@ -97,8 +97,6 @@ func cueLines(cues []cue.Cue) []CueDTO {
 		out = append(out, CueDTO{
 			ID:      string(item.ID()),
 			Title:   item.Title(),
-			Group:   item.ID().Group(),
-			Heading: item.ID().Heading(),
 			Folder:  item.ID().Folder(),
 			Purpose: item.Purpose(),
 		})

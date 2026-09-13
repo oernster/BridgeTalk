@@ -48,8 +48,6 @@ vi.mock('./api', () => ({
           {
             id: 'Docked',
             title: 'Docked',
-            group: 'Docked',
-            heading: 'Docked at a station',
             folder: 'Docked',
             purpose: 'When the ship docks.',
           },

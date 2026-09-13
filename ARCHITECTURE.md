@@ -127,7 +127,9 @@ field and a value where one payload field narrows it. A status cue's id is the f
 `Set` or `Cleared`; a status value's id is its name followed by what it became (`GuiFocus.GalaxyMap`).
 The one cue with no name from the game is the application's own `Cast.Confirmed`. The first segment is
 therefore the moment the cue listens for. It is the only grouping the vocabulary needs: the audition
-pane and the breakdown dialog both read it rather than keeping a second taxonomy in step.
+pane reads it rather than keeping a second taxonomy in step. A list of cues does not: the Missing
+takes pane and the breakdown dialog show each cue under its full title alone (FR-233), since a heading
+read from the first segment would repeat the start of every title beneath it.
 
 **The words a reader sees are generated, with one exception.** `cue.ID.Title` reads an id as words:
 each segment breaks where its capitals begin a new word, a run of capitals stays an initialism and

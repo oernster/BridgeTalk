@@ -143,67 +143,6 @@ func (p *Player) gain() float64 {
 	return math.Pow(volumeBase, (level-fullVolume)*volumeOctaves)
 }
 
-// Stalls reports how many times the device went hungry and the longest it waited.
-//
-// It is cumulative over the run and shown where it can be read, because a break in
-// the speech is otherwise something only the listener knows about and only in words.
-// A machine that never starves the player reports nothing at all.
-func (p *Player) Stalls() (count int, worst time.Duration) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.stalls, p.worst
-}
-
-// beginClip forgets the last request, so the silence between two clips is
-// not counted as the device having waited for one.
-func (p *Player) beginClip() {
-	p.mu.Lock()
-	p.lastPull = time.Time{}
-	p.mu.Unlock()
-}
-
-// observePull records that the device asked for samples, counting the wait since it
-// last asked where that ran past a whole buffer.
-func (p *Player) observePull(at time.Time) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if !p.lastPull.IsZero() {
-		if waited := at.Sub(p.lastPull); waited > stallInterval {
-			p.stalls++
-			if waited > p.worst {
-				p.worst = waited
-			}
-		}
-	}
-	p.lastPull = at
-}
-
-// levelled wraps a streamer so every buffer it produces is scaled by the player's
-// current gain, with the device's request for it timed on the way through.
-type levelled struct {
-	source beep.Streamer
-	player *Player
-	clock  func() time.Time
-}
-
-// Stream fills the buffer from the wrapped streamer, then scales it.
-func (l levelled) Stream(samples [][2]float64) (int, bool) {
-	l.player.observePull(l.clock())
-	filled, ok := l.source.Stream(samples)
-	gain := l.player.gain()
-	if gain == fullVolume {
-		return filled, ok
-	}
-	for i := range samples[:filled] {
-		samples[i][0] *= gain
-		samples[i][1] *= gain
-	}
-	return filled, ok
-}
-
-// Err propagates the wrapped streamer's error.
-func (l levelled) Err() error { return l.source.Err() }
-
 // Done yields once per completed or stopped sequence.
 func (p *Player) Done() <-chan struct{} { return p.finished }
 
@@ -214,25 +153,66 @@ func (p *Player) Playing() bool {
 	return p.playing
 }
 
-// Play starts a sequence and returns immediately.
+// Play starts a sequence and returns immediately, ending whatever was playing first.
+//
+// The old sequence is replaced and the new one claimed under the one lock, so there is
+// no moment reading idle between them for PlayIfIdle to start something in.
 func (p *Player) Play(clips []string, gap time.Duration) error {
 	if len(clips) == 0 {
 		return ErrNoClips
 	}
-	p.Stop()
-
 	p.mu.Lock()
+	replaced := p.cancel
+	cancel := p.claim()
+	p.mu.Unlock()
+
+	if replaced != nil {
+		close(replaced)
+	}
+	if !p.silent {
+		speaker.Clear()
+	}
+	p.launch(clips, gap, cancel)
+	return nil
+}
+
+// PlayIfIdle starts a sequence only when nothing is playing, reporting whether it did.
+//
+// A press on a button must never cut short a clip already sounding (FR-236). Asking
+// Playing and then calling Play leaves a gap in which another caller can start
+// something, so the question and the start are taken under the one lock.
+func (p *Player) PlayIfIdle(clips []string, gap time.Duration) (bool, error) {
+	if len(clips) == 0 {
+		return false, ErrNoClips
+	}
+	p.mu.Lock()
+	if p.playing {
+		p.mu.Unlock()
+		return false, nil
+	}
+	cancel := p.claim()
+	p.mu.Unlock()
+
+	p.launch(clips, gap, cancel)
+	return true, nil
+}
+
+// claim marks a sequence as playing and returns the channel that cancels it. The
+// caller holds the lock.
+func (p *Player) claim() chan struct{} {
 	p.playing = true
 	cancel := make(chan struct{})
 	p.cancel = cancel
-	p.mu.Unlock()
+	return cancel
+}
 
+// launch runs a claimed sequence; with no device it completes at once.
+func (p *Player) launch(clips []string, gap time.Duration, cancel chan struct{}) {
 	if p.silent {
 		p.complete(cancel)
-		return nil
+		return
 	}
 	go p.run(clips, gap, cancel)
-	return nil
 }
 
 // run plays each clip in turn, honouring the cancel signal between and during them.

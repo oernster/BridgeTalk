@@ -70,6 +70,54 @@ func wavBytes(t *testing.T, frames int) []byte {
 	return out.Bytes()
 }
 
+// A press must never cut short what is already sounding (FR-236), so starting only
+// when idle leaves a running sequence exactly as it was: still current, still playing
+// and never cancelled.
+func TestPlayingIfIdleLeavesACurrentSequenceAlone(t *testing.T) {
+	t.Parallel()
+	player := silentPlayer()
+	current := make(chan struct{})
+	player.playing = true
+	player.cancel = current
+
+	started, err := player.PlayIfIdle([]string{"anything.mp3"}, 0)
+	if err != nil {
+		t.Fatalf("playing if idle: %v", err)
+	}
+	if started {
+		t.Fatal("a sequence started over one already playing")
+	}
+	if player.cancel != current || !player.Playing() {
+		t.Fatal("the sequence already playing was replaced")
+	}
+	select {
+	case <-current:
+		t.Fatal("the sequence already playing was cancelled")
+	default:
+	}
+}
+
+// With nothing playing, the idle-only start is an ordinary start.
+func TestPlayingIfIdleStartsWhenNothingPlays(t *testing.T) {
+	t.Parallel()
+	player := silentPlayer()
+
+	started, err := player.PlayIfIdle([]string{"anything.mp3"}, 0)
+	if err != nil || !started {
+		t.Fatalf("got %v, %v; want a start with no error", started, err)
+	}
+	if !waitForFinish(t, player) {
+		t.Fatal("a sequence started when idle never signalled that it had finished")
+	}
+}
+
+func TestPlayingNothingIfIdleIsRefused(t *testing.T) {
+	t.Parallel()
+	if _, err := silentPlayer().PlayIfIdle(nil, 0); !errors.Is(err, ErrNoClips) {
+		t.Fatalf("got %v, want %v", err, ErrNoClips)
+	}
+}
+
 // A sequence with nothing in it is a caller mistake rather than a silent success;
 // a cue bound to an empty folder would otherwise look as though it had spoken.
 func TestPlayingNothingIsRefused(t *testing.T) {

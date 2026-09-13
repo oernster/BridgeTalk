@@ -29,6 +29,7 @@ vi.mock('./api', () => ({
     auditionGroups: () => Promise.resolve([]),
     audition: () => Promise.resolve(null),
     stopAudition: () => Promise.resolve(),
+    playing: () => Promise.resolve(false),
     reactions: () => Promise.resolve([]),
     about: () => Promise.resolve(null),
     licence: () => Promise.resolve('the full terms'),

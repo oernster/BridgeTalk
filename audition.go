@@ -67,9 +67,19 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	if a.session.player == nil {
 		return AuditionDTO{}, fmt.Errorf("there is no audio device to play through")
 	}
-	if err := a.session.player.Play([]string{clip}, auditionGap); err != nil {
+	// FR-236: a press never cuts short what is already sounding, whether an earlier
+	// audition or the ship speaking. The question and the start are one call on the
+	// player, since asking first and playing second leaves a gap another caller can use.
+	started, err := a.session.player.PlayIfIdle([]string{clip}, auditionGap)
+	if err != nil {
 		return AuditionDTO{}, fmt.Errorf("playing %s: %w", label(group), err)
 	}
+	if !started {
+		// Ignored rather than refused: the pane holds its buttons while anything plays,
+		// so this is a press that raced the event; it says nothing.
+		return AuditionDTO{}, nil
+	}
+	a.announcePlayback()
 	return AuditionDTO{Group: group, Clip: clipName(clip)}, nil
 }
 
@@ -77,6 +87,30 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 func (a *App) StopAudition() {
 	if a.session.player != nil {
 		a.session.player.Stop()
+	}
+}
+
+// Playing reports whether the device is sounding anything. A pane opened part way
+// through a clip asks, so its buttons are held from the start rather than from the
+// next event (FR-236).
+func (a *App) Playing() bool {
+	return a.session.player != nil && a.session.player.Playing()
+}
+
+// announcePlayback tells the front end whether anything is sounding. The run loop
+// announces each end; a start is announced from here, so the audition buttons are held
+// for as long as a clip plays (FR-236).
+func (a *App) announcePlayback() {
+	a.emit(playbackEvent, PlaybackDTO{Playing: a.Playing()})
+}
+
+// pollAndAnnounce polls, then announces a start where the poll set something playing,
+// so a reaction to the game holds the audition buttons exactly as an audition does.
+func (a *App) pollAndAnnounce() {
+	was := a.Playing()
+	a.poll()
+	if !was && a.Playing() {
+		a.announcePlayback()
 	}
 }
 

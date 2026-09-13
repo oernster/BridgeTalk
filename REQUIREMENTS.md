@@ -586,6 +586,23 @@ pressed, then the sign-in entry exists and the application's Settings box reads 
 Verified by: `TestSetupAppliesTheBoxesItShows` in `tests/structural/setupchoices_test.go`. The
 entry and the Settings box after a real Reinstall are checked by hand, since no test runs setup.
 
+**FR-236 A press never cuts a clip short**
+Priority: Must.
+While a clip is playing, the application shall ignore every audition press whichever group it
+names; it shall show each audition button as unavailable until the clip ends or Stop is pressed.
+Rationale: hammering Play cut off the clip already sounding, since starting a clip stopped whatever
+was playing first (Oliver, 2026-09-13). A clip the ship is saying in reaction to the game counts
+as playing, so an audition press never cuts a reaction short either.
+Note: three acts still end a clip on purpose. Stop ends it. Casting a voice ends it and plays the
+new voice's confirmation (FR-232). An alert ends a reaction of lower priority.
+Acceptance: Given a clip playing, when any audition button is pressed, then the clip plays on and
+nothing else starts. Given a clip playing, then every audition button is disabled; when the clip
+ends, they are enabled again.
+Verified by: `TestAPressWhileAClipPlaysLeavesThatClipPlaying` in `audition_test.go`;
+`TestPlayingIfIdleLeavesACurrentSequenceAlone` in `internal/infrastructure/audio/sequence_test.go`;
+`frontend/src/audition.test.tsx` for the held buttons. Each failed with its guard taken out. That
+the clip is heard to its end is checked by hand, since no test hears the device.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**

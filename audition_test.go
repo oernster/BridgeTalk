@@ -4,6 +4,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/oernster/bridge-talk/internal/application/services"
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 )
 
 func TestTheAuditionPaneListsWhatAVoiceCanBeHeardOn(t *testing.T) {
@@ -62,6 +65,128 @@ func TestAnAuditionPlaysEvenWhileMuted(t *testing.T) {
 	defer player.mu.Unlock()
 	if len(player.played) != 1 {
 		t.Fatalf("the device was given %d sequences, want one", len(player.played))
+	}
+}
+
+// The real player stops whatever is running before it starts a sequence, so a second
+// Play handed to it while a clip sounds cuts that clip off. A press while something
+// plays must therefore never reach the device (FR-236). It is ignored rather than
+// refused, so it names no clip and raises no error for the pane to show.
+func TestAPressWhileAClipPlaysLeavesThatClipPlaying(t *testing.T) {
+	app, player, _ := fixtureApp(t)
+
+	if _, err := app.Audition("Alpha", "ShieldState"); err != nil {
+		t.Fatalf("auditioning: %v", err)
+	}
+	ignored, err := app.Audition("Alpha", "Docked")
+	if err != nil {
+		t.Fatalf("a press while a clip plays raised %v, want it ignored", err)
+	}
+	if ignored.Clip != "" {
+		t.Fatalf("an ignored press named %q, want no clip", ignored.Clip)
+	}
+
+	player.mu.Lock()
+	defer player.mu.Unlock()
+	if len(player.played) != 1 {
+		t.Fatalf("the device was given %d sequences, want the first alone", len(player.played))
+	}
+	if player.stops != 0 {
+		t.Fatalf("the device was stopped %d times, want the clip left playing", player.stops)
+	}
+}
+
+// announcedPlaying reports whether the facade told the page that something is playing.
+func announcedPlaying(log *recorder) bool {
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	for _, event := range log.events {
+		if state, ok := event.payload.(PlaybackDTO); ok && event.name == playbackEvent && state.Playing {
+			return true
+		}
+	}
+	return false
+}
+
+// The pane holds its buttons from the moment a clip starts, so an audition that starts
+// one says so rather than leaving the pane to find out when it ends (FR-236).
+func TestAnAuditionAnnouncesThatItStarted(t *testing.T) {
+	app, _, log := fixtureApp(t)
+
+	if _, err := app.Audition("Alpha", "ShieldState"); err != nil {
+		t.Fatalf("auditioning: %v", err)
+	}
+
+	if !announcedPlaying(log) {
+		t.Fatal("an audition started a clip without telling the page")
+	}
+}
+
+// Casting ends what was playing on purpose and plays the confirmation, which holds the
+// audition buttons like any other clip.
+func TestACastConfirmationAnnouncesThatItStarted(t *testing.T) {
+	app, _, log := fixtureApp(t)
+
+	if err := app.SelectVoice("Alpha"); err != nil {
+		t.Fatalf("casting Alpha: %v", err)
+	}
+
+	if !announcedPlaying(log) {
+		t.Fatal("a cast confirmation started without telling the page")
+	}
+}
+
+// A reaction the game set off is a clip playing too, so a poll that starts one tells
+// the page, which holds the audition buttons exactly as it does for an audition.
+func TestAPollThatStartsAReactionAnnouncesIt(t *testing.T) {
+	player := newFakePlayer()
+	app, log := newTestApp(t, player)
+	docked, err := cue.New(cue.Definition{
+		ID: "Docked", Source: "journal", Event: "Docked", Priority: "notice",
+	})
+	if err != nil {
+		t.Fatalf("building cue: %v", err)
+	}
+	app.session.scheduler.Submit(services.Request{Cue: docked, Clips: []string{"docked.mp3"}})
+
+	app.pollAndAnnounce()
+
+	if !announcedPlaying(log) {
+		t.Fatal("a poll started a reaction without telling the page")
+	}
+}
+
+// A poll that starts nothing says nothing, so the page is not told on every tick.
+func TestAPollThatStartsNothingAnnouncesNothing(t *testing.T) {
+	player := newFakePlayer()
+	app, log := newTestApp(t, player)
+
+	app.pollAndAnnounce()
+
+	log.mu.Lock()
+	defer log.mu.Unlock()
+	if len(log.events) != 0 {
+		t.Fatalf("an idle poll emitted %v, want nothing", log.events)
+	}
+}
+
+// A pane opened part way through a clip asks, so the answer follows the device; with
+// no device there is nothing that could be playing.
+func TestThePaneCanAskWhetherAnythingIsPlaying(t *testing.T) {
+	app, player, _ := fixtureApp(t)
+
+	if app.Playing() {
+		t.Fatal("an idle device reported playing")
+	}
+	player.mu.Lock()
+	player.playing = true
+	player.mu.Unlock()
+	if !app.Playing() {
+		t.Fatal("a playing device reported idle")
+	}
+	app.session.player = nil
+	if app.Playing() {
+		t.Fatal("no device at all reported playing")
 	}
 }
 

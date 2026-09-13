@@ -1,19 +1,21 @@
 // The audition pane: hearing a voice deliberately.
 //
-// The behaviour worth guarding here is the pulse. An audition call returns the moment
-// the clip STARTS, so nothing on this side knows when the sound stopped: the pulse is
-// cleared by a playback event from the backend. Clearing it on the call's own
-// resolution would put the light out while the clip was still audible; never
-// clearing it would leave every button lit for the rest of the session.
+// The behaviour worth guarding here is the pulse and the held buttons. An audition
+// call returns the moment the clip STARTS, so nothing on this side knows when the
+// sound stopped: both are released by a playback event from the backend. Releasing
+// them on the call's own resolution would free the buttons while the clip was still
+// audible, so a second press could cut it short (FR-236); never releasing them would
+// leave the pane dead for the rest of the session.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { Audition, Group, Voice } from './api'
 
 const voices = vi.fn<() => Promise<Voice[]>>()
 const auditionGroups = vi.fn<(voice: string) => Promise<Group[]>>()
 const audition = vi.fn<(voice: string, group: string) => Promise<Audition | null>>()
 const stopAudition = vi.fn<() => Promise<void>>()
+const playing = vi.fn<() => Promise<boolean>>()
 
 /** handlers holds whatever the pane subscribed to, so a test can raise the event. */
 const handlers = new Map<string, (...data: unknown[]) => void>()
@@ -24,6 +26,7 @@ vi.mock('./api', () => ({
     auditionGroups: (voice: string) => auditionGroups(voice),
     audition: (voice: string, group: string) => audition(voice, group),
     stopAudition: () => stopAudition(),
+    playing: () => playing(),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -41,17 +44,23 @@ const combat: Group = { key: 'combat', label: 'Combat', clips: 1 }
 
 beforeEach(() => {
   handlers.clear()
-  for (const spy of [voices, auditionGroups, audition, stopAudition]) spy.mockReset()
+  for (const spy of [voices, auditionGroups, audition, stopAudition, playing]) spy.mockReset()
   voices.mockResolvedValue([grace, kate])
   auditionGroups.mockResolvedValue([shields, combat])
   audition.mockResolvedValue({ group: 'shields', clip: 'a.mp3' })
   stopAudition.mockResolvedValue(undefined)
+  playing.mockResolvedValue(false)
 })
 
 /** show renders the pane over whoever is cast and waits for its groups. */
 async function show(cast = 'Grace') {
   render(<AuditionPane cast={cast} />)
   await screen.findByRole('button', { name: /Shields/ })
+}
+
+/** groupButton finds one group's play button by the label it shows. */
+function groupButton(name: RegExp): HTMLButtonElement {
+  return screen.getByRole('button', { name }) as HTMLButtonElement
 }
 
 describe('the audition pane', () => {
@@ -102,7 +111,7 @@ describe('the audition pane', () => {
   it('plays the group whose button was pressed', async () => {
     await show()
 
-    fireEvent.click(screen.getByRole('button', { name: /Shields/ }))
+    fireEvent.click(groupButton(/Shields/))
 
     await waitFor(() => expect(audition).toHaveBeenCalledWith('Grace', 'shields'))
   })
@@ -111,7 +120,7 @@ describe('the audition pane', () => {
   // the call resolves would put the light out while the clip was still playing.
   it('keeps the pulse on until the backend says the sound stopped', async () => {
     await show()
-    const button = screen.getByRole('button', { name: /Shields/ })
+    const button = groupButton(/Shields/)
 
     fireEvent.click(button)
     await waitFor(() => expect(button.getAttribute('aria-current')).toBe('true'))
@@ -127,7 +136,7 @@ describe('the audition pane', () => {
   // for the rest of the session is worse than one cleared a moment early.
   it('clears the pulse on a playback event that says nothing', async () => {
     await show()
-    const button = screen.getByRole('button', { name: /Shields/ })
+    const button = groupButton(/Shields/)
     fireEvent.click(button)
     await waitFor(() => expect(button.getAttribute('aria-current')).toBe('true'))
 
@@ -136,17 +145,69 @@ describe('the audition pane', () => {
     await waitFor(() => expect(button.getAttribute('aria-current')).toBe('false'))
   })
 
-  // A refused clip is the one case this side knows means no sound at all, so it both
-  // clears the pulse and says what went wrong.
+  // FR-236: a press must never cut a clip short, so every button is held from the
+  // press until the backend says the sound has stopped, the one pressed included.
+  it('holds every button while a clip plays, then frees them', async () => {
+    await show()
+
+    fireEvent.click(groupButton(/Shields/))
+    await waitFor(() => expect(groupButton(/Combat/).disabled).toBe(true))
+    expect(groupButton(/Shields/).disabled).toBe(true)
+
+    act(() => handlers.get('playback')?.({ playing: false }))
+    await waitFor(() => expect(groupButton(/Combat/).disabled).toBe(false))
+    expect(groupButton(/Shields/).disabled).toBe(false)
+  })
+
+  // The ship speaking is a clip playing too, so a reaction to the game holds the
+  // buttons exactly as an audition does.
+  it('holds every button while the ship is speaking', async () => {
+    await show()
+
+    act(() => handlers.get('playback')?.({ playing: true }))
+
+    await waitFor(() => expect(groupButton(/Combat/).disabled).toBe(true))
+    expect(groupButton(/Shields/).disabled).toBe(true)
+  })
+
+  // A pane opened part way through a clip holds its buttons from the start rather
+  // than waiting for an event that will only say when the clip ends.
+  it('opens with its buttons held while something is already playing', async () => {
+    playing.mockResolvedValue(true)
+    await show()
+
+    await waitFor(() => expect(groupButton(/Combat/).disabled).toBe(true))
+  })
+
+  // An event is newer than the answer to the opening question, so a late answer that
+  // something is playing does not hold buttons an event has already freed.
+  it('lets a playback event outrank a late opening answer', async () => {
+    let answer: (sounding: boolean) => void = () => undefined
+    playing.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        answer = resolve
+      }),
+    )
+    await show()
+
+    act(() => handlers.get('playback')?.({ playing: false }))
+    await act(async () => answer(true))
+
+    expect(groupButton(/Combat/).disabled).toBe(false)
+  })
+
+  // A refused clip is the one case this side knows means no sound at all, so it
+  // clears the pulse, frees the buttons and says what went wrong.
   it('reports a refused clip and puts the pulse out', async () => {
     await show()
     audition.mockRejectedValue(new Error('the device is busy'))
-    const button = screen.getByRole('button', { name: /Shields/ })
+    const button = groupButton(/Shields/)
 
     fireEvent.click(button)
 
     expect(await screen.findByText(/the device is busy/)).toBeTruthy()
     expect(button.getAttribute('aria-current')).toBe('false')
+    expect(button.disabled).toBe(false)
   })
 
   it('stops whatever is playing when asked', async () => {

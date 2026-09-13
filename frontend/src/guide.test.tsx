@@ -31,6 +31,7 @@ vi.mock('./api', () => ({
     auditionGroups: () => Promise.resolve([]),
     audition: () => Promise.resolve(null),
     stopAudition: () => Promise.resolve(),
+    playing: () => Promise.resolve(false),
     reactions: () => Promise.resolve([]),
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),

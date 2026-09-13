@@ -86,6 +86,7 @@ func main() {
 // test, which is the only way the facade's behaviour can be exercised at all.
 type audioPlayer interface {
 	Play(clips []string, gap time.Duration) error
+	PlayIfIdle(clips []string, gap time.Duration) (bool, error)
 	Stop()
 	Playing() bool
 	Done() <-chan struct{}

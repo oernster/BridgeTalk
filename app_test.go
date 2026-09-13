@@ -41,6 +41,21 @@ func (f *fakePlayer) Play(clips []string, _ time.Duration) error {
 	return nil
 }
 
+// PlayIfIdle starts only when the fake is not already playing, as the real player does.
+func (f *fakePlayer) PlayIfIdle(clips []string, _ time.Duration) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.failWith != nil {
+		return false, f.failWith
+	}
+	if f.playing {
+		return false, nil
+	}
+	f.played = append(f.played, clips)
+	f.playing = true
+	return true, nil
+}
+
 func (f *fakePlayer) Stop() {
 	f.mu.Lock()
 	defer f.mu.Unlock()

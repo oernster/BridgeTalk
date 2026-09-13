@@ -122,6 +122,7 @@ interface Bridge {
   AuditionGroups(voice: string): Promise<Group[]>
   Audition(voice: string, group: string): Promise<Audition>
   StopAudition(): Promise<void>
+  Playing(): Promise<boolean>
   TakeKeyboard(): Promise<void>
   Quit(): Promise<void>
   Reactions(): Promise<Reaction[]>
@@ -168,6 +169,8 @@ export const api = {
   audition: (voice: string, group: string): Promise<Audition | null> =>
     bridge()?.Audition(voice, group) ?? Promise.resolve(null),
   stopAudition: (): Promise<void> => bridge()?.StopAudition() ?? Promise.resolve(),
+  /** Whether the device is sounding anything, asked once when the audition pane opens. */
+  playing: (): Promise<boolean> => bridge()?.Playing() ?? Promise.resolve(false),
   takeKeyboard: (): Promise<void> => bridge()?.TakeKeyboard() ?? Promise.resolve(),
   quit: (): Promise<void> => bridge()?.Quit() ?? Promise.resolve(),
   reactions: (): Promise<Reaction[]> => bridge()?.Reactions() ?? Promise.resolve([]),

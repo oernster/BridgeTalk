@@ -27,9 +27,9 @@ const reactionHistory = 200
 // reactionEvent is the Wails event name the front end subscribes to.
 const reactionEvent = "reaction"
 
-// playbackEvent is emitted whenever a sequence ends, carrying whether anything is
-// still playing. Play returns as soon as the clip starts, so without this the front
-// end has no way to know when the sound stopped and can only guess.
+// playbackEvent is emitted whenever a sequence starts or ends, carrying whether anything
+// is playing. Play returns as soon as the clip starts, so without this the front end
+// has no way to know when the sound stopped and can only guess.
 const playbackEvent = "playback"
 
 // windowShownEvent is emitted when the window is summoned back from the notification
@@ -223,7 +223,7 @@ func (a *App) run() {
 			a.session.scheduler.Finished()
 			a.emit(playbackEvent, PlaybackDTO{Playing: a.session.player.Playing()})
 		case <-ticker.C:
-			a.poll()
+			a.pollAndAnnounce()
 		}
 	}
 }

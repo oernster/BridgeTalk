@@ -283,6 +283,13 @@ reported on the status pane, only once the count is above zero. The timing resta
 **An unreadable clip is skipped.** A clip that fails to open or decode plays nothing and raises no error.
 The scheduler has already logged the request as played by then, so the reaction list shows it as played.
 
+**A button never cuts a clip short.** An audition starts through `PlayIfIdle`, which asks whether anything
+is playing and claims the device under the one lock, so a press while a clip sounds is ignored rather than
+started over it (FR-236). The page is told when something starts as well as when it ends: from an
+audition, from the cast confirmation and from any poll that set a reaction playing. The audition buttons
+are held for as long as anything plays. Casting still ends what is playing through `Play`; so does an
+alert over a reaction of lower priority.
+
 ## Scheduling
 
 Each event goes through one decision in `ReactionService.Handle`, in this order: resolve the cue; drop a

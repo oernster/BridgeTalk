@@ -67,7 +67,10 @@ func (a *App) acknowledge() {
 	if !ok {
 		return
 	}
-	_ = a.session.player.Play([]string{clip}, auditionGap)
+	// Casting ends what was playing on purpose, so this is Play rather than PlayIfIdle.
+	if a.session.player.Play([]string{clip}, auditionGap) == nil {
+		a.announcePlayback()
+	}
 }
 
 // CueBreakdown is one voice's whole relationship with the cue table: what it can

@@ -22,6 +22,10 @@ export function AuditionPane({ cast }: { cast: string }) {
   const [voice, setVoice] = useState(cast)
   const [groups, setGroups] = useState<Group[]>([])
   const [playing, setPlaying] = useState('')
+  // Whether anything at all is sounding, the ship's reactions to the game included.
+  // Every button is held while it is, because a press must never cut a clip short
+  // (FR-236); the backend ignores one that slips through regardless.
+  const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState('')
 
   useEffect(() => {
@@ -44,27 +48,36 @@ export function AuditionPane({ cast }: { cast: string }) {
   }, [voice])
 
   // The pulse has to end when the sound does; only the backend knows that. The
-  // audition call returns the moment the clip starts. A sequence that ended because
-  // a newer one replaced it reports that something is still playing, so the pulse
-  // moves to the new button rather than going out.
-  useEffect(
-    () =>
-      on('playback', (...data: unknown[]) => {
-        const state = data[0] as Playback | undefined
-        if (!state?.playing) setPlaying('')
-      }),
-    [],
-  )
+  // audition call returns the moment the clip starts. The same event says when
+  // something starts, which is how a reaction to the game holds the buttons too.
+  //
+  // A pane opened part way through a clip asks once, so its buttons are held from the
+  // start. An event is newer than that answer, so an answer arriving after one is dropped.
+  useEffect(() => {
+    let heard = false
+    const off = on('playback', (...data: unknown[]) => {
+      const state = data[0] as Playback | undefined
+      heard = true
+      setBusy(state?.playing ?? false)
+      if (!state?.playing) setPlaying('')
+    })
+    void api.playing().then((sounding) => {
+      if (!heard) setBusy(sounding)
+    })
+    return off
+  }, [])
 
   const play = useCallback(
     (group: Group) => {
       setPlaying(group.key)
+      setBusy(true)
       setFailure('')
-      // Nothing clears the pulse here. audition resolves when the clip STARTS, so
-      // the end of the sound arrives later as a playback event; only a failure is
-      // known to mean no sound at all.
+      // Nothing clears the pulse or frees the buttons here. audition resolves when the
+      // clip STARTS, so the end of the sound arrives later as a playback event; only a
+      // failure is known to mean no sound at all.
       void api.audition(voice, group.key).catch((error: unknown) => {
         setPlaying('')
+        setBusy(false)
         setFailure(String(error))
       })
     },
@@ -134,6 +147,7 @@ export function AuditionPane({ cast }: { cast: string }) {
                 key={group.key}
                 data-stop
                 type="button"
+                disabled={busy}
                 aria-current={playing === group.key}
                 title={`Play a random ${group.label} sample`}
                 onClick={() => play(group)}

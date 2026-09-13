@@ -1,0 +1,55 @@
+/* ------------------------------------------------------------- volume */
+
+.volume {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.volume:hover,
+.volume:focus-within {
+  border-color: var(--ring);
+}
+
+.volume .reading {
+  min-width: 34px;
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.volume input[type='range'] {
+  width: 96px;
+  height: 4px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--raised);
+  box-shadow: inset 0 0 0 1px var(--border);
+  appearance: none;
+  cursor: pointer;
+}
+
+/* The two thumb rules cannot be combined: a selector a browser does not know
+   invalidates the whole rule, so sharing one would silence both. */
+.volume input[type='range']::-webkit-slider-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  appearance: none;
+}
+
+.volume input[type='range']::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+

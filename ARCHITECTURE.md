@@ -1,0 +1,650 @@
+# Bridge Talk Architecture
+
+A background application that watches Elite Dangerous journal and status data, decides that something
+worth speaking about has happened, then plays a matching recording from a library the user supplies. It
+is one-directional. There is no microphone, no speech recognition and no command and control; the
+application talks to the commander and never listens.
+
+It ships no audio of its own. Nothing in its own source reaches the network: no Go package here imports
+one and the front end makes no request.
+
+## Invariant
+
+`UI -> Application -> Domain <- Infrastructure`
+
+Dependencies point inward. The Domain is the stable core and depends on nothing. Every rule below is
+enforced by a test under `tests/structural`, not by convention. The table is the whole set: a guard
+that is not listed here is undiscoverable, so a rule claimed in prose and enforced nowhere reads
+exactly like one that holds.
+
+| Invariant | Enforcing test | File |
+|---|---|---|
+| Domain imports nothing from application/infrastructure/ui/wails | `TestDomainHasNoOutwardImports` | `boundary_test.go` |
+| Domain is pure: no network, filesystem, process or database package; no wall clock or global random source | `TestDomainIsPure` | `boundary_test.go` |
+| Application never imports infrastructure or wails | `TestApplicationDoesNotImportInfrastructure` | `boundary_test.go` |
+| Only the composition root wires the application services to infrastructure | `TestCompositionRootIsWhitelisted` | `boundary_test.go` |
+| No source file exceeds the module-size limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
+| No source file sits in the danger band below the limit | `TestNoFileInDangerBand` | `boundary_test.go` |
+| Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
+| No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
+| The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
+| Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
+| Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
+| The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
+| Every cue group has a heading a commander would recognise | `TestEveryCueGroupIsNamed` | `vocabulary_test.go` |
+| Cue ids, journal events and status values stay in the cue table | `TestGameVocabularyStaysInItsHome` | `vocabulary_test.go` |
+| No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
+| The wire is stated identically in the DTOs and in `api.ts` | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
+
+## Layers
+
+- **Domain** (`internal/domain`: `cue`, `event`, `selection`): pure Go. Values are validated on
+  construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
+  `CooldownGate.Allow` and `DedupeWindow.Fresh`, while randomness arrives through the injected
+  `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
+  so all of it is testable without a filesystem, a clock or an audio device.
+- **Application** (`internal/application`): the reaction and scheduling services plus the ports they
+  depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
+  never imports Infrastructure or the Wails runtime.
+- **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
+  reader (`journal`), the status-flag watcher (`status`), the voice library scanner and catalogue
+  (`library`), the audio engine (`audio`), the cue table and the settings store (`config`), the Windows
+  tray (`taskbar`), keyboard focus for the web view (`window`) and the per-user install work behind the
+  setup program (`setup`). Never imported by Domain or Application.
+- **UI**: the React front end plus a Wails facade in package `main`, which calls the Application
+  services and maps what they return into the shapes in `dto.go`.
+
+## Composition root
+
+`main.go` is the composition root. It constructs the infrastructure adapters, injects them into the
+application services by constructor and hands the assembled facade to Wails. No service is held in a
+package-level variable and there is no service locator or auto-wiring. The structural test whitelists
+`main.go` and `app.go`: no other file may import both the application services and infrastructure. The
+facade is spread over the root files beside them, `settings.go`, `cast.go`, `audition.go`, `voices.go`,
+`identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
+carrying; the wire shapes are in `dto.go`.
+
+## Dependency direction
+
+```
+             +-------------------+
+   Wails/UI  |   app.go (facade) |
+             +---------+---------+
+                       | calls
+             +---------v---------+
+             |    application    |  ports (interfaces) + services
+             +----+---------+----+
+        depends on |         ^ implements
+             +-----v----+    |
+             |  domain  |    |
+             +----------+    |
+                       +-----+-----------------------+
+                       |      infrastructure         |
+                       | journal, status, library,   |
+                       | audio, config, taskbar,     |
+                       | window, setup               |
+                       +-----------------------------+
+```
+
+## The cue model
+
+Game semantics and a person's recordings are separate axes, so they are kept apart. `FSDJump` is a
+fact about Elite Dangerous and is true for every voice; which file answers it is a fact about one
+person's library. The two meet at the cue id and nowhere else.
+
+**The cue table, `internal/infrastructure/config/cues.toml`, embedded in the binary.** Each entry names
+a source, the journal event or status flag it listens for, an optional edge, an optional predicate over
+the payload, a priority and a cooldown in seconds. A missing priority reads as `ambient`; a missing
+cooldown lets the cue fire as often as its event does.
+
+```toml
+[[cue]]
+id = "Cast.Confirmed"
+source = "application"
+event = "cast"
+priority = "notice"
+
+[[cue]]
+id = "StartJump.JumpType.Hyperspace"
+source = "journal"
+event = "StartJump"
+match = { JumpType = "Hyperspace" }
+priority = "notice"
+
+[[cue]]
+id = "LightsOn.Cleared"
+source = "status"
+flag = "LightsOn"
+edge = "falling"
+priority = "ambient"
+```
+
+**Every id is spelled in the game's own words.** A journal cue's id is the event name, followed by a
+field and a value where one payload field narrows it. A status cue's id is the flag name followed by
+`Set` or `Cleared`; a status value's id is its name followed by what it became (`GuiFocus.GalaxyMap`).
+The one cue with no name from the game is the application's own `Cast.Confirmed`. The first segment is
+therefore the moment the cue listens for. It is the only grouping the vocabulary needs: the audition
+pane and the breakdown dialog both read it rather than keeping a second taxonomy in step.
+
+**The words a reader sees are generated, never written.** `cue.ID.Title` reads an id as words: each
+segment breaks where its capitals begin a new word, a run of capitals stays an initialism and whatever
+narrows the moment follows a colon, so `StartJump.JumpType.Hyperspace` reads "Start jump: jump type
+hyperspace". `cue.ID.Heading` reads the group the same way. The table has no title key. A table that
+writes one is refused by name, as is a table writing any other key the loader does not hold.
+
+**The shipped set.** The journal cues are every event present in a real commander's journals except the
+snapshots the game writes at login or when a screen opens (`Cargo`, `Loadout`, `Market` and the like)
+and two bulk listings (`Music`, `FSSSignalDiscovered`). At most one payload field narrows an event,
+taking only the plain values those journals actually carried. The status cues are every flag the status
+watcher decodes on both edges, every `GuiFocus` value, every pip distribution and the fire group.
+`config_test.go` holds every shipped id to that spelling.
+
+Every table is built through `cue.New`, which refuses a definition it cannot honour: an empty id, an
+unknown source or edge, a journal or application cue naming no event, a status cue naming no flag, an
+unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below) or an id
+ending in a dot or a space (FR-222, below).
+`config.LoadCueTable` also refuses a duplicate id and a key it does not hold. It accepts a path to a table on disk, which would
+replace the shipped one whole under exactly the same rules; no flag supplies such a path today, so the
+running application always loads the embedded table and only the tests exercise the other route.
+
+## The voice library
+
+A voice is one person's recordings, held in a directory under a library root the user chooses.
+`internal/infrastructure/library` finds them by scanning. There is no configuration step and no
+mapping file: the names on disk are the whole mapping.
+
+```
+<library root>/
+  Alice/
+    StartJump/               folder form: every audio file directly inside is a take
+      best-one.wav
+      second-try.wav
+  Bob/
+    DockingGranted.wav       flat form: the base name is the cue id
+    DockingGranted.2.wav     a trailing dot and digits tells one take from another
+```
+
+- **Every immediate subdirectory of the root is a candidate.** It becomes a voice when at least one take
+  resolves inside it. One that resolves nothing is reported rather than offered.
+- **Matching is exact apart from case.** A directory or file name matches a cue id only when the two
+  strings are equal compared case insensitively. Nothing is normalised, so a folder named in prose or
+  spelled with underscores for dots resolves nothing, which is what makes it safe to point the
+  application at a directory and simply see what happens.
+- **Four formats are recognised**, `.wav`, `.mp3`, `.flac` and `.ogg`, matched case insensitively.
+  Every other file is ignored without a word.
+- **Nothing deeper than a cue folder is read.** A folder inside a cue folder is not a take.
+- **Two cue folders differing only in case are merged** and the duplication is reported (FR-218). Linux
+  permits such a pair; Windows refuses to create the second, so the test that holds the merge hands the
+  scan a tree held in memory through its injected directory lister.
+- **No cue id may end in a segment of digits** (FR-219). The flat form reads a trailing dot and digits as
+  a take number, so such an id would give a file name two meanings. A structural test holds the shipped
+  table to this; `cue.New` holds every table to it.
+- **No cue id may end in a dot or a space** (FR-222). Windows strips either from the end of a name as it is
+  created, so a folder made for such an id would arrive under another name and never be found. The same
+  pair of guards holds it.
+
+Every scan returns a report beside the voices, naming what it passed over with the path it was found at
+and the reason: directories and audio files whose names match no cue id, candidates that resolved
+nothing and case duplicates. The report is the difference between "nothing here" and "here is what I
+found and could not use". At startup it is written to standard error. Voices are listed by name,
+ignoring case.
+
+The scan reads names and writes nothing; the library is never modified. There is no cache: the scan
+runs at startup and again whenever a recordings directory is chosen in Settings.
+
+## Resolving a cue
+
+An event resolves to a cue through the table. The reaction service asks the catalogue for the cast
+voice's takes for that cue; the domain `Picker` chooses one, avoiding the take it chose for the same cue
+last time; the scheduler hands that single clip to the player. One cue plays one file.
+
+There is no fallback chain. A voice that recorded nothing for a cue answers it with silence and the
+reaction list records why, because a wrong line delivered confidently is worse than silence. A voice is
+expected to be complete, so a gap is something to record rather than something to paper over.
+
+**The acknowledgement.** Casting a voice plays one take of the single cue whose source is the application
+rather than the game. The catalogue finds that cue by its source rather than by its id, so the id is
+written in the cue table and nowhere else. A voice that recorded no acknowledgement is silent when cast
+rather than broken. It goes straight to the player rather than through the scheduler, so it cannot queue
+behind the ship; unlike an audition it respects the mute.
+
+**Coverage.** The breakdown dialog behind each cast row lists the cues a voice serves and the cues it does
+not, as exact complements over the table: a cue is in one list or the other, never both and never
+neither.
+
+## Event sources
+
+Both sources satisfy one `EventSource` port, so the reaction service sees a single stream and neither
+file format reaches the Application layer. The facade polls both every 250 milliseconds.
+
+**Journal (`internal/infrastructure/journal`).** Elite Dangerous appends one JSON object per line to
+`Journal.*.log`. The reader stores a byte offset, seeks to it, reads to end of file, prepends any
+partial line carried from the previous pass, splits on newline and carries the trailing fragment
+forward. A file smaller than the stored offset means rotation or truncation, so the reader restarts at
+zero. A line that does not parse is dropped, as is one naming no event.
+
+- **Start at the end, never at the beginning.** On launch the newest journal file's current size becomes
+  the starting offset and nothing is read. Replaying an existing session would fire hundreds of clips at
+  once. There is no read-all path in this application.
+- **Follow the newest file.** Each poll re-resolves the newest journal by name, since the names embed a
+  sortable timestamp. A changed path starts at offset zero, because the new file's contents genuinely are
+  new.
+
+**Status (`internal/infrastructure/status`).** `Status.json` is rewritten in place rather than appended,
+so it needs a different reader: read the whole file, parse it and compare it with the previous reading.
+Each changed bit in `Flags` or `Flags2` emits one event tagged rising or falling; a change of GUI focus,
+fire group or dominant power distribution emits one value event. The first reading only primes the
+baseline, because a flag already set at startup is state rather than news. A reading identical to the
+last emits nothing; a read that fails or does not parse is discarded.
+
+**A reading with no flag set in either word is not the ship doing anything.** Wherever a commander can
+be, in the main ship, a fighter, an SRV or on foot, one of those flags is set. Both words at zero
+therefore means there is no session, so nothing is emitted and the baseline is dropped: the next reading
+primes afresh. Diffed instead, leaving the game would announce every flag that had been set as falling.
+
+The status cues (landing gear, hardpoints, cargo scoop, mass lock and the rest) are reachable only
+through this source.
+
+## Playback
+
+**Decoding and output.** The audio engine decodes MP3, WAV, FLAC and Ogg Vorbis through the pure-Go
+decoders of one library and writes to the device directly. It does not use Windows Media Foundation,
+DirectShow, any installed system codec or any external process. `build.ps1` pins cgo off before the gate
+and the build, so a machine carrying a C toolchain cannot quietly produce a different binary.
+
+**Nothing is decoded on the device's thread.** A clip is read whole into memory on the player's own
+goroutine, resampled to the device rate, before the speaker is given any of it. The device's request for
+its next buffer is then a copy out of memory rather than a decode, where being slow would be heard
+rather than merely slow. One clip is loaded at a time.
+
+**The device buffer is half what it is asked for.** The player asks for half a second of buffer; the
+speaker library splits that figure between the driver and the player, leaving a quarter of a second on
+each side. What it costs is interruption, since a clip cutting in cannot be heard until the audio already
+handed to the device has played.
+
+**A late refill is counted.** The interval between the device's requests for samples is timed; one longer
+than half a second means the buffer emptied before it was refilled. The count and the longest wait are
+reported on the status pane, only once the count is above zero. The timing restarts with each clip.
+
+**An unreadable clip is skipped.** A clip that fails to open or decode plays nothing and raises no error.
+The scheduler has already logged the request as played by then, so the reaction list shows it as played.
+
+## Scheduling
+
+Each event goes through one decision in `ReactionService.Handle`, in this order: resolve the cue; drop a
+repeat of the same cue inside the 900 millisecond dedupe window; drop a cue still inside its cooldown;
+ask the catalogue for takes and record the cue as unserved where there are none; drop it while muted;
+pick one take; submit it to the scheduler. Every step that ends in silence is reported to the reaction
+list.
+
+The arithmetic of the cooldown and the dedupe window lives in the Domain (`selection`). The dedupe width
+and the priority policy live in the Application (`services`).
+
+- **Priority**, in descending order `alert`, `notice`, `ambient`, `flavour`. The queue is kept in
+  priority order; equal priorities keep their arrival order.
+- **Policy per priority.** An `alert` stops what is playing when that request is of lower priority, then
+  goes to the front of the queue; a second alert arriving while one plays waits for it. A `notice`
+  queues. An `ambient` is dropped when anything is already queued. A `flavour` is dropped when anything is
+  queued or playing.
+- **Cooldown per cue**, from the table. A cue that fires again inside its cooldown is dropped.
+- **Dedupe window.** The journal can restate a situation in quick succession, so a short window collapses
+  repeats of one cue into one utterance.
+
+Pre-emption is a cut, not a fade. The player stops the current clip outright and the next starts; there
+is no mixer, no ducking and no crossfade. What the player does carry is a single gain applied per audio
+buffer, which is what makes the volume slider audible mid-clip.
+
+An audition and the acknowledgement go to the player directly. Starting either stops whatever the player
+was doing, a scheduled clip included; the cut request is not resumed.
+
+**Threading.** The audio library runs its own output thread and nothing on it touches the UI. The player
+reports completion over a channel. The facade's poll loop selects over that channel, the tray's command
+channel and the poll ticker; on completion it tells the scheduler and announces the playback state to the
+page, so nothing on the audio path reaches Wails directly.
+
+## Choosing where to read from
+
+**Recordings.** Two sources, in order: the `-library` flag, then the directory stored from Settings. There
+is no third. Nothing is detected, because only the user knows where their recordings are. A root that is
+missing, unreadable or holds no voice leaves the application running with nothing cast; the warning goes
+to standard error and the cast pane names where it looked.
+
+**Journal.** The `-journal` flag, then the stored directory, then the game's saved-games directory under
+the user's profile. Startup stops with an error, before any window, where that directory cannot be found,
+holds no journal file or has no `Status.json`.
+
+**Changing either in Settings.** Each Browse opens the system's directory chooser and takes effect at
+once. A recordings directory is rescanned and refused, with the reason drawn in the alert colour, when it
+holds no voice; otherwise the cast voice is re-cast by name where it survives the move and falls back to
+the first voice where it does not. A journal directory is refused unless both sources can be built over
+it, then both are swapped in together. Either choice writes both directories to the settings file. Each
+chooser answers with the directory it took, else with nothing where the dialog was cancelled, which is
+what lets the pane tell a cancel from a refusal.
+
+**The cast voice.** Casting is the one act that writes the voice's name down, so the next run opens
+speaking with it. The re-cast that follows a new recordings directory does not write it. A stored or
+flagged name that is no longer found falls back to the first voice with a warning on standard error.
+
+**The command line.** `-voice` names a voice for one run; `-list` prints each voice with its takes and
+the cues it covers, then exits; `-unbound` lists the cues the chosen voice cannot serve, then exits;
+`-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window.
+
+## Ambient chatter: not built
+
+**Nothing below runs today.** The application registers exactly two event sources, journal and status.
+It speaks only in answer to the game or to a press of its own controls. This section records what the
+shape allows, so that the absence reads as a decision rather than as an omission.
+
+The seam is the port, not a component. The composition root hands the facade a list of `EventSource`,
+so a third source would be added to that list and nothing in the scheduler would change. It would feed
+the same queue at `flavour` priority, which is already the priority that is always outranked, always
+droppable and never interrupts.
+
+What is missing is the source itself, along with the rate limit and quiet-period rule any such source
+would need. Without those it turns from characterful to grating quickly, which is the reason it has not
+been built on the way past.
+
+## UI
+
+**Shape.** The application is resident rather than foreground. A tray icon carries the menu; the main
+window is summoned. The cross asks rather than acts: it is ambiguous in a resident application, meaning
+"put it away" at least as often as "stop it", so `OnBeforeClose` cancels the close and the page draws the
+choice. Minimising leaves the application listening with its tray icon on screen; quitting is deliberate;
+dismissing the dialog changes nothing. A quit already chosen, from the File menu, the tray or the dialog,
+passes straight through rather than being asked about twice. With no tray icon there is nowhere to hide,
+so the close is allowed through instead of leaving a running application with nothing on screen to
+summon it.
+
+```
++----------------------------------------------------------------------+
+| File   Audio   Settings   Help                                       |
++----------------------------------------------------------------------+
+| [Cast] [Audition] [Status] [Settings]  [Volume] [Mute] [Theme] [Guide] |
++----------------------------------------------------------------------+
+|                                                                      |
+|   main pane: a switched view, not a stack of modal dialogs           |
+|                                                                      |
++----------------------------------------------------------------------+
+```
+
+The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
+order. The main pane switches between Cast, Audition, Status, Settings and Guide; it opens on Cast. The
+menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition and Mute; Settings holds the
+pane and the theme; Help holds the guide, the licence and About.
+
+Four surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
+licence, the close choice and the breakdown of what one voice speaks for. Each opens focused on its first
+control; the close choice lists Minimise first, since Enter straight after pressing the cross must not
+mean stop. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
+and the terms the source carries cannot differ; About names the licence in a sentence.
+
+**Status.** The cast voice, how many cues it serves out of the table, the journal directory, the status
+file, whether playback is live or muted, a line where no audio device was found and a line where the
+device has run dry. Beneath them, the reaction list: every decision with its time, its outcome and its cue,
+beside the clip played (the event where no clip was). The facade keeps the last 200. That list is how a
+cue that never speaks gets diagnosed.
+
+**Casting, not selecting.** Choosing a voice is casting a part, so each row names the act it offers:
+"Cast Iris"; "Grace is cast as your ship's voice" for the one already in the role. Beneath the name
+the row gives the number of recordings the voice holds that answer a cue. Every voice listed can be cast,
+because a directory that resolved no recording never becomes a voice. A button at the end of the row
+opens the breakdown dialog.
+
+**Audition.** The cast pane says what a voice covers; the audition pane lets it be heard. Groups come
+from the cue vocabulary's own first segment, the moment in the game's own words, so no second taxonomy is
+kept in step with the cue table; a group with no takes is not offered. Each group button plays one clip
+drawn at random from the union of its cues' takes, deduplicated, so one take answering several cues is not
+weighted by them; a press can repeat the previous clip. A Stop button cuts a long clip short. The voice
+being auditioned starts as the cast one but is not tied to it: hearing a voice before committing to it is
+what an audition is for. An audition ignores the mute, which silences reactions to the game rather than
+the application, because answering a deliberate press with silence would read as a fault.
+
+**Volume.** A slider in the nav band, from silence to the clip as recorded, in twenty steps. Perceived
+loudness is roughly logarithmic in gain, so the slider position picks a point up to six halvings below
+full rather than scaling gain directly: mapped straight onto gain, most of the travel sounds the same.
+The level is read once per audio buffer rather than once per clip, so moving the slider is heard
+immediately. The page stores the level and pushes it in on load, so the player persists nothing.
+
+**Icons.** The band's icons are the project's own artwork rather than drawn marks, so they carry their
+own colour and do not follow the theme. `tools/genicons.py` writes them from the masters in `assets/`
+into `frontend/src/assets/icons`, each centred on a square canvas; it composes the muted speaker from
+the sounding one and a slash so the two states cannot drift. The script is not part of the build and its
+output is committed, so a clone needs neither Python nor Pillow to build the application.
+
+`assets/application-icon.png` is the whole identity. The same script turns it into a multi-size `.ico`
+beside it, a copy for the About crest and the setup page's header mark, alongside the setup page's two
+theme icons. `build.ps1` refuses to start without the `.png` and `.ico`, then copies both onto the
+application and onto the setup program. The shortcuts point their icon at the executable and the tray
+loads its icon out of it.
+
+The icons are drawn large, which leaves no room for a label beside each one, so the buttons carry the
+artwork alone and the name arrives on hover or focus as a tooltip drawn by the stylesheet from the
+button's own label. Each button also carries its name as an accessible label, so nothing depends on the
+tooltip being seen.
+
+**Keyboard.** One explicit ring, recomputed on each move. Its stops are the controls marked as stops that
+are enabled, not hidden from assistive technology and actually rendered; the nav button for the pane
+already open stays a stop. Tab and Right step forward; Shift+Tab and Left step back; both wrap. Text
+fields keep their own arrows and leave the ring by Tab; the volume slider gives Left and Right to the
+ring and keeps Up and Down. A scrolling region joins the ring only while it overflows. The reaction list
+is a single stop whose rows are walked with Up and Down. A menu title opens on Down, Enter or Space;
+Up and Down walk its items; Escape closes it back to the title. The main window starts neutral with
+nothing focused and no menu open; every dialog opens focused on its first enabled control and Escape
+closes it.
+
+Ring colours follow three states and no others: no ring at rest, one colour while hovered or focused
+and enabled, a permanent second colour while disabled. The brand accent is never a ring colour, because
+it carries meaning rather than state.
+
+**Getting the keyboard at all.** Wails gives the web view its keyboard only from the main window's own
+focus event, which a window that never took focus never raises. `internal/infrastructure/window` finds
+this process's visible window, attaches to its thread's input and focuses the WebView2 child directly,
+which is what a click would do. Both programs call it once the page exists; each page then checks
+`document.hasFocus()` after 400 milliseconds and asks the facade for the keyboard again where it has none.
+
+**Reading surfaces.** The guide and every dialog carrying text hold still on open, then read themselves
+down slowly, hold at the end, rewind quickly and repeat. Every dialog reads through one `ReadingBody`, so
+none keeps rules of its own; a body that fits its dialog never moves, since the cycle acts only on content
+that overflows. A wheel, a press, a touch, a key or focus arriving suspends the cycle and it resumes from
+where the reader left it rather than switching off. Focus arriving while the start hold still runs is the
+dialog's own opening focus rather than a reader, so it leaves the hold alone. A surface beneath a modal
+freezes in place rather than suspending and takes no input while frozen, so it resumes exactly where it
+was. The cycle is not gated on reduced motion. Surfaces to act on, such as the reaction list, do not read
+themselves.
+
+**Theme.** Light and dark, chosen from the nav band or the Settings menu, stored by the page and dark by
+default. Every colour value in `frontend/src` lives in one token file with a set per theme and no
+component names a colour directly, so the three ring states hold in both themes by construction. The
+setup page and the window backgrounds set in Go carry colour values of their own, outside that rule.
+
+**One control, one place.** Mute and volume live in the band, which is on screen whichever pane is
+open. Neither is repeated in a pane. The status pane still reports the playback state in words, because
+whether an audio device was found at all is something the band cannot show.
+
+**Crests.** About and the guide are headed by the artwork they belong to, the application icon and the
+help icon respectively, so a reader can see at a glance which surface they opened.
+
+**Guide.** Its words live in `frontend/src/guideContent.ts` as typed sections: entries naming a control
+by the pictures it wears, rules stated as a claim followed by what it means, then plain paragraphs.
+`guide.tsx` only draws them. Every entry takes its pictures from the `artwork` export in `icons.tsx`, the
+module the controls themselves are drawn from, so the guide cannot show a picture the window does not.
+Its title is read from About rather than written into the page, because the product is named in one
+place. `guide.test.tsx` renders the nav band in both states of Mute and the theme; it fails when the band
+draws a picture that no entry shows.
+
+## The tray
+
+The notification-area icon is the application's only visible surface while the window is put away. It
+owns a hidden window and a message loop on a thread locked for their lifetime, which is a hard
+requirement of the Win32 windowing model.
+
+Nothing crosses that thread boundary by callback. The tray reports what the user chose on a channel that
+the facade's loop selects over, dropping a choice rather than blocking when nothing is reading; the loop
+pushes the mute state and the cast voice back through two atomics that the menu builder and the tooltip
+read. A callback invoked from the tray thread would be running on the wrong thread for everything it
+wanted to touch, which is a failure mode this design removes rather than manages.
+
+The left button asks for the window on a single click and on a double; the right button opens the menu:
+a Voice submenu, Open, Mute and Quit. The tooltip names the cast voice and says when it is muted. The
+Voice submenu lists the voices found at startup; it is not rebuilt when a new recordings directory is
+chosen.
+
+The window comes back centred and on the cast pane, whatever pane it was left on. Centred, because a
+window put away for hours may return to a different arrangement of screens and the middle is the one
+place it is certainly reachable. On the cast pane, because hiding a window does not reload the page. The
+facade says so on the way back rather than the page guessing, since only the facade can tell a summons
+from an ordinary raise. Showing it precedes taking focus: `SetForegroundWindow` acts on a window that is
+already visible.
+
+A tray that cannot be created is not fatal: the application still watches the journal and still speaks.
+Non-Windows builds compile a no-op tray rather than taking on a desktop toolkit dependency for one icon.
+
+## The setup program
+
+Delivery is a second Wails application. `installer/` is its own `main` package inside the same module,
+embedding the built application as a zip and the setup page as assets, so one file is the whole
+distribution. `build.ps1` zips the built application into `installer/payload.zip`, builds the setup
+program with the version from `VERSION` passed in through `-ldflags`, then puts the empty placeholder zip
+back so a full payload never reaches a commit. A setup program built without that flag reports its
+version as `dev`.
+
+It is split the way the application is. `internal/infrastructure/setup` holds the machine work: the
+paths, the payload extraction with its fence against an archive entry that climbs out of the install
+directory, the version comparison, the registry writes, the shortcut handling and the process work. The
+portable half carries unit tests; the Windows half is behind a build tag with no-op stubs beside it, so
+the package builds and vets on every platform, while its own tests run only on Windows.
+`installer/app.go` is the facade over it and owns the sequencing: the order of the install and uninstall
+steps and their progress figures, the name of the uninstaller copy and the `-uninstall` argument. It has
+no tests of its own.
+
+**The setup page names nothing.** The setup front end is hand written with no build step, so nothing
+compiles it and nothing type checks it. The product's name arrives on the state the page is already
+given and the static markup carries none of it. `TestTheProductIsNamedOnce` reads the page's directory to
+hold it to that; the line-limit tests read the same directory for size.
+
+**It is four files.** `index.html` carries the markup, `setup.css` the palette and layout, `setup-shell.js`
+the page plumbing and `setup-routes.js` the screens. No bundler is involved: the whole directory is
+embedded already, so a stylesheet link and two script tags resolve as they stand. The scripts are classic,
+sharing one global scope in load order, which is why the state both halves read is declared in the first
+of them.
+
+Which screen opens is decided by two readings of the machine: whether the uninstall registry entry
+exists and how the payload's version compares with the one recorded there.
+
+| Reading | Screen |
+|---|---|
+| started with `-uninstall` | uninstall |
+| nothing installed | install |
+| payload is newer | update, with Uninstall also offered |
+| payload is older | the update screen, worded as going back a version |
+| versions match | manage: Repair, Reinstall, Uninstall or Close |
+
+Repair and reinstall are genuinely different acts rather than two words for one. Repair writes the files
+again and leaves the shortcuts and the login entry as they stand; reinstall writes them again with the
+choices a fresh install makes, both shortcuts present and the login entry off. Both act on one press and
+both run the same single install path, which is what keeps them from drifting apart. The boxes on the
+manage screen act the moment they change. Every screen that writes files ends with a box, ticked by
+default, that starts the application and closes setup once the work succeeds.
+
+Everything is per user, so no step needs administrator rights: the files under
+`%LOCALAPPDATA%\Programs\BridgeTalk`, the Start Menu shortcut under `%APPDATA%`, the Desktop
+shortcut in the user's own Desktop directory and the install record and login entry under
+`HKEY_CURRENT_USER`. The shortcut boxes apply in both directions, so unticking one removes a shortcut
+rather than leaving a stale one behind. Setup copies itself into the install directory as
+`uninstall.exe` and registers that copy as the uninstaller and as the Modify target, with `NoModify` and
+`NoRepair` both zero.
+
+Uninstall removes the shortcuts, the login entry and the install record, optionally the web view's
+folder under `%APPDATA%`, then hands the install directory to a detached shell that deletes it once setup
+has exited. It does not remove the settings file.
+
+An install or an uninstall refuses to run while the application is open, because writing over a locked
+executable fails part way and leaves a half-written install. The setup window offers to close it instead.
+Closing is forced rather than a polite window close, since a polite one only raises the application's own
+close question, which setup cannot answer; setup then waits up to five seconds for the process to go.
+
+The setup page carries the application's palette in both themes and opens in whichever one Windows is set
+to for applications, with a toggle in its header. The window's background colour is chosen before the
+page loads so setup never flashes the wrong ground. Its own web view data is kept under the temporary
+directory, so running setup leaves no folder beside the application's.
+
+## Data locations
+
+| What | Where |
+|---|---|
+| Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile |
+| Recordings | `-library`, else the stored choice; no default |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both; casting writes the voice |
+| Cue table | embedded in the binary |
+| Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
+| Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
+| Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |
+| Login entry | `HKCU\...\CurrentVersion\Run`, written by setup or by Settings, one entry either way |
+| Login entry value | the quoted path plus `-hidden`, so a sign-in start waits in the tray |
+| Install record | `HKCU\...\Uninstall\BridgeTalk`, per user |
+
+Nothing is written to the game's directories or to the recordings. The game is the single writer of the
+journal; this application is one of several readers.
+
+## Errors
+
+Errors are wrapped with context at each boundary using `%w`. One comparison is made by string: the
+journal reader tests a read error's text against `"EOF"`.
+
+- **Fatal, before any window:** a cue table that fails to load; a journal directory that cannot be found,
+  holds no journal file or has no `Status.json`.
+- **A warning on standard error, then carry on:** no audio device, which runs silent and says so on the
+  status pane; no tray; a recordings root that is missing, unreadable or empty; a voice name that is not
+  found; the scan report.
+- **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
+  tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a clip that
+  fails to decode is skipped after being logged as played.
+- **Recorded in the reaction list:** a repeat inside the dedupe window, a cue in cooldown, a cue the voice
+  has no takes for and a request dropped by the mute or by the priority policy, beside what was queued and
+  what played.
+- **Refused in Settings with the reason:** a recordings directory with no voice, a journal directory the
+  sources cannot be built over and a login entry that could not be written.
+
+## Quality enforcement
+
+- Structural tests enforce the layer direction, domain purity, the module-size limit and its danger
+  band, the composition-root whitelist, the documented surface and the rules that keep a value in one
+  home: colours in the theme tokens, the product name in `internal/product`, the game's own words in
+  the cue table. The invariant table above lists every one of them with the test that enforces it.
+- The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
+  `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
+  output is gitignored and imported by nothing, so it is not the contract and it goes stale silently.
+  The hand-written file is the one the application compiles against; a structural test compares it to
+  the DTOs so a rename on one side alone cannot pass.
+- The game's vocabulary has two homes and no others: `internal/infrastructure/config` holds the cue
+  table and `internal/infrastructure/status/flags.go` declares the status values the game writes.
+  Elsewhere a cue id, a journal event or a status value is read as data rather than written down. The
+  guard knows the real words because it reads the table, so it never has to guess which strings look
+  like one.
+- `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
+  dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
+  to 100% coverage, then holds each other measured package to a floor of its own: the root package 75%,
+  `audio` 80%, `setup` 61%, `taskbar` 22%, with `config`, `journal`, `library` and `status` at 100%.
+  `internal/infrastructure/window` and `installer` carry no floor, since neither has anything a test can
+  reach without the platform behind it. TESTING.md names what each shortfall is.
+- `build.ps1` runs `test.ps1` before it builds and offers no switch to skip it. `wails build` runs the
+  front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
+  error stops the build too.
+- Neither script runs `staticcheck` or the front-end test runner. Both are run by hand, the tests with
+  `npx vitest run` from `frontend/`; the front-end coverage report carries no threshold.
+
+## Design decisions
+
+| Decision | Why | Rejected alternative |
+|---|---|---|
+| Go with a web front end | A single binary with no runtime to ship; the same web view serves the setup program | A Python and Qt desktop stack |
+| Pure-Go audio, cgo disabled | No system codec, no external process | A system media framework; a bundled transcoder, too heavy for the job |
+| The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no configuration step | A mapping file per voice, kept in step by hand |
+| One cue plays one file | Every recording answers exactly one moment | Several files played in turn for one moment |
+| No fallback chain | A wrong line delivered confidently is worse than silence | Substituting another cue's take |
+| No cue id ends in digits | The flat form reads a trailing dot and digits as a take number | Letting a file name carry two meanings |
+| Status flags as a first-class source | A large block of cues describes ship state that never appears in the journal | Journal only, which would leave those cues permanently unreachable |
+| Start reading at end of file | Replaying a session on launch would fire hundreds of clips at once | Reading from the beginning; a heuristic time cutoff |
+| Priority, cooldown and dedupe | Without them the application is a slot machine rather than a voice worth listening to | A plain queue |
+| The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
+| No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |

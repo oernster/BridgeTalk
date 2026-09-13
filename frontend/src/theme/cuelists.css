@@ -1,0 +1,37 @@
+/* ------------------------------------------------------ the cue lists */
+
+/* The cues a cast voice cannot reach, grouped under the area of the game they belong
+   to and named in words. Columns rather than a grid: a grid puts the groups in ROWS,
+   so a row stands as tall as the tallest box in it, which leaves every short group
+   beside a long one sitting over an acre of nothing. Columns flow the boxes one after
+   another and balance the heights, which is the packing this content wants, since the
+   groups differ wildly in length. break-inside keeps a group whole rather than
+   splitting its rows across a column boundary, which would put a heading in one column
+   and its cues in the next. */
+.cuelist {
+  columns: 240px;
+  column-gap: 20px;
+}
+
+.cuegroup {
+  break-inside: avoid;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.cuegroup .grouphead {
+  font-size: 14px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.cuerow {
+  padding: 3px 0;
+  color: var(--text);
+}
+

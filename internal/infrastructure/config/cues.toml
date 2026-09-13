@@ -1,0 +1,1757 @@
+# The cue table: game truth, independent of whoever recorded the audio.
+#
+# Every id is spelled in Elite Dangerous's own words. A journal cue is the event
+# name, followed by a field and a value where one payload field narrows it. A status
+# cue is the flag name followed by Set or Cleared; a status value is its name followed
+# by what it became. The words a reader sees are generated from the id, never written
+# here. A voice's recordings are found by the id alone.
+#
+# cooldown is in seconds. A cue with no cooldown may fire as often as its event does.
+
+# ------------------------------------------------------------------ the application
+
+# Played once when a voice is chosen. Its source is the application rather than the
+# game, so no journal line or status change ever reaches it.
+
+[[cue]]
+id = "Cast.Confirmed"
+source = "application"
+event = "cast"
+priority = "notice"
+
+# ----------------------------------------------------------------- journal events
+
+[[cue]]
+id = "ApproachBody"
+source = "journal"
+event = "ApproachBody"
+priority = "notice"
+
+[[cue]]
+id = "ApproachSettlement"
+source = "journal"
+event = "ApproachSettlement"
+priority = "notice"
+
+[[cue]]
+id = "Bounty"
+source = "journal"
+event = "Bounty"
+priority = "notice"
+
+[[cue]]
+id = "BuyAmmo"
+source = "journal"
+event = "BuyAmmo"
+priority = "notice"
+
+[[cue]]
+id = "BuyDrones"
+source = "journal"
+event = "BuyDrones"
+priority = "notice"
+
+[[cue]]
+id = "CarrierCrewServices"
+source = "journal"
+event = "CarrierCrewServices"
+priority = "notice"
+
+[[cue]]
+id = "CarrierCrewServices.Operation.Deactivate"
+source = "journal"
+event = "CarrierCrewServices"
+match = { Operation = "Deactivate" }
+priority = "notice"
+
+[[cue]]
+id = "CarrierCrewServices.Operation.Pause"
+source = "journal"
+event = "CarrierCrewServices"
+match = { Operation = "Pause" }
+priority = "notice"
+
+[[cue]]
+id = "CarrierCrewServices.Operation.Resume"
+source = "journal"
+event = "CarrierCrewServices"
+match = { Operation = "Resume" }
+priority = "notice"
+
+[[cue]]
+id = "CarrierDepositFuel"
+source = "journal"
+event = "CarrierDepositFuel"
+priority = "notice"
+
+[[cue]]
+id = "CarrierDockingPermission"
+source = "journal"
+event = "CarrierDockingPermission"
+priority = "notice"
+
+[[cue]]
+id = "CarrierJump"
+source = "journal"
+event = "CarrierJump"
+priority = "notice"
+
+[[cue]]
+id = "CarrierJumpCancelled"
+source = "journal"
+event = "CarrierJumpCancelled"
+priority = "notice"
+
+[[cue]]
+id = "CarrierJumpRequest"
+source = "journal"
+event = "CarrierJumpRequest"
+priority = "notice"
+
+[[cue]]
+id = "CarrierTradeOrder"
+source = "journal"
+event = "CarrierTradeOrder"
+priority = "notice"
+
+[[cue]]
+id = "CodexEntry"
+source = "journal"
+event = "CodexEntry"
+priority = "notice"
+
+[[cue]]
+id = "ColonisationContribution"
+source = "journal"
+event = "ColonisationContribution"
+priority = "notice"
+
+[[cue]]
+id = "CommitCrime"
+source = "journal"
+event = "CommitCrime"
+priority = "notice"
+
+[[cue]]
+id = "CommitCrime.CrimeType.assault"
+source = "journal"
+event = "CommitCrime"
+match = { CrimeType = "assault" }
+priority = "notice"
+
+[[cue]]
+id = "CommitCrime.CrimeType.collidedAtSpeedInNoFireZone"
+source = "journal"
+event = "CommitCrime"
+match = { CrimeType = "collidedAtSpeedInNoFireZone" }
+priority = "notice"
+
+[[cue]]
+id = "CommitCrime.CrimeType.dockingMinorTresspass"
+source = "journal"
+event = "CommitCrime"
+match = { CrimeType = "dockingMinorTresspass" }
+priority = "notice"
+
+[[cue]]
+id = "CommitCrime.CrimeType.murder"
+source = "journal"
+event = "CommitCrime"
+match = { CrimeType = "murder" }
+priority = "notice"
+
+[[cue]]
+id = "CrimeVictim"
+source = "journal"
+event = "CrimeVictim"
+priority = "notice"
+
+[[cue]]
+id = "CrimeVictim.CrimeType.assault"
+source = "journal"
+event = "CrimeVictim"
+match = { CrimeType = "assault" }
+priority = "notice"
+
+[[cue]]
+id = "CrimeVictim.CrimeType.interdiction"
+source = "journal"
+event = "CrimeVictim"
+match = { CrimeType = "interdiction" }
+priority = "notice"
+
+[[cue]]
+id = "DataScanned"
+source = "journal"
+event = "DataScanned"
+priority = "notice"
+
+[[cue]]
+id = "Died"
+source = "journal"
+event = "Died"
+priority = "alert"
+
+[[cue]]
+id = "Disembark"
+source = "journal"
+event = "Disembark"
+priority = "notice"
+
+[[cue]]
+id = "Disembark.SRV.false"
+source = "journal"
+event = "Disembark"
+match = { SRV = "false" }
+priority = "notice"
+
+[[cue]]
+id = "Disembark.SRV.true"
+source = "journal"
+event = "Disembark"
+match = { SRV = "true" }
+priority = "notice"
+
+[[cue]]
+id = "DockSRV"
+source = "journal"
+event = "DockSRV"
+priority = "notice"
+
+[[cue]]
+id = "Docked"
+source = "journal"
+event = "Docked"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "DockingCancelled"
+source = "journal"
+event = "DockingCancelled"
+priority = "notice"
+
+[[cue]]
+id = "DockingDenied"
+source = "journal"
+event = "DockingDenied"
+priority = "notice"
+
+[[cue]]
+id = "DockingDenied.Reason.Distance"
+source = "journal"
+event = "DockingDenied"
+match = { Reason = "Distance" }
+priority = "notice"
+
+[[cue]]
+id = "DockingDenied.Reason.JumpImminent"
+source = "journal"
+event = "DockingDenied"
+match = { Reason = "JumpImminent" }
+priority = "notice"
+
+[[cue]]
+id = "DockingDenied.Reason.NoSpace"
+source = "journal"
+event = "DockingDenied"
+match = { Reason = "NoSpace" }
+priority = "notice"
+
+[[cue]]
+id = "DockingDenied.Reason.TooLarge"
+source = "journal"
+event = "DockingDenied"
+match = { Reason = "TooLarge" }
+priority = "notice"
+
+[[cue]]
+id = "DockingGranted"
+source = "journal"
+event = "DockingGranted"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "DockingRequested"
+source = "journal"
+event = "DockingRequested"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "DockingTimeout"
+source = "journal"
+event = "DockingTimeout"
+priority = "notice"
+
+[[cue]]
+id = "EjectCargo"
+source = "journal"
+event = "EjectCargo"
+priority = "notice"
+
+[[cue]]
+id = "Embark"
+source = "journal"
+event = "Embark"
+priority = "notice"
+
+[[cue]]
+id = "EngineerCraft"
+source = "journal"
+event = "EngineerCraft"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "FSDJump"
+source = "journal"
+event = "FSDJump"
+priority = "notice"
+
+[[cue]]
+id = "FSDTarget"
+source = "journal"
+event = "FSDTarget"
+priority = "notice"
+
+[[cue]]
+id = "FSSAllBodiesFound"
+source = "journal"
+event = "FSSAllBodiesFound"
+priority = "notice"
+
+[[cue]]
+id = "FSSDiscoveryScan"
+source = "journal"
+event = "FSSDiscoveryScan"
+priority = "notice"
+
+[[cue]]
+id = "FetchRemoteModule"
+source = "journal"
+event = "FetchRemoteModule"
+priority = "notice"
+
+[[cue]]
+id = "Friends"
+source = "journal"
+event = "Friends"
+priority = "notice"
+
+[[cue]]
+id = "Friends.Status.Added"
+source = "journal"
+event = "Friends"
+match = { Status = "Added" }
+priority = "notice"
+
+[[cue]]
+id = "Friends.Status.Lost"
+source = "journal"
+event = "Friends"
+match = { Status = "Lost" }
+priority = "notice"
+
+[[cue]]
+id = "Friends.Status.Offline"
+source = "journal"
+event = "Friends"
+match = { Status = "Offline" }
+priority = "notice"
+
+[[cue]]
+id = "Friends.Status.Online"
+source = "journal"
+event = "Friends"
+match = { Status = "Online" }
+priority = "notice"
+
+[[cue]]
+id = "Friends.Status.Requested"
+source = "journal"
+event = "Friends"
+match = { Status = "Requested" }
+priority = "notice"
+
+[[cue]]
+id = "FuelScoop"
+source = "journal"
+event = "FuelScoop"
+priority = "notice"
+
+[[cue]]
+id = "GameModeChange"
+source = "journal"
+event = "GameModeChange"
+priority = "notice"
+
+[[cue]]
+id = "HeatDamage"
+source = "journal"
+event = "HeatDamage"
+priority = "alert"
+
+[[cue]]
+id = "HeatWarning"
+source = "journal"
+event = "HeatWarning"
+priority = "alert"
+cooldown = 15
+
+[[cue]]
+id = "HullDamage"
+source = "journal"
+event = "HullDamage"
+priority = "alert"
+cooldown = 15
+
+[[cue]]
+id = "Interdicted"
+source = "journal"
+event = "Interdicted"
+priority = "alert"
+
+[[cue]]
+id = "Interdicted.Submitted.false"
+source = "journal"
+event = "Interdicted"
+match = { Submitted = "false" }
+priority = "alert"
+
+[[cue]]
+id = "Interdicted.Submitted.true"
+source = "journal"
+event = "Interdicted"
+match = { Submitted = "true" }
+priority = "alert"
+
+[[cue]]
+id = "JoinedSquadron"
+source = "journal"
+event = "JoinedSquadron"
+priority = "notice"
+
+[[cue]]
+id = "LaunchDrone"
+source = "journal"
+event = "LaunchDrone"
+priority = "notice"
+
+[[cue]]
+id = "LaunchFighter"
+source = "journal"
+event = "LaunchFighter"
+priority = "notice"
+
+[[cue]]
+id = "LaunchSRV"
+source = "journal"
+event = "LaunchSRV"
+priority = "notice"
+
+[[cue]]
+id = "LeaveBody"
+source = "journal"
+event = "LeaveBody"
+priority = "notice"
+
+[[cue]]
+id = "LeftSquadron"
+source = "journal"
+event = "LeftSquadron"
+priority = "notice"
+
+[[cue]]
+id = "Liftoff"
+source = "journal"
+event = "Liftoff"
+priority = "notice"
+
+[[cue]]
+id = "LoadGame"
+source = "journal"
+event = "LoadGame"
+priority = "notice"
+
+[[cue]]
+id = "LoadGame.GameMode.Group"
+source = "journal"
+event = "LoadGame"
+match = { GameMode = "Group" }
+priority = "notice"
+
+[[cue]]
+id = "LoadGame.GameMode.Open"
+source = "journal"
+event = "LoadGame"
+match = { GameMode = "Open" }
+priority = "notice"
+
+[[cue]]
+id = "LoadGame.GameMode.Solo"
+source = "journal"
+event = "LoadGame"
+match = { GameMode = "Solo" }
+priority = "notice"
+
+[[cue]]
+id = "MarketBuy"
+source = "journal"
+event = "MarketBuy"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "MarketSell"
+source = "journal"
+event = "MarketSell"
+priority = "notice"
+
+[[cue]]
+id = "MaterialCollected"
+source = "journal"
+event = "MaterialCollected"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "MaterialCollected.Category.Encoded"
+source = "journal"
+event = "MaterialCollected"
+match = { Category = "Encoded" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "MaterialCollected.Category.Manufactured"
+source = "journal"
+event = "MaterialCollected"
+match = { Category = "Manufactured" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "MaterialCollected.Category.Raw"
+source = "journal"
+event = "MaterialCollected"
+match = { Category = "Raw" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "MaterialTrade"
+source = "journal"
+event = "MaterialTrade"
+priority = "notice"
+
+[[cue]]
+id = "MaterialTrade.TraderType.encoded"
+source = "journal"
+event = "MaterialTrade"
+match = { TraderType = "encoded" }
+priority = "notice"
+
+[[cue]]
+id = "MaterialTrade.TraderType.manufactured"
+source = "journal"
+event = "MaterialTrade"
+match = { TraderType = "manufactured" }
+priority = "notice"
+
+[[cue]]
+id = "MaterialTrade.TraderType.raw"
+source = "journal"
+event = "MaterialTrade"
+match = { TraderType = "raw" }
+priority = "notice"
+
+[[cue]]
+id = "MissionAbandoned"
+source = "journal"
+event = "MissionAbandoned"
+priority = "notice"
+
+[[cue]]
+id = "MissionAccepted"
+source = "journal"
+event = "MissionAccepted"
+priority = "notice"
+
+[[cue]]
+id = "MissionCompleted"
+source = "journal"
+event = "MissionCompleted"
+priority = "notice"
+
+[[cue]]
+id = "MissionRedirected"
+source = "journal"
+event = "MissionRedirected"
+priority = "notice"
+
+[[cue]]
+id = "ModuleBuy"
+source = "journal"
+event = "ModuleBuy"
+priority = "notice"
+
+[[cue]]
+id = "ModuleRetrieve"
+source = "journal"
+event = "ModuleRetrieve"
+priority = "notice"
+
+[[cue]]
+id = "ModuleSell"
+source = "journal"
+event = "ModuleSell"
+priority = "notice"
+
+[[cue]]
+id = "ModuleSellRemote"
+source = "journal"
+event = "ModuleSellRemote"
+priority = "notice"
+
+[[cue]]
+id = "ModuleStore"
+source = "journal"
+event = "ModuleStore"
+priority = "notice"
+
+[[cue]]
+id = "MultiSellExplorationData"
+source = "journal"
+event = "MultiSellExplorationData"
+priority = "notice"
+
+[[cue]]
+id = "NavBeaconScan"
+source = "journal"
+event = "NavBeaconScan"
+priority = "notice"
+
+[[cue]]
+id = "NavRoute"
+source = "journal"
+event = "NavRoute"
+priority = "notice"
+
+[[cue]]
+id = "NavRouteClear"
+source = "journal"
+event = "NavRouteClear"
+priority = "notice"
+
+[[cue]]
+id = "PayBounties"
+source = "journal"
+event = "PayBounties"
+priority = "notice"
+
+[[cue]]
+id = "PayFines"
+source = "journal"
+event = "PayFines"
+priority = "notice"
+
+[[cue]]
+id = "Promotion"
+source = "journal"
+event = "Promotion"
+priority = "notice"
+
+[[cue]]
+id = "ReceiveText"
+source = "journal"
+event = "ReceiveText"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ReceiveText.Channel.npc"
+source = "journal"
+event = "ReceiveText"
+match = { Channel = "npc" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ReceiveText.Channel.starsystem"
+source = "journal"
+event = "ReceiveText"
+match = { Channel = "starsystem" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "RedeemVoucher"
+source = "journal"
+event = "RedeemVoucher"
+priority = "notice"
+
+[[cue]]
+id = "RefuelAll"
+source = "journal"
+event = "RefuelAll"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "Repair"
+source = "journal"
+event = "Repair"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "RepairAll"
+source = "journal"
+event = "RepairAll"
+priority = "notice"
+
+[[cue]]
+id = "ReservoirReplenished"
+source = "journal"
+event = "ReservoirReplenished"
+priority = "notice"
+
+[[cue]]
+id = "RestockVehicle"
+source = "journal"
+event = "RestockVehicle"
+priority = "notice"
+
+[[cue]]
+id = "Resurrect"
+source = "journal"
+event = "Resurrect"
+priority = "notice"
+
+[[cue]]
+id = "Resurrect.Option.rebuy"
+source = "journal"
+event = "Resurrect"
+match = { Option = "rebuy" }
+priority = "notice"
+
+[[cue]]
+id = "Resurrect.Option.rejoin"
+source = "journal"
+event = "Resurrect"
+match = { Option = "rejoin" }
+priority = "notice"
+
+[[cue]]
+id = "SAAScanComplete"
+source = "journal"
+event = "SAAScanComplete"
+priority = "notice"
+
+[[cue]]
+id = "SAASignalsFound"
+source = "journal"
+event = "SAASignalsFound"
+priority = "notice"
+
+[[cue]]
+id = "SRVDestroyed"
+source = "journal"
+event = "SRVDestroyed"
+priority = "notice"
+
+[[cue]]
+id = "Scan"
+source = "journal"
+event = "Scan"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "Scan.ScanType.AutoScan"
+source = "journal"
+event = "Scan"
+match = { ScanType = "AutoScan" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "Scan.ScanType.Detailed"
+source = "journal"
+event = "Scan"
+match = { ScanType = "Detailed" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "Scan.ScanType.NavBeaconDetail"
+source = "journal"
+event = "Scan"
+match = { ScanType = "NavBeaconDetail" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ScanBaryCentre"
+source = "journal"
+event = "ScanBaryCentre"
+priority = "notice"
+
+[[cue]]
+id = "Scanned"
+source = "journal"
+event = "Scanned"
+priority = "notice"
+
+[[cue]]
+id = "SelfDestruct"
+source = "journal"
+event = "SelfDestruct"
+priority = "alert"
+
+[[cue]]
+id = "SellDrones"
+source = "journal"
+event = "SellDrones"
+priority = "notice"
+
+[[cue]]
+id = "SellExplorationData"
+source = "journal"
+event = "SellExplorationData"
+priority = "notice"
+
+[[cue]]
+id = "SendText"
+source = "journal"
+event = "SendText"
+priority = "notice"
+
+[[cue]]
+id = "SetUserShipName"
+source = "journal"
+event = "SetUserShipName"
+priority = "notice"
+
+[[cue]]
+id = "SharedBookmarkToSquadron"
+source = "journal"
+event = "SharedBookmarkToSquadron"
+priority = "notice"
+
+[[cue]]
+id = "ShieldState"
+source = "journal"
+event = "ShieldState"
+priority = "notice"
+
+[[cue]]
+id = "ShieldState.ShieldsUp.false"
+source = "journal"
+event = "ShieldState"
+match = { ShieldsUp = "false" }
+priority = "alert"
+
+[[cue]]
+id = "ShieldState.ShieldsUp.true"
+source = "journal"
+event = "ShieldState"
+match = { ShieldsUp = "true" }
+priority = "notice"
+
+[[cue]]
+id = "ShipRedeemed"
+source = "journal"
+event = "ShipRedeemed"
+priority = "notice"
+
+[[cue]]
+id = "ShipTargeted"
+source = "journal"
+event = "ShipTargeted"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ShipTargeted.TargetLocked.false"
+source = "journal"
+event = "ShipTargeted"
+match = { TargetLocked = "false" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ShipTargeted.TargetLocked.true"
+source = "journal"
+event = "ShipTargeted"
+match = { TargetLocked = "true" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "ShipyardBuy"
+source = "journal"
+event = "ShipyardBuy"
+priority = "notice"
+
+[[cue]]
+id = "ShipyardNew"
+source = "journal"
+event = "ShipyardNew"
+priority = "notice"
+
+[[cue]]
+id = "ShipyardRedeem"
+source = "journal"
+event = "ShipyardRedeem"
+priority = "notice"
+
+[[cue]]
+id = "ShipyardSell"
+source = "journal"
+event = "ShipyardSell"
+priority = "notice"
+
+[[cue]]
+id = "ShipyardSwap"
+source = "journal"
+event = "ShipyardSwap"
+priority = "notice"
+
+[[cue]]
+id = "ShipyardTransfer"
+source = "journal"
+event = "ShipyardTransfer"
+priority = "notice"
+
+[[cue]]
+id = "Shutdown"
+source = "journal"
+event = "Shutdown"
+priority = "notice"
+
+[[cue]]
+id = "SquadronCreated"
+source = "journal"
+event = "SquadronCreated"
+priority = "notice"
+
+[[cue]]
+id = "StartJump"
+source = "journal"
+event = "StartJump"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "StartJump.JumpType.Hyperspace"
+source = "journal"
+event = "StartJump"
+match = { JumpType = "Hyperspace" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "StartJump.JumpType.Supercruise"
+source = "journal"
+event = "StartJump"
+match = { JumpType = "Supercruise" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseDestinationDrop"
+source = "journal"
+event = "SupercruiseDestinationDrop"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseEntry"
+source = "journal"
+event = "SupercruiseEntry"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit"
+source = "journal"
+event = "SupercruiseExit"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit.BodyType.Null"
+source = "journal"
+event = "SupercruiseExit"
+match = { BodyType = "Null" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit.BodyType.Planet"
+source = "journal"
+event = "SupercruiseExit"
+match = { BodyType = "Planet" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit.BodyType.PlanetaryRing"
+source = "journal"
+event = "SupercruiseExit"
+match = { BodyType = "PlanetaryRing" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit.BodyType.Star"
+source = "journal"
+event = "SupercruiseExit"
+match = { BodyType = "Star" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "SupercruiseExit.BodyType.Station"
+source = "journal"
+event = "SupercruiseExit"
+match = { BodyType = "Station" }
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "Synthesis"
+source = "journal"
+event = "Synthesis"
+priority = "notice"
+
+[[cue]]
+id = "Synthesis.Name.Ammo Basic"
+source = "journal"
+event = "Synthesis"
+match = { Name = "Ammo Basic" }
+priority = "notice"
+
+[[cue]]
+id = "Synthesis.Name.Cannon Ammo Basic"
+source = "journal"
+event = "Synthesis"
+match = { Name = "Cannon Ammo Basic" }
+priority = "notice"
+
+[[cue]]
+id = "Synthesis.Name.Fuel Basic"
+source = "journal"
+event = "Synthesis"
+match = { Name = "Fuel Basic" }
+priority = "notice"
+
+[[cue]]
+id = "Synthesis.Name.Missile Ammo Basic"
+source = "journal"
+event = "Synthesis"
+match = { Name = "Missile Ammo Basic" }
+priority = "notice"
+
+[[cue]]
+id = "Synthesis.Name.Repair Basic"
+source = "journal"
+event = "Synthesis"
+match = { Name = "Repair Basic" }
+priority = "notice"
+
+[[cue]]
+id = "Touchdown"
+source = "journal"
+event = "Touchdown"
+priority = "notice"
+
+[[cue]]
+id = "USSDrop"
+source = "journal"
+event = "USSDrop"
+priority = "notice"
+
+[[cue]]
+id = "UnderAttack"
+source = "journal"
+event = "UnderAttack"
+priority = "alert"
+cooldown = 15
+
+[[cue]]
+id = "Undocked"
+source = "journal"
+event = "Undocked"
+priority = "ambient"
+cooldown = 30
+
+[[cue]]
+id = "WingAdd"
+source = "journal"
+event = "WingAdd"
+priority = "notice"
+
+[[cue]]
+id = "WingJoin"
+source = "journal"
+event = "WingJoin"
+priority = "notice"
+
+[[cue]]
+id = "WingLeave"
+source = "journal"
+event = "WingLeave"
+priority = "notice"
+
+# -------------------------------------------------------------------- status flags
+
+[[cue]]
+id = "Docked.Set"
+source = "status"
+flag = "Docked"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "Docked.Cleared"
+source = "status"
+flag = "Docked"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "Landed.Set"
+source = "status"
+flag = "Landed"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "Landed.Cleared"
+source = "status"
+flag = "Landed"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "LandingGearDown.Set"
+source = "status"
+flag = "LandingGearDown"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "LandingGearDown.Cleared"
+source = "status"
+flag = "LandingGearDown"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "ShieldsUp.Set"
+source = "status"
+flag = "ShieldsUp"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "ShieldsUp.Cleared"
+source = "status"
+flag = "ShieldsUp"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "Supercruise.Set"
+source = "status"
+flag = "Supercruise"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "Supercruise.Cleared"
+source = "status"
+flag = "Supercruise"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FlightAssistOff.Set"
+source = "status"
+flag = "FlightAssistOff"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FlightAssistOff.Cleared"
+source = "status"
+flag = "FlightAssistOff"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "HardpointsDeployed.Set"
+source = "status"
+flag = "HardpointsDeployed"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "HardpointsDeployed.Cleared"
+source = "status"
+flag = "HardpointsDeployed"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "InWing.Set"
+source = "status"
+flag = "InWing"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "InWing.Cleared"
+source = "status"
+flag = "InWing"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "LightsOn.Set"
+source = "status"
+flag = "LightsOn"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "LightsOn.Cleared"
+source = "status"
+flag = "LightsOn"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "CargoScoopDeployed.Set"
+source = "status"
+flag = "CargoScoopDeployed"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "CargoScoopDeployed.Cleared"
+source = "status"
+flag = "CargoScoopDeployed"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "SilentRunning.Set"
+source = "status"
+flag = "SilentRunning"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "SilentRunning.Cleared"
+source = "status"
+flag = "SilentRunning"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "ScoopingFuel.Set"
+source = "status"
+flag = "ScoopingFuel"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "ScoopingFuel.Cleared"
+source = "status"
+flag = "ScoopingFuel"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "SrvHandbrake.Set"
+source = "status"
+flag = "SrvHandbrake"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "SrvHandbrake.Cleared"
+source = "status"
+flag = "SrvHandbrake"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "SrvTurret.Set"
+source = "status"
+flag = "SrvTurret"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "SrvTurret.Cleared"
+source = "status"
+flag = "SrvTurret"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "SrvDriveAssist.Set"
+source = "status"
+flag = "SrvDriveAssist"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "SrvDriveAssist.Cleared"
+source = "status"
+flag = "SrvDriveAssist"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FsdMassLocked.Set"
+source = "status"
+flag = "FsdMassLocked"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FsdMassLocked.Cleared"
+source = "status"
+flag = "FsdMassLocked"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FsdCharging.Set"
+source = "status"
+flag = "FsdCharging"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FsdCharging.Cleared"
+source = "status"
+flag = "FsdCharging"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FsdCooldown.Set"
+source = "status"
+flag = "FsdCooldown"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FsdCooldown.Cleared"
+source = "status"
+flag = "FsdCooldown"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "LowFuel.Set"
+source = "status"
+flag = "LowFuel"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "LowFuel.Cleared"
+source = "status"
+flag = "LowFuel"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "OverHeating.Set"
+source = "status"
+flag = "OverHeating"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "OverHeating.Cleared"
+source = "status"
+flag = "OverHeating"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "IsInDanger.Set"
+source = "status"
+flag = "IsInDanger"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "IsInDanger.Cleared"
+source = "status"
+flag = "IsInDanger"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "BeingInterdicted.Set"
+source = "status"
+flag = "BeingInterdicted"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "BeingInterdicted.Cleared"
+source = "status"
+flag = "BeingInterdicted"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "InMainShip.Set"
+source = "status"
+flag = "InMainShip"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "InMainShip.Cleared"
+source = "status"
+flag = "InMainShip"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "InFighter.Set"
+source = "status"
+flag = "InFighter"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "InFighter.Cleared"
+source = "status"
+flag = "InFighter"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "InSRV.Set"
+source = "status"
+flag = "InSRV"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "InSRV.Cleared"
+source = "status"
+flag = "InSRV"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "HudInAnalysisMode.Set"
+source = "status"
+flag = "HudInAnalysisMode"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "HudInAnalysisMode.Cleared"
+source = "status"
+flag = "HudInAnalysisMode"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "NightVision.Set"
+source = "status"
+flag = "NightVision"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "NightVision.Cleared"
+source = "status"
+flag = "NightVision"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FsdJump.Set"
+source = "status"
+flag = "FsdJump"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FsdJump.Cleared"
+source = "status"
+flag = "FsdJump"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "SrvHighBeam.Set"
+source = "status"
+flag = "SrvHighBeam"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "SrvHighBeam.Cleared"
+source = "status"
+flag = "SrvHighBeam"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "OnFoot.Set"
+source = "status"
+flag = "OnFoot"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "OnFoot.Cleared"
+source = "status"
+flag = "OnFoot"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "InTaxi.Set"
+source = "status"
+flag = "InTaxi"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "InTaxi.Cleared"
+source = "status"
+flag = "InTaxi"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "LowOxygen.Set"
+source = "status"
+flag = "LowOxygen"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "LowOxygen.Cleared"
+source = "status"
+flag = "LowOxygen"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "LowHealth.Set"
+source = "status"
+flag = "LowHealth"
+edge = "rising"
+priority = "alert"
+cooldown = 30
+
+[[cue]]
+id = "LowHealth.Cleared"
+source = "status"
+flag = "LowHealth"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "GlideMode.Set"
+source = "status"
+flag = "GlideMode"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "GlideMode.Cleared"
+source = "status"
+flag = "GlideMode"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "BreathableAtmosphere.Set"
+source = "status"
+flag = "BreathableAtmosphere"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "BreathableAtmosphere.Cleared"
+source = "status"
+flag = "BreathableAtmosphere"
+edge = "falling"
+priority = "ambient"
+
+[[cue]]
+id = "FsdHyperdriveCharging.Set"
+source = "status"
+flag = "FsdHyperdriveCharging"
+edge = "rising"
+priority = "ambient"
+
+[[cue]]
+id = "FsdHyperdriveCharging.Cleared"
+source = "status"
+flag = "FsdHyperdriveCharging"
+edge = "falling"
+priority = "ambient"
+
+# ------------------------------------------------------------------- status values
+
+[[cue]]
+id = "GuiFocus.NoFocus"
+source = "status"
+flag = "GuiFocus"
+match = { value = "NoFocus" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.InternalPanel"
+source = "status"
+flag = "GuiFocus"
+match = { value = "InternalPanel" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.ExternalPanel"
+source = "status"
+flag = "GuiFocus"
+match = { value = "ExternalPanel" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.CommsPanel"
+source = "status"
+flag = "GuiFocus"
+match = { value = "CommsPanel" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.RolePanel"
+source = "status"
+flag = "GuiFocus"
+match = { value = "RolePanel" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.StationServices"
+source = "status"
+flag = "GuiFocus"
+match = { value = "StationServices" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.GalaxyMap"
+source = "status"
+flag = "GuiFocus"
+match = { value = "GalaxyMap" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.SystemMap"
+source = "status"
+flag = "GuiFocus"
+match = { value = "SystemMap" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.Orrery"
+source = "status"
+flag = "GuiFocus"
+match = { value = "Orrery" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.FssMode"
+source = "status"
+flag = "GuiFocus"
+match = { value = "FssMode" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.SaaMode"
+source = "status"
+flag = "GuiFocus"
+match = { value = "SaaMode" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "GuiFocus.Codex"
+source = "status"
+flag = "GuiFocus"
+match = { value = "Codex" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "Pips.Balanced"
+source = "status"
+flag = "Pips"
+match = { value = "Balanced" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "Pips.Systems"
+source = "status"
+flag = "Pips"
+match = { value = "Systems" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "Pips.Engines"
+source = "status"
+flag = "Pips"
+match = { value = "Engines" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "Pips.Weapons"
+source = "status"
+flag = "Pips"
+match = { value = "Weapons" }
+priority = "flavour"
+cooldown = 5
+
+[[cue]]
+id = "FireGroup.Changed"
+source = "status"
+flag = "FireGroup"
+priority = "flavour"
+cooldown = 5

@@ -1,0 +1,76 @@
+/* --------------------------------------------------------------- controls */
+
+/* controlHeight is the height of every control standing on a row, given once so that
+   two controls side by side cannot end up different sizes. It was two numbers before,
+   a selector left to its natural height and a button written down at what that height
+   had been when somebody measured it; the selector changed and the button stood six
+   pixels proud of it. CSS cannot read one box's height into another's width, so the
+   figure is stated here and both read it, which is the nearest thing to deriving it. */
+.row {
+  --control-height: 40px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  border-top: 1px solid var(--border);
+}
+
+.row:first-of-type {
+  border-top: none;
+}
+
+.row .grow {
+  flex: 1 1 auto;
+}
+
+.row .hint {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* A box standing on a row, sized against the row's own control height rather than
+   left at the browser's default, which is drawn small enough to be hard to hit. The
+   accent is the brand one because a tick is the control's state rather than its
+   focus; the ring follows the same three states every other control here uses. */
+.check {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--secondary);
+  cursor: pointer;
+}
+
+.check:enabled:hover,
+.check:enabled:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.btn {
+  padding: 7px 14px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn:enabled:hover,
+.btn:enabled:focus {
+  border-color: var(--ring);
+}
+
+.btn:disabled {
+  border-color: var(--danger);
+  color: var(--muted);
+  cursor: default;
+}
+
+.btn.primary {
+  background: var(--secondary-soft);
+  color: var(--secondary);
+  font-weight: 600;
+}
+

@@ -1,0 +1,16 @@
+# Check every text file out with the endings it is stored with.
+#
+# Without this a clone on Windows takes core.autocrlf at its word and materialises the
+# whole tree with CRLF, which the committed bytes never had. Nothing in the build reads
+# an ending except gofmt, which refuses a CRLF file outright: a fresh clone therefore
+# reports every Go file in the repository as unformatted, including the ones nobody has
+# touched. The check that is supposed to catch a real fault answers with all of them.
+* text=auto eol=lf
+
+# Binaries carry no endings to convert.
+*.png binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.wav binary
+*.exe binary

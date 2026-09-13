@@ -1,0 +1,604 @@
+# Bridge Talk: Requirements Specification
+
+Open questions in section 8 are blocking for the areas they name.
+
+---
+
+## 1. Introduction
+
+### 1.1 Purpose
+
+Bridge Talk is a desktop application that watches Elite Dangerous as it is
+played and plays a short piece of recorded audio when something happens in the
+game. The audio is supplied by the person using it: recordings they made
+themselves; recordings made for them by people they know.
+
+It listens to the game. It does not control the game.
+
+### 1.2 Intended audience
+
+Oliver Ernster as author and decision owner; contributors to the open source
+project.
+
+### 1.3 Scope
+
+**In scope:**
+
+- A cue engine that turns Elite Dangerous journal events and status flags into
+  named cues.
+- An audio library held in a directory the user chooses, organised by the person
+  who recorded it.
+- Discovery of that library by scanning, with no configuration step.
+- A recorder that captures audio from the user's own microphone and files it
+  against the cue vocabulary.
+- Auditioning, casting a voice, settings and a tray presence.
+- An extension point through which an additional audio source may be supplied.
+
+**Out of scope:**
+
+| Item | Why |
+|---|---|
+| Controlling the game in any way | The application has no input path to the game and will not acquire one |
+| Speech recognition or spoken commands | Not what this is for |
+| Text to speech synthesis | Recorded audio only |
+| Shipping any audio with the application | The application plays what the user provides |
+| Distributing recordings between users | No transport, no store, no upload |
+| Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
+| Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
+| Cross platform builds | Windows for now; Linux is under consideration in OQ-11 |
+
+### 1.4 Definitions
+
+| Term | Meaning, fixed for this document |
+|---|---|
+| **Cue** | One thing the application can play, plus the game condition that triggers it. Identified by a stable id spelled in the game's own words, such as `StartJump.JumpType.Hyperspace`. Defined in `cues.toml`. |
+| **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 256. |
+| **Voice** | One person's recordings, selectable as a whole. A directory under the library root that yields at least one take. |
+| **Library root** | One directory the user chooses, holding one subdirectory per voice. |
+| **Manifest** | `voice.toml` in a voice directory. Optional. Carries a display name, a credit and any take the convention cannot find. |
+| **Take** | One audio file answering one cue. A cue may have several takes. |
+| **Cast** | The act of selecting the voice that speaks. |
+| **Audition** | Playing a take on demand from the user interface, outside game events. |
+
+### 1.5 References
+
+- `ARCHITECTURE.md`: the layering invariants and the tests that enforce them.
+- `internal/infrastructure/config/cues.toml`: the cue vocabulary.
+- ISO/IEC/IEEE 29148:2018 for requirement quality; EARS for requirement syntax.
+
+---
+
+## 2. Overall description
+
+### 2.1 Product perspective
+
+```mermaid
+graph LR
+  J[Journal reader] --> CE[Cue engine]
+  CE --> SEL[Selection]
+  SEL --> CAT[Library catalogue]
+  CAT --> SCAN["Scanner<br/>exact cue id match"]
+  SCAN --> ROOT["User-chosen<br/>library root"]
+  CAT --> PLAY[Audio player]
+  REC[Recorder] -->|writes takes| ROOT
+  DROP["Drop in a folder<br/>of audio files"] --> ROOT
+  PORT["Audio source port<br/>section 6"] -.optional.-> CAT
+```
+
+The cue engine asks the catalogue for a take for a cue id and gets a path or
+nothing back. Everything about how audio is stored sits below that line.
+
+### 2.2 User classes
+
+| Class | Description | May do | May not do |
+|---|---|---|---|
+| **Commander** | Plays Elite Dangerous, wants spoken feedback | Choose a library root, cast a voice, audition, adjust settings, record | Modify the cue vocabulary from the interface |
+| **Contributor** | Someone recording a voice for a commander | Record takes into their own voice directory | Anything else; the recorder is the whole interface |
+
+A single person is usually both.
+
+### 2.3 Operating environment
+
+Windows 10 and Windows 11, x64. Go 1.26 with Wails v2 hosting a React and
+TypeScript front end. No CGO, per the house rule; audio capture was measured and
+needs no exception to it, see NFR-C-304. Elite Dangerous journal files in their
+standard location. No network dependency at runtime: the application makes no
+outbound request.
+
+**Linux is under consideration and is not yet in scope.** See OQ-11. The library
+schema in section 3 is already portable, so nothing there changes either way.
+
+### 2.4 Constraints
+
+| ID | Constraint |
+|---|---|
+| CON-1 | The layering invariant `UI to Application to Domain from Infrastructure` holds and is enforced by `tests/structural`. |
+| CON-2 | Modules stay at or below 400 lines; a module landing between 381 and 400 lines is reduced to 350 or fewer. Build and packaging scripts are exempt. |
+| CON-3 | The coverage floor over `internal/domain` and `internal/application` stays at 100 percent. |
+| CON-4 | `VERSION` is the single source of truth for the version. No version literal elsewhere. |
+| CON-5 | No audio ships inside the application or its setup program. |
+| CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
+| CON-7 | The application never writes to the library root except where section 3 permits it. |
+
+### 2.5 Assumptions
+
+| ID | Assumption | Owner | Confirm by |
+|---|---|---|---|
+| ASM-1 | The 256 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before the recorder is built |
+| ASM-2 | Contributors record with ordinary consumer microphones in untreated rooms, so capture quality is not controllable by the application. | Oliver | Before the recorder is built |
+| ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
+
+---
+
+## 3. The audio library
+
+### 3.1 The schema
+
+```
+<library root>/
+├── Alice/
+│   ├── StartJump/
+│   │   ├── best-one.wav
+│   │   └── second-try.wav
+│   ├── DockingGranted/
+│   │   └── docking.mp3
+│   └── voice.toml              optional: display name, credit, overrides
+└── Bob/
+    ├── StartJump.wav
+    └── DockingGranted.wav
+```
+
+**Rule 1, the voice.** Each immediate subdirectory of the library root is a
+candidate voice. It becomes a voice when at least one take resolves inside it.
+
+**Rule 2, the folder form.** A subdirectory whose name is exactly a cue id holds
+takes. Every recognised audio file directly inside it is one take. File names
+carry no meaning.
+
+**Rule 3, the flat form.** An audio file whose name, with its extension removed,
+is exactly a cue id is a take for that cue. A trailing dot plus digits before the
+extension distinguishes takes, so `StartJump.2.wav` is a second take of
+`StartJump`.
+
+**Rule 4, exact literal matching.** A name matches a cue id only when the two
+strings are equal, compared case insensitively and in no other way. No
+normalisation, no punctuation folding, no fuzzy or nearest match, ever.
+
+**Rule 5, the optional manifest.** `voice.toml` is not required and most voices
+will not have one. Where present it may set a display name, a credit line and
+explicit cue to file mappings for takes that follow no convention. It adds to what
+the convention found.
+
+**Why rule 4 is a requirement and not a detail.** A name either is a cue id or it
+is not. Exact matching means the scan report can state, of every file it found,
+whether it was used and if not why not, with no third answer. It also means a
+directory of audio organised for some other purpose contributes nothing by
+accident, which is what makes it safe to point the application at a directory and
+simply see what happens.
+
+### 3.2 Naming on disk
+
+The cue id is the on-disk name unchanged, with no derivation step between them.
+
+Checked against all 256 cue ids: every id uses only letters, digits, `.` and a
+space inside a segment, which five ids carry; none begins with a dot, which would
+hide it on Linux and macOS; none ends in a dot or space, which Windows silently
+strips; no space sits beside a dot; none has a first segment that is a Windows
+reserved device name (`con`, `prn`, `aux`, `nul`, `com1` to `com9`, `lpt1` to
+`lpt9`); none collides with another when case folded; the longest is 49
+characters.
+
+Verified on the Windows filesystem directly: directories named
+`CommitCrime.CrimeType.collidedAtSpeedInNoFireZone` (the longest id),
+`Synthesis.Name.Repair Basic` and `DockingGranted`, plus files named
+`DockingGranted.wav` and `DockingGranted.2.wav`, were created and read back byte
+for byte with nothing stripped and nothing renamed. On Linux and macOS every byte
+except `/` and NUL is legal in a name; the only special case is a leading dot,
+which no id has.
+
+**Case is the only genuine cross platform difference.** Windows and macOS refuse
+two names differing only in case; Linux allows both. FR-218 says what happens
+then. Voice directory names are user chosen and are never matched against
+anything, so they may hold any characters the platform allows, including non
+ASCII; they are display strings only.
+
+### 3.3 The manifest format
+
+TOML, matching `cues.toml`.
+
+```toml
+name = "Alice"
+credit = "Recorded by Alice, 2026"
+
+# Optional. Only needed for files the convention cannot find.
+[takes]
+"IsInDanger.Set" = ["oddly-named-file.wav", "alternates/another.wav"]
+```
+
+The reasoning, since this is an open source project and the file is meant to be
+edited by hand: TOML takes comments, which JSON does not; it is not whitespace
+significant, so no user can break it by indenting, which a YAML user can; it is
+already a direct dependency, so it costs nothing; and it is what `cues.toml`
+already is. Two configuration formats in one application is worse than either
+format alone.
+
+### 3.4 Requirements
+
+**FR-201 Choose a library root**
+Priority: Must.
+When the user selects a library root, the application shall persist that path in
+settings and shall scan it.
+Acceptance: Given no root is set, when the user chooses one and the application is
+restarted, then the same root is in use.
+
+**FR-202 If the library root is missing or unreadable, then say so**
+Priority: Must.
+If the configured library root does not exist or cannot be read, then the
+application shall report the path it tried and shall offer to choose another,
+rather than presenting an empty voice list.
+Rationale: an empty list and a broken path look identical; the guess a user makes
+is usually the parent of the right place.
+
+**FR-203 Recognised audio formats**
+Priority: Must.
+The scanner shall recognise files with the extensions `.wav`, `.mp3`, `.flac` and
+`.ogg`, matched case insensitively; it shall ignore every other file.
+Rationale: these are exactly the formats the player can decode.
+
+**FR-204 If a file has a recognised extension but cannot be decoded, then report it**
+Priority: Must.
+If a take cannot be decoded, then the application shall exclude it from the
+catalogue, shall record it in the scan report with the reason and shall not fail
+the scan.
+
+**FR-205 Drop-in discovery, folder form**
+Priority: Must.
+When scanning a voice directory, the application shall treat each subdirectory
+whose name equals a cue id as that cue's takes; every recognised audio file
+directly inside it is one take.
+Acceptance: Given `Alice/StartJump/` holding two WAV files, when a scan runs,
+then Alice has two takes for `StartJump` and no manifest was needed.
+
+**FR-206 Drop-in discovery, flat form**
+Priority: Should.
+When scanning a voice directory, the application shall treat a recognised audio
+file whose base name equals a cue id, optionally followed by a dot and digits, as
+a take for that cue.
+Acceptance: Given `Bob/DockingGranted.wav` and `Bob/DockingGranted.2.wav`, when
+a scan runs, then Bob has two takes for `DockingGranted`.
+
+**FR-207 Matching is exact and literal**
+Priority: Must.
+The application shall compare a directory or file name to a cue id by case
+insensitive string equality alone. It shall not normalise punctuation, whitespace
+or word separators; nor shall it perform any fuzzy, partial or nearest match.
+
+**FR-208 If a name does not match a cue id, then skip it and report it**
+Priority: Must.
+If a subdirectory or audio file inside a voice directory matches no cue id, then
+the application shall ignore it and shall record it in the scan report as
+unmatched, naming what it found.
+Rationale: a typo is the most likely user error and it is otherwise silent.
+
+**FR-209 If a directory yields no takes, then it is not a voice**
+Priority: Must.
+If an immediate subdirectory of the library root yields no resolved take, then the
+application shall omit it from the voice list and shall record it in the scan
+report with the reason.
+
+**FR-210 Optional manifest**
+Priority: Should.
+Where a voice directory holds a readable `voice.toml`, the application shall take
+the display name and credit from it; it shall add any takes it declares to those
+found by convention.
+Acceptance: Given a voice directory with files found by convention and a manifest
+naming one further file, when a scan runs, then both sets of takes are present.
+
+**FR-211 If a manifest is malformed, then fall back to the convention**
+Priority: Must.
+If `voice.toml` cannot be parsed, then the application shall scan the directory by
+convention as though the file were absent; it shall record the parse error in the
+scan report.
+Rationale: a broken optional file must never cost a voice their voice.
+
+**FR-212 Assign unmatched files to cues**
+Priority: Should.
+When the user selects a voice with unmatched files, the application shall list
+those files, shall let the user assign each to a cue and shall write the
+assignments to that voice's `voice.toml`.
+Rationale: the escape hatch for audio that arrived under someone else's naming; it
+is also how a user fixes a typo without leaving the application.
+
+**FR-213 A directory organised under another convention resolves nothing**
+Priority: Must.
+Given a directory tree whose names follow a space separated prose convention, when
+a scan runs, then no take shall resolve and no voice shall be offered.
+Verified by: a test using invented prose folder names.
+
+**FR-214 Rescan on demand**
+Priority: Must.
+When the user requests a rescan, the application shall re-read the library root
+and update the voice list, the completeness figures and the cast voice's catalogue
+without a restart.
+
+**FR-215 Report both completeness figures**
+Priority: Must.
+The application shall show, for each voice, the number of cues that voice has at
+least one take for out of the size of the cue vocabulary, plus the number of audio
+files it uses out of the number of recognised audio files present in that voice's
+directory.
+Rationale: a voice is expected to be complete and every file present is expected
+to be used, so both figures should read `n of n`. Two figures rather than one
+because they fail differently: a shortfall in the first means lines were never
+recorded; a shortfall in the second means files are present that nothing can
+reach, which is a naming mistake.
+Acceptance: Given a voice with takes for every cue and no unmatched files, when
+the voice list is shown, then both figures read `n of n`.
+
+**FR-216 Audition a take**
+Priority: Must.
+When the user selects a cue for the cast voice and requests an audition, the
+application shall play one take for that cue.
+
+**FR-217 The library is read only, with two named exceptions**
+Priority: Must.
+The application shall never write to, move, rename or delete a file under the
+library root, except the recorder writing a take, plus FR-212 writing a
+`voice.toml`. Both are confined to the voice directory being targeted.
+
+**FR-218 If two directories differ only in case, then merge their takes**
+Priority: Must.
+If a voice directory holds more than one entry whose name equals the same cue id
+under case insensitive comparison, then the application shall treat their takes as
+one set and shall record the duplication in the scan report.
+Rationale: Linux permits `Docking.Granted/` beside `docking.granted/`; Windows and
+macOS do not. Merging is deterministic and loses nothing. Silently choosing one
+would make a library behave differently on two machines holding identical files.
+
+**FR-219 No cue id may end in a digit only segment**
+Priority: Must.
+The cue vocabulary shall contain no id whose final dot separated segment consists
+only of digits.
+Rationale: the flat form in rule 3 distinguishes takes by a trailing dot and
+digits, so such an id would make `x.2.wav` ambiguous between a second take of `x`
+and a first take of `x.2`. No id has this shape today, which is a property of the
+vocabulary rather than a law, so it is made a test.
+A cue table holding such an id, whether shipped or supplied by the user, shall fail
+to load with the reason.
+Verified by: a structural test over `cues.toml`, proved by planting a violating id
+and reading a non-zero exit code; plus tests that `cue.New`, which every table is
+built through, refuses such an id and that an override holding one fails to load.
+
+**FR-222 No cue id may end in a dot or a space**
+Priority: Must.
+The cue vocabulary shall contain no id whose final character is a dot or a space.
+Rationale: a recording is found by a name equal to its cue id; Windows silently
+strips a trailing dot or space from a name as it is created, so a folder made for
+such an id would arrive under a different name and never be found.
+A cue table holding such an id, whether shipped or supplied by the user, shall fail
+to load with the reason.
+Verified by: a structural test over `cues.toml`, proved by planting a violating id
+and reading a non-zero exit code; plus tests that `cue.New` refuses such an id and
+that an override holding one fails to load.
+
+**FR-220 If a voice has no take for a cue, then the cue is silent and the gap is reported**
+Priority: Must.
+If the cast voice has no take for a fired cue, then the application shall play
+nothing, shall not substitute a take from another cue or another voice; it shall
+list that cue among the voice's missing cues.
+Note: a complete voice is the expectation, so silence here covers a state the
+design does not intend rather than a normal operating mode. It stays a Must
+because a half recorded voice must not crash or substitute.
+
+**FR-221 One cue plays one file**
+Priority: Must.
+The application shall play exactly one audio file per fired cue and shall not
+assemble a sequence of files into one utterance.
+Rationale: a long line is one long file. The person recording decides where a line
+ends.
+
+### 3.5 Non-functional
+
+**NFR-P-201 Scan time**
+Priority: Should.
+When scanning a library root holding up to 10 voices and up to 5,000 audio files
+in total, the application shall complete the scan within 3 seconds on the
+reference machine in section 2.3, measured by a benchmark in the scanner package.
+
+**NFR-P-202 Playback latency**
+Priority: Must.
+When a cue fires, the application shall begin audio output within 150 milliseconds
+at the 95th percentile, measured over 100 firings in the player benchmark.
+
+---
+
+## 4. The recorder
+
+```mermaid
+stateDiagram-v2
+  [*] --> ChooseVoice
+  ChooseVoice --> SelectCue: voice directory chosen or created
+  SelectCue --> Armed: cue chosen from the vocabulary
+  Armed --> Recording: user starts
+  Recording --> Review: user stops or the ceiling is reached
+  Review --> Recording: retake
+  Review --> Saved: keep
+  Review --> SelectCue: discard
+  Saved --> SelectCue: next cue
+  SelectCue --> [*]: done
+```
+
+**FR-301 Guided cue list**
+Priority: Must.
+The recorder shall present the cue vocabulary as a list, showing for each cue its
+title, its id and how many takes the target voice already has.
+
+**FR-302 Record a take**
+Priority: Must.
+When the user starts recording, the application shall capture audio from the
+selected input device until the user stops or the ceiling in NFR-C-301 is reached.
+
+**FR-303 Review before writing**
+Priority: Must.
+When a recording stops, the application shall play it back on request and shall
+write nothing to disk until the user keeps it.
+Rationale: a recorder that writes first and asks later fills a library with throat
+clearing.
+
+**FR-304 Write location and file name**
+Priority: Must.
+When the user keeps a take, the application shall write it to
+`<library root>/<voice>/<cue id>/<n>.wav`, where `<n>` is the lowest positive
+integer not already used in that directory, zero padded to two digits.
+Rationale: file names carry no meaning under section 3.1 rule 2, so the only
+requirement on one is that it is distinct and stable. Writing into a folder named
+by cue id is the folder form of the drop-in convention, so a recorded voice and a
+hand assembled one are the same thing on disk.
+
+**FR-305 If the target directory cannot be written, then keep the take in memory**
+Priority: Must.
+If writing a kept take fails, then the application shall report the path and the
+reason, shall retain the recording in memory and shall offer to retry, rather than
+losing the performance.
+
+**FR-306 Choose an input device**
+Priority: Must.
+The user shall be able to select the capture device from those the operating
+system reports; the selection shall persist in settings.
+
+**FR-307 Input level indication**
+Priority: Should.
+While the recorder is armed or recording, the application shall show a live input
+level, so a user can tell a dead microphone from a quiet one before recording the
+whole vocabulary into silence.
+
+**FR-308 If the input is clipping, then warn**
+Priority: Could.
+If more than 0.1 percent of samples in a take reach full scale, then the
+application shall mark the take as clipped in the review step.
+
+**FR-309 Progress across the vocabulary**
+Priority: Should.
+The recorder shall show how many cues of the vocabulary the target voice now has
+at least one take for.
+
+**FR-310 The recorder writes only into the target voice directory**
+Priority: Must.
+The recorder shall write no file outside `<library root>/<voice>/`, for the voice
+currently targeted.
+
+### 4.1 Non-functional
+
+**NFR-C-301 Take ceiling**
+Priority: Must.
+A single take shall be capped at 30 seconds. When the cap is reached, recording
+stops and the take enters review.
+Rationale: no cue in the vocabulary is a monologue; an uncapped recorder left
+running writes a gigabyte.
+
+**NFR-C-302 Capture format**
+Priority: Must.
+The recorder shall write 16 bit signed PCM WAV at 48,000 Hz, single channel.
+Rationale: WASAPI in shared mode delivers only the endpoint's own mixer rate,
+which measured 48,000 Hz on the reference machine, so specifying 44,100 Hz would
+force a resampler into the recorder for no gain. WAV is one of the four formats
+already decoded, it is lossless and it needs no encoder dependency. Where the
+endpoint reports more than one channel, the recorder shall downmix to one by
+averaging.
+
+**NFR-C-303 Recording does not block the interface**
+Priority: Must.
+While recording, the user interface shall continue to respond to input, measured
+by the level meter in FR-307 updating at least 10 times a second.
+
+**NFR-C-304 No CGO in the capture path**
+Priority: Must.
+The capture path shall build and run with `CGO_ENABLED=0`.
+Verified by measurement: `github.com/moutend/go-wca` over
+`github.com/go-ole/go-ole`, built with `CGO_ENABLED=0`, opened the default
+endpoint, negotiated 48,000 Hz stereo float32 shared mode and delivered 143,040
+frames across 2.98 seconds, with a peak magnitude of 0.0117. A second spike
+enumerated the active capture endpoints by name and id. `go-ole` is already an
+indirect dependency, through Wails, so this adds one direct dependency and no
+toolchain change.
+
+---
+
+## 5. Cross cutting non-functional requirements
+
+| ID | Requirement | Method |
+|---|---|---|
+| NFR-M-1 | Coverage over `internal/domain` and `internal/application` stays at 100 percent | `test.ps1` fails below the floor and names every function short of it |
+| NFR-M-2 | No module exceeds 400 lines; none sits between 381 and 400 | `tests/structural` LOC test, build scripts exempt |
+| NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
+| NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1`, ahead of any build |
+| NFR-S-1 | The application makes no network request other than the update check | Inspection plus a test asserting the outbound surface |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories | Test over the write paths |
+| NFR-O-1 | Every scan produces a report naming every skipped directory, every unmatched file and every undecodable file, with a reason | Test asserting a report entry per skip class |
+
+**Non claims, stated deliberately:**
+
+- The application does not encrypt recordings at rest.
+- The application does not verify who a recording is of or who owns it.
+- The application does not process, clean up or improve captured audio.
+- The application cannot control the game.
+
+---
+
+## 6. The audio source port
+
+**FR-501 The audio source is a port**
+Priority: Should.
+The application layer shall declare an audio source interface that answers, for a
+cue id, the takes available; the catalogue shall depend on that interface rather
+than on any concrete scanner.
+Rationale: an additional source of audio can then be supplied without the
+catalogue knowing anything about where it came from. Declaring the seam now costs
+nothing; retrofitting it later is a rewrite of the catalogue.
+
+**FR-502 An extension supplies audio, never behaviour**
+Priority: Must.
+An implementation of the port shall supply takes for cue ids and nothing else. It
+shall not add cues, alter the cue table or change playback behaviour.
+
+---
+
+## 7. Build order
+
+Requirements are elicited outside in. The system is built inside out: domain,
+then application, then infrastructure, then user interface.
+
+The diagnostic that says the foundation is sound: every user visible action in
+this document is executable from a Go test with no window open. Choosing a root,
+scanning, casting, auditioning, recording a take and writing it are each one named
+entry point. If the user interface for the recorder turns out to be hard, the
+recorder actions were not given callable homes; that is a hypothesis; the
+headless test is how it gets tested.
+
+---
+
+## 8. Open questions
+
+| ID | Question | Blocks | Owner |
+|---|---|---|---|
+| **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
+| **OQ-11** | **Does Linux come into scope? And when?** Measured: only 8 of the 85 Go files carry a `//go:build windows` tag, confined to three infrastructure packages, `setup`, `taskbar` and `window`, so the platform surface is already isolated behind the layering rather than spread through it. Audio output is already portable, since `oto` and `beep` support Linux and macOS. What is genuinely missing is a Linux capture backend, because the measured path is WASAPI and is Windows only; a tray and window integration; an install and update story that is not the registry; and journal discovery under Proton. The capture backend is the one that may reopen the no-CGO question on Linux; nothing has been measured there yet, so nothing is claimed. This wants deciding before the recorder is built rather than after. | The recorder | Oliver |
+
+---
+
+## 9. Prioritisation
+
+| Priority | Content |
+|---|---|
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-222, FR-301 to FR-306, FR-310, FR-502, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-C-301 to NFR-C-304 |
+| **Should** | FR-206, FR-210, FR-212, FR-307, FR-309, FR-501, NFR-P-201 |
+| **Could** | FR-308 |
+| **Won't this time** | Distributing recordings between users; text to speech; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface |
+
+---
+
+## 10. Traceability
+
+Every requirement above names its acceptance criterion. On implementation, each
+gains a `Verified by:` line naming the test; no requirement is considered met
+until that test exists and has been seen to fail without the implementation.

@@ -1,0 +1,31 @@
+/*
+ * The order the styles are read in, written down.
+ *
+ * theme.css was one file of nearly a thousand lines. It is now its opening half,
+ * which is the palette and the handful of rules every page rests on, followed by one
+ * file per region of the window. The parts are slices of that original file rather
+ * than a regrouping of it: each holds exactly the run of rules that stood under its
+ * heading, in the order it stood there.
+ *
+ * That ordering is the reason this file exists. Two rules of equal weight are settled
+ * by which was read last, so a split that shuffles the reading order changes what the
+ * window looks like even though every rule survived. Listing the parts in one place
+ * keeps the order visible and keeps it somewhere a reader will think to look, rather
+ * than leaving it implied by a run of imports beside the React entry point.
+ *
+ * theme.css comes first because it holds the tokens every other file reads.
+ */
+
+@import './theme.css';
+@import './theme/shell.css';
+@import './theme/navband.css';
+@import './theme/volume.css';
+@import './theme/panes.css';
+@import './theme/log.css';
+@import './theme/voices.css';
+@import './theme/controls.css';
+@import './theme/dialogs.css';
+@import './theme/audition.css';
+@import './theme/crests.css';
+@import './theme/cuelists.css';
+@import './theme/guide.css';

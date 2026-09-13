@@ -1,0 +1,161 @@
+/* -------------------------------------------------------------- audition */
+
+.field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The label reads at the size of the words beside it rather than a size below them.
+   It names what the control does, so it is part of the sentence the row makes and not
+   a footnote to it; at fifteen against seventeen it read as the smaller of two things
+   that are saying one thing. The weight carries the emphasis so no second colour has
+   to be introduced for one word. */
+.field .label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.field select {
+  height: var(--control-height);
+  padding: 6px 9px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.field select:enabled:hover,
+.field select:enabled:focus {
+  border-color: var(--ring);
+}
+
+/* The floor is measured, not chosen: a card holds the 113px play icon, an 11px gap,
+   the label and 12px of padding each side, so at the shipped type sizes the longest
+   label the cue vocabulary produces ("Supercruise") first fits without clipping at a
+   column of 230px. The floor is set above that so a longer group name than any in the
+   table today, roughly three more characters, still fits rather than being cut off. */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.group:enabled:hover,
+.group:enabled:focus {
+  border-color: var(--ring);
+}
+
+.group:disabled {
+  border-color: var(--danger);
+  background: var(--raised);
+  color: var(--muted);
+  cursor: default;
+}
+
+
+
+.group .name {
+  font-weight: 600;
+}
+
+.group .meta {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* Stop is a red square rather than a labelled button. It is the one interrupting
+   action on the pane, it reads at a glance, its name drawn from data-label the way the
+   band's icon buttons are named.
+
+   The height comes from the row's own control height, which the selector beside it also
+   reads. It used to be a figure written down here, right when it was measured and wrong
+   once the selector changed: the button stood six pixels proud of the control it was
+   meant to sit level with. One figure read by both cannot drift that way.
+
+   The mark is drawn inside the button instead of being the button. A shape filling its
+   whole target reads as a block of colour rather than as a stop; it also shouts beside
+   the quieter controls in the row. The same red at under half the width still reads at
+   a glance while the button keeps a target worth pressing. */
+.stopbtn {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--control-height);
+  height: var(--control-height);
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: none;
+  cursor: pointer;
+}
+
+.stopbtn::before {
+  content: '';
+  position: absolute;
+  inset: 25%;
+  border-radius: 3px;
+  background: var(--danger);
+}
+
+.stopbtn:enabled:hover,
+.stopbtn:enabled:focus {
+  border-color: var(--ring);
+}
+
+/* A group that is sounding pulses its ring. The border is already 2px of transparent
+   on every group, so animating its colour moves nothing on the page. The pulse ends
+   when the backend says the sound has, not on a timer here. */
+@keyframes sounding {
+  0%,
+  100% {
+    border-color: var(--ring);
+  }
+
+  50% {
+    border-color: transparent;
+  }
+}
+
+/* A group that is sounding wears the lavender secondary rather than the accent, so
+   the green ring still reads on it while it is focused; it pulses that ring too. */
+.group[aria-current='true'] {
+  background: var(--secondary-soft);
+  animation: sounding 1.5s ease-in-out infinite;
+}
+
+/* Someone who has asked their system for less movement gets a steady ring instead. */
+@media (prefers-reduced-motion: reduce) {
+  .group[aria-current='true'] {
+    animation: none;
+    border-color: var(--ring);
+  }
+}
+
+.icon.play {
+  width: 113px;
+  height: 113px;
+  flex: 0 0 auto;
+}
+
+.pane p.failure {
+  color: var(--danger);
+}
+

@@ -1,0 +1,53 @@
+/* ---------------------------------------------------------------- the guide */
+
+/* The title sits under the crest and is centred with it, so it reads as the crest's caption. */
+.guide-title {
+  text-align: center;
+}
+
+.guide-section:last-child {
+  padding-bottom: 8px;
+}
+
+.guide-intro,
+.guide-rule,
+.guide-para {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+/* An entry is its pictures and a sentence about them, ruled from its neighbours the way the
+   settings rows are, so the two reading surfaces agree. The name inside the sentence takes the
+   body colour, so a reader scanning for one control finds it without reading every line. */
+.guide-entry {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.guide-intro + .guide-entry,
+h3 + .guide-entry {
+  border-top: none;
+}
+
+.guide-entry b,
+.guide-rule b {
+  color: var(--text);
+}
+
+.guide-entry .marks {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* Forty pixels, not a bullet's worth. These are rendered illustrations rather than flat
+   glyphs: measured at twenty-four the four dark marks are one dark disc. */
+.guide-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}

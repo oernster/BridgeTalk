@@ -1,0 +1,89 @@
+/*
+ * One home for every colour value.
+ *
+ * Elite Dangerous is black and orange, so orange is the accent and it carries
+ * meaning: the active voice, something playing, the brand. It is never a focus ring.
+ * Lavender is the contrast, used for selection and for anything that has to sit
+ * beside the accent without competing with it.
+ *
+ * The three ring states are the whole focus model: no ring at rest, green while
+ * hovered or focused and enabled, a permanent rose ring while disabled. Rose rather
+ * than a warm red on purpose, because a warm red sits too close to the accent and the
+ * two blur at a glance.
+ *
+ * Light and dark carry their own tokens rather than sharing them, because a pastel
+ * that reads on near-black is weak on paper and a saturated tone that reads on paper
+ * glares on black.
+ *
+ * The rules for each region of the window used to follow, in the same file. They now
+ * sit beside it under theme/, one file per region, read in the order styles.css lists
+ * them. What stays here is the palette plus the few rules the whole page rests on,
+ * which is also what the colour guard expects: this is the one file a colour value
+ * may be written in, so every other file names a token instead.
+ */
+
+:root {
+  --surface: #f6f4f1;
+  --panel: #ffffff;
+  --raised: #eae6e0;
+  --border: #d6d0c8;
+  --text: #1c1a18;
+  --muted: #6b6560;
+  --accent: #b34e00;
+  --accent-soft: #e8dccd;
+  --secondary: #4338ca;
+  --secondary-soft: #e0e0ff;
+  --ring: #047857;
+  --danger: #be123c;
+  --danger-soft: #ffe4e6;
+  --alert: #b91c1c;
+  --notice: #b34e00;
+  --ambient: #4338ca;
+  --flavour: #6b6560;
+  --shadow: rgba(28, 26, 24, 0.18);
+}
+
+:root[data-theme='dark'] {
+  --surface: #0c0c0e;
+  --panel: #16161a;
+  --raised: #202027;
+  --border: #2e2e37;
+  --text: #e9e6e2;
+  --muted: #96918a;
+  --accent: #ff7f11;
+  --accent-soft: #3a2510;
+  --secondary: #b3bcff;
+  --secondary-soft: #23233a;
+  --ring: #34d399;
+  --danger: #fb7185;
+  --danger-soft: #35161f;
+  --alert: #fb7185;
+  --notice: #ff7f11;
+  --ambient: #b3bcff;
+  --flavour: #96918a;
+  --shadow: rgba(0, 0, 0, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font: 17px/1.55 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* One focus indicator only: the ring. The browser's own outline is suppressed. */
+:focus {
+  outline: none;
+}
+

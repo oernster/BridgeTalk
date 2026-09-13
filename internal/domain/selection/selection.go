@@ -1,0 +1,126 @@
+// Package selection holds the arithmetic that decides whether a cue speaks now and
+// which take it uses. It is pure: the clock and the randomness are both injected,
+// so every decision here is reproducible in a test.
+package selection
+
+import (
+	"time"
+
+	"github.com/oernster/bridge-talk/internal/domain/cue"
+)
+
+// Chooser supplies the randomness a take selection needs. The domain defines it so
+// that nothing here has to import math/rand.
+type Chooser interface {
+	// Intn returns a value in [0, n). Callers guarantee n is positive.
+	Intn(n int) int
+}
+
+// Picker chooses a take, avoiding the clip it chose for the same cue last time.
+//
+// Avoiding only the immediately previous clip is deliberate. Remembering more would
+// make a two-clip cue silent on alternate firings; a long memory makes a large
+// folder feel ordered rather than varied.
+type Picker struct {
+	chooser Chooser
+	last    map[cue.ID]string
+}
+
+// NewPicker builds a Picker over an injected source of randomness.
+func NewPicker(chooser Chooser) *Picker {
+	return &Picker{chooser: chooser, last: make(map[cue.ID]string)}
+}
+
+// Pick returns one clip for a cue; false when there is nothing to play.
+func (p *Picker) Pick(id cue.ID, clips []string) (string, bool) {
+	switch len(clips) {
+	case 0:
+		return "", false
+	case 1:
+		p.last[id] = clips[0]
+		return clips[0], true
+	}
+
+	previous, seen := p.last[id]
+	if !seen {
+		chosen := clips[p.chooser.Intn(len(clips))]
+		p.last[id] = chosen
+		return chosen, true
+	}
+
+	// Choose from the clips that are not the previous one by picking an index into
+	// the shortened list, then stepping over the excluded entry. This draws evenly
+	// across the remaining clips with a single call to the chooser.
+	candidates := make([]string, 0, len(clips)-1)
+	for _, clip := range clips {
+		if clip != previous {
+			candidates = append(candidates, clip)
+		}
+	}
+	if len(candidates) == 0 {
+		p.last[id] = clips[0]
+		return clips[0], true
+	}
+	chosen := candidates[p.chooser.Intn(len(candidates))]
+	p.last[id] = chosen
+	return chosen, true
+}
+
+// Forget drops the memory of what a cue last played, used when the active voice
+// changes and the previous clip no longer exists.
+func (p *Picker) Forget() {
+	p.last = make(map[cue.ID]string)
+}
+
+// CooldownGate rate-limits a cue to at most one firing per its cooldown.
+type CooldownGate struct {
+	lastFired map[cue.ID]time.Time
+}
+
+// NewCooldownGate builds an empty gate.
+func NewCooldownGate() *CooldownGate {
+	return &CooldownGate{lastFired: make(map[cue.ID]time.Time)}
+}
+
+// Allow reports whether a cue may fire at now, recording the firing when it may.
+//
+// A cue with no cooldown always passes and is still recorded, so that adding a
+// cooldown later needs no special first-run case.
+func (g *CooldownGate) Allow(item cue.Cue, now time.Time) bool {
+	previous, seen := g.lastFired[item.ID()]
+	if seen && item.Cooldown() > 0 && now.Sub(previous) < item.Cooldown() {
+		return false
+	}
+	g.lastFired[item.ID()] = now
+	return true
+}
+
+// Reset clears every recorded firing.
+func (g *CooldownGate) Reset() {
+	g.lastFired = make(map[cue.ID]time.Time)
+}
+
+// DedupeWindow collapses repeats of the same cue arriving within a short window.
+//
+// This is not the cooldown. The cooldown is a deliberate per-cue rate limit
+// measured in seconds; the dedupe window is much shorter and exists because the
+// journal sometimes emits the same situation more than once in quick succession.
+type DedupeWindow struct {
+	window time.Duration
+	seen   map[cue.ID]time.Time
+}
+
+// NewDedupeWindow builds a window of the given width.
+func NewDedupeWindow(window time.Duration) *DedupeWindow {
+	return &DedupeWindow{window: window, seen: make(map[cue.ID]time.Time)}
+}
+
+// Fresh reports whether a cue is not a repeat of one just seen.
+func (d *DedupeWindow) Fresh(id cue.ID, now time.Time) bool {
+	previous, ok := d.seen[id]
+	if ok && now.Sub(previous) < d.window {
+		return false
+	}
+	d.seen[id] = now
+	return true
+}

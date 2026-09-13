@@ -1,0 +1,16 @@
+/* ----------------------------------------------------------------- crests */
+
+/* A crest heads a reading surface. It is centred and given room beneath it, so the
+   heading that follows reads as a caption to it rather than as a collision. */
+.icon.crest {
+  display: block;
+  width: 128px;
+  height: 128px;
+  margin: 4px auto 14px;
+}
+
+.dialog .body .copyright {
+  color: var(--muted);
+  font-size: 15px;
+}
+

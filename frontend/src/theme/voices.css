@@ -1,0 +1,113 @@
+/* ------------------------------------------------------------- voice list */
+
+.voices {
+  display: grid;
+  gap: 10px;
+}
+
+/* A row holds two controls, so it is a container rather than a control: it takes no
+   focus and draws no ring. The ring belongs to whichever of the two is focused, which
+   is also the only honest indication when a row has more than one thing to press. */
+.voice {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* The casting control: everything left of the figure, so the whole name and its
+   description remain one target rather than the name becoming a small link. */
+.pick {
+  display: block;
+  width: 100%;
+  padding: 4px 4px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick:enabled:hover,
+.pick:enabled:focus {
+  border-color: var(--ring);
+}
+
+.voice[aria-current='true'] {
+  background: var(--secondary-soft);
+}
+
+.voice .name {
+  font-weight: 600;
+}
+
+/* The line under the name is the only number the row still states; it also says what it
+   is counting, so it takes the accent that the bare fraction beside it used to hold.
+   Pale grey put the one figure worth reading in the quietest colour on the row. */
+.voice .meta {
+  font-size: 15px;
+  color: var(--accent);
+}
+
+/* The right-hand column of a voice row. It holds the control that shows the working.
+   It held a figure once and was set in a monospace face so that column of digits would
+   line up down the list; there are no digits here now, so it reads in the face
+   everything else does. */
+.voice .coverage {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* position is not decoration here: the tooltip is an absolutely positioned pseudo
+   element on this button, so without a positioned ancestor of its own it would hang
+   off whatever else happened to be positioned up the tree. */
+.voice .momentsbtn {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--raised);
+  cursor: pointer;
+}
+
+.voice .momentsbtn:enabled:hover,
+.voice .momentsbtn:enabled:focus {
+  border-color: var(--ring);
+}
+
+/* Hang the label from the button's right edge rather than its centre, the same guard
+   the band's end buttons carry. This button sits at the end of its row, so a centred
+   label reaches past the pane: measured, its centre stood 68 pixels from the pane's
+   edge while the label wanted 83 either side; the 15 pixels over the top were enough
+   to give the whole pane a horizontal scrollbar. A pseudo element at zero
+   opacity still takes its space, so nothing about it being invisible saves it. */
+.voice .momentsbtn::after {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+/* Sixty-four. Forty-eight is where the artwork stops being a smudge, measured against
+   the same set at 32 and 40 where the play mark and the trace behind it run together.
+   Stopping at legible sold it short: this is the one piece of illustration in the
+   row and it carries the detail to be looked at rather than merely recognised. */
+.voice .momentsbtn .icon.moments {
+  width: var(--moments-icon);
+  height: var(--moments-icon);
+  flex: 0 0 auto;
+}
+

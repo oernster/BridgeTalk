@@ -1,0 +1,77 @@
+/* ----------------------------------------------------------- reaction log */
+
+.log {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+/* focus-visible, not focus. This region is a ring stop because it scrolls, so a
+   keyboard reader must see where they have landed. A pointer landing here is a
+   different thing entirely: clicking or right-clicking to read put a ring around the
+   whole panel, which reads as a selection nobody asked for. The browser already knows
+   the difference between the two, so the ring is asked for on the keyboard case only. */
+.log:focus-visible {
+  border-color: var(--ring);
+}
+
+.logrows {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.logrow {
+  display: grid;
+  grid-template-columns: 74px 84px 1fr 1.2fr;
+  gap: 10px;
+  padding: 5px 12px;
+  border-top: 1px solid var(--border);
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 15px;
+}
+
+.logrow:first-child {
+  border-top: none;
+}
+
+.logrow[aria-selected='true'] {
+  background: var(--secondary-soft);
+}
+
+.logrow .time {
+  color: var(--muted);
+}
+
+.logrow .cue {
+  color: var(--text);
+}
+
+.logrow .clip {
+  color: var(--muted);
+}
+
+.badge {
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 14px;
+  text-align: center;
+  background: var(--raised);
+  color: var(--muted);
+}
+
+.badge.played {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge.alert {
+  color: var(--alert);
+}
+
+.empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--muted);
+}
+

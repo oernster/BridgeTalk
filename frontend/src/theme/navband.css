@@ -1,0 +1,163 @@
+/* --------------------------------------------------------------- nav band */
+
+.navband {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.navband .spacer {
+  flex: 1 1 auto;
+}
+
+/* The band's buttons carry the artwork alone. A label beside each one at this icon
+   size would push the row past the window's minimum width; the name is only wanted
+   at the moment of asking, which is what the tooltip below is for. */
+.navbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The name, on hover or focus, drawn rather than left to the browser's own tooltip:
+   that one waits about a second before appearing, which is far too long when it is
+   the only thing naming the button. This one is near enough immediate.
+
+   It also goes away on its own. A label that stays for as long as the pointer rests
+   on the button sits over whatever is beneath it, which on the nav band is the top
+   of the pane; a name is worth reading once rather than being left in the way. The
+   browser's own tooltip retires itself for the same reason, so this one matching it
+   is the behaviour a reader already expects.
+
+   An animation rather than a transition, because a transition has no way to move
+   twice: it can fade the label in on hover; nothing then tells it to fade out
+   while the hover is still true. forwards holds the final frame, so the label stays
+   gone until the pointer leaves and comes back, which is what restarts it. */
+@keyframes tooltip {
+  0% {
+    opacity: 0;
+  }
+  4% {
+    opacity: 1;
+  }
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* How long the whole appearance lasts, fade in and fade out included. It sits here
+   rather than in the palette at the top of this file, which is the one home for
+   colour and holds nothing else. */
+:root {
+  --tip-life: 2.8s;
+}
+
+/* The moments control's size. */
+:root {
+  --moments-icon: 64px;
+}
+
+[data-label]::after {
+  content: attr(data-label);
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  z-index: 50;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 15px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 90ms linear;
+  pointer-events: none;
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+/* Both states retire the label. They must share ONE animation name.
+   Clicking a button leaves it focused, so moving the pointer away drops :hover while
+   :focus stays true. With one name the animation carries on across that change and
+   holds its last frame, which is the label gone. Two names would restart it as the
+   selector changed, popping the label back up the moment the mouse left, which is
+   the complaint rather than the fix. Measured both ways in a page before choosing.
+
+   The cost of one name: a button holding focus will not show its label again until
+   focus leaves it, since the animation it would replay is the one already finished.
+   That button is the one just pressed, so its name is the name least needed. */
+[data-label]:enabled:hover::after,
+[data-label]:enabled:focus::after {
+  animation: tooltip var(--tip-life) linear forwards;
+}
+
+/* A toggle keeps its label while it holds focus, which is to say for as long as it is
+   the button last pressed.
+   Mute and the light and dark switch are the two here; they are the only buttons
+   whose label names a state rather than a place: pressing one changes what its own
+   label says, so the label is worth MORE after the press than before it. Cast and
+   Guide say the same thing afterwards as they did before, which is why they retire.
+   Declared after the rule above and at equal specificity, so it is the later rule
+   that decides; animation none is what lets the plain opacity below it take effect,
+   since an animation would otherwise outrank any declaration. Hover alone still
+   retires, because a pointer resting on a toggle has not pressed anything. */
+[data-toggle]:enabled:focus::after {
+  animation: none;
+  opacity: 1;
+}
+
+/* The buttons at each end would otherwise hang their tooltip off the window. */
+.navband > .navbtn:first-of-type::after {
+  left: 0;
+  transform: none;
+}
+
+.navband > .navbtn:last-of-type::after {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+
+.navbtn:enabled:hover,
+.navbtn:enabled:focus {
+  border-color: var(--ring);
+}
+
+.navbtn:disabled {
+  border-color: var(--danger);
+  background: var(--raised);
+  color: var(--muted);
+  cursor: default;
+}
+
+/* The current pane is marked with the lavender secondary, not the accent, so the
+   green ring still reads on it when it is focused. */
+.navbtn[aria-current='page'] {
+  background: var(--secondary-soft);
+  color: var(--secondary);
+}
+
+/* The icons are artwork rather than line marks, so they need real room before their
+   detail resolves into something recognisable. At a glyph's size they read as
+   coloured blobs, which is worse than no icon at all. */
+.navbtn .icon {
+  width: 83px;
+  height: 83px;
+  flex: 0 0 auto;
+}
+

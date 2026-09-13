@@ -1,0 +1,66 @@
+/* ------------------------------------------------------------------ shell */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.menubar {
+  display: flex;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+
+.menutitle {
+  position: relative;
+  padding: 4px 12px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.menutitle:enabled:hover,
+.menutitle:enabled:focus {
+  border-color: var(--ring);
+}
+
+.menupopup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 40;
+  min-width: 190px;
+  margin-top: 4px;
+  padding: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  text-align: left;
+}
+
+.menuitem {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuitem:enabled:hover,
+.menuitem:enabled:focus {
+  border-color: var(--ring);
+}
+

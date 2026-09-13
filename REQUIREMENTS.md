@@ -1386,6 +1386,8 @@ broken product before the application is ever seen.
 Acceptance: Given the Install screen with Install focused, when Right is pressed, then focus wraps to
 the theme button; when Left is then pressed, focus returns to Install. Given Add a Desktop shortcut
 ticked and focused, when Enter is pressed, then the box is unticked.
+Note: each screen opening on its primary button rather than on its first control was ruled by
+Oliver on 2026-09-13, so Enter pressed straight away does what the screen is for.
 Note: the ring is written for this page rather than shared with the window's, since the page has no
 build step to share it through.
 Verified by: "steps forward on Tab and on Right, wrapping at the end", "steps back on Shift+Tab and

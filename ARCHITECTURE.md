@@ -742,7 +742,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 - `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `setup` 61%, `taskbar` 22%, with `config`, `journal`, `library`, `status`,
+  package 75%, `audio` 80%, `audiotest` 86%, `setup` 61%, `taskbar` 67%, with `config`, `journal`, `library`, `status`,
   `tomlfile` and `internal/refusal` at 100%. `internal/infrastructure/window` and `installer` carry no floor, since
   neither has anything a test can reach without the platform behind it. TESTING.md names what each
   shortfall is.

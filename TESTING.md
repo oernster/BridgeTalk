@@ -45,7 +45,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 67.1% | 22% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |

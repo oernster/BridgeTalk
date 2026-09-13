@@ -81,7 +81,7 @@ try {
 # These are floors picked from a measurement, never from an aspiration. Five of the
 # infrastructure packages reach 100%, because everything in them can be exercised over
 # a temporary directory. The four that do not need a machine to go further: audio needs
-# an output device, taskbar needs a Win32 message loop, setup needs to write to the real
+# an output device, taskbar needs the Windows shell, setup needs to write to the real
 # registry and the root package needs Wails. What CAN be tested in each of them is;
 # these numbers are what that came to.
 #
@@ -98,7 +98,7 @@ $measured = [ordered]@{
     './internal/infrastructure/library'   = 100
     './internal/infrastructure/setup'     = 61
     './internal/infrastructure/status'    = 100
-    './internal/infrastructure/taskbar'   = 22
+    './internal/infrastructure/taskbar'   = 67
     './internal/infrastructure/tomlfile'  = 100
     './internal/refusal'                  = 100
 }

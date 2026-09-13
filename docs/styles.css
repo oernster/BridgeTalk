@@ -108,6 +108,10 @@ nav.site {
 .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
 .btn-secondary { background: var(--panel); color: var(--text); font-weight: 500; border: 1px solid var(--border); }
 .btn-secondary:hover { background: var(--raised); transform: translateY(-1px); }
+/* The donate button carries artwork before its label. The mark is sized in em
+   against the button's own type; at one line box the artwork could not be read,
+   so it takes 2.7em and the button is deliberately taller than a text-only one. */
+.btn-donate img { display: block; height: 2.7em; width: auto; }
 
 /* Hero */
 .hero { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem 3rem; text-align: center; }

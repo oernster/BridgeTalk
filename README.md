@@ -140,6 +140,14 @@ can be.
 `./build.ps1 -SkipInstaller` builds the application alone. The tests run first and the build does
 not start unless they pass.
 
+## Supporting the project
+
+Bridge Talk is free and stays free. There is no paid tier, no licence key and no feature held back
+behind a donation. If it has been useful, a donation supports its maintenance and continued
+development.
+
+<a href="https://www.paypal.com/ncp/payment/DVP73MPL9JPSU"><img src="docs/images/donate.png" alt="Donate to Bridge Talk" width="120"></a>
+
 ## Licence
 
 GNU General Public License, version 3: see `LICENSE`. The application shows the same text under

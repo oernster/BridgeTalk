@@ -20,6 +20,7 @@ import (
 	"runtime"
 
 	"github.com/oernster/bridge-talk/internal/product"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // recordingsFolder names the default recordings directory inside the product's own
@@ -41,7 +42,7 @@ func DefaultRoot() (string, error) {
 		return "", err
 	}
 	if err := os.MkdirAll(dir, folderPerm); err != nil {
-		return "", fmt.Errorf("making %s: %w", dir, err)
+		return "", fmt.Errorf("making %s: %w", dir, refusal.Reason(err))
 	}
 	return dir, nil
 }

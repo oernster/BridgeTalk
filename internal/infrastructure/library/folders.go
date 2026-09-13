@@ -18,6 +18,7 @@ import (
 	"unicode"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // folderPerm is the permission a made folder carries: the owner writes, anyone reads.
@@ -100,7 +101,7 @@ func makeVoiceFolders(root, name string, table cue.Table, mkdir maker) (string, 
 	}
 	info, err := os.Stat(root)
 	if err != nil {
-		return "", 0, fmt.Errorf("reading %s: %w", root, err)
+		return "", 0, fmt.Errorf("reading %s: %w", root, refusal.Reason(err))
 	}
 	if !info.IsDir() {
 		return "", 0, fmt.Errorf("%s is not a directory", root)
@@ -110,7 +111,7 @@ func makeVoiceFolders(root, name string, table cue.Table, mkdir maker) (string, 
 	// which is what keeps the join inside the root.
 	dir := filepath.Join(root, name)
 	if err := os.MkdirAll(dir, folderPerm); err != nil {
-		return "", 0, fmt.Errorf("making %s: %w", dir, err)
+		return "", 0, fmt.Errorf("making %s: %w", dir, refusal.Reason(err))
 	}
 
 	made := 0
@@ -121,7 +122,7 @@ func makeVoiceFolders(root, name string, table cue.Table, mkdir maker) (string, 
 			continue
 		}
 		if err != nil {
-			return dir, made, fmt.Errorf("making %s: %w", target, err)
+			return dir, made, fmt.Errorf("making %s: %w", target, refusal.Reason(err))
 		}
 		made++
 	}

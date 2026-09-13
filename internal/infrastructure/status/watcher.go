@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // fileName is the status file the game rewrites in place.
@@ -40,7 +41,7 @@ type Watcher struct {
 func NewWatcher(directory string, clock func() time.Time) (*Watcher, error) {
 	path := filepath.Join(directory, fileName)
 	if _, err := os.Stat(path); err != nil {
-		return nil, fmt.Errorf("status file %q: %w", path, err)
+		return nil, fmt.Errorf("reading %s: %w", path, refusal.Reason(err))
 	}
 	return &Watcher{path: path, clock: clock}, nil
 }

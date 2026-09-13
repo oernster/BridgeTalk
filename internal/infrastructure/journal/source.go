@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // journalPattern matches the game's journal file names.
@@ -38,7 +39,7 @@ type Source struct {
 // NewSource opens a source positioned at the end of the newest journal.
 func NewSource(directory string, clock func() time.Time) (*Source, error) {
 	if _, err := os.Stat(directory); err != nil {
-		return nil, fmt.Errorf("journal directory %q: %w", directory, err)
+		return nil, fmt.Errorf("reading the journal directory %s: %w", directory, refusal.Reason(err))
 	}
 	source := &Source{directory: directory, clock: clock}
 	newest, err := source.newestPath()
@@ -109,10 +110,10 @@ func (s *Source) parse(line string) (event.Event, bool) {
 func (s *Source) newestPath() (string, error) {
 	matches, err := filepath.Glob(filepath.Join(s.directory, journalPattern))
 	if err != nil {
-		return "", fmt.Errorf("scanning %q: %w", s.directory, err)
+		return "", fmt.Errorf("searching %s: %w", s.directory, err)
 	}
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no journal files in %q", s.directory)
+		return "", fmt.Errorf("no journal files in %s", s.directory)
 	}
 	// Journal names embed a sortable timestamp, so lexical order is time order and
 	// a name comparison avoids stat-ing every file on every poll.

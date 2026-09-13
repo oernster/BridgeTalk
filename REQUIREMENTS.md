@@ -603,6 +603,24 @@ Verified by: `TestAPressWhileAClipPlaysLeavesThatClipPlaying` in `audition_test.
 `frontend/src/audition.test.tsx` for the held buttons. Each failed with its guard taken out. That
 the clip is heard to its end is checked by hand, since no test hears the device.
 
+**FR-237 A refusal names each path once**
+Priority: Must.
+Wherever the application or its setup program refuses an action over a file or folder, the refusal
+shall name that file or folder once, written as the reader would type it, followed by the reason in
+plain words. It shall not name the system call that failed.
+Rationale: a folder with no journal in it was named twice, the second time with every separator
+doubled; a folder that did not exist was named three times, with GetFileAttributesEx between them
+(Oliver, 2026-09-13). Of the 18 refusals the panes could show, 15 repeated a path.
+Acceptance: Given Browse on the Journal directory row answered with a folder holding no journal,
+then the refusal names that folder once with single separators. Given a recordings directory that
+does not exist, when Refresh is pressed, then the refusal names it once and says it cannot be found.
+Verified by: `TestAJournalDirectoryRefusalNamesItsFolderOnce`, `TestARecordingsRefusalNamesItsFolderOnce`
+and `TestAFolderTheFileManagerWillNotOpenIsNamedOnce` in `refusals_test.go`;
+`TestSetupRefusalsNameTheirPathOnce` in `internal/infrastructure/setup/refusals_test.go`;
+`TestConfigRefusalsNameTheirPathOnce` in `internal/infrastructure/config/refusals_test.go`. Every one
+holds its refusals to `refusal.Check` in `internal/refusal`, the one statement of the rule, which
+`TestCheckFindsEachWayARefusalGoesWrong` holds in turn. Each failed with its site's fix taken out.
+
 ### 3.5 Non-functional
 
 **NFR-P-201 Scan time**

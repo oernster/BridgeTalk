@@ -147,7 +147,7 @@ func createShortcut(linkPath, target, workDir string) error {
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", script)
 	cmd.SysProcAttr = hidden()
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("create shortcut %q: %w: %s", linkPath, err, string(out))
+		return fmt.Errorf("creating the shortcut %s: %w: %s", linkPath, err, string(out))
 	}
 	return nil
 }

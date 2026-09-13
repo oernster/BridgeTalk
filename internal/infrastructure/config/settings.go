@@ -10,6 +10,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/product"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // settingsFile is what the store writes inside the application's own directory.
@@ -103,15 +104,15 @@ func (s *Settings) Save(chosen ports.Settings) error {
 
 	dir := filepath.Dir(s.path)
 	if err := os.MkdirAll(dir, dirPerm); err != nil {
-		return fmt.Errorf("create %q: %w", dir, err)
+		return fmt.Errorf("creating %s: %w", dir, refusal.Reason(err))
 	}
 	temporary := s.path + writingSuffix
 	if err := os.WriteFile(temporary, raw, filePerm); err != nil {
-		return fmt.Errorf("write settings: %w", err)
+		return fmt.Errorf("writing %s: %w", s.path, refusal.Reason(err))
 	}
 	if err := os.Rename(temporary, s.path); err != nil {
 		_ = os.Remove(temporary)
-		return fmt.Errorf("replace settings: %w", err)
+		return fmt.Errorf("replacing %s: %w", s.path, refusal.Reason(err))
 	}
 	return nil
 }
@@ -127,7 +128,7 @@ func (s *Settings) Forget() error {
 	}
 	for _, target := range []string{s.path, s.path + writingSuffix} {
 		if err := os.Remove(target); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("forget settings: %w", err)
+			return fmt.Errorf("removing %s: %w", target, refusal.Reason(err))
 		}
 	}
 	// Removing a directory that still holds something fails, which is the intent: that

@@ -39,14 +39,15 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/config` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/audio` | 80.4% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 79.5% | 75% | `test.ps1` |
-| `internal/infrastructure/setup` | 67.3% | 61% | `test.ps1` |
+| `internal/refusal` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/audio` | 81.9% | 80% | `test.ps1` |
+| the root package (the Wails facade) | 80% | 75% | `test.ps1` |
+| `internal/infrastructure/setup` | 69.5% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 22.4% | 22% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 
-377 test functions, which expand to 430 runs once their subtests are counted.
+388 test functions, which expand to 441 runs once their subtests are counted.
 Twenty of them are the structural tests in `tests/structural`, which assert the
 architecture itself rather than any behaviour: layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band and the rule
@@ -75,7 +76,7 @@ that the product is named in exactly one place.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.2%** | **95.6%** |
 
-178 tests across 15 files, run under Vitest with jsdom.
+179 tests across 15 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being wrong.
 `missingTakes.tsx` read 100% while six of its behaviours could be broken with every test still

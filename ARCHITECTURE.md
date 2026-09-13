@@ -629,6 +629,15 @@ journal reader tests a read error's text against `"EOF"`.
   recordings directory with no voice; in Settings, a journal directory the sources cannot be built over
   and a login entry that could not be written.
 
+**A refusal names its path once (FR-237).** A file-system error from the standard library already
+carries the path and the system call behind it, so wrapping one beneath words that name the path showed
+the path twice, with a call such as `GetFileAttributesEx` between. `internal/refusal` is the one home for
+the fix: `Reason` keeps only the system's reason, which the site that names the path wraps with `%w`;
+`Check` is the one statement of the rule, which the facade, setup and settings-store tests all hold their
+refusals to. It sits under `internal` beside `product` for the same reason: every infrastructure package
+and the setup program read it, so it belongs to no layer. Paths are written with `%s`, never `%q`, which
+doubles every Windows separator.
+
 ## Quality enforcement
 
 - Structural tests enforce the layer direction, domain purity, the module-size limit and its danger

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // ErrUnknownCue means a moment was named that the cue vocabulary does not hold.
@@ -27,7 +28,7 @@ func VoiceDirs(root string) ([]string, error) {
 	}
 	entries, err := os.ReadDir(root)
 	if err != nil {
-		return nil, fmt.Errorf("reading %s: %w", root, err)
+		return nil, fmt.Errorf("reading %s: %w", root, refusal.Reason(err))
 	}
 	names := []string{}
 	for _, entry := range entries {
@@ -72,7 +73,7 @@ func MomentFolder(root, name, id string, table cue.Table) (string, error) {
 		}
 		target := filepath.Join(dir, item.ID().Folder())
 		if err := os.MkdirAll(target, folderPerm); err != nil {
-			return "", fmt.Errorf("making %s: %w", target, err)
+			return "", fmt.Errorf("making %s: %w", target, refusal.Reason(err))
 		}
 		return target, nil
 	}
@@ -91,7 +92,7 @@ func voiceDir(root, name string) (string, error) {
 	dir := filepath.Join(root, name)
 	info, err := os.Stat(dir)
 	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", dir, err)
+		return "", fmt.Errorf("reading %s: %w", dir, refusal.Reason(err))
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("%s is not a directory", dir)

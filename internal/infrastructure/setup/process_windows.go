@@ -13,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/oernster/bridge-talk/internal/product"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // ErrAppRunning says the application is open, so an install or an uninstall that
@@ -107,7 +108,7 @@ func LaunchApp() error {
 	cmd := exec.Command(filepath.Join(dir, ExeName))
 	cmd.Dir = dir
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("launch %s: %w", AppName, err)
+		return fmt.Errorf("starting %s: %w", AppName, refusal.Reason(err))
 	}
 	return cmd.Process.Release()
 }

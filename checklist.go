@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/window"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // VoiceDirectories lists every voice folder under the recordings directory, including
@@ -56,7 +57,7 @@ func (a *App) OpenMomentFolder(voice, id string) error {
 		show = window.Reveal
 	}
 	if err := show(dir); err != nil {
-		return fmt.Errorf("opening %s: %w", dir, err)
+		return fmt.Errorf("opening %s: %w", dir, refusal.Reason(err))
 	}
 	return nil
 }

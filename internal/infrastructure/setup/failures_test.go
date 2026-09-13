@@ -64,7 +64,7 @@ func TestAnEntryInAnUnreadableMethodStopsTheExtraction(t *testing.T) {
 
 	err := ExtractZip(payload, t.TempDir())
 
-	if !errors.Is(err, zip.ErrAlgorithm) || !strings.HasPrefix(err.Error(), "open entry ") {
+	if !errors.Is(err, zip.ErrAlgorithm) || !strings.HasPrefix(err.Error(), "opening entry ") {
 		t.Fatalf("err = %v, want the entry refused as unreadable", err)
 	}
 }
@@ -84,7 +84,7 @@ func TestAnEntryWhoseChecksumDoesNotMatchStopsTheExtraction(t *testing.T) {
 
 	err := ExtractZip(payload, t.TempDir())
 
-	if !errors.Is(err, zip.ErrChecksum) || !strings.HasPrefix(err.Error(), "write ") {
+	if !errors.Is(err, zip.ErrChecksum) || !strings.HasPrefix(err.Error(), "writing ") {
 		t.Fatalf("err = %v, want the damaged entry reported as it was written", err)
 	}
 }
@@ -98,7 +98,7 @@ func TestACopyWhoseSourceCannotBeReadIsReported(t *testing.T) {
 
 	err := CopyFile(source, target)
 
-	if err == nil || !strings.HasPrefix(err.Error(), "write ") {
+	if err == nil || !strings.HasPrefix(err.Error(), "writing ") {
 		t.Fatalf("err = %v, want the unreadable source reported at the write", err)
 	}
 }
@@ -111,7 +111,7 @@ func TestATreeThatCannotBeRemovedIsReported(t *testing.T) {
 
 	err := RemoveTree(dir + string(os.PathSeparator) + ".")
 
-	if err == nil || !strings.HasPrefix(err.Error(), "remove ") {
+	if err == nil || !strings.HasPrefix(err.Error(), "removing ") {
 		t.Fatalf("err = %v, want the refusal reported", err)
 	}
 	if _, statErr := os.Stat(dir); statErr != nil {

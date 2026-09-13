@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/product"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 const (
@@ -63,10 +64,10 @@ func StateDir() (string, error) {
 func ExtractZip(data []byte, dest string) error {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return fmt.Errorf("open payload: %w", err)
+		return fmt.Errorf("opening the payload: %w", err)
 	}
 	if err := os.MkdirAll(dest, dirPerm); err != nil {
-		return fmt.Errorf("create install dir %q: %w", dest, err)
+		return fmt.Errorf("creating %s: %w", dest, refusal.Reason(err))
 	}
 	for _, file := range reader.File {
 		if err := extractEntry(file, dest); err != nil {
@@ -77,30 +78,37 @@ func ExtractZip(data []byte, dest string) error {
 }
 
 // extractEntry writes one archive entry, rejecting a name that climbs out of dest.
+//
+// Every refusal names its path once in words of its own, with only the system's reason
+// after it (FR-237).
 func extractEntry(file *zip.File, dest string) error {
 	target := filepath.Join(dest, file.Name)
 	fence := filepath.Clean(dest) + string(os.PathSeparator)
 	if !strings.HasPrefix(filepath.Clean(target)+string(os.PathSeparator), fence) {
-		return fmt.Errorf("unsafe path in payload: %q", file.Name)
+		return fmt.Errorf("unsafe path in payload: %s", file.Name)
+	}
+	folder := filepath.Dir(target)
+	if file.FileInfo().IsDir() {
+		folder = target
+	}
+	if err := os.MkdirAll(folder, dirPerm); err != nil {
+		return fmt.Errorf("creating %s: %w", folder, refusal.Reason(err))
 	}
 	if file.FileInfo().IsDir() {
-		return os.MkdirAll(target, dirPerm)
-	}
-	if err := os.MkdirAll(filepath.Dir(target), dirPerm); err != nil {
-		return fmt.Errorf("create dir for %q: %w", target, err)
+		return nil
 	}
 	source, err := file.Open()
 	if err != nil {
-		return fmt.Errorf("open entry %q: %w", file.Name, err)
+		return fmt.Errorf("opening entry %s: %w", file.Name, err)
 	}
 	defer source.Close()
 	out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, dirPerm)
 	if err != nil {
-		return fmt.Errorf("create %q: %w", target, err)
+		return fmt.Errorf("creating %s: %w", target, refusal.Reason(err))
 	}
 	defer out.Close()
 	if _, err := io.Copy(out, source); err != nil {
-		return fmt.Errorf("write %q: %w", target, err)
+		return fmt.Errorf("writing %s: %w", target, refusal.Reason(err))
 	}
 	return nil
 }
@@ -119,7 +127,7 @@ func DirSizeKB(dir string) (uint32, error) {
 		return nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("size %q: %w", dir, err)
+		return 0, fmt.Errorf("measuring %s: %w", dir, refusal.Reason(err))
 	}
 	return uint32(total / 1024), nil
 }
@@ -128,7 +136,7 @@ func DirSizeKB(dir string) (uint32, error) {
 // the uninstall screen offers to keep.
 func RemoveTree(dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
-		return fmt.Errorf("remove %q: %w", dir, err)
+		return fmt.Errorf("removing %s: %w", dir, refusal.Reason(err))
 	}
 	return nil
 }
@@ -138,16 +146,16 @@ func RemoveTree(dir string) error {
 func CopyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("open %q: %w", src, err)
+		return fmt.Errorf("opening %s: %w", src, refusal.Reason(err))
 	}
 	defer in.Close()
 	out, err := os.OpenFile(dst, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, dirPerm)
 	if err != nil {
-		return fmt.Errorf("create %q: %w", dst, err)
+		return fmt.Errorf("creating %s: %w", dst, refusal.Reason(err))
 	}
 	defer out.Close()
 	if _, err := io.Copy(out, in); err != nil {
-		return fmt.Errorf("write %q: %w", dst, err)
+		return fmt.Errorf("writing %s: %w", dst, refusal.Reason(err))
 	}
 	return nil
 }

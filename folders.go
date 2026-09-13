@@ -32,7 +32,7 @@ func (a *App) MakeVoiceFolders(name string) (VoiceFoldersDTO, error) {
 	if adopted {
 		fallback, err := library.DefaultRoot()
 		if err != nil {
-			return VoiceFoldersDTO{}, fmt.Errorf("making the default recordings directory: %w", err)
+			return VoiceFoldersDTO{}, fmt.Errorf("no default recordings directory: %w", err)
 		}
 		root = fallback
 	}
@@ -80,9 +80,10 @@ func (a *App) Rescan() (int, error) {
 	if a.libraryRoot == "" {
 		return 0, fmt.Errorf("%w yet: choose one on the Missing takes pane or make a voice's folders here", library.ErrNoRoot)
 	}
+	// The scan names the directory itself (FR-237), so it is not named here again.
 	found, _, err := library.Scan(a.libraryRoot, a.session.table)
 	if err != nil {
-		return 0, fmt.Errorf("reading %s: %w", a.libraryRoot, err)
+		return 0, err
 	}
 	a.adopt(found)
 	a.emitState()

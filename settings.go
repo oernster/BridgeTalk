@@ -38,9 +38,10 @@ func (a *App) ChooseLibraryRoot() (string, error) {
 		return "", err
 	}
 
+	// The scan names the directory itself (FR-237), so it is not named here again.
 	found, _, scanErr := library.Scan(chosen, a.session.table)
 	if scanErr != nil {
-		return "", fmt.Errorf("reading %s: %w", chosen, scanErr)
+		return "", scanErr
 	}
 	if len(found) == 0 {
 		return "", noVoicesIn(chosen)
@@ -89,13 +90,14 @@ func (a *App) ChooseJournalDir() (string, error) {
 		return "", err
 	}
 
+	// Each source names the directory itself (FR-237), so it is not named here again.
 	journalSource, err := journal.NewSource(chosen, systemClock{}.Now)
 	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", chosen, err)
+		return "", err
 	}
 	statusSource, err := status.NewWatcher(chosen, systemClock{}.Now)
 	if err != nil {
-		return "", fmt.Errorf("reading %s: %w", chosen, err)
+		return "", err
 	}
 
 	// Nothing is changed until both sources exist. A directory that yields one and

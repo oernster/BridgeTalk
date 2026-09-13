@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 //go:embed cues.toml
@@ -93,7 +94,7 @@ func contents(override string, embedded []byte) ([]byte, error) {
 	}
 	raw, err := os.ReadFile(override)
 	if err != nil {
-		return nil, fmt.Errorf("reading %q: %w", override, err)
+		return nil, fmt.Errorf("reading %s: %w", override, refusal.Reason(err))
 	}
 	return raw, nil
 }

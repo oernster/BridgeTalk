@@ -11,12 +11,14 @@
 package library
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // audioExtensions are the formats the player can decode.
@@ -124,7 +126,7 @@ func Scan(root string, table cue.Table) ([]Voice, Report, error) {
 func scan(root string, table cue.Table, read lister) ([]Voice, Report, error) {
 	entries, err := read(root)
 	if err != nil {
-		return nil, Report{}, err
+		return nil, Report{}, fmt.Errorf("reading %s: %w", root, refusal.Reason(err))
 	}
 
 	lookup := index(table)

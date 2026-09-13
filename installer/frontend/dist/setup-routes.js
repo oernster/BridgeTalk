@@ -138,7 +138,6 @@ async function init() {
     const state = await backend().DetectState()
     appName = state.appName
     document.title = `${appName} Setup`
-    $('brand').textContent = `${appName} Setup`
     $('uninstall-title').textContent = `Remove ${appName}?`
     $('running-title').textContent = `${appName} is open`
     applyTheme(state.prefersDark ? 'dark' : 'light')

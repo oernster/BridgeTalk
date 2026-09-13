@@ -89,12 +89,6 @@ body {
 
 .head .who { flex: 1 1 auto; min-width: 0; }
 
-.head .title {
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.4px;
-}
-
 .head .sub { font-size: 18px; color: var(--muted); }
 
 .themebtn {

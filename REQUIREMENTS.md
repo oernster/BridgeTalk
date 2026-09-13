@@ -567,10 +567,12 @@ Acceptance: A decision in the reaction log that played nothing names its cue onc
 name repeating the start of the id. With every voice complete, the voice chooser says "Every voice
 is complete" and the note beneath it does not say it again. After Browse, the new path is shown
 once, in its row; the message beneath does not repeat it. A cast row carries no tooltip
-repeating its own words.
+repeating its own words. The setup program's header carries no title line beneath the window's
+own title bar, which already names the program.
 Verified by: `frontend/src/shell.test.tsx` for the reaction log; `frontend/src/missingTakes.test.tsx`
 for the complete note and the recordings message; `frontend/src/panes.test.tsx` for the journal
-message; `frontend/src/cast.test.tsx` for the cast rows. Each failed with its repeat put back.
+message; `frontend/src/cast.test.tsx` for the cast rows; `TestTheSetupHeaderRepeatsNoTitle` in
+`tests/structural/setupheader_test.go` for the setup header. Each failed with its repeat put back.
 
 ### 3.5 Non-functional
 

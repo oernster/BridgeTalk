@@ -46,8 +46,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 
-366 test functions, which expand to 419 runs once their subtests are counted.
-Eighteen of them are the structural tests in `tests/structural`, which assert the
+367 test functions, which expand to 420 runs once their subtests are counted.
+Nineteen of them are the structural tests in `tests/structural`, which assert the
 architecture itself rather than any behaviour: layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band and the rule
 that the product is named in exactly one place.

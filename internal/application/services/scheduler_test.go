@@ -97,6 +97,31 @@ func TestAlertDoesNotInterruptAnotherAlert(t *testing.T) {
 	}
 }
 
+// A take cut short by an alert reports its end once the alert is already under way, as the
+// player does. That report must not end the alert: a flavour line arriving then is let go
+// (FR-612) rather than queued behind it. Reproduced on a real device before this was written.
+func TestATakeCutShortLeavesTheAlertThatReplacedItSpeaking(t *testing.T) {
+	player := newFakePlayer()
+	log := &collector{}
+	scheduler := services.NewScheduler(player, log, frozenClock{})
+
+	scheduler.Submit(request(t, "ambient", "ambient", "quiet.mp3"))
+	scheduler.Advance()
+	scheduler.Submit(request(t, "alert", "alert", "danger.mp3"))
+	scheduler.Advance()
+	scheduler.Finished()
+
+	if !scheduler.Speaking() {
+		t.Fatal("the end of the cut take was taken for the end of the alert")
+	}
+	if scheduler.Submit(request(t, "flavour", "flavour", "idle.mp3")) {
+		t.Fatalf("a flavour line was taken while the alert was speaking; pending = %d", scheduler.Pending())
+	}
+	if log.outcomes[len(log.outcomes)-1] != ports.OutcomeDropped {
+		t.Errorf("outcomes = %v, want the flavour line recorded as dropped", log.outcomes)
+	}
+}
+
 // Alerts waiting together are said in the order they happened, ahead of anything less
 // urgent (Oliver, 2026-09-13).
 func TestAlertsWaitingTogetherPlayInArrivalOrder(t *testing.T) {

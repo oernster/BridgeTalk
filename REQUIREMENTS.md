@@ -1059,7 +1059,7 @@ The queue plays from the highest priority down; cues of one priority play in the
 arrived. The application shall record a cue as `played` when
 it starts; as `queued` when it waits behind one that is playing.
 Verified by: `TestAlertInterruptsWhatIsSpeaking`, `TestAlertDoesNotInterruptAnotherAlert`,
-`TestAmbientQueuesOnlyWhenNothingIsWaiting`, `TestFlavourIsDroppedWhileAnythingIsPending`,
+`TestATakeCutShortLeavesTheAlertThatReplacedItSpeaking`, `TestAmbientQueuesOnlyWhenNothingIsWaiting`, `TestFlavourIsDroppedWhileAnythingIsPending`,
 `TestAFlavourLineIsDiscardedWhileSomethingIsSpeaking`,
 `TestAFlavourLineIsTakenWhenNothingElseIsPending`, `TestQueueIsOrderedByPriorityThenArrival` and
 `TestAlertsWaitingTogetherPlayInArrivalOrder` in
@@ -1160,7 +1160,7 @@ Verified by: `TestMutingSilencesTheDeviceAndUnmutingDoesNot` and
 `TestTheFacadeAnswersWithNoVoiceCast` in `app_test.go`; `TestTheTrayIsKeptInStepWithTheSession` in
 `session_test.go`; "offers the mute as the act rather than as the state" in
 `frontend/src/App.menus.test.tsx`. Not verified by a test: starting unmuted; the mark in the tray
-menu. The tray's hover text is OQ-12.
+menu.
 
 **FR-706 Volume**
 Priority: Must.
@@ -1222,10 +1222,13 @@ When the tray icon is clicked or Open is chosen from its menu, the application s
 window back, centred, on the Cast pane. The menu shall hold, in order: Voice, listing the voices
 found at startup by the name each is shown by (FR-210) with the cast one marked, present only while a voice was found; Open; Mute, marked
 while muted; Quit. The icon's hover text shall name the product, the cast voice and whether playback
-is muted. If the icon cannot be made, then the application shall print a warning and run without it.
+is muted. When playback is muted or unmuted or a voice is cast, whether from the window or from the
+tray menu, the application shall send the hover text again with the new state. If the icon cannot be
+made, then the application shall print a warning and run without it.
 Verified by: `TestAClickAsksForTheWindowBack`, `TestTheMenuOffersTheWindowToo`,
 `TestDispatchMapsMenuIdentifiers`, `TestDispatchIgnoresNothingAndOutOfRange`,
-`TestDispatchDoesNotBlockWhenNobodyIsReading`, `TestTooltipReflectsVoiceAndMuteState` and
+`TestDispatchDoesNotBlockWhenNobodyIsReading`, `TestTooltipReflectsVoiceAndMuteState`,
+`TestTheHoverTextFollowsTheStateOnTheTrayThread` and
 `TestTheMenuShowsEachVoiceByTheNameItIsShownBy` in
 `internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayIconBringsTheWindowBack` and
 `TestASummonedWindowIsToldToOpenOnTheCast` in `window_life_test.go`;
@@ -1429,8 +1432,6 @@ headless test is how it gets tested.
 | ID | Question | Blocks | Owner |
 |---|---|---|---|
 | **OQ-6** | How does an additional audio source reach the application? Go has no practical dynamic plugin story on Windows. The realistic options are a separate process behind a local protocol, a build tag producing a second binary; or having the extension write a `voice.toml` into a directory the application already scans. The third needs no new mechanism at all. | Section 6 | Oliver, with a recommendation from Claude |
-| **OQ-10** | A take cut short still reports that it finished, so the scheduler stops counting the alert that replaced it as speaking. A `flavour` cue arriving then is queued behind the alert rather than let go. Read in the source, not reproduced. | FR-612 | Claude, to reproduce |
-| **OQ-12** | The tray's hover text is refreshed only after a choice from the tray menu, so muting or casting from the window leaves it describing the state before. Read in the source, not reproduced. | FR-710 | Claude, to reproduce |
 | **OQ-16** | Shortcut paths reach PowerShell quoted by Go's `%q`, which doubles every backslash; a `$` in a path would also be read by PowerShell. What either does to the shortcut is not measured. | FR-802, FR-804 | Claude, to measure |
 
 ---

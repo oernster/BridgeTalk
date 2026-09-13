@@ -12,6 +12,7 @@ import (
 const (
 	wmApp           = 0x8000
 	wmTrayCallback  = wmApp + 1 // the tray icon posts its mouse events here
+	wmRefreshTip    = wmApp + 2 // a change of mute or voice asks for the hover text here
 	wmNull          = 0x0000
 	wmDestroy       = 0x0002
 	wmClose         = 0x0010

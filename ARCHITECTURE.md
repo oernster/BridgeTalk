@@ -567,7 +567,9 @@ requirement of the Win32 windowing model.
 Nothing crosses that thread boundary by callback. The tray reports what the user chose on a channel that
 the facade's loop selects over, dropping a choice rather than blocking when nothing is reading; the loop
 pushes the mute state and the cast voice back through two atomics that the menu builder and the tooltip
-read. A callback invoked from the tray thread would be running on the wrong thread for everything it
+read. Each push also posts a message to the tray's own window, so the hover text is sent again from the
+tray thread once the state has changed. A menu choice never sends it itself: the choice has not been
+acted on when the menu returns. A callback invoked from the tray thread would be running on the wrong thread for everything it
 wanted to touch, which is a failure mode this design removes rather than manages.
 
 The left button asks for the window on a single click and on a double; the right button opens the menu:

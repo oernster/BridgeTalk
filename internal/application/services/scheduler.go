@@ -106,8 +106,16 @@ func (s *Scheduler) Advance() {
 	s.report(next, ports.OutcomePlayed)
 }
 
-// Finished tells the scheduler the player has gone idle.
+// Finished tells the scheduler the player has reported the end of a take.
+//
+// The player reports a take cut short as well as one that ended; it reports the cut once
+// the take that replaced it is already sounding. While the player is still playing,
+// that report is not the end of what is speaking, so it changes nothing; otherwise a
+// flavour line would queue behind an alert rather than being let go (FR-612).
 func (s *Scheduler) Finished() {
+	if s.player.Playing() {
+		return
+	}
 	s.current = nil
 	s.Advance()
 }

@@ -26,8 +26,9 @@ const commandBuffer = 8
 // Tray is the notification-area icon and its menu.
 //
 // Everything inside the message loop runs on one locked OS thread. The only things
-// crossing that boundary are the command channel outward and two atomics inward,
-// so no Win32 handle is ever touched from another goroutine.
+// crossing that boundary are the command channel outward, two atomics inward and a
+// message posted to say they changed; no other goroutine does anything else with a
+// Win32 handle.
 type Tray struct {
 	commands chan Command
 	options  Options
@@ -35,8 +36,16 @@ type Tray struct {
 	muted       atomic.Bool
 	activeVoice atomic.Value
 
+	// window belongs to the tray thread. posted holds the same handle for every other
+	// goroutine, which may only post to it: zero before the window exists and again once
+	// it is being taken down.
 	window windows.HWND
+	posted atomic.Uintptr
 	icon   windows.Handle
+
+	// notify hands icon data to the shell. A test replaces it to read what would be sent
+	// without an icon appearing.
+	notify func(message uintptr, data *notifyIconData) error
 
 	started sync.Once
 	stopped sync.Once
@@ -57,6 +66,7 @@ func New(options Options) *Tray {
 	tray := &Tray{
 		commands: make(chan Command, commandBuffer),
 		options:  options,
+		notify:   shellNotify,
 		ready:    make(chan error, 1),
 	}
 	tray.muted.Store(options.Muted)
@@ -64,14 +74,29 @@ func New(options Options) *Tray {
 	return tray
 }
 
+// shellNotify sends icon data to the shell, answering with the reason when it refuses.
+func shellNotify(message uintptr, data *notifyIconData) error {
+	if ret, _, callErr := procShellNotifyIcon.Call(message, uintptr(unsafe.Pointer(data))); ret == 0 {
+		return callErr
+	}
+	return nil
+}
+
 // Commands yields the user's menu choices. The channel is closed when the tray stops.
 func (t *Tray) Commands() <-chan Command { return t.commands }
 
-// SetMuted updates the state the menu shows. Safe from any goroutine.
-func (t *Tray) SetMuted(muted bool) { t.muted.Store(muted) }
+// SetMuted updates the state the menu and the hover text show. Safe from any goroutine.
+func (t *Tray) SetMuted(muted bool) {
+	t.muted.Store(muted)
+	t.post(wmRefreshTip)
+}
 
-// SetActiveVoice updates which voice the menu shows as chosen. Safe from any goroutine.
-func (t *Tray) SetActiveVoice(name string) { t.activeVoice.Store(name) }
+// SetActiveVoice updates which voice the menu and the hover text show. Safe from any
+// goroutine.
+func (t *Tray) SetActiveVoice(name string) {
+	t.activeVoice.Store(name)
+	t.post(wmRefreshTip)
+}
 
 // Start shows the icon and runs the message loop on its own locked thread.
 //
@@ -89,11 +114,16 @@ func (t *Tray) Start() error {
 
 // Stop removes the icon and ends the message loop.
 func (t *Tray) Stop() {
-	t.stopped.Do(func() {
-		if t.window != 0 {
-			_, _, _ = procPostMessage.Call(uintptr(t.window), wmClose, 0, 0)
-		}
-	})
+	t.stopped.Do(func() { t.post(wmClose) })
+}
+
+// post hands a message to the tray thread, doing nothing while there is no window to take
+// it. PostMessage may be called from any thread, which is why it is the one call made from
+// outside the tray thread.
+func (t *Tray) post(message uintptr) {
+	if window := t.posted.Load(); window != 0 {
+		_, _, _ = procPostMessage.Call(window, message, 0, 0)
+	}
 }
 
 // run owns the tray thread from creation to teardown.
@@ -143,11 +173,12 @@ func (t *Tray) create() error {
 	t.icon = ownIcon()
 
 	data := t.iconData()
-	if ret, _, callErr := procShellNotifyIcon.Call(nimAdd, uintptr(unsafe.Pointer(&data))); ret == 0 {
+	if err := t.notify(nimAdd, &data); err != nil {
 		_, _, _ = procDestroyWindow.Call(handle)
 		t.window = 0
-		return fmt.Errorf("adding the tray icon: %w", callErr)
+		return fmt.Errorf("adding the tray icon: %w", err)
 	}
+	t.posted.Store(handle)
 	return nil
 }
 
@@ -179,13 +210,15 @@ func (t *Tray) tooltip() string {
 	return fmt.Sprintf("%s: %s", t.options.Title, voice)
 }
 
-// refreshTooltip re-sends the icon data so the hover text follows the state.
+// refreshTooltip re-sends the icon data so the hover text follows the state. It runs on
+// the tray thread, on the message SetMuted and SetActiveVoice post once the state has
+// changed (FR-710).
 func (t *Tray) refreshTooltip() {
 	if t.window == 0 {
 		return
 	}
 	data := t.iconData()
-	_, _, _ = procShellNotifyIcon.Call(nimModify, uintptr(unsafe.Pointer(&data)))
+	_ = t.notify(nimModify, &data)
 }
 
 // pump runs the message loop until the window closes.
@@ -207,8 +240,9 @@ func (t *Tray) destroy() {
 	if t.window == 0 {
 		return
 	}
+	t.posted.Store(0)
 	data := t.iconData()
-	_, _, _ = procShellNotifyIcon.Call(nimDelete, uintptr(unsafe.Pointer(&data)))
+	_ = t.notify(nimDelete, &data)
 	_, _, _ = procDestroyWindow.Call(uintptr(t.window))
 	t.window = 0
 }
@@ -228,6 +262,9 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 		case wmLButtonUp, wmLButtonDblClk:
 			t.send(Command{Kind: CommandShow})
 		}
+		return 0
+	case wmRefreshTip:
+		t.refreshTooltip()
 		return 0
 	case wmClose:
 		_, _, _ = procDestroyWindow.Call(uintptr(hwnd))
@@ -249,107 +286,6 @@ func (t *Tray) label(name string) string {
 		}
 	}
 	return name
-}
-
-// menuVoice is one entry of the Voice submenu as it is drawn.
-type menuVoice struct {
-	id      uint32
-	label   string
-	checked bool
-}
-
-// voiceItems lists the Voice submenu: each voice under the label it is shown by, the cast one
-// checked by the name that identifies it (FR-210, FR-710). It is apart from showMenu so the
-// entries can be read without a menu to draw them in.
-func (t *Tray) voiceItems() []menuVoice {
-	active, _ := t.activeVoice.Load().(string)
-	items := make([]menuVoice, 0, len(t.options.Voices))
-	for index, choice := range t.options.Voices {
-		items = append(items, menuVoice{
-			id:      uint32(idVoiceBase + index),
-			label:   choice.Label,
-			checked: choice.Name == active,
-		})
-	}
-	return items
-}
-
-// showMenu builds the context menu, tracks it and dispatches what was chosen.
-func (t *Tray) showMenu() {
-	menu, _, _ := procCreatePopupMenu.Call()
-	if menu == 0 {
-		return
-	}
-	defer func() { _, _, _ = procDestroyMenu.Call(menu) }()
-
-	voices, _, _ := procCreatePopupMenu.Call()
-	for _, item := range t.voiceItems() {
-		flags := uintptr(0)
-		if item.checked {
-			flags = mfChecked
-		}
-		appendMenuItem(voices, item.id, item.label, flags)
-	}
-	if len(t.options.Voices) > 0 {
-		appendSubmenu(menu, voices, "Voice")
-		appendSeparator(menu)
-	}
-
-	muteFlags := uintptr(0)
-	if t.muted.Load() {
-		muteFlags = mfChecked
-	}
-	appendMenuItem(menu, idShow, "Open", 0)
-	appendSeparator(menu)
-	appendMenuItem(menu, idMute, "Mute", muteFlags)
-	appendSeparator(menu)
-	appendMenuItem(menu, idQuit, "Quit", 0)
-
-	var cursor point
-	_, _, _ = procGetCursorPos.Call(uintptr(unsafe.Pointer(&cursor)))
-	// The menu will not dismiss on a click elsewhere unless its owner window is
-	// foreground first, which is a documented quirk of tray menus.
-	_, _, _ = procSetForegroundWindow.Call(uintptr(t.window))
-
-	chosen, _, _ := procTrackPopupMenu.Call(
-		menu,
-		tpmRightButton|tpmNonotify|tpmReturnCmd,
-		uintptr(cursor.x), uintptr(cursor.y),
-		0, uintptr(t.window), 0,
-	)
-	// Posting a null message lets the menu close cleanly, another documented quirk.
-	_, _, _ = procPostMessage.Call(uintptr(t.window), wmNull, 0, 0)
-
-	t.dispatch(uint32(chosen))
-}
-
-// dispatch turns a menu command identifier into a Command on the channel.
-//
-// A send that would block is dropped rather than stalling the tray thread: a full
-// buffer means the main loop has stopped reading; a frozen menu would be a worse
-// symptom than a lost click.
-func (t *Tray) dispatch(chosen uint32) {
-	var command Command
-	switch {
-	case chosen == 0:
-		return
-	case chosen == idMute:
-		command = Command{Kind: CommandToggleMute}
-	case chosen == idQuit:
-		command = Command{Kind: CommandQuit}
-	case chosen == idShow:
-		command = Command{Kind: CommandShow}
-	case chosen >= idVoiceBase:
-		index := int(chosen - idVoiceBase)
-		if index >= len(t.options.Voices) {
-			return
-		}
-		command = Command{Kind: CommandSelectVoice, Voice: t.options.Voices[index].Name}
-	default:
-		return
-	}
-	t.send(command)
-	t.refreshTooltip()
 }
 
 // send offers one command to the main loop, dropping it where nothing is reading.

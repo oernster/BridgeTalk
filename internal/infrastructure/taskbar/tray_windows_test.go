@@ -5,7 +5,60 @@ package taskbar
 import (
 	"reflect"
 	"testing"
+	"time"
+
+	"golang.org/x/sys/windows"
 )
+
+// tipWait is how long a posted refresh may take to reach the shell before the test gives up.
+const tipWait = 2 * time.Second
+
+// FR-710: the hover text follows a mute and a cast from whichever goroutine makes them, sent
+// again on the tray's own thread once the state has changed. A menu choice does not send it
+// itself, since the choice has not been acted on when the menu returns and the text would be
+// the state before. A real window and message loop run here; only the shell is replaced, so
+// no icon appears.
+func TestTheHoverTextFollowsTheStateOnTheTrayThread(t *testing.T) {
+	tray := newTestTray([]string{"Grace", "Jack"}, "Grace")
+	sent := make(chan string, commandBuffer)
+	tray.notify = func(message uintptr, data *notifyIconData) error {
+		if message == nimModify {
+			sent <- windows.UTF16ToString(data.szTip[:])
+		}
+		return nil
+	}
+	if err := tray.Start(); err != nil {
+		t.Fatalf("starting the tray: %v", err)
+	}
+	defer func() {
+		tray.Stop()
+		for range tray.Commands() {
+		}
+	}()
+
+	awaitTip := func(want string) {
+		t.Helper()
+		select {
+		case got := <-sent:
+			if got != want {
+				t.Fatalf("hover text sent = %q, want %q", got, want)
+			}
+		case <-time.After(tipWait):
+			t.Fatalf("no hover text was sent; want %q", want)
+		}
+	}
+	tray.SetMuted(true)
+	awaitTip("Test: Grace (muted)")
+	tray.SetActiveVoice("Jack")
+	awaitTip("Test: Jack (muted)")
+
+	tray.dispatch(idMute)
+	select {
+	case got := <-sent:
+		t.Fatalf("the menu choice sent %q before it was acted on", got)
+	default:
+	}
+}
 
 // newTestTray builds a tray without touching Win32, so the menu logic can be tested
 // without a message loop or a shell. Each voice is shown by its own name.

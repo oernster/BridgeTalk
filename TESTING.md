@@ -45,12 +45,12 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 69.1% | 61% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 22.4% | 22% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 67.1% | 22% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-422 test functions, which expand to 479 runs once their subtests are counted.
+424 test functions, which expand to 481 runs once their subtests are counted.
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
@@ -127,11 +127,13 @@ release is for.
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not.
-- **`internal/infrastructure/taskbar` (22.4%).** The tray icon runs its own Win32
-  message loop on a locked OS thread. What is testable without one, the command
-  vocabulary and the state the menu reads, is tested; the loop, the window
-  procedure and the menu construction are not.
-- **`internal/infrastructure/audio` (84.1%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/taskbar` (67.1%).** The tray icon runs its own Win32
+  message loop on a locked OS thread. One test runs that loop for real over a real
+  hidden window, replacing only the call that hands the icon to the shell, so the
+  hover text being sent again after a change is tested while an icon appearing is
+  not. The command vocabulary and the state the menu reads are tested directly; the
+  menu as drawn is not.
+- **`internal/infrastructure/audio` (93.6%).** `run` and `playOne` hand a loaded clip
   to the speaker; the speaker itself is the part no harness reaches. Everything around
   them is covered through a SILENT player, which is the same object with the same state
   machine minus the calls into the device, so the sequencing, the cancelling, the volume

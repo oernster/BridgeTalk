@@ -80,9 +80,16 @@ package still builds and vets on any platform.
 
 - The setup program carries every file a machine voice is made from, downloading nothing (FR-524).
 - Uninstall deletes the made lines (FR-525).
-- **Measure before M7 starts:** the setup program's size, build time and memory while it runs, today
-  against the same with about 339 MB of model files embedded. The answer may change how those files
-  travel.
+- Embed the payload as a `string` rather than a `[]byte`, if Oliver agrees. Measured on 2026-09-14
+  with a stand-in program that embeds the full payload and extracts it the way `setup.ExtractZip`
+  does: as a `[]byte` the payload is charged to the process as 323.6 MB of private memory from the
+  moment it starts, peaking at 329.1 MB; as a `string`, 12.8 MB at start and 17.6 MB at peak.
+  Extracting took about 1.9 s either way.
+- What the model files cost, measured the same day: they take the payload from 6.0 MB to 326.2 MB
+  (367.9 MB before zipping), so the setup program is projected at about 338 MB against 17.7 MB today.
+  Building a program that embeds the payload took about 3.1 s against 0.37 s. Only 2 of the 28 style
+  files were on this machine; copies of those stood in for the rest. The real setup program was not
+  built or run for this, so its own build time and the memory its window uses are not measured.
 
 ## Content track, alongside M3 onwards
 
@@ -94,7 +101,10 @@ switched on, so FR-507 fails the build from then on.
 
 ## Waiting on Oliver
 
-- Where the model files live on the build machine, since the model alone is 310.5 MB. A
-  recommendation comes before M7.
+- Where the model files live on the build machine, since the model alone is 310.5 MB. Recommended: a
+  folder outside the repository named by an environment variable that `build.ps1` reads, each file
+  checked against a committed list of its name, size and SHA-256 before it is zipped. Today the
+  model, ONNX Runtime and two style files sit only in an old session scratchpad, which may vanish.
+- Whether the setup payload is embedded as a `string` (M9).
 - Approval before downloading any file not already on this machine, each named with its source and
   size. Which files those are is measured before M7.

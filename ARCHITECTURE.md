@@ -42,11 +42,13 @@ exactly like one that holds.
 
 ## Layers
 
-- **Domain** (`internal/domain`: `cue`, `event`, `selection`): pure Go. Values are validated on
+- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `selection`): pure Go. Values are validated on
   construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
   `CooldownGate.Allow` and `DedupeWindow.Fresh`, while randomness arrives through the injected
   `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
-  so all of it is testable without a filesystem, a clock or an audio device.
+  so all of it is testable without a filesystem, a clock or an audio device. `machinevoice` holds the
+  28 machine voices offered, the accent each speaks with and the name each is shown by; the list is the
+  one home of the model's voice ids.
 - **Application** (`internal/application`): the reaction and scheduling services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
   never imports Infrastructure or the Wails runtime.

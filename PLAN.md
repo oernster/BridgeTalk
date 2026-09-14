@@ -6,7 +6,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## What exists today
 
-- No machine voice code. The domain holds `cue`, `event` and `selection`.
+- `internal/domain/machinevoice` holds the 28 voices offered, the accent each speaks with and the name
+  each is shown by (FR-508, FR-510, FR-528). Nothing else of machine voices is built.
 - `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
   `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
   (FR-501).
@@ -18,13 +19,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller, the
   eSpeak NG caller, the dictionary lookup with misaki's rules and the FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M1 Domain: the machine voices
-
-Package `internal/domain/machinevoice`.
-
-- The 28 ids (FR-508); accent and sex read from the id's prefix (FR-510); the name on screen (FR-528).
-- Tests: every id is named as FR-528 says; an unknown prefix is refused.
 
 ## M2 Domain: speech sounds
 

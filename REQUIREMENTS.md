@@ -1016,7 +1016,9 @@ Rationale: machine voices and recorded voices are cast separately (Oliver, 2026-
 how each is named.
 Acceptance: Given a library root holding `Alice/`, when the Cast pane opens, then Alice is listed
 among the recorded voices and the 28 machine voices are listed apart from her.
-Verified by: not built.
+Verified by: in part, `TestTheVoicesOfferedAreTheTwentyEightOfFR508` in
+`internal/domain/machinevoice/voice_test.go` for the voices offered; the Cast pane listing them apart
+is not built.
 
 **FR-509 The tray offers the machine voices**
 Priority: Should.
@@ -1030,7 +1032,9 @@ an American machine voice's lines with American English pronunciation.
 Acceptance: Given the line "Fuel reserves are running low, commander.", when it is made for
 `bf_emma`, then its last word reads `kəmˈɑːndə`; when made for `am_michael`, `kəmˈændəɹ`. Both
 were measured on 2026-09-14.
-Verified by: not built.
+Verified by: in part, `TestAVoiceSpeaksWithTheAccentItsIdNames` in
+`internal/domain/machinevoice/voice_test.go` for the accent read from the id; making lines with that
+accent's pronunciation is not built.
 
 **FR-511 Casting a machine voice makes its missing lines**
 Priority: Must.
@@ -1165,7 +1169,8 @@ Priority: Must.
 The application shall name a machine voice by the name in its id, capitalised, followed by its accent
 and sex in brackets, such as "Emma (British, female)" for `bf_emma`.
 Rationale: recommended by Claude; accepted by Oliver on 2026-09-14.
-Verified by: not built.
+Verified by: in part, `TestAVoiceIsNamedByItsNameThenItsAccentAndSex` in
+`internal/domain/machinevoice/voice_test.go` for the name; showing it on the Cast pane is not built.
 
 **FR-529 A line may give a word's speech sounds**
 Priority: Should.

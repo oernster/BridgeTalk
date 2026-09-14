@@ -16,8 +16,12 @@ func TestTheMadeLinesGoWhateverIsTickedWhileTheRecordingsBesideThemStay(t *testi
 	for _, forget := range []bool{false, true} {
 		base := t.TempDir()
 		data := filepath.Join(base, "data")
-		left := Leftovers{MadeLines: filepath.Join(data, "made"), State: filepath.Join(base, "state")}
+		left := Leftovers{
+			MadeLines: filepath.Join(data, "made"), Log: filepath.Join(data, "Log.txt"),
+			State: filepath.Join(base, "state"),
+		}
 		plant(t, left.MadeLines, "bf_emma/a.flac", "a made line")
+		plant(t, data, "Log.txt", "a run")
 		plant(t, data, "recordings/Hugo/a.flac", "a recording")
 		plant(t, left.State, "theme", "dark")
 
@@ -27,6 +31,9 @@ func TestTheMadeLinesGoWhateverIsTickedWhileTheRecordingsBesideThemStay(t *testi
 
 		if _, err := os.Stat(left.MadeLines); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("forgetting %v: the made lines survived: %v", forget, err)
+		}
+		if _, err := os.Stat(left.Log); !errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("forgetting %v: the log survived: %v", forget, err)
 		}
 		if _, err := os.Stat(filepath.Join(data, "recordings", "Hugo", "a.flac")); err != nil {
 			t.Errorf("forgetting %v: a recording beside the made lines went: %v", forget, err)

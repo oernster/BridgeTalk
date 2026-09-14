@@ -10,6 +10,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
+	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/oernster/bridge-talk/internal/infrastructure/window"
 )
@@ -230,7 +231,7 @@ func (a *App) register(dir, exePath string) error {
 }
 
 // Uninstall removes the shortcuts, the login entry, the registry record, the lines made
-// for machine voices and the installed files. When the user asks to forget their
+// for machine voices, the log and the installed files. When the user asks to forget their
 // settings, the application's stored choices go too, along with the theme and volume
 // the window keeps.
 func (a *App) Uninstall(removeState bool) error {
@@ -251,13 +252,14 @@ func (a *App) Uninstall(removeState bool) error {
 	a.progress(50, "Removing registry entries...")
 	_ = setup.RemoveUninstallEntry()
 
-	// The made lines go whatever is ticked, since the application made them and can make
-	// them again (FR-525); the window's state goes only when forgetting is asked for. A
-	// folder that cannot be found arrives empty, which removes nothing.
-	a.progress(60, "Removing the lines made for machine voices...")
+	// The made lines and the log go whatever is ticked, since the application wrote them
+	// (FR-525, FR-715); the window's state goes only when forgetting is asked for. One that
+	// cannot be found arrives empty, which removes nothing.
+	a.progress(60, "Removing the lines made for machine voices and the log...")
 	madeLines, _ := madelines.Dir()
+	log, _ := runlog.Path()
 	state, _ := setup.StateDir()
-	_ = setup.RemoveLeftovers(setup.Leftovers{MadeLines: madeLines, State: state}, removeState)
+	_ = setup.RemoveLeftovers(setup.Leftovers{MadeLines: madeLines, Log: log, State: state}, removeState)
 
 	if removeState {
 		a.progress(70, "Removing your saved settings...")

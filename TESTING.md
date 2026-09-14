@@ -53,6 +53,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 91.5% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
+| `internal/infrastructure/runlog` | 51.9% | 51% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `tools/sounds` | 38.5% | 38% | `test.ps1` |
@@ -61,7 +62,9 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-427 test functions, which expand to 486 runs once their subtests are counted.
+596 test functions, which expand to 658 runs once their subtests are counted (measured on
+2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
+the whole suite; the build-tagged benchmarks are counted as functions but do not run).
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
@@ -154,6 +157,12 @@ release is for.
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
   clock rather than by waiting.
+- **The crashes in `internal/infrastructure/runlog` (51.9%).** A crash ends the process that has it,
+  so the crash tests start the test binary again as a child that panics or fails fatally, then read
+  what the child left in its log. Every line the child runs is in a process coverage does not measure.
+  Finding that a run has no error output is not reached at all: a test binary is always given one.
+  A windowed probe measured it on 2026-09-14 (FR-715). Writing the start line failing after the file
+  opened fails only inside the system.
 - **A made lines folder that exists but cannot be listed, in `internal/infrastructure/madelines`.**
   Deleting then says why rather than deleting nothing in silence (FR-530). Only a permission the
   system withholds reaches it: a folder a test makes can always be listed. Windows answers a plain

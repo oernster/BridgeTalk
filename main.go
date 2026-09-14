@@ -74,6 +74,7 @@ type randomChooser struct{ source *rand.Rand }
 func (r randomChooser) Intn(n int) int { return r.source.Intn(n) }
 
 func main() {
+	keepLog()
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "bridge-talk: %v\n", err)
 		os.Exit(1)

@@ -67,7 +67,8 @@ exactly like one that holds.
   folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),
   the strict reading both TOML files share (`tomlfile`), the files a machine voice is made from
   (`voicefiles`), the made lines kept as 16-bit FLAC (`madelines`), the product's local data folder
-  both it and the default recordings directory sit in (`appdata`),
+  both it and the default recordings directory sit in (`appdata`), the log each run leaves in that
+  folder (`runlog`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
   (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
   Domain or Application.
@@ -789,8 +790,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   differs (FR-538). It then checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `speechmodel` 91%, `taskbar`
-  67%, `tools/sounds` 38%, `tools/models` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
+  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `runlog` 51%, `setup` 61%, `speechmodel` 91%, `taskbar`
+  67%, `tools/sounds` 38%, `tools/models` 48%, `tools/payload` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
   `status`, `tomlfile`, `voicefiles`, `wholefile` and `internal/refusal` at 100%. `internal/infrastructure/window`,
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
   the platform behind them; the last is test support exercised by the `modelfiles` tests.

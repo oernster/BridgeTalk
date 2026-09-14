@@ -897,7 +897,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt` and `go vet`; `build.ps1` runs `test.ps1` ahead of any build. Not enforced today for `staticcheck`: no script runs it; it is run by hand |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: no Go source outside the structural tests names a network package and the front end makes no request. No test asserts the outbound surface today; `TestDomainIsPure` forbids `net` and `net/http` in the domain alone |
-| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection the application writes the settings file under the user configuration directory, the default recordings directory under `%LOCALAPPDATA%`, the folders of FR-223 and FR-314 plus the sign-in entry |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection the application writes the settings file under the user configuration directory, the default recordings directory under `%LOCALAPPDATA%`, the log of FR-715 beside it, the folders of FR-223 and FR-314 plus the sign-in entry |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue and every cue folder differing from another only in case, each with a reason. Not built today for undecodable files (FR-204) | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go` |
 
 **Non claims, stated deliberately:**
@@ -1920,6 +1920,48 @@ left it rather than from the top" and "ignores focus arriving while the start ho
 `frontend/src/reading.test.tsx`; "freezes while a dialog is open over it" in
 `frontend/src/hooks.test.tsx`.
 
+**FR-715 A run leaves a log**
+Priority: Must.
+When the application starts, it shall add a line naming the product and the time it started to
+`Log.txt` in the product's local data folder (FR-523), making the folder where there is none. While
+the run has no error output of its own, as when it is started from a shortcut, at sign-in or by setup,
+everything written to error output shall go to `Log.txt`: warnings, a refusal to start and the whole
+report of a panic or a fatal error. While the run has an error output, that output shall stay where it
+is; the report of a panic shall also be added to `Log.txt`. If `Log.txt` holds more than 1 MB when a
+run starts, then the log shall be started afresh. If the folder or the file cannot be opened, then the
+run shall start with a warning naming the file once (FR-237). When Uninstall is confirmed, setup shall
+delete `Log.txt` whether or not "Also forget my settings" is ticked; the uninstall screen shall say so.
+Rationale: on 2026-09-14 the application crashed at about line 100 of 768 while making `bf_alice`'s
+lines and left nothing behind. A windowed program started with no error output reads a handle of 0, so
+what Go prints as it fails is lost. Go's crash file (`runtime/debug.SetCrashOutput`) was measured
+carrying a panic's report whole but not the first line of a fatal error's, which the runtime prints
+before it copies anything to the file (`runtime.throw`, read in Go 1.26.3). Pointing the error output
+at a file carried every line of a stack overflow, of concurrent map writes and of a panic. It is named
+`Log.txt` rather than a crash log since it also holds the WebView2 line Wails prints on every run. The
+1 MB limit only stops it growing, a crash report measuring 0.4 to 24 KB. It goes on uninstall as the
+made lines do, being the application's own (recommended by Claude; accepted by Oliver on 2026-09-14).
+Acceptance: Given a log holding an earlier report, when a run starts at 11:18:31 on 2026-09-14, then
+`Log.txt` holds the report followed by `Bridge Talk started 2026-09-14 11:18:31`; when a goroutine other
+than the main one then panics, `Log.txt` holds `panic:` with its message. Given a run with no error
+output, when it writes a warning then fails with `fatal error: sync: unlock of unlocked mutex`, then
+`Log.txt` holds both lines.
+Verified by: `TestAPanicOnAnotherGoroutineIsInTheLogAndStaysOnTheErrorOutput`,
+`TestEveryRunAddsItsStartLineAfterWhatTheLogHolds`, `TestALogOverTheLimitIsStartedAfresh`,
+`TestTheLogIsMadeWithItsFolder` and `TestALogThatCannotBeKeptIsRefusedNamingItOnce` in
+`internal/infrastructure/runlog/runlog_test.go`; `TestWhereTheRunHasNoErrorOutputEverythingWrittenToItIsInTheLog`,
+`TestTheLogSitsInTheProductsDataFolder` and `TestWithNoDataFolderThereIsNoLog` in
+`internal/infrastructure/runlog/runlog_windows_test.go`; the log in
+`TestTheMadeLinesGoWhateverIsTickedWhileTheRecordingsBesideThemStay` in
+`internal/infrastructure/setup/leftovers_test.go`. The crash tests start the test binary again as a
+child that crashes. Proved by planting ten faults, each of which failed its test: the crash report not
+copied, a run with error output losing it to the log, the runtime's handle left unpointed, `os.Stderr`
+left unpointed, a log over the limit kept, a log at the limit started afresh, the start line reading the
+wall clock, the folder not made, a refusal naming the log twice and uninstall leaving the log. The
+uninstall screen's words were seen on 2026-09-14 in a browser at the setup window's size, not in the
+setup program. Not verified by a test: finding that a run has no error output, since a test binary
+always has one (measured instead with a windowed probe on 2026-09-14); `main` keeping the log before
+anything else; setup finding the file through `runlog.Path`; a real crash of the application.
+
 ---
 
 ## 9. The setup program
@@ -2053,7 +2095,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

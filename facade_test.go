@@ -203,6 +203,17 @@ func TestEachTrayChoiceActsThroughTheControlItMirrors(t *testing.T) {
 		}
 	})
 
+	// FR-509: a machine voice chosen from the tray is cast as one, by its id.
+	t.Run("selecting a machine voice casts it", func(t *testing.T) {
+		app, _, _ := fixtureApp(t)
+
+		app.handleTray(taskbar.Command{Kind: taskbar.CommandSelectMachineVoice, Voice: "bf_emma"})
+
+		if app.session.active != (castVoice{Name: "bf_emma", Display: "Emma (British, female)", Machine: true}) {
+			t.Fatalf("active voice is %+v, want bf_emma cast as a machine voice", app.session.active)
+		}
+	})
+
 	t.Run("a voice the tray cannot cast is not fatal", func(t *testing.T) {
 		app, _, _ := fixtureApp(t)
 

@@ -16,6 +16,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
+	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
 // errMissing is the reason a test's files refuse bf_emma with.
@@ -242,5 +243,21 @@ func TestWithNowhereToKeepMadeLinesNoMachineVoiceIsCast(t *testing.T) {
 	}
 	if entries := store.Entries(); len(entries) != 0 || app.session.hasVoice() {
 		t.Errorf("store saw %v, a voice cast %v; want nothing touched", entries, app.session.hasVoice())
+	}
+}
+
+// FR-509: the tray offers the recorded voices found, then every machine voice by the name it is
+// shown by, each marked as one.
+func TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices(t *testing.T) {
+	current, _ := fixtureSession(t, newFakePlayer())
+
+	choices := trayChoices(current.available)
+
+	want := playable(current.available)
+	for _, voice := range machinevoice.All() {
+		want = append(want, taskbar.Choice{Name: voice.ID(), Label: voice.Name(), Machine: true})
+	}
+	if !slices.Equal(choices, want) {
+		t.Errorf("tray offers %+v, want %+v", choices, want)
 	}
 }

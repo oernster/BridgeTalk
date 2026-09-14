@@ -33,8 +33,9 @@ type Tray struct {
 	commands chan Command
 	options  Options
 
-	muted       atomic.Bool
-	activeVoice atomic.Value
+	muted         atomic.Bool
+	activeVoice   atomic.Value
+	activeMachine atomic.Bool
 
 	// window belongs to the tray thread. posted holds the same handle for every other
 	// goroutine, which may only post to it: zero before the window exists and again once
@@ -71,6 +72,7 @@ func New(options Options) *Tray {
 	}
 	tray.muted.Store(options.Muted)
 	tray.activeVoice.Store(options.ActiveVoice)
+	tray.activeMachine.Store(options.ActiveMachine)
 	return tray
 }
 
@@ -91,10 +93,11 @@ func (t *Tray) SetMuted(muted bool) {
 	t.post(wmRefreshTip)
 }
 
-// SetActiveVoice updates which voice the menu and the hover text show. Safe from any
-// goroutine.
-func (t *Tray) SetActiveVoice(name string) {
+// SetActiveVoice updates which voice the menu and the hover text show, by the name that
+// identifies it and whether it is a machine voice. Safe from any goroutine.
+func (t *Tray) SetActiveVoice(name string, machine bool) {
 	t.activeVoice.Store(name)
+	t.activeMachine.Store(machine)
 	t.post(wmRefreshTip)
 }
 
@@ -203,7 +206,7 @@ func (t *Tray) tooltip() string {
 	if voice == "" {
 		return t.options.Title
 	}
-	voice = t.label(voice)
+	voice = t.label(voice, t.activeMachine.Load())
 	if t.muted.Load() {
 		return fmt.Sprintf("%s: %s (muted)", t.options.Title, voice)
 	}
@@ -277,11 +280,11 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 	return ret
 }
 
-// label answers with what a voice is shown by, given the name that identifies it. A name the
-// menu does not hold is shown as it is.
-func (t *Tray) label(name string) string {
+// label answers with what a voice is shown by, given the name that identifies it and its kind. A
+// voice the menu does not hold is shown by its name as it is.
+func (t *Tray) label(name string, machine bool) string {
 	for _, choice := range t.options.Voices {
-		if choice.Name == name {
+		if choice.Name == name && choice.Machine == machine {
 			return choice.Label
 		}
 	}

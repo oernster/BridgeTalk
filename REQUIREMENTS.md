@@ -1046,7 +1046,10 @@ apart, by the name each is shown by" in `frontend/src/machineVoices.test.tsx`.
 **FR-509 The tray offers the machine voices**
 Priority: Should.
 The tray icon's Voice menu (FR-710) shall list the machine voices after the recorded voices.
-Verified by: not built.
+Verified by: `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` in
+`internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices`
+in `machine_test.go`; "selecting a machine voice casts it" in `facade_test.go`. Not verified by a test:
+the menu as drawn, with its separator.
 
 **FR-510 A machine voice speaks with its own accent**
 Priority: Must.
@@ -1776,7 +1779,7 @@ press outside the question.
 Priority: Must.
 When the tray icon is clicked or Open is chosen from its menu, the application shall bring the
 window back, centred, on the Cast pane. The menu shall hold, in order: Voice, listing the voices
-found at startup by the name each is shown by (FR-210) with the cast one marked, present only while a voice was found; Open; Mute, marked
+found at startup by the name each is shown by (FR-210), then the machine voices under a separator (FR-509), with the cast one marked by its name and its kind (FR-540); Open; Mute, marked
 while muted; Quit. The icon's hover text shall name the product, the cast voice and whether playback
 is muted. When playback is muted or unmuted or a voice is cast, whether from the window or from the
 tray menu, the application shall send the hover text again with the new state. If the icon cannot be
@@ -1784,8 +1787,8 @@ made, then the application shall print a warning and run without it.
 Verified by: `TestAClickAsksForTheWindowBack`, `TestTheMenuOffersTheWindowToo`,
 `TestDispatchMapsMenuIdentifiers`, `TestDispatchIgnoresNothingAndOutOfRange`,
 `TestDispatchDoesNotBlockWhenNobodyIsReading`, `TestTooltipReflectsVoiceAndMuteState`,
-`TestTheHoverTextFollowsTheStateOnTheTrayThread` and
-`TestTheMenuShowsEachVoiceByTheNameItIsShownBy` in
+`TestTheHoverTextFollowsTheStateOnTheTrayThread`,
+`TestTheMenuShowsEachVoiceByTheNameItIsShownBy` and `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` in
 `internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayIconBringsTheWindowBack` and
 `TestASummonedWindowIsToldToOpenOnTheCast` in `window_life_test.go`;
 `TestOnlyDirectoriesHoldingTakesAreOfferedToTheTray` in `cast_test.go`. Not verified by a test: the

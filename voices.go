@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
@@ -25,6 +26,17 @@ func playable(found []library.Voice) []taskbar.Choice {
 	var choices []taskbar.Choice
 	for _, candidate := range found {
 		choices = append(choices, taskbar.Choice{Name: candidate.Name, Label: candidate.Display()})
+	}
+	return choices
+}
+
+// trayChoices is every voice the tray's Voice menu offers: the recorded voices found, then every
+// machine voice by the name it is shown by, each marked as one so a choice casts it by its id
+// (FR-509).
+func trayChoices(found []library.Voice) []taskbar.Choice {
+	choices := playable(found)
+	for _, voice := range machinevoice.All() {
+		choices = append(choices, taskbar.Choice{Name: voice.ID(), Label: voice.Name(), Machine: true})
 	}
 	return choices
 }

@@ -49,7 +49,7 @@ func TestTheHoverTextFollowsTheStateOnTheTrayThread(t *testing.T) {
 	}
 	tray.SetMuted(true)
 	awaitTip("Test: Grace (muted)")
-	tray.SetActiveVoice("Jack")
+	tray.SetActiveVoice("Jack", false)
 	awaitTip("Test: Jack (muted)")
 
 	tray.dispatch(idMute)
@@ -88,7 +88,7 @@ func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Leo Marsh"; got != want {
 		t.Errorf("tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("nobody listed")
+	tray.SetActiveVoice("nobody listed", false)
 	if got, want := tray.tooltip(), "Test: nobody listed"; got != want {
 		t.Errorf("tooltip = %q, want an unlisted name shown as it is", got)
 	}
@@ -96,6 +96,41 @@ func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
 	tray.dispatch(idVoiceBase)
 	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Voice: "grace"}) {
 		t.Errorf("command = %+v, want grace chosen by the name that identifies her", got)
+	}
+}
+
+// FR-509 and FR-540: the machine voices follow the recorded voices under a separator, each cast by
+// its id; a recordings folder carrying the same name is a different voice, checked and named apart.
+func TestTheMenuListsMachineVoicesAfterTheRecordedVoices(t *testing.T) {
+	tray := New(Options{Title: "Test", ActiveVoice: "bf_emma", ActiveMachine: true, Voices: []Choice{
+		{Name: "bf_emma", Label: "bf_emma"},
+		{Name: "bf_emma", Label: "Emma (British, female)", Machine: true},
+		{Name: "am_adam", Label: "Adam (American, male)", Machine: true},
+	}})
+
+	want := []menuVoice{
+		{id: idVoiceBase, label: "bf_emma"},
+		{id: idVoiceBase + 1, label: "Emma (British, female)", checked: true, separated: true},
+		{id: idVoiceBase + 2, label: "Adam (American, male)"},
+	}
+	if got := tray.voiceItems(); !reflect.DeepEqual(got, want) {
+		t.Errorf("items = %+v, want %+v", got, want)
+	}
+	if got, want := tray.tooltip(), "Test: Emma (British, female)"; got != want {
+		t.Errorf("tooltip = %q, want %q", got, want)
+	}
+	tray.SetActiveVoice("bf_emma", false)
+	if got, want := tray.tooltip(), "Test: bf_emma"; got != want {
+		t.Errorf("tooltip = %q, want the recorded voice's own label", got)
+	}
+
+	tray.dispatch(idVoiceBase + 1)
+	if got := <-tray.commands; got != (Command{Kind: CommandSelectMachineVoice, Voice: "bf_emma"}) {
+		t.Errorf("command = %+v, want the machine voice cast by its id", got)
+	}
+	tray.dispatch(idVoiceBase)
+	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Voice: "bf_emma"}) {
+		t.Errorf("command = %+v, want the recorded voice cast by its name", got)
 	}
 }
 
@@ -163,7 +198,7 @@ func TestTooltipReflectsVoiceAndMuteState(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Grace (muted)"; got != want {
 		t.Fatalf("muted tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("Jack")
+	tray.SetActiveVoice("Jack", false)
 	if got, want := tray.tooltip(), "Test: Jack (muted)"; got != want {
 		t.Fatalf("after switching voice tooltip = %q, want %q", got, want)
 	}

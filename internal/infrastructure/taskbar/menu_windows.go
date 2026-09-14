@@ -9,19 +9,24 @@ type menuVoice struct {
 	id      uint32
 	label   string
 	checked bool
+	// separated marks the first machine voice after a recorded one, drawn under a separator.
+	separated bool
 }
 
 // voiceItems lists the Voice submenu: each voice under the label it is shown by, the cast one
-// checked by the name that identifies it (FR-210, FR-710). It is apart from showMenu so the
-// entries can be read without a menu to draw them in.
+// checked by the name that identifies it and its kind (FR-210, FR-540, FR-710). The machine voices
+// follow the recorded voices, the first of them under a separator (FR-509). It is apart from
+// showMenu so the entries can be read without a menu to draw them in.
 func (t *Tray) voiceItems() []menuVoice {
 	active, _ := t.activeVoice.Load().(string)
+	machine := t.activeMachine.Load()
 	items := make([]menuVoice, 0, len(t.options.Voices))
 	for index, choice := range t.options.Voices {
 		items = append(items, menuVoice{
-			id:      uint32(idVoiceBase + index),
-			label:   choice.Label,
-			checked: choice.Name == active,
+			id:        uint32(idVoiceBase + index),
+			label:     choice.Label,
+			checked:   choice.Name == active && choice.Machine == machine,
+			separated: choice.Machine && index > 0 && !t.options.Voices[index-1].Machine,
 		})
 	}
 	return items
@@ -40,6 +45,9 @@ func (t *Tray) showMenu() {
 		flags := uintptr(0)
 		if item.checked {
 			flags = mfChecked
+		}
+		if item.separated {
+			appendSeparator(voices)
 		}
 		appendMenuItem(voices, item.id, item.label, flags)
 	}
@@ -101,7 +109,11 @@ func (t *Tray) dispatch(chosen uint32) {
 		if index >= len(t.options.Voices) {
 			return
 		}
-		command = Command{Kind: CommandSelectVoice, Voice: t.options.Voices[index].Name}
+		choice := t.options.Voices[index]
+		command = Command{Kind: CommandSelectVoice, Voice: choice.Name}
+		if choice.Machine {
+			command.Kind = CommandSelectMachineVoice
+		}
 	default:
 		return
 	}

@@ -21,12 +21,15 @@ const (
 	// window that has been put away, so it has to answer a plain click as well as
 	// the menu: an icon that does nothing on the usual gesture reads as broken.
 	CommandShow
+	// CommandSelectMachineVoice asks for a machine voice, by its id (FR-509).
+	CommandSelectMachineVoice
 )
 
 // Command is one choice made from the tray menu.
 type Command struct {
 	Kind CommandKind
-	// Voice carries the voice name for CommandSelectVoice; empty otherwise.
+	// Voice carries the voice name for CommandSelectVoice and the id for
+	// CommandSelectMachineVoice; empty otherwise.
 	Voice string
 }
 
@@ -37,6 +40,9 @@ type Choice struct {
 	Name string
 	// Label is what the menu and the hover text show.
 	Label string
+	// Machine marks a machine voice, which a choice casts by its id. A recordings folder may
+	// carry the same name, so the kind is part of what identifies a voice (FR-540).
+	Machine bool
 }
 
 // Options configures a tray at construction.
@@ -47,6 +53,8 @@ type Options struct {
 	Voices []Choice
 	// ActiveVoice names the voice shown as chosen, by the name that identifies it.
 	ActiveVoice string
+	// ActiveMachine says whether ActiveVoice names a machine voice.
+	ActiveMachine bool
 	// Muted is the starting state of the mute item.
 	Muted bool
 }

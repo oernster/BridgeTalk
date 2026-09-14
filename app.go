@@ -280,6 +280,8 @@ func (a *App) handleTray(command taskbar.Command) {
 		a.SetMuted(!a.session.muted)
 	case taskbar.CommandSelectVoice:
 		_ = a.SelectVoice(command.Voice)
+	case taskbar.CommandSelectMachineVoice:
+		_ = a.CastMachineVoice(command.Voice)
 	}
 }
 

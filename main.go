@@ -155,7 +155,7 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 	)
 	s.reactions.SetMuted(s.muted)
 	if s.tray != nil {
-		s.tray.SetActiveVoice(cast.Name)
+		s.tray.SetActiveVoice(cast.Name, cast.Machine)
 	}
 }
 
@@ -329,7 +329,7 @@ func launch(app *App, hidden bool) error {
 // and still speaks, which is the whole point of it.
 func startTray(found []library.Voice, active string) *taskbar.Tray {
 	tray := taskbar.New(taskbar.Options{
-		Title: appTitle, Voices: playable(found), ActiveVoice: active,
+		Title: appTitle, Voices: trayChoices(found), ActiveVoice: active,
 	})
 	if err := tray.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)

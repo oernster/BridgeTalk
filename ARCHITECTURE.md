@@ -606,7 +606,10 @@ wanted to touch, which is a failure mode this design removes rather than manages
 The left button asks for the window on a single click and on a double; the right button opens the menu:
 a Voice submenu, Open, Mute and Quit. The tooltip names the cast voice and says when it is muted. The
 Voice submenu lists the voices found at startup; it is not rebuilt when a new recordings directory is
-chosen or Refresh finds more.
+chosen or Refresh finds more. The machine voices follow them under a separator. A choice carries whether
+it is a machine voice, since a recordings folder may carry a machine voice's id: the check mark and the
+tooltip match a voice by name and kind, the kind pushed beside the name through a third atomic. A
+machine voice chosen there reaches `CastMachineVoice` rather than `SelectVoice`.
 
 The window comes back centred and on the cast pane, whatever pane it was left on. Centred, because a
 window put away for hours may return to a different arrangement of screens and the middle is the one

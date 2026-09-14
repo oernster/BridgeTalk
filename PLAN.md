@@ -76,17 +76,13 @@ section 10 says: domain, then application, then infrastructure, then user interf
   a `making` event the poll loop sends on each change (FR-515, FR-522); failed lines, a stopped making,
   undeleted lines and a refused cast each get a callout (FR-518 to FR-520, FR-530). The state says
   whether the cast voice is a machine voice, so a recordings folder carrying its id is not marked cast.
-- Line counts that decide placement: `app.go` 373, `library/voice.go` 348, `main.go` 356. New code
+- The tray's Voice menu lists the machine voices after the recorded voices under a separator, each
+  cast by its id; its check mark and hover text match a voice by name and kind (FR-509, FR-540).
+- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 358. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M8 Composition root and user interface
-
-- Tray Voice menu (FR-509): the machine voices after the recorded voices, casting through
-  `CastMachineVoice`.
-- ARCHITECTURE.md gains the layers, ports, data location and design decisions as each part lands.
 
 ## M9 Setup
 

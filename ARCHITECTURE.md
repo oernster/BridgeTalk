@@ -30,11 +30,18 @@ exactly like one that holds.
 | The Missing takes purpose line reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestThePurposeLineContrastsInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
+| Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
+| Every region that is a keyboard stop because it scrolls wears a focus ring | `TestEveryScrollingRegionRingsForTheKeyboard` | `rings_test.go` |
+| The shipped script and its saved speech sounds break none of the script's rules; every problem is named with its cue and its line | `TestTheShippedScriptHoldsNoProblem` | `script_test.go` |
+| Every cue in the table has lines in the script | `TestTheScriptHoldsLinesForEveryCue` | `script_test.go` |
 | The setup page applies the boxes it shows and handles the failure of every box that saves at once | `TestSetupAppliesTheBoxesItShows` | `setupchoices_test.go` |
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
+| The setup page, the scripts beside it and `setupScripts` stay in step: the page loads every script and every script has a place in the list | `TestTheSetupPageLoadsEveryScript` | `setupring_test.go` |
+| The setup page's body, a keyboard stop because it scrolls, wears a focus ring | `TestTheSetupBodyRingsForTheKeyboard` | `setupring_test.go` |
 | Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
 | The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
 | An address handed to a DLL becomes a uintptr only in the argument list of the call into it; no function takes `...uintptr` | `TestAddressesAreConvertedOnlyWhereTheCallIsMade` | `syscall_test.go` |
+| The speech sound table matches the model's tokenizer file: every symbol at the same number, the boundary as its marker and nothing more | `TestTheSymbolTableIsTheModelsOwn` | `tokenizer_test.go` |
 | Cue ids, journal events and status values stay in the cue table | `TestGameVocabularyStaysInItsHome` | `vocabulary_test.go` |
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
 | No cue id ends in a dot or a space, which Windows strips from a name | `TestNoCueIdEndsInADotOrASpace` | `vocabulary_test.go` |

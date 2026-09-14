@@ -9,6 +9,7 @@ import (
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
+	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/oernster/bridge-talk/internal/infrastructure/window"
 )
@@ -228,9 +229,10 @@ func (a *App) register(dir, exePath string) error {
 	return nil
 }
 
-// Uninstall removes the shortcuts, the login entry, the registry record and the
-// installed files. When the user asks to forget their settings, the application's
-// stored choices go too, along with the theme and volume the window keeps.
+// Uninstall removes the shortcuts, the login entry, the registry record, the lines made
+// for machine voices and the installed files. When the user asks to forget their
+// settings, the application's stored choices go too, along with the theme and volume
+// the window keeps.
 func (a *App) Uninstall(removeState bool) error {
 	// The scheduled deletion cannot remove a locked executable, so a running
 	// application has to close first.
@@ -249,11 +251,16 @@ func (a *App) Uninstall(removeState bool) error {
 	a.progress(50, "Removing registry entries...")
 	_ = setup.RemoveUninstallEntry()
 
+	// The made lines go whatever is ticked, since the application made them and can make
+	// them again (FR-525); the window's state goes only when forgetting is asked for. A
+	// folder that cannot be found arrives empty, which removes nothing.
+	a.progress(60, "Removing the lines made for machine voices...")
+	madeLines, _ := madelines.Dir()
+	state, _ := setup.StateDir()
+	_ = setup.RemoveLeftovers(setup.Leftovers{MadeLines: madeLines, State: state}, removeState)
+
 	if removeState {
 		a.progress(70, "Removing your saved settings...")
-		if state, stateErr := setup.StateDir(); stateErr == nil {
-			_ = setup.RemoveTree(state)
-		}
 		_ = config.NewSettings().Forget()
 	}
 

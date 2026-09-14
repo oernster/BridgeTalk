@@ -686,8 +686,11 @@ rather than leaving a stale one behind. Setup copies itself into the install dir
 `uninstall.exe` and registers that copy as the uninstaller and as the Modify target, with `NoModify` and
 `NoRepair` both zero.
 
-Uninstall removes the shortcuts, the login entry and the install record, then hands the install directory
-to a detached shell that deletes it once setup has exited. Its one box, Also forget my settings, is
+Uninstall removes the shortcuts, the login entry and the install record, then the folder the made lines
+are kept in whatever is ticked (FR-525), leaving the product's data folder around it, which can hold the
+default recordings directory. It then hands the install directory to a detached shell that deletes it once
+setup has exited. `setup.RemoveLeftovers` holds the rule for what goes outside the install directory, so
+the facade only finds the folders and passes the box on. Its one box, Also forget my settings, is
 unticked by default; ticked, it also removes the web view's folder under `%APPDATA%`, which holds the
 theme and the volume, plus the settings file and its working file, then the settings directory where
 that leaves it empty. The recordings are never touched, the default recordings directory included.

@@ -46,6 +46,7 @@ func TestSetupRefusalsNameTheirPathOnce(t *testing.T) {
 		{"packing a model file that is not there", Pack(io.Discard, Payload{
 			App: built, ModelsDir: base, Folder: modelsFolder, Models: []string{filepath.Base(missingModel)},
 		}), missingModel},
+		{"removing leftovers that cannot go", RemoveLeftovers(Leftovers{MadeLines: undeletable}, false), undeletable},
 	}
 	for _, each := range cases {
 		for _, problem := range refusal.Check(each.refused, each.path) {

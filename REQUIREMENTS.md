@@ -1223,10 +1223,25 @@ neither has been built or run.
 
 **FR-525 Uninstall removes the made lines**
 Priority: Must.
-When Uninstall is confirmed, setup shall delete every made line.
+When Uninstall is confirmed, setup shall delete the folder the made lines are kept in (FR-523) whether
+or not "Also forget my settings" is ticked, leaving the product's data folder around it as it is. The
+uninstall screen shall say that the made lines are removed.
 Rationale: made lines are the application's own and can be made again. FR-805's rule that setup
-never touches the recordings still holds, since a made line is not one.
-Verified by: not built.
+never touches the recordings still holds, since a made line is not one. The default recordings folder
+sits beside the made lines in the product's data folder, so only the made lines' own folder is deleted.
+Saying so on the uninstall screen was recommended by Claude on 2026-09-14, since the screen otherwise
+names only the application and its shortcuts.
+Acceptance: Given the product's data folder holding `Made lines` and `Recordings`, when Uninstall is
+confirmed with "Also forget my settings" unticked, then `Made lines` is gone and `Recordings` is as it
+was.
+Verified by: `TestTheMadeLinesGoWhateverIsTickedWhileTheRecordingsBesideThemStay`,
+`TestLeftoversThatCouldNotBeFoundAreSkipped` and `TestAFolderThatCannotGoDoesNotStopTheOther` in
+`internal/infrastructure/setup/leftovers_test.go`, with the leftovers case in
+`TestSetupRefusalsNameTheirPathOnce`. Proved by planting the made lines deleted only when forgetting, the
+folder around them deleted and a refusal over them stopping the rest; each planted fault failed its test.
+The uninstall screen's words were seen on 2026-09-14 in a browser at the setup window's size, not in the
+setup program. Not verified by a test: the facade finding the folders through `madelines.Dir` and
+`setup.StateDir`; a real uninstall.
 
 **FR-526 Made lines are stored as 16-bit FLAC**
 Priority: Must.

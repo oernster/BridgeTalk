@@ -84,10 +84,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
 
-## M9 Setup
-
-- Uninstall deletes the made lines (FR-525).
-
 ## Content track, alongside M3 onwards
 
 `script.toml`: three lines for each of the 256 cues, 768 in all (FR-505, FR-507). Claude drafts a

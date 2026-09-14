@@ -118,7 +118,7 @@ function routeUninstall(state) {
             onClick: () => withAppClosed(() => run(
                 () => backend().Uninstall(read('state')),
                 `Removing ${appName}`, `${appName} is removed`,
-                'The application and its shortcuts are gone.')),
+                'The application, its shortcuts and the lines made for machine voices are gone.')),
         },
     ])
 }

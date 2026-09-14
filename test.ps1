@@ -10,9 +10,10 @@
 # today, so that is what it is set to. A floor picked from an aspiration only teaches
 # people to lower it; a floor at the measured number fails the moment cover is lost,
 # which is the only moment it is worth being told.
-#   ./test.ps1 -Benchmarks  also measure making a complete script with the real model
-#                           (NFR-P-203, NFR-C-502); minutes, so build.ps1 passes it and
-#                           the everyday gate does not (Oliver, 2026-09-14)
+#   ./test.ps1 -Benchmarks  also run the tests that need the real model for minutes: the
+#                           cast and the complete script (NFR-P-205, NFR-C-502) and lines made
+#                           while stacks move; build.ps1 passes it and the everyday gate does
+#                           not (Oliver, 2026-09-14)
 param(
     [double]$Floor = 100,
     [switch]$Benchmarks
@@ -152,12 +153,12 @@ foreach ($package in $measured.Keys) {
 
 if ($Benchmarks) {
     # The benchmark files carry the benchmarks build tag, which the vet and the suite above leave
-    # out, so they are vetted here as well as run. The timeout sits above NFR-P-203's ten minutes,
-    # so the test itself reports a making that runs over rather than go test cutting it off.
-    Write-Host 'Measuring a complete script...'
-    go vet -tags benchmarks ./tests/machinevoice/
+    # out, so they are vetted here as well as run. Making the complete script took 3 m 18 s on
+    # 2026-09-14; the timeout leaves it room several times over.
+    Write-Host 'Running the tests that need the real model...'
+    go vet -tags benchmarks ./tests/machinevoice/ ./internal/infrastructure/speechmodel/
     if ($LASTEXITCODE -ne 0) { throw "go vet of the benchmarks failed with exit code $LASTEXITCODE" }
-    go test -tags benchmarks -count=1 -timeout 15m -v ./tests/machinevoice/
+    go test -tags benchmarks -count=1 -timeout 15m -v ./tests/machinevoice/ ./internal/infrastructure/speechmodel/
     if ($LASTEXITCODE -ne 0) { throw "the benchmarks failed with exit code $LASTEXITCODE" }
 }
 

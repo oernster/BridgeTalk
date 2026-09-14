@@ -62,10 +62,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-619 test functions, which expand to 680 runs once their subtests are counted (measured on
+621 test functions, which expand to 681 runs once their subtests are counted (measured on
 2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
-Twenty-four of them are the structural tests in `tests/structural`, which scan the source
+Twenty-eight of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
@@ -74,8 +74,9 @@ facade binds, the wire contract on both sides of it, colours confined to the tok
 the contrast of the purpose line in both themes, every style part being read, the
 setup program applying the boxes it shows with a header that repeats no title, the
 setup page loading every script it has with its body ringed for the keyboard, game
-vocabulary kept in its home, the shape of every cue id and the speech sound table held
-to the model's tokenizer file.
+vocabulary kept in its home, the shape of every cue id, the speech sound table held
+to the model's tokenizer file and every address handed to a DLL converted only where
+the call into it is made.
 
 ### The front end
 
@@ -182,7 +183,7 @@ release is for.
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.
-- **ONNX Runtime's own failures in `internal/infrastructure/speechmodel` (91.5% with `models/` filled).**
+- **ONNX Runtime's own failures in `internal/infrastructure/speechmodel` (92.1% with `models/` filled).**
   Making the environment, the memory description, the session options or a tensor fails only inside
   ONNX Runtime; so does reading a made tensor's shape or data. So does a runtime too old to answer
   the version 23 function table. `loadReason` also keeps a fallback for a load error that is not
@@ -299,17 +300,20 @@ missing or differs, saying to run the tool above. It then checks formatting, run
 holds each other gated package at its floor. Read the exit code rather than the last
 line of output.
 
-Making a complete script with the real model takes minutes, so the gate measures it
-only when asked; `build.ps1` always asks:
+The tests that need the real model take minutes, so the gate runs them only when
+asked; `build.ps1` always asks:
 
 ```powershell
 ./test.ps1 -Benchmarks
 ```
 
-It vets and runs `tests/machinevoice`, whose test carries the `benchmarks` build tag.
-The test makes the shipped script for one voice and fails over NFR-P-203's ten
-minutes or NFR-C-502's 60 MB. While the script lacks lines for any cue it skips,
-saying how far the script has got.
+It vets and runs the files carrying the `benchmarks` build tag in `tests/machinevoice`
+and `internal/infrastructure/speechmodel`. One casts a voice and fails over NFR-P-205's
+5 seconds or FR-514's 2 seconds. One makes the shipped script for one voice and fails
+over NFR-C-502's 60 MB, skipping while the script lacks lines for any cue. One makes
+150 lines while collections shrink goroutine stacks and fails on any line that panics,
+fails or comes back empty: on 2026-09-14 it broke 6 of 150 lines before every address
+handed to ONNX Runtime was converted where the call is made; none broke after.
 
 The stricter Go analysis, which `test.ps1` does not run:
 

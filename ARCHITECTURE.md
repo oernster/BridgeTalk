@@ -34,6 +34,7 @@ exactly like one that holds.
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
 | The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
+| An address handed to a DLL becomes a uintptr only in the argument list of the call into it; no function takes `...uintptr` | `TestAddressesAreConvertedOnlyWhereTheCallIsMade` | `syscall_test.go` |
 | Cue ids, journal events and status values stay in the cue table | `TestGameVocabularyStaysInItsHome` | `vocabulary_test.go` |
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
 | No cue id ends in a dot or a space, which Windows strips from a name | `TestNoCueIdEndsInADotOrASpace` | `vocabulary_test.go` |
@@ -778,7 +779,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
   game's own words in the cue table. They also hold the shape of every cue id, the purpose line's
   contrast, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
-  against the model's tokenizer file in `models/`. The invariant table above lists every one of them with
+  against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
+  uintptr only where the call into it is made. The invariant table above lists every one of them with
   the test that enforces it.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
   `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
@@ -825,4 +827,5 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | ONNX Runtime called through its C API table with cgo disabled, loaded by full path | The build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in | cgo bindings, which need a C toolchain on every build machine |
 | The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
 | ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
+| Every address is converted to uintptr in the argument list of `syscall.SyscallN` itself | Only there does Go keep the variable where ONNX Runtime was told it is; through a Go helper, a moving goroutine stack left ONNX Runtime writing the old copy, which broke a build on 2026-09-14 | A helper taking `...uintptr`; pinning every out-parameter instead |
 | Model files found by Go in `models/` beside `go.mod`, filled from a pinned list | Every machine finds them the same way with nothing to set; the rule that a file must match its published SHA-256 lives once, in Go (Oliver, 2026-09-14) | An environment variable naming a folder, with the checksums checked a second time in PowerShell |

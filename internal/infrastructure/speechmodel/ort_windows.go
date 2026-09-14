@@ -5,6 +5,12 @@ package speechmodel
 // ONNX Runtime's C API called with cgo disabled. The library is loaded by its full path, so the
 // older copy Windows keeps in System32 is never picked up in its place. Each function is read out of
 // the OrtApi table by its position; every call answers a status that is nil on success.
+//
+// Every call is made with syscall.SyscallN directly, each address converted to uintptr in its
+// argument list. Only there does Go keep the variable where ONNX Runtime was told it is: converted any
+// earlier, a goroutine stack that moved before the call left ONNX Runtime reading and writing the old
+// copy, measured on 2026-09-14 as panics, empty lines and "NULL input" refusals
+// (TestAddressesAreConvertedOnlyWhereTheCallIsMade in tests/structural).
 
 import (
 	"errors"
@@ -136,14 +142,17 @@ func loadReason(err error) error {
 // start makes ONNX Runtime's environment and memory description, then loads the model.
 func (s *ortSession) start(modelPath string) error {
 	name := append([]byte(logID), 0)
-	if err := s.call(fnCreateEnv, loggingLevelError, uintptr(unsafe.Pointer(&name[0])), uintptr(unsafe.Pointer(&s.env))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnCreateEnv), loggingLevelError,
+		uintptr(unsafe.Pointer(&name[0])), uintptr(unsafe.Pointer(&s.env)))); err != nil {
 		return fmt.Errorf("starting ONNX Runtime: %w", err)
 	}
-	if err := s.call(fnCreateCpuMemoryInfo, deviceAllocator, defaultMemory, uintptr(unsafe.Pointer(&s.memory))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnCreateCpuMemoryInfo), deviceAllocator, defaultMemory,
+		uintptr(unsafe.Pointer(&s.memory)))); err != nil {
 		return fmt.Errorf("starting ONNX Runtime: %w", err)
 	}
 	var options uintptr
-	if err := s.call(fnCreateSessionOptions, uintptr(unsafe.Pointer(&options))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnCreateSessionOptions),
+		uintptr(unsafe.Pointer(&options)))); err != nil {
 		return fmt.Errorf("starting ONNX Runtime: %w", err)
 	}
 	defer syscall.SyscallN(s.function(fnReleaseSessionOptions), options)
@@ -151,7 +160,8 @@ func (s *ortSession) start(modelPath string) error {
 	if err != nil {
 		return fmt.Errorf("loading %s: %w", modelPath, err)
 	}
-	if err := s.call(fnCreateSession, s.env, uintptr(unsafe.Pointer(path)), options, uintptr(unsafe.Pointer(&s.session))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnCreateSession), s.env, uintptr(unsafe.Pointer(path)),
+		options, uintptr(unsafe.Pointer(&s.session)))); err != nil {
 		// ONNX Runtime writes the model's full path into its own message, twice for a missing file,
 		// measured on 2026-09-14; the path is given once here and the file's name stands in there.
 		said := strings.ReplaceAll(err.Error(), modelPath, voicefiles.ModelFile)
@@ -161,14 +171,13 @@ func (s *ortSession) start(modelPath string) error {
 }
 
 // run makes one line. The numbers, the style row and the speed go in as tensors over Go's own
-// memory, pinned while ONNX Runtime holds their addresses; the waveform is copied out.
+// memory, pinned while ONNX Runtime holds their addresses, as are the lists of names and values the
+// run reads; the waveform is copied out.
 func (s *ortSession) run(tokens []int64, style []float32) ([]float32, error) {
 	speed := []float32{speakingRate}
 	tokenShape := []int64{1, int64(len(tokens))}
 	styleShape := []int64{1, int64(len(style))}
 	speedShape := []int64{int64(len(speed))}
-	names := make([][]byte, len(inputNames))
-	namePointers := make([]uintptr, len(inputNames))
 	output := append([]byte(outputName), 0)
 
 	var pinner runtime.Pinner
@@ -180,20 +189,26 @@ func (s *ortSession) run(tokens []int64, style []float32) ([]float32, error) {
 	pinner.Pin(&styleShape[0])
 	pinner.Pin(&speedShape[0])
 	pinner.Pin(&output[0])
+	names := make([]*byte, len(inputNames))
 	for index, name := range inputNames {
-		names[index] = append([]byte(name), 0)
-		pinner.Pin(&names[index][0])
-		namePointers[index] = uintptr(unsafe.Pointer(&names[index][0]))
+		terminated := append([]byte(name), 0)
+		pinner.Pin(&terminated[0])
+		names[index] = &terminated[0]
 	}
-	outputPointer := uintptr(unsafe.Pointer(&output[0]))
+	pinner.Pin(&names[0])
+	outputs := []*byte{&output[0]}
+	pinner.Pin(&outputs[0])
+	values := make([]uintptr, len(inputNames))
+	pinner.Pin(&values[0])
 
-	values := make([]uintptr, 0, len(inputNames))
 	defer func() {
 		for _, value := range values {
-			syscall.SyscallN(s.function(fnReleaseValue), value)
+			if value != 0 {
+				syscall.SyscallN(s.function(fnReleaseValue), value)
+			}
 		}
 	}()
-	for _, input := range []struct {
+	for index, input := range []struct {
 		data  unsafe.Pointer
 		bytes int
 		shape []int64
@@ -203,18 +218,17 @@ func (s *ortSession) run(tokens []int64, style []float32) ([]float32, error) {
 		{unsafe.Pointer(&style[0]), len(style) * float32Bytes, styleShape, elementFloat32},
 		{unsafe.Pointer(&speed[0]), len(speed) * float32Bytes, speedShape, elementFloat32},
 	} {
-		var value uintptr
-		if err := s.call(fnCreateTensorWithDataAsOrtValue, s.memory, uintptr(input.data), uintptr(input.bytes),
-			uintptr(unsafe.Pointer(&input.shape[0])), uintptr(len(input.shape)), input.kind,
-			uintptr(unsafe.Pointer(&value))); err != nil {
+		if err := s.checked(syscall.SyscallN(s.function(fnCreateTensorWithDataAsOrtValue), s.memory,
+			uintptr(input.data), uintptr(input.bytes), uintptr(unsafe.Pointer(&input.shape[0])),
+			uintptr(len(input.shape)), input.kind, uintptr(unsafe.Pointer(&values[index])))); err != nil {
 			return nil, fmt.Errorf("making a line: %w", err)
 		}
-		values = append(values, value)
 	}
 
 	var result uintptr
-	if err := s.call(fnRun, s.session, 0, uintptr(unsafe.Pointer(&namePointers[0])), uintptr(unsafe.Pointer(&values[0])),
-		uintptr(len(values)), uintptr(unsafe.Pointer(&outputPointer)), 1, uintptr(unsafe.Pointer(&result))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnRun), s.session, 0, uintptr(unsafe.Pointer(&names[0])),
+		uintptr(unsafe.Pointer(&values[0])), uintptr(len(values)), uintptr(unsafe.Pointer(&outputs[0])),
+		uintptr(len(outputs)), uintptr(unsafe.Pointer(&result)))); err != nil {
 		return nil, fmt.Errorf("making a line: %w", err)
 	}
 	defer syscall.SyscallN(s.function(fnReleaseValue), result)
@@ -224,16 +238,19 @@ func (s *ortSession) run(tokens []int64, style []float32) ([]float32, error) {
 // samples copies a float32 tensor's elements out of ONNX Runtime's memory.
 func (s *ortSession) samples(tensor uintptr) ([]float32, error) {
 	var info uintptr
-	if err := s.call(fnGetTensorTypeAndShape, tensor, uintptr(unsafe.Pointer(&info))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnGetTensorTypeAndShape), tensor,
+		uintptr(unsafe.Pointer(&info)))); err != nil {
 		return nil, fmt.Errorf("reading a made line: %w", err)
 	}
 	defer syscall.SyscallN(s.function(fnReleaseTensorTypeAndShapeInfo), info)
 	var count uintptr
-	if err := s.call(fnGetTensorShapeElementCount, info, uintptr(unsafe.Pointer(&count))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnGetTensorShapeElementCount), info,
+		uintptr(unsafe.Pointer(&count)))); err != nil {
 		return nil, fmt.Errorf("reading a made line: %w", err)
 	}
 	var data unsafe.Pointer
-	if err := s.call(fnGetTensorMutableData, tensor, uintptr(unsafe.Pointer(&data))); err != nil {
+	if err := s.checked(syscall.SyscallN(s.function(fnGetTensorMutableData), tensor,
+		uintptr(unsafe.Pointer(&data)))); err != nil {
 		return nil, fmt.Errorf("reading a made line: %w", err)
 	}
 	return append([]float32(nil), unsafe.Slice((*float32)(data), count)...), nil
@@ -252,9 +269,8 @@ func (s *ortSession) release() {
 	s.session, s.memory, s.env = 0, 0, 0
 }
 
-// call calls the function at index with args, answering ONNX Runtime's message where it fails.
-func (s *ortSession) call(index int, args ...uintptr) error {
-	status, _, _ := syscall.SyscallN(s.function(index), args...)
+// checked answers ONNX Runtime's message where the call whose results it is handed failed.
+func (s *ortSession) checked(status, _ uintptr, _ syscall.Errno) error {
 	if status == 0 {
 		return nil
 	}

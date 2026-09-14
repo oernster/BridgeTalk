@@ -55,7 +55,9 @@ section 10 says: domain, then application, then infrastructure, then user interf
   with cgo disabled: the OrtApi v23 table read by position, the library loaded by its full path. The
   model is loaded when a machine voice is cast or its first line is made, whichever is first (FR-544),
   then kept until `Close`; a load that fails is tried again on the next line. Loading it and making one
-  line peaked at 408.5 MB working set on 2026-09-14; whether that grows over many lines is not measured. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
+  line peaked at 408.5 MB working set on 2026-09-14; whether that grows over many lines is not measured.
+  Every address it hands ONNX Runtime is converted in `syscall.SyscallN`'s own argument list, held there
+  by a structural test; a build's stress test makes 150 lines while goroutine stacks move. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
   shipped `Docked` line for `bf_emma` from the real model files.
 - `tests/machinevoice` holds two tests over the real model, store and making service, carrying the
   `benchmarks` build tag: `./test.ps1 -Benchmarks` and every build run them, the everyday gate does not

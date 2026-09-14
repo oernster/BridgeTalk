@@ -1091,7 +1091,12 @@ confirmation taken from the first cue whatever its source; each failed its test.
 `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
 the lines still to make, with
 `TestAShippedLineIsMadeByTheRealModel` in `internal/infrastructure/speechmodel/maker_windows_test.go`
-for the real model making a shipped line, with `TestCastingAMachineVoiceSpeaksWithItAndTellsThePage`
+for the real model making a shipped line, with `TestLinesSurviveTheirStackMovingWhileTheModelIsCalled`
+in `internal/infrastructure/speechmodel/stress_windows_test.go` for lines made while goroutine stacks
+move (6 of 150 lines broke before the fix on 2026-09-14, none after) and
+`TestAddressesAreConvertedOnlyWhereTheCallIsMade` in `tests/structural/syscall_test.go` (it named 17
+addresses and the wrapper that carried them before the fix), with
+`TestCastingAMachineVoiceSpeaksWithItAndTellsThePage`
 in `machine_test.go` for casting from the facade over fakes. Not verified by a test: `newMaking` in
 `main.go` wiring the model and the store, since it runs only inside the window's start.
 

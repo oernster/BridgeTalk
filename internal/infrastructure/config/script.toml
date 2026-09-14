@@ -4,4 +4,17 @@
 # misread and no rewording serves, give its speech sounds after it: [record](/ˈɹɛkɔːd/) serves
 # both accents; [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) gives British then American.
 [lines]
+"Cast.Confirmed" = ["I'm your ship's voice now, commander.", "Voice link established. Ready when you are.", "You'll be hearing from me from here on."]
+"DockingRequested" = ["Docking request sent.", "Requesting permission to dock.", "Request is in. Waiting on the tower."]
+"DockingGranted" = ["Docking granted. We have a pad.", "Permission to dock confirmed.", "We're cleared to land, commander."]
+"DockingDenied" = ["Docking request refused.", "They've turned us away, commander.", "No permission to dock."]
+"DockingDenied.Reason.Distance" = ["Refused. We're too far out to request docking.", "Too far away. Close in and ask again.", "We need to get closer before they'll let us dock."]
+"DockingDenied.Reason.JumpImminent" = ["The carrier is about to jump. No docking.", "Docking refused. That carrier is preparing to leave.", "They won't take us aboard; the carrier's jump is close."]
+"DockingDenied.Reason.NoSpace" = ["Refused. Every pad is taken.", "No free pads right now, commander.", "They have no room for us. We'll have to wait."]
+"DockingDenied.Reason.TooLarge" = ["Refused. Our ship is too big for their pads.", "The pads here can't take a ship our size.", "We're too large to dock here, commander."]
+"DockingCancelled" = ["Docking request cancelled.", "Understood. We're withdrawing the request.", "Request called off."]
+"DockingTimeout" = ["Our docking permission has expired.", "We took too long. The pad has been released.", "Docking clearance lapsed. We'll need to ask again."]
 "Docked" = ["Docking complete.", "We're down safely.", "Docked and secure, commander."]
+"Undocked" = ["We're clear of the pad.", "Undocked. Take us out when ready.", "Lifting away from the pad, commander."]
+"Docked.Set" = ["Clamps engaged.", "We're locked down on the pad.", "Ship secured, commander."]
+"Docked.Cleared" = ["Clamps released.", "We're free to fly.", "No longer docked, commander."]

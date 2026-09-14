@@ -102,6 +102,44 @@ func TestCastingMakesOnlyTheConfirmationsUnmadeLines(t *testing.T) {
 	}
 }
 
+// FR-544: a cast loads the model at once without making a line and without waiting for the load.
+func TestCastingLoadsTheModelAtOnceWithoutWaitingForIt(t *testing.T) {
+	store, maker := makingtest.NewStore(), makingtest.NewMaker()
+	maker.HoldLoad = make(chan struct{})
+	emma := voiceNamed(t, "bf_emma")
+	store.Hold(emma.ID(), keys("bə", "bɪ", "bi")...)
+	service := makingWith(t, "di", makingtest.Files{}, maker, store)
+
+	cast := make(chan struct{})
+	go func() {
+		defer close(cast)
+		if _, err := service.Cast(emma); err != nil {
+			t.Errorf("Cast: %v", err)
+		}
+	}()
+	makingtest.Await(t, cast, "the cast returning while the model loads")
+	makingtest.Await(t, maker.Loaded, "the model loading")
+	close(maker.HoldLoad)
+	service.Wait()
+
+	if maker.Made() != 0 || maker.Loads() != 1 {
+		t.Errorf("made %d lines and loaded %d times; want the model loaded once with no line made",
+			maker.Made(), maker.Loads())
+	}
+}
+
+// FR-544: casting only recorded voices never loads the model.
+func TestCastingARecordedVoiceLoadsNothing(t *testing.T) {
+	maker := makingtest.NewMaker()
+	service := makingWith(t, "di", makingtest.Files{}, maker, makingtest.NewStore())
+
+	service.CastRecorded()
+
+	if maker.Loads() != 0 {
+		t.Errorf("loaded %d times for a recorded voice, want none", maker.Loads())
+	}
+}
+
 // FR-514: while making is under way, the voice answers a cue with its current made lines alone; a
 // cue with none yet is silent.
 func TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade(t *testing.T) {

@@ -4,20 +4,6 @@ Open work only. Each milestone ends with the gate green (`test.ps1`: gofmt, go v
 and the coverage floor) plus staticcheck, then a commit block. Built inside out, as REQUIREMENTS.md
 section 10 says: domain, then application, then infrastructure, then user interface.
 
-## M11: Each line made the first time it is needed, every voice keeping its lines
-
-Oliver accepted on 2026-09-14, replacing Option B's making of every line: FR-511, FR-512, FR-514's first
-sentence, FR-515, FR-516's note, FR-527 and FR-530 amended; NFR-P-203 withdrawn; NFR-C-502 kept. His
-three choices: a voice's lines no longer current are deleted when it is cast; the model is loaded in
-the background when a run starts with a machine voice, after its memory is measured and shown to him;
-the complete-script benchmark stays on every build for NFR-C-502 without a time limit.
-
-1. Build the background load: the model loaded when a run starts with a machine voice. Loading it and
-   making one line peaked at 408.5 MB working set and 452.8 MB private bytes against 4.0 to 7.6 MB and
-   33.5 to 46.5 MB without it (measured 2026-09-14, three runs each); Oliver accepted building it the
-   same day. Whether that grows over hundreds of lines is not measured.
-2. The gate, staticcheck, the sweeps, then a commit block.
-
 ## What exists today
 
 - `internal/domain/machinevoice` holds the 28 voices offered, the accent each speaks with and the name
@@ -41,7 +27,8 @@ the complete-script benchmark stays on every build for NFR-C-502 without a time 
 - `services.MakingService` makes a cast machine voice's confirmation when it is cast and every other
   line the first time its cue asks through `MakeNext`, over the ports in `ports/making.go`, tested with
   hand-written fakes (FR-511, FR-512, FR-514, FR-516, FR-518 to FR-520, FR-527, FR-530). A cast deletes
-  that voice's lines no longer current; casting a recorded voice deletes nothing. The audio source a
+  that voice's lines no longer current; casting a recorded voice deletes nothing. A cast loads the model
+  without waiting for it (FR-544). The audio source a
   cast answers with plays current made lines alone. `script/scripttest` builds a voiced script for
   every suite that needs one.
 - `library.Catalogue` answers from `ports.AudioSource` under the name it is given (FR-501); a
@@ -66,8 +53,9 @@ the complete-script benchmark stays on every build for NFR-C-502 without a time 
   failing where one differs (FR-538).
 - `internal/infrastructure/speechmodel` implements `ports.SpeechMaker` through ONNX Runtime's C API
   with cgo disabled: the OrtApi v23 table read by position, the library loaded by its full path. The
-  model is loaded when the first line is made, then kept until `Close`; a load that fails is tried
-  again on the next line. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
+  model is loaded when a machine voice is cast or its first line is made, whichever is first (FR-544),
+  then kept until `Close`; a load that fails is tried again on the next line. Loading it and making one
+  line peaked at 408.5 MB working set on 2026-09-14; whether that grows over many lines is not measured. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
   shipped `Docked` line for `bf_emma` from the real model files.
 - `tests/machinevoice` holds two tests over the real model, store and making service, carrying the
   `benchmarks` build tag: `./test.ps1 -Benchmarks` and every build run them, the everyday gate does not
@@ -103,7 +91,7 @@ the complete-script benchmark stays on every build for NFR-C-502 without a time 
 - `ReactionService` records `making` for a cue with nothing made, waits up to 2 s for its line and
   hands it over on `Tick`, which the poll tick calls through `tickMaking` in `machine.go`. A machine
   cast's confirmation plays once it is written (FR-521). `TestAMachineVoiceIsCastWithinFiveSeconds`
-  in `tests/machinevoice` measured 1.304 s for NFR-P-205 on 2026-09-14.
+  in `tests/machinevoice` measured 1.348 s for NFR-P-205 on 2026-09-14, with the model loaded at the cast.
 - Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 373. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the

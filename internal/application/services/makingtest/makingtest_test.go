@@ -97,6 +97,37 @@ func TestTheMakerPausesUntilResumedOrStopped(t *testing.T) {
 	}
 }
 
+func TestTheMakerCountsLoadsHoldsThemAndFailsWhenTold(t *testing.T) {
+	t.Parallel()
+	failing := makingtest.NewMaker()
+	failing.LoadErr = makingtest.ErrModel
+	if err := failing.Load(context.Background()); !errors.Is(err, makingtest.ErrModel) {
+		t.Errorf("Load = %v, want the model failing", err)
+	}
+	makingtest.Await(t, failing.Loaded, "the first load")
+
+	held := makingtest.NewMaker()
+	held.HoldLoad = make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-held.Loaded
+		cancel()
+	}()
+	if err := held.Load(ctx); !errors.Is(err, context.Canceled) {
+		t.Errorf("held Load = %v, want it to end with its context", err)
+	}
+	if err := held.Load(ctx); !errors.Is(err, context.Canceled) || held.Loads() != 1 {
+		t.Errorf("a stopped Load = %v with %d loads; want it refused and uncounted", err, held.Loads())
+	}
+
+	released := makingtest.NewMaker()
+	released.HoldLoad = make(chan struct{})
+	close(released.HoldLoad)
+	if err := released.Load(context.Background()); err != nil || released.Loads() != 1 || failing.Loads() != 1 {
+		t.Errorf("released Load = %v with %d loads; want it loaded once", err, released.Loads())
+	}
+}
+
 func TestAwaitReturnsOnceTheChannelCloses(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})

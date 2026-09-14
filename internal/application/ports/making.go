@@ -22,8 +22,12 @@ import (
 //
 // The context ends when making is stopped (FR-516). An implementation that cannot interrupt the
 // model mid-line checks it before starting one; either way the line is not written.
+//
+// Load loads the model ahead of the first line, as casting a machine voice asks (FR-544). Loading a
+// model already loaded does nothing; a load that fails answers why, as the next line made would.
 type SpeechMaker interface {
 	Make(ctx context.Context, tokens []int64, style []float32) ([]float32, error)
+	Load(ctx context.Context) error
 }
 
 // CueMaker makes a cue's lines when the cue fires with none made (FR-514).

@@ -56,21 +56,30 @@ func (f Files) Open(voice machinevoice.Voice) (ports.Material, error) {
 // Maker answers each line with one sample: the count of numbers it was handed. Counting calls from
 // one, call FailOn fails with ErrModel and call BlockOn closes Started then waits for its context to
 // end. Call PauseOn closes Started then waits for Resume to be closed, making its line; where its
-// context ends first, it answers why. It counts the times it is closed.
+// context ends first, it answers why. It counts the times it is closed. Each load is counted: the
+// first closes Loaded; a load waits for HoldLoad to be closed where one is given, answering why where
+// its context ends first; every load answers LoadErr. A load for a context already ended answers why,
+// uncounted.
 type Maker struct {
-	FailOn  int
-	BlockOn int
-	PauseOn int
-	Started chan struct{}
-	Resume  chan struct{}
+	FailOn   int
+	BlockOn  int
+	PauseOn  int
+	Started  chan struct{}
+	Resume   chan struct{}
+	Loaded   chan struct{}
+	HoldLoad chan struct{}
+	LoadErr  error
 
 	mu     sync.Mutex
 	calls  int
 	closes int
+	loads  int
 }
 
 // NewMaker makes a Maker that neither fails nor blocks until told to.
-func NewMaker() *Maker { return &Maker{Started: make(chan struct{}), Resume: make(chan struct{})} }
+func NewMaker() *Maker {
+	return &Maker{Started: make(chan struct{}), Resume: make(chan struct{}), Loaded: make(chan struct{})}
+}
 
 // Make answers one line's samples.
 func (f *Maker) Make(ctx context.Context, tokens []int64, _ []float32) ([]float32, error) {
@@ -101,6 +110,34 @@ func (f *Maker) Made() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.calls
+}
+
+// Load records a load of the model.
+func (f *Maker) Load(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	f.mu.Lock()
+	f.loads++
+	if f.loads == 1 {
+		close(f.Loaded)
+	}
+	f.mu.Unlock()
+	if f.HoldLoad != nil {
+		select {
+		case <-f.HoldLoad:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return f.LoadErr
+}
+
+// Loads counts the loads recorded.
+func (f *Maker) Loads() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.loads
 }
 
 // Close records that the model was released.

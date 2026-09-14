@@ -59,7 +59,7 @@ exactly like one that holds.
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
-  through three more: `SpeechMaker` turns a line's numbers and style row into samples, `VoiceFiles`
+  through three more: `SpeechMaker` loads the model and turns a line's numbers and style row into samples, `VoiceFiles`
   reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
   made lines (FR-517, FR-523, FR-527). A cast makes only its confirmation's lines (FR-511); every
   other line is made the first time its cue fires. The audio source a cast answers with is also a `CueMaker`, through which the
@@ -823,6 +823,6 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
 | No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |
 | ONNX Runtime called through its C API table with cgo disabled, loaded by full path | The build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in | cgo bindings, which need a C toolchain on every build machine |
-| The model is loaded when the first line is made and kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start; remembering a failed load |
+| The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
 | ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
 | Model files found by Go in `models/` beside `go.mod`, filled from a pinned list | Every machine finds them the same way with nothing to set; the rule that a file must match its published SHA-256 lives once, in Go (Oliver, 2026-09-14) | An environment variable naming a folder, with the checksums checked a second time in PowerShell |

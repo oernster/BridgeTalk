@@ -51,7 +51,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 94.1% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 81.5% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
-| `internal/infrastructure/speechmodel` | 91.5% | 91% | `test.ps1` |
+| `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.4% | 67% | `test.ps1` |
 | `internal/infrastructure/runlog` | 51.9% | 51% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
@@ -62,7 +62,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-614 test functions, which expand to 675 runs once their subtests are counted (measured on
+619 test functions, which expand to 680 runs once their subtests are counted (measured on
 2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source

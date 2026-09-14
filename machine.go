@@ -102,8 +102,8 @@ func (a *App) announceMaking() {
 	a.emit(makingEvent, now)
 }
 
-// CastMachineVoice casts the machine voice with the id given, which starts making every line it has
-// no current made line for (FR-511).
+// CastMachineVoice casts the machine voice with the id given, which makes its confirmation's lines not
+// yet made and loads the model (FR-511, FR-544).
 //
 // A voice that is not offered is refused with nothing changed; so is one whose files cannot be read
 // (FR-519).

@@ -1578,13 +1578,37 @@ application left unlooked for and the archive packed in place; each planted faul
 326,264,502 bytes: `BridgeTalk.exe` at the root, 30 files in `models`, no `tokenizer.json`. `build.ps1`
 was checked by the PowerShell parser only; it has not been run.
 
+**FR-544 Casting a machine voice loads the model at once**
+Priority: Should.
+When a machine voice is cast, at start (FR-512) or later, the application shall begin loading the model
+at once rather than when its first line is made, completing the cast without waiting for the load. If
+the model cannot be loaded, then the application shall say nothing of it until a line is made, which
+reports why (FR-518). While only recorded voices are cast, the application shall not load the model.
+Rationale: loading the model took 539 ms (section 6.1). A cast whose confirmation is already made makes
+no line, so the first cue to fire with nothing made paid for the load inside FR-514's 2 seconds; loaded
+at the cast, that cue waits for its line alone. Loading the model and making one line peaked at 408.5
+MB working set and 452.8 MB private bytes, against 4.0 to 7.6 MB and 33.5 to 46.5 MB without it,
+measured on 2026-09-14 over three runs each by sampling the test process; Oliver saw the figures and
+accepted loading the model when a run starts with a machine voice the same day. A later cast is
+included so its first cue is spared the load too (recommended by Claude; not yet ruled on by Oliver).
+Acceptance: Given `bf_emma` kept with her confirmation's three lines made, when the application starts,
+then the model is loaded with no line made and the cast completes while the load is under way. Given
+only recorded voices cast in a run, then the model is never loaded.
+Verified by: `TestCastingLoadsTheModelAtOnceWithoutWaitingForIt` and
+`TestCastingARecordedVoiceLoadsNothing` in `internal/application/services/making_test.go` over fakes,
+with `TestLoadingAheadLoadsTheModelOnceForTheLinesAfter` and
+`TestALoadStoppedFailingOrClosedLoadsNothingMore` in `internal/infrastructure/speechmodel/maker_test.go`.
+Proved on 2026-09-14 by planting a cast that loads nothing, a cast that waits for the load, a recorded
+cast that loads the model, a load that ignores a stopped making, a closed maker that loads and a loaded
+model loaded again; each failed its test. Not verified by a test: the load over the real model files.
+
 ### 6.2 Machine voices, non-functional
 
 | ID | Requirement | Method |
 |---|---|---|
 | NFR-P-203 | Withdrawn on 2026-09-14. It held making all 768 lines of a complete script for one machine voice to 10 minutes; the application no longer makes a complete script in one go (FR-511). NFR-P-203 is retired and is not reused. | None |
 | NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated. Option B makes lines while the game is played, so this matters more than it did |
-| NFR-P-205 | From casting a machine voice with none of its lines made, its confirmation reaches the player within 5 seconds on the development machine | `TestAMachineVoiceIsCastWithinFiveSeconds` in `tests/machinevoice/cast_test.go` casts `bf_emma` over an empty store with the real model and measures until the confirmation's first line is current, adding the 250 ms poll (FR-615) through which the facade hands it over; it fails over the limit. It also measures a cue made when it fires, failing over FR-514's 2 seconds. It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14: `bf_emma`'s confirmation reached the player 1.316 s after the cast, the 250 ms counted in full; a line asked for on call was written 590 ms later. The projection before measuring was about 0.9 s: 539 ms to load plus a line at 204 to 348 ms (Oliver, 2026-09-14) |
+| NFR-P-205 | From casting a machine voice with none of its lines made, its confirmation reaches the player within 5 seconds on the development machine | `TestAMachineVoiceIsCastWithinFiveSeconds` in `tests/machinevoice/cast_test.go` casts `bf_emma` over an empty store with the real model and measures until the confirmation's first line is current, adding the 250 ms poll (FR-615) through which the facade hands it over; it fails over the limit. It also measures a cue made when it fires, failing over FR-514's 2 seconds. It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14 with the model loaded at the cast (FR-544): `bf_emma`'s confirmation reached the player 1.348 s after the cast, the 250 ms counted in full; a line asked for on call was written 595 ms later. The projection before measuring was about 0.9 s: 539 ms to load plus a line at 204 to 348 ms (Oliver, 2026-09-14) |
 | NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
 | NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 339 MB |
 | NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | `TestMakingACompleteScriptKeepsWithinDisk` in `tests/machinevoice/script_test.go` casts `bf_emma` over an empty store with the real model and asks for every cue's lines, then sums the made lines' files once making ends and fails over the limit; it has no time limit (Oliver, 2026-09-14). It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14 over the complete script: 768 of 768 lines made in 3 m 17 s, taking 51.7 MB. Proved before M11: 3 lines took 0.2 MB and passed, then the test failed naming NFR-C-502 with the limit cut to one byte |
@@ -2160,7 +2184,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

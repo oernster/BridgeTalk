@@ -187,3 +187,50 @@ func TestClosingReleasesTheModelOnceAndRefusesMore(t *testing.T) {
 		t.Errorf("closing an unused maker loaded %v and released %d", unused.opened, unused.session.released)
 	}
 }
+
+// FR-544: loading ahead loads the model once from the folder; the lines after it use that model.
+func TestLoadingAheadLoadsTheModelOnceForTheLinesAfter(t *testing.T) {
+	t.Parallel()
+	source := &opener{session: &fakeSession{samples: []float32{0.5}}}
+	maker := makerOver("installed", source)
+
+	for range 2 {
+		if err := maker.Load(context.Background()); err != nil {
+			t.Fatalf("Load: %v", err)
+		}
+	}
+	if _, err := maker.Make(context.Background(), aLine, aStyle); err != nil {
+		t.Fatalf("Make: %v", err)
+	}
+
+	if !slices.Equal(source.opened, []string{"installed"}) || source.session.runs != 1 {
+		t.Errorf("loaded from %v and ran %d lines; want loaded once from installed, then one line",
+			source.opened, source.session.runs)
+	}
+}
+
+// A load for a stopped making loads nothing; a load that fails says why, the next line trying again
+// (FR-518); after Close nothing is loaded.
+func TestALoadStoppedFailingOrClosedLoadsNothingMore(t *testing.T) {
+	t.Parallel()
+	missing := errors.New("the model is missing")
+	source := &opener{session: &fakeSession{samples: []float32{0.5}}, failures: 1, loadFailure: missing}
+	maker := makerOver("installed", source)
+	stopped, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if err := maker.Load(stopped); !errors.Is(err, context.Canceled) || len(source.opened) != 0 {
+		t.Errorf("a stopped Load = %v having loaded %v; want %v with nothing loaded", err, source.opened, context.Canceled)
+	}
+	if err := maker.Load(context.Background()); !errors.Is(err, missing) {
+		t.Errorf("Load = %v, want %v", err, missing)
+	}
+	if _, err := maker.Make(context.Background(), aLine, aStyle); err != nil {
+		t.Errorf("the line after a failed load = %v, want it made", err)
+	}
+	maker.Close()
+	if err := maker.Load(context.Background()); !errors.Is(err, ErrClosed) || len(source.opened) != 2 {
+		t.Errorf("Load after Close = %v having loaded %d times; want %v with no third load",
+			err, len(source.opened), ErrClosed)
+	}
+}

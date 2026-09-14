@@ -89,7 +89,7 @@ func NewMakingService(
 }
 
 // Cast casts a machine voice, which casting at start does as well (FR-511, FR-512), making the
-// confirmation's lines that are not current. It answers the audio source that plays the voice's
+// confirmation's lines that are not current and loading the model (FR-544). It answers the audio source that plays the voice's
 // current made lines and makes a cue's lines on call (FR-514).
 //
 // A voice whose files cannot be read is refused before anything changes (FR-519). Otherwise the run
@@ -119,6 +119,9 @@ func (m *MakingService) Cast(voice machinevoice.Voice) (ports.AudioSource, error
 	m.ctx, m.cancel, m.running, m.making = ctx, cancel, nil, false
 	m.failed, m.stopped, m.notDeleted = nil, nil, notDeleted
 	m.makeNext(m.confirmation)
+	// The cast does not wait for the model; a load that fails is tried again by the first line, which
+	// reports why (FR-518).
+	go func() { _ = m.maker.Load(ctx) }()
 	return madeVoice{service: m, generation: m.generation}, nil
 }
 

@@ -1276,7 +1276,10 @@ Acceptance: Given `"Docked"` holding a line with `[record](/ˈɹɛkɔːd)`, when
 then one fails naming `Docked` and that line.
 Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go`, proved by
 planting a broken spelling; every broken form is `TestABrokenSpellingIsRefusedSayingWhy` in
-`internal/domain/speech/speech_test.go`.
+`internal/domain/speech/speech_test.go`. The symbols the model reads are held to its tokenizer file by
+`TestTheSymbolTableIsTheModelsOwn` in `tests/structural/tokenizer_test.go`, proved by planting a
+symbol's number changed, a symbol removed and a symbol the file does not give; on 2026-09-14 the
+table matched the file exactly.
 
 **FR-532 Every line's speech sounds are saved with the script**
 Priority: Must.

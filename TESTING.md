@@ -70,7 +70,8 @@ facade binds, the wire contract on both sides of it, colours confined to the tok
 the contrast of the purpose line in both themes, every style part being read, the
 setup program applying the boxes it shows with a header that repeats no title, the
 setup page loading every script it has with its body ringed for the keyboard, game
-vocabulary kept in its home and the shape of every cue id.
+vocabulary kept in its home, the shape of every cue id and the speech sound table held
+to the model's tokenizer file.
 
 ### The front end
 

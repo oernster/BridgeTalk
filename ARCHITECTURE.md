@@ -748,7 +748,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   band, the composition-root whitelist, the declared bound surface, the wire contract and the rules that
   keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
   game's own words in the cue table. They also hold the shape of every cue id, the purpose line's
-  contrast and the setup page's boxes and header. The invariant table above lists every one of them with
+  contrast, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
+  against the model's tokenizer file in `models/`. The invariant table above lists every one of them with
   the test that enforces it.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
   `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that

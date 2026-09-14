@@ -1,5 +1,12 @@
 package speech
 
+import "maps"
+
+// Symbols answers every speech sound symbol the model reads with the number it reads it as. The
+// table is the caller's own copy, so the structural tests can hold it to the model's tokenizer
+// file without being able to change what Tokens reads.
+func Symbols() map[rune]int64 { return maps.Clone(symbols) }
+
 // boundary is the marker the model reads at the start and end of every line, written "$" in
 // its tokenizer file. It is never a speech sound, so no line may give it.
 const boundary int64 = 0

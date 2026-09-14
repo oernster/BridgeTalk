@@ -9,7 +9,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - `internal/domain/machinevoice` holds the 28 voices offered, the accent each speaks with and the name
   each is shown by (FR-508, FR-510, FR-528).
 - `internal/domain/speech` holds the 114 speech sound symbols the model reads with their numbers,
-  copied from its tokenizer file by a script. It turns speech sounds into those numbers, refusing
+  copied from its tokenizer file by a script; `TestTheSymbolTableIsTheModelsOwn` in `tests/structural`
+  holds the table to `models/tokenizer.json`. It turns speech sounds into those numbers, refusing
   more than 510 (FR-506). It reads the spellings a line gives, refusing every broken form (FR-529,
   FR-531).
 - `internal/domain/script` holds the script checked against the cue table (FR-503 to FR-505,
@@ -70,10 +71,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
 Each part behind its port. Windows code sits behind a build tag with stubs beside it, so every
 package still builds and vets on any platform.
 
-- A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
-  that file is present, so a new model cannot leave the table behind.
-- Tests needing the model files skip where they are absent: NFR-P-203 (768 lines within 10 minutes)
-  and NFR-C-502 (60 MB).
+- Tests over a complete script with the real model: NFR-P-203 (768 lines within 10 minutes) and
+  NFR-C-502 (60 MB).
 
 ## M8 Composition root and user interface
 

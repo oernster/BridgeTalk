@@ -35,6 +35,25 @@ func TestSpeechSoundsBecomeTheModelsNumbersBetweenBoundaries(t *testing.T) {
 	}
 }
 
+// The table of symbols is handed out as the caller's own copy: changing it changes neither what
+// Tokens reads nor the next copy. The structural tests hold it to the model's tokenizer file.
+func TestTheSymbolTableHandedOutIsTheCallersOwn(t *testing.T) {
+	table := speech.Symbols()
+	if table['k'] != 53 || table['ə'] != 83 {
+		t.Fatalf("the table reads k as %d and ə as %d, want 53 and 83", table['k'], table['ə'])
+	}
+
+	delete(table, 'k')
+	table['ə'] = 0
+
+	if got, err := speech.Tokens("kə"); err != nil || !slices.Equal(got, []int64{0, 53, 83, 0}) {
+		t.Errorf("Tokens(kə) after changing a copy = %v, %v; want [0 53 83 0]", got, err)
+	}
+	if again := speech.Symbols(); again['k'] != 53 || again['ə'] != 83 {
+		t.Errorf("the next copy reads k as %d and ə as %d, want 53 and 83", again['k'], again['ə'])
+	}
+}
+
 // FR-506: 510 symbols is the most a line may come to. Symbols are counted, not bytes, so a
 // line of a two-byte symbol is held to the same number.
 func TestALineOfAtMostFiveHundredAndTenSymbolsIsAccepted(t *testing.T) {

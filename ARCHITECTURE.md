@@ -51,10 +51,11 @@ exactly like one that holds.
   one home of the model's voice ids. `speech` holds the speech sound symbols the model reads with their
   numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives
   and chooses the row of a voice's style file the model reads beside a line.
-  `script` checks the script against the cue table, naming the cue and the line behind every problem.
+  `script` checks the script against the cue table, naming the cue and the line behind every problem;
+  `script/scripttest` builds a voiced script for the tests that need one.
   `making` keys each made line by its speech sounds, style file and model, then works out which lines
   a voice still has to make.
-- **Application** (`internal/application`): the reaction and scheduling services plus the ports they
+- **Application** (`internal/application`): the reaction, scheduling and making services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made

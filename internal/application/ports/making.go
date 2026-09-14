@@ -5,6 +5,8 @@ package ports
 // infrastructure; the making service works against these alone.
 
 import (
+	"context"
+
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/speech"
@@ -16,8 +18,11 @@ import (
 // with the style row for that line (speech.Style.For). It answers the samples the model made,
 // unchanged. Making one line took 204 to 348 ms, measured, so it is never called between an
 // event and its speech.
+//
+// The context ends when making is stopped (FR-516). An implementation that cannot interrupt the
+// model mid-line checks it before starting one; either way the line is not written.
 type SpeechMaker interface {
-	Make(tokens []int64, style []float32) ([]float32, error)
+	Make(ctx context.Context, tokens []int64, style []float32) ([]float32, error)
 }
 
 // Material is what a machine voice's lines are made from besides their speech sounds: the style

@@ -1064,14 +1064,16 @@ Acceptance: Given `bf_emma` with no made lines, when she is cast, then making st
 every line in the script has a current made line for her.
 Verified by: in part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
 `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
-the lines still to make; making them on cast is not built.
+the lines still to make and `TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent` in
+`internal/application/services/making_test.go` for making them on cast over fakes; the model and the
+store behind the ports are not built.
 
 **FR-512 Starting with a machine voice cast makes its missing lines**
 Priority: Must.
 When the application starts with a machine voice cast, the application shall make every line of
 the script that voice has no current made line for.
-Verified by: in part, the tests FR-511 names in `internal/domain/making/making_test.go` for the lines
-still to make; making them at start is not built.
+Verified by: in part, the tests FR-511 names for making the lines on cast, which casting at start
+does too; casting the stored voice at start is not built.
 
 **FR-513 A made line is current only while what it was made from is unchanged**
 Priority: Must.
@@ -1089,7 +1091,9 @@ Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 Priority: Must.
 While a machine voice's lines are being made, the application shall play that voice's current made
 lines for the cues that fire; a cue with none yet shall be silent.
-Verified by: not built.
+Verified by: in part, `TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade` in
+`internal/application/services/making_test.go` over fakes, with `TestACuesTakesAreTheDistinctKeysOfItsCurrentLines`
+in `internal/domain/making/making_test.go`; playing them through the catalogue is not built.
 
 **FR-515 Show how far making has got**
 Priority: Must.
@@ -1105,7 +1109,9 @@ Priority: Must.
 When another voice is cast while a machine voice's lines are being made, the application shall stop
 making them, keeping every made line written so far.
 Note: FR-527 then deletes the made lines of the voice that was cast.
-Verified by: not built.
+Verified by: in part, `TestCastingAnotherVoiceStopsMakingKeepingWhatWasWritten` and
+`TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine` in `internal/application/services/making_test.go`
+over fakes; the Cast pane casting through the service is not built.
 
 **FR-517 A made line is written whole or not at all**
 Priority: Must.
@@ -1117,20 +1123,24 @@ Verified by: not built.
 Priority: Must.
 If a line cannot be made, then the application shall report the cue and the reason on the Cast pane
 and go on to the next line.
-Verified by: not built.
+Verified by: in part, `TestALineThatCannotBeMadeIsReportedAndMakingGoesOn` in
+`internal/application/services/making_test.go` for the report; the Cast pane showing it is not built.
 
 **FR-519 If a machine voice's files are missing, then refuse the cast**
 Priority: Must.
 If a file a machine voice is made from is missing or cannot be read, then the application shall
 refuse to cast that voice, changing nothing, with a reason that names the file once (FR-237).
 Rationale: a damaged install is put right by Repair (FR-804); saying which file is gone says so.
-Verified by: not built.
+Verified by: in part, `TestAVoiceWhoseFilesCannotBeReadIsRefusedChangingNothing` in
+`internal/application/services/making_test.go` over a fake; reading the real files is not built.
 
 **FR-520 If a made line cannot be written, then stop and say why**
 Priority: Must.
 If a made line cannot be written, whether for want of space or permission, then the application
 shall stop making that voice's lines and show the reason on the Cast pane.
-Verified by: not built.
+Verified by: in part, `TestAWriteFailureStopsMakingAndSaysWhy` in
+`internal/application/services/making_test.go` for stopping with the reason; writing the files and the
+Cast pane are not built.
 
 **FR-521 Casting a machine voice plays its confirmation**
 Priority: Must.
@@ -1187,7 +1197,9 @@ Rationale: disk use stays near 50 MB however many voices are tried (Oliver, 2026
 voice again makes its lines again, a projected 4 minutes.
 Acceptance: Given `bf_emma` cast with her lines made, when `am_michael` is cast, then no made line of
 `bf_emma` remains.
-Verified by: not built.
+Verified by: in part, `TestCastingDeletesOtherVoicesLinesSayingWhereItCannot` and
+`TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine` in `internal/application/services/making_test.go`
+over a fake store; deleting the files is not built.
 
 **FR-528 A machine voice's name on screen**
 Priority: Must.
@@ -1218,7 +1230,8 @@ is not built.
 Priority: Must.
 If a made line of the voice that was cast before cannot be deleted, then the application shall say so
 on the Cast pane and complete the cast.
-Verified by: not built.
+Verified by: in part, the tests FR-527 names for the reason being kept; the Cast pane showing it is not
+built.
 
 **FR-531 If a line's given speech sounds cannot be read, then the build fails**
 Priority: Should.

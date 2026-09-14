@@ -5,6 +5,8 @@ package making
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
@@ -78,6 +80,31 @@ func (p Plan) Total() int { return len(p.lines) }
 
 // Current returns how many of those lines have a current made line (FR-515).
 func (p Plan) Current() int { return p.Total() - len(p.ToMake()) }
+
+// WithMade returns the plan with the made line under key current, leaving this plan unchanged.
+// Making asks for it as each line is written, so what is counted and answered rises as making goes
+// on (FR-514, FR-515).
+func (p Plan) WithMade(key string) Plan {
+	current := make(map[string]bool, len(p.current)+1)
+	maps.Copy(current, p.current)
+	current[key] = true
+	return Plan{lines: p.lines, current: current}
+}
+
+// Made reports whether the made line under key is current.
+func (p Plan) Made(key string) bool { return p.current[key] }
+
+// Takes returns the keys of a cue's current made lines in line order, each once: two lines with the
+// same sounds share one made line (FR-514).
+func (p Plan) Takes(id cue.ID) []string {
+	var keys []string
+	for _, line := range p.lines {
+		if line.Cue == id && p.current[line.Key] && !slices.Contains(keys, line.Key) {
+			keys = append(keys, line.Key)
+		}
+	}
+	return keys
+}
 
 // CuesServed returns how many cues have at least one current made line (FR-522).
 func (p Plan) CuesServed() int {

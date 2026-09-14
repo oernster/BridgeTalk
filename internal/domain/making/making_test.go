@@ -1,6 +1,6 @@
 package making_test
 
-// FR-511 to FR-513, FR-515 and FR-522: what a machine voice still has to make.
+// FR-511 to FR-515 and FR-522: what a machine voice still has to make.
 
 import (
 	"slices"
@@ -10,40 +10,30 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/script"
+	"github.com/oernster/bridge-talk/internal/domain/script/scripttest"
 )
 
 // files are the style file and model digests the plans below are made against.
 var files = making.Files{Style: "style-1", Model: "model-1"}
 
-// voiced builds a script giving Docked and Undocked three lines each with saved speech sounds,
-// against a table that also holds Touchdown. firstBritish is Docked's first British sounds.
+// voiced builds a script giving Docked and Undocked three lines each with saved speech sounds.
+// firstBritish is Docked's first British sounds.
 func voiced(t *testing.T, firstBritish string) script.Voiced {
 	t.Helper()
-	var cues []cue.Cue
-	for _, id := range []string{"Docked", "Undocked", "Touchdown"} {
-		item, err := cue.New(cue.Definition{ID: id, Source: "journal", Event: id, Purpose: "When it happens."})
-		if err != nil {
-			t.Fatalf("building cue %q: %v", id, err)
-		}
-		cues = append(cues, item)
-	}
-	lines := map[string][]string{
-		"Docked":   {"Docking complete.", "Down safely.", "Docked."},
-		"Undocked": {"Undocked.", "Clear of the pad.", "Leaving."},
-	}
-	built, err := script.New(lines, cue.NewTable(cues))
+	built, err := scripttest.Build(map[string]script.Saved{
+		"Docked": {
+			Lines:   []string{"Docking complete.", "Down safely.", "Docked."},
+			British: []string{firstBritish, "bɪ", "bi"}, American: []string{"æə", "æɪ", "æi"},
+		},
+		"Undocked": {
+			Lines:   []string{"Undocked.", "Clear of the pad.", "Leaving."},
+			British: []string{"du", "dɪ", "di"}, American: []string{"dæ", "dæɪ", "dæi"},
+		},
+	})
 	if err != nil {
-		t.Fatalf("New: %v", err)
+		t.Fatalf("Build: %v", err)
 	}
-	saved := map[string]script.Saved{
-		"Docked":   {Lines: lines["Docked"], British: []string{firstBritish, "bɪ", "bi"}, American: []string{"æə", "æɪ", "æi"}},
-		"Undocked": {Lines: lines["Undocked"], British: []string{"du", "dɪ", "di"}, American: []string{"dæ", "dæɪ", "dæi"}},
-	}
-	voicedScript, err := script.Voice(built, saved)
-	if err != nil {
-		t.Fatalf("Voice: %v", err)
-	}
-	return voicedScript
+	return built
 }
 
 // keysOf returns the keys of the lines given.
@@ -124,5 +114,38 @@ func TestANewStyleFileMakesEveryLineAgain(t *testing.T) {
 	plan := making.New(voiced(t, "bə"), machinevoice.British, making.Files{Style: "style-2", Model: files.Model}, made)
 	if len(plan.ToMake()) != 6 || plan.Current() != 0 {
 		t.Errorf("to make %d, current %d; want every line to make again", len(plan.ToMake()), plan.Current())
+	}
+}
+
+// FR-514 and FR-515: a line made while making is under way is current in the plan WithMade
+// answers, which counts it and hands its key out for its cue. The plan it came from is unchanged.
+func TestAMadeLineIsCurrentInThePlanThatHoldsIt(t *testing.T) {
+	plan := making.New(voiced(t, "bə"), machinevoice.British, files, nil)
+	first := plan.ToMake()[0]
+
+	made := plan.WithMade(first.Key)
+
+	if !made.Made(first.Key) || made.Current() != 1 || !slices.Equal(made.Takes("Docked"), []string{first.Key}) {
+		t.Errorf("the plan holding the made line: made %v, current %d, takes %v",
+			made.Made(first.Key), made.Current(), made.Takes("Docked"))
+	}
+	if plan.Made(first.Key) || plan.Current() != 0 || len(plan.Takes("Docked")) != 0 {
+		t.Error("the plan WithMade was asked of changed")
+	}
+}
+
+// FR-514: a cue's takes are the distinct keys of its current lines in line order. Two lines with
+// the same sounds share one made line, so it is one take; a cue with nothing current has none.
+func TestACuesTakesAreTheDistinctKeysOfItsCurrentLines(t *testing.T) {
+	all := making.New(voiced(t, "bi"), machinevoice.British, files, nil).ToMake()
+	plan := making.New(voiced(t, "bi"), machinevoice.British, files, []string{all[2].Key, all[1].Key})
+
+	if got, want := plan.Takes("Docked"), []string{all[0].Key, all[1].Key}; !slices.Equal(got, want) {
+		t.Errorf("Docked's takes = %v, want %v", got, want)
+	}
+	for _, id := range []cue.ID{"Undocked", "Touchdown"} {
+		if got := plan.Takes(id); len(got) != 0 {
+			t.Errorf("%s's takes = %v, want none", id, got)
+		}
 	}
 }

@@ -98,6 +98,8 @@ $measured = [ordered]@{
     './internal/infrastructure/journal'   = 100
     './internal/infrastructure/library'   = 100
     './internal/infrastructure/madelines' = 98
+    './internal/infrastructure/modelfiles' = 99
+    './internal/infrastructure/reporoot'  = 100
     './internal/infrastructure/setup'     = 61
     './internal/infrastructure/status'    = 100
     './internal/infrastructure/taskbar'   = 67
@@ -105,6 +107,7 @@ $measured = [ordered]@{
     './internal/infrastructure/voicefiles' = 100
     './internal/refusal'                  = 100
     './tools/sounds'                      = 38
+    './tools/models'                      = 53
 }
 
 Write-Host 'Measuring the rest of the tree...'
@@ -129,5 +132,7 @@ foreach ($package in $measured.Keys) {
 # machine. Neither has anything a test can reach without the platform behind it, so a
 # floor over either would be a floor at zero, which asserts nothing. TESTING.md says so
 # in full rather than leaving the absence to be read as an oversight.
+# internal/infrastructure/modelfiles/modelfilestest is test support with no tests of its
+# own: the modelfiles and tools/models tests run every part of it.
 
 Write-Host 'All green.'

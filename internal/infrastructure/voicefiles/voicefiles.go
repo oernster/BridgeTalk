@@ -35,6 +35,9 @@ const (
 // styleExtension follows a voice's id to name its style file, such as bf_emma.bin.
 const styleExtension = ".bin"
 
+// StyleFile names a voice's style file in the folder: its id followed by .bin, such as bf_emma.bin.
+func StyleFile(voice machinevoice.Voice) string { return voice.ID() + styleExtension }
+
 // float32Bytes is how many bytes one number of a style file takes.
 const float32Bytes = 4
 
@@ -66,7 +69,7 @@ func (f Files) Open(voice machinevoice.Voice) (ports.Material, error) {
 
 // style reads a voice's style file as the numbers the model reads, with the file's digest.
 func (f Files) style(voice machinevoice.Voice) (speech.Style, string, error) {
-	path := filepath.Join(f.dir, voice.ID()+styleExtension)
+	path := filepath.Join(f.dir, StyleFile(voice))
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return speech.Style{}, "", fmt.Errorf("reading %s: %w", path, refusal.Reason(err))

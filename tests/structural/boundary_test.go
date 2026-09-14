@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/oernster/bridge-talk/internal/infrastructure/reporoot"
 )
 
 // lineLimit is the module-size cap. dangerBand is five per cent below it: a file
@@ -49,14 +51,11 @@ func repoRoot(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("working directory: %v", err)
 	}
-	for range 6 {
-		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
-			return dir
-		}
-		dir = filepath.Dir(dir)
+	root, err := reporoot.Find(dir)
+	if err != nil {
+		t.Fatalf("finding the repository root: %v", err)
 	}
-	t.Fatal("could not find go.mod above the test directory")
-	return ""
+	return root
 }
 
 // goFiles returns every Go source file in the repository.

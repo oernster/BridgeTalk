@@ -42,14 +42,18 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/voicefiles` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 98.5% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
+| `tools/models` | 53.1% | 53% | `test.ps1` |
 | `tools/sounds` | 38.5% | 38% | `test.ps1` |
+| `internal/infrastructure/modelfiles/modelfilestest` | test support, run by the `modelfiles` and `tools/models` tests | none | not gated |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
@@ -156,6 +160,10 @@ release is for.
   application. Each is reached through a field on the facade, so the behaviour AROUND
   the call is fully tested and only the call itself is not: the tests substitute the
   field and assert what the facade decided.
+- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.1%).** Only a walk from outside
+  any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
+  business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
+  refusal on.
 - **`main`, `run`, `launch` and `startTray` in `main.go`.** The composition root. It
   opens a device, scans the disk, builds a tray and hands the assembled application
   to Wails. Running it in a test would be running the application.
@@ -187,6 +195,10 @@ release is for.
   Making every line in each accent from its spelling and matching the answers back to their
   lines is tested in `makeSounds` over a hand-written maker. What the real tool wrote is checked
   by the structural test over `sounds.toml`.
+- **`tools/models` (53.1%).** The model files tool. `main` and `start` read the real list, find
+  `models/` in the repository and hand `run` a client that reaches the internet. `run` itself is tested
+  in both modes over a local server, as `internal/infrastructure/modelfiles` is: no test downloads
+  anything or writes outside a temporary folder.
 
 ### It could not happen, so it is gone
 

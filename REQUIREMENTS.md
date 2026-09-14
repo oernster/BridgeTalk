@@ -1312,6 +1312,69 @@ Note: the venv is not committed; `.gitignore` already ignores `venv/`.
 Verified by: inspection. `tools/sounds/requirements.txt` pins every package; the tool's run on
 2026-09-14 wrote `sounds.toml` whole.
 
+**FR-535 The model files are listed with where they come from**
+Priority: Must.
+The repository shall hold one list of every file a machine voice is made from, with the model's
+tokenizer file, each given the name it is kept under, the address it is downloaded from, its size and
+its SHA-256. A file taken from inside a downloaded archive shall also give its path in that archive.
+Rationale: the code is written against one exact model. A different or damaged copy still runs
+while the speech comes out wrong with no error; the list turns that into a refusal naming the file. Where
+the files are kept on the build machine is found by Go rather than set by an environment variable
+(Oliver, 2026-09-14).
+Acceptance: Given the list, when the tests run, then it names `model.onnx`, `onnxruntime.dll`,
+`tokenizer.json` and one style file for each of the 28 voices; it names nothing else.
+Verified by: `TestTheListNamesEveryFileAVoiceIsMadeFrom` and `TestAListThatCannotBeTrustedIsRefused` in
+`internal/infrastructure/modelfiles/list_test.go`, proved by planting a name no voice reads and a source
+reached over plain HTTP. On 2026-09-14 `go run ./tools/models -check` over the model, ONNX Runtime, the
+tokenizer file and two style files, copied in from files checked against their published digests,
+found none of them different.
+
+**FR-536 The model files tool**
+Priority: Must.
+When `go run ./tools/models` runs, the tool shall leave `models/` at the repository root holding every
+listed file at its listed size and SHA-256. A file already there that matches shall be left alone;
+any other shall be downloaded, checked, then put in place.
+Rationale: a machine that builds the setup program fills its own folder from the list, so nothing is
+copied by hand. `models/` is not committed; `.gitignore` ignores it.
+Acceptance: Given `models/` holding a `model.onnx` that matches the list and no `bf_alice.bin`, when
+the tool runs, then `model.onnx` is not downloaded and `bf_alice.bin` is.
+Verified by: in part, `TestOnlyWhatDoesNotMatchIsDownloaded` and `TestTheFolderIsMadeWhereItIsMissing`
+in `internal/infrastructure/modelfiles/fetch_test.go` over a local server, with
+`TestTheToolFillsTheFolderThenChecksIt` in `tools/models/main_test.go`, proved by planting a matching
+file being downloaded again; a real download from the listed addresses has not been run.
+
+**FR-537 If a downloaded model file does not match the list, then refuse it**
+Priority: Must.
+If a downloaded file's size or SHA-256 differs from the list, its download fails or its archive does
+not hold the listed path, then the tool shall leave nothing under that file's name, go on to the
+rest, then exit with a failure naming each refused file with what was wrong.
+Rationale: as FR-517 for a made line, a file is put in place whole and checked or not at all.
+Acceptance: Given an address that answers with bytes whose SHA-256 differs from the list for
+`bf_alice.bin`, when the tool runs, then no `bf_alice.bin` is left in `models/` and the failure names
+`bf_alice.bin` and both digests.
+Verified by: `TestADownloadThatDoesNotMatchLeavesNothingInItsPlace` and
+`TestAFileIsTakenFromInsideItsArchive` in `internal/infrastructure/modelfiles/fetch_test.go`, with
+`TestADownloadThatNeverArrivesWholeIsRefused` and
+`TestAFileThatCannotBeWrittenOrPutInPlaceIsRefusedNamingItOnce` in `refusals_test.go` beside it, proved
+by planting a download put in place unchecked, a refused part left behind and the archive's listed
+path ignored.
+
+**FR-538 Checking the model files downloads nothing**
+Priority: Must.
+When the tool runs with `-check`, it shall download nothing and exit with a failure naming each listed
+file that is missing from `models/` or differs from the list. A test that needs the model files shall
+skip where one is missing and fail where one differs.
+Rationale: the build checks the files before packing them without reaching the network. A file that
+is present but wrong is a fault to be told about, never a reason to skip.
+Acceptance: Given `models/` with `bf_alice.bin` missing and `am_adam.bin` altered, when the tool runs
+with `-check`, then nothing is requested from any address and the failure names both files.
+Verified by: in part, `TestCheckNamesWhatIsMissingAndWhatDiffersAskingForNothing` and
+`TestAFolderWhereAFileShouldBeIsRefusedNamingItOnce` in `internal/infrastructure/modelfiles/check_test.go`,
+with `TestTheToolFillsTheFolderThenChecksIt` and `TestTheCheckFailsOnAFileThatDiffers` in
+`tools/models/main_test.go`, proved by planting a different digest matching and the check reporting
+nothing missing; no test that needs the model files exists yet, so skipping or failing on them is not
+built.
+
 ### 6.2 Machine voices, non-functional
 
 | ID | Requirement | Method |
@@ -1850,7 +1913,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-534, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-538, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

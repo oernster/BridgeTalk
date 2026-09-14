@@ -694,6 +694,7 @@ directory, so running setup leaves no folder beside the application's.
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
+| Model files on the build machine | `models/` at the repository root, found by walking up to `go.mod` and filled by `go run ./tools/models` from the list embedded in `internal/infrastructure/modelfiles`; not committed |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
 | Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |
@@ -762,10 +763,12 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 - `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `setup` 61%, `taskbar` 67%, with `config`, `journal`, `library`, `status`,
-  `tomlfile` and `internal/refusal` at 100%. `internal/infrastructure/window` and `installer` carry no floor, since
-  neither has anything a test can reach without the platform behind it. TESTING.md names what each
-  shortfall is.
+  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `taskbar`
+  67%, `tools/sounds` 38%, `tools/models` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
+  `status`, `tomlfile`, `voicefiles` and `internal/refusal` at 100%. `internal/infrastructure/window`,
+  `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
+  the platform behind them; the last is test support exercised by the `modelfiles` tests.
+  TESTING.md names what each shortfall is.
 - `build.ps1` runs `test.ps1` before it builds and offers no switch to skip it. `wails build` runs the
   front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
   error stops the build too.
@@ -787,3 +790,4 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | Priority, cooldown and dedupe | Without them the application is a slot machine rather than a voice worth listening to | A plain queue |
 | The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
 | No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |
+| Model files found by Go in `models/` beside `go.mod`, filled from a pinned list | Every machine finds them the same way with nothing to set; the rule that a file must match its published SHA-256 lives once, in Go (Oliver, 2026-09-14) | An environment variable naming a folder, with the checksums checked a second time in PowerShell |

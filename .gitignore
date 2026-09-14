@@ -64,6 +64,9 @@ frontend/src/assets/bridge-talk.png
 dist-installer/
 installer/build/
 
+# The files a machine voice is made from, filled by `go run ./tools/models` (FR-536)
+/models/
+
 # Local scratch
 NOTES.md
 *.db

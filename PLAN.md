@@ -37,7 +37,13 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - `internal/infrastructure/voicefiles` reads the model, ONNX Runtime and a voice's style file from
   one folder laid out flat as `model.onnx`, `onnxruntime.dll` and `<id>.bin`. It refuses a file that
   is missing or cannot be read, naming it once (FR-519). It gives the digests made lines are keyed by
-  (FR-513).
+  (FR-513). `voicefiles.StyleFile` is the one home of a style file's name.
+- `internal/infrastructure/modelfiles` embeds `models.toml`, the list of those files plus the
+  tokenizer file with pinned addresses, sizes and published SHA-256s (FR-535): Hugging Face revision
+  `1939ad2a`, ONNX Runtime release v1.23.2. `go run ./tools/models` fills `models/` at the repository
+  root (FR-536, FR-537); `-check` downloads nothing (FR-538). The folder is found by walking up to
+  `go.mod` in `internal/infrastructure/reporoot`, which the structural tests use too. On 2026-09-14
+  `-check` over the five files copied in named only the 26 style files still to download.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
   stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
@@ -81,6 +87,8 @@ package still builds and vets on any platform.
 
 - The setup program carries every file a machine voice is made from, downloading nothing (FR-524).
 - Uninstall deletes the made lines (FR-525).
+- `build.ps1` runs `go run ./tools/models -check` before it packs anything, then takes the files from
+  `models/` (FR-538).
 - Embed the payload as a `string` rather than a `[]byte` (Oliver, 2026-09-14). Measured the same day
   with a stand-in program that embeds the full payload and extracts it the way `setup.ExtractZip`
   does: as a `[]byte` the payload is charged to the process as 323.6 MB of private memory from the
@@ -103,9 +111,7 @@ switched on, so FR-507 fails the build from then on.
 ## Waiting on Oliver
 
 
-- Where the model files live on the build machine, since the model alone is 310.5 MB. Recommended: a
-  folder outside the repository named by an environment variable that `build.ps1` reads, each file
-  checked against a committed list of its name, size and SHA-256 before it is zipped. Today the
-  model, ONNX Runtime and two style files sit only in an old session scratchpad, which may vanish.
-- Approval before downloading any file not already on this machine, each named with its source and
-  size. Which files those are is measured before M7.
+- Approval before the tool downloads the 26 style files not on this machine: 522,240 bytes each,
+  13,578,240 in all, from the pinned Hugging Face revision. The model, ONNX Runtime, the tokenizer
+  file and two style files sit in an old session scratchpad, checked on 2026-09-14 against their
+  published digests; they are copied into `models/` rather than downloaded again.

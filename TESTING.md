@@ -40,7 +40,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/voicefiles` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/madelines` | 98.5% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
@@ -143,6 +146,11 @@ release is for.
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
   clock rather than by waiting.
+- **A made lines folder that exists but cannot be listed, in `internal/infrastructure/madelines`.**
+  Deleting then says why rather than deleting nothing in silence (FR-530). Only a permission the
+  system withholds reaches it: a folder a test makes can always be listed. Windows answers a plain
+  file standing where the folder should be as not there at all, measured on 2026-09-14, which is
+  nothing to delete.
 - **The Wails calls in the root package.** `runtime.EventsEmit`, `WindowShow`,
   `WindowHide`, `WindowCenter`, `Quit` and the directory dialog need a running Wails
   application. Each is reached through a field on the facade, so the behaviour AROUND
@@ -184,13 +192,14 @@ release is for.
 
 A branch nothing can reach is not a gap in the tests; it is dead code, so documenting
 it would be technical debt wearing a description. Branches like that are removed
-rather than excused. Three of them, in code that still exists:
+rather than excused. Four of them, in code that still exists:
 
 | What it was | Why it could not run |
 |---|---|
 | the error return from `readAll` | it could only ever have been nil, so `readAll` now returns bytes alone |
 | the empty check in `splitLines` | `bytes.Split` always yields at least one element |
 | the encode failure in `Save` | a struct of three strings always marshals |
+| the encode failures in `madelines.encode` | the FLAC encoder fails only on a write (which memory never refuses) or on a frame shape other than the two the store builds, both round-tripped by its tests |
 
 ### The front end
 

@@ -942,7 +942,8 @@ script holding three lines a cue; the setup program carries the files they are m
 answers OQ-6: the additional source is built in behind the section 6 port rather than supplied by an
 extension, so FR-501 is raised to Must. Later the same day Oliver accepted Claude's recommendations
 on naming a machine voice, on putting a misread word right and on a complete script. He chose
-lossless FLAC for made lines, kept for the cast machine voice alone. He then accepted the form a
+lossless FLAC for made lines, kept for the cast machine voice alone; once it was measured that FLAC
+cannot hold the model's floating-point samples, he chose 16-bit samples within it. He then accepted the form a
 line uses to give a word's speech sounds, with a second spelling for American voices, checked when
 the tests run. Last, he chose to make every line's speech sounds before the build with misaki itself,
 run by a tool with its own venv in the repository, so that neither misaki nor eSpeak NG ships (CON-8).
@@ -1119,7 +1120,9 @@ over fakes; the Cast pane casting through the service is not built.
 Priority: Must.
 If making a line is interrupted, by the application closing or the machine stopping, then the
 application shall leave either the whole made line or no file for it.
-Verified by: not built.
+Verified by: `TestALineIsWrittenWholeOrNotAtAll` and `TestKeysListAVoicesMadeLinesAlone` in
+`internal/infrastructure/madelines/madelines_test.go`: a line is written to a part then renamed into
+place; a part left behind is never taken for a made line.
 
 **FR-518 If a line cannot be made, then say why and carry on**
 Priority: Must.
@@ -1167,7 +1170,9 @@ Priority: Must.
 The application shall write made lines under its own per user data directory, never under the
 library root.
 Rationale: CON-7. A made line is the application's to remake; a recording is the user's.
-Verified by: not built.
+Verified by: in part, `TestMadeLinesLiveInTheProductsDataFolder` in
+`internal/infrastructure/madelines/madelines_test.go` for the folder; the composition root handing it
+to the store is not built.
 
 **FR-524 Setup installs everything a machine voice is made from**
 Priority: Must.
@@ -1183,16 +1188,23 @@ Rationale: made lines are the application's own and can be made again. FR-805's 
 never touches the recordings still holds, since a made line is not one.
 Verified by: not built.
 
-**FR-526 Made lines are stored as lossless FLAC**
+**FR-526 Made lines are stored as 16-bit FLAC**
 Priority: Must.
-The application shall store each made line as a FLAC file that decodes to exactly the samples the
-model made.
-Rationale: FLAC took 56.7 percent of the space of WAV over ten made lines with nothing lost, through
-the FLAC library the application already uses (Oliver, 2026-09-14).
+The application shall store each made line as a mono 16-bit FLAC file at the model's sample rate,
+each sample clamped to between -1 and 1, then scaled to 16 bits and rounded; decoding the file shall
+give exactly those 16-bit samples.
+Rationale: FLAC took 56.7 percent of the space of 16-bit WAV over ten made lines, giving back every
+16-bit sample, through the FLAC library the application already uses (Oliver, 2026-09-14). The model
+makes 32-bit floating-point samples, which FLAC cannot hold. The output device is opened for 16-bit
+samples, so nothing finer than 16 bits reaches it either way; Oliver chose 16 bits on 2026-09-14.
 Note: measured on 2026-09-14, that library logs a line for every frame it reads at 24 kHz; playing a
 made line must not fill the output with them.
-Acceptance: Given a made line, when it is decoded, then every sample equals the sample the model made.
-Verified by: not built.
+Acceptance: Given the model's samples -1.5, -0.5, 0, 0.5 and 1.5, when they are stored and the file is
+decoded, then it gives -32767, -16384, 0, 16384 and 32767.
+Verified by: `TestAMadeLineDecodesToItsSamplesRoundedToSixteenBits` and
+`TestALongLineComesBackSampleForSample` in `internal/infrastructure/madelines/madelines_test.go`,
+decoding through the FLAC library the player uses. Playing a made line without its log lines is not
+built.
 
 **FR-527 Only the cast machine voice keeps its made lines**
 Priority: Must.
@@ -1204,7 +1216,9 @@ Acceptance: Given `bf_emma` cast with her lines made, when `am_michael` is cast,
 `bf_emma` remains.
 Verified by: in part, `TestCastingDeletesOtherVoicesLinesSayingWhereItCannot` and
 `TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine` in `internal/application/services/making_test.go`
-over a fake store; deleting the files is not built.
+over a fake store, with `TestDeletingKeepsOnlyTheVoiceNamed` in
+`internal/infrastructure/madelines/madelines_test.go` for deleting the files; the composition root
+wiring the two is not built.
 
 **FR-528 A machine voice's name on screen**
 Priority: Must.
@@ -1235,8 +1249,10 @@ is not built.
 Priority: Must.
 If a made line of the voice that was cast before cannot be deleted, then the application shall say so
 on the Cast pane and complete the cast.
-Verified by: in part, the tests FR-527 names for the reason being kept; the Cast pane showing it is not
-built.
+Verified by: in part, the tests FR-527 names for the reason being kept, with
+`TestLinesThatCannotBeDeletedAreRefusedNamingThemOnce` in
+`internal/infrastructure/madelines/madelines_test.go` for the reason itself; the Cast pane showing it
+is not built.
 
 **FR-531 If a line's given speech sounds cannot be read, then the build fails**
 Priority: Should.

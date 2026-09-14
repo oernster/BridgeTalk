@@ -38,6 +38,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
   one folder laid out flat as `model.onnx`, `onnxruntime.dll` and `<id>.bin`. It refuses a file that
   is missing or cannot be read, naming it once (FR-519). It gives the digests made lines are keyed by
   (FR-513).
+- `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
+  voice, written to a part then renamed (FR-517, FR-526). It deletes every voice's lines but one
+  (or all of them), naming what it cannot delete (FR-527, FR-530). Its folder sits in the product's local
+  data folder, which `internal/infrastructure/appdata` finds for it and for `library` (FR-523).
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
@@ -52,15 +56,13 @@ section 10 says: domain, then application, then infrastructure, then user interf
 Each part behind its port. Windows code sits behind a build tag with stubs beside it, so every
 package still builds and vets on any platform.
 
-- Made-line store: FLAC with fixed order 2, the Rice parameter from the mean residual and blocks of
-  4096 (FR-526); written to a temporary file then renamed (FR-517); under the per user data
-  directory, never the library root (FR-523). The data directory resolution in `library/root.go` is
-  extracted and shared rather than repeated.
 - ONNX Runtime caller through the OrtApi v23 table, no cgo.
 - A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
   that file is present, so a new model cannot leave the table behind.
-- **Reproduce before fixing:** the FLAC library's line per frame at 24 kHz, in an audio player
-  test, before silencing it (FR-526 note).
+- Silence the FLAC library's log line where the player decodes a made line (FR-526 note). Reproduced
+  on 2026-09-14: decoding a 24 kHz made line in `madelines_test.go` printed `frame.Frame.parseHeader`
+  once for its one frame, from `log.Printf` in the library's `frame/frame.go`. An audio player test
+  shows it on the play path before anything is silenced.
 - Tests needing the model files skip where they are absent: NFR-P-203 (768 lines within 10 minutes)
   and NFR-C-502 (60 MB).
 
@@ -103,10 +105,6 @@ switched on, so FR-507 fails the build from then on.
 
 ## Waiting on Oliver
 
-- FR-526 as written cannot be met. The model makes 32-bit floating-point samples and FLAC holds whole
-  numbers; the earlier "bit-identical" measurement compared FLAC with 16-bit WAV files made by
-  rounding. Recommended: store 16-bit, which the player already sends to the output device
-  (`oto.FormatSignedInt16LE`); FR-526 is then reworded to say so. The made-line store waits on this.
 
 - Where the model files live on the build machine, since the model alone is 310.5 MB. Recommended: a
   folder outside the repository named by an environment variable that `build.ps1` reads, each file

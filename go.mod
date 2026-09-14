@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/go-ole/go-ole v1.3.0
 	github.com/gopxl/beep/v2 v2.1.1
+	github.com/mewkiz/flac v1.0.12
 	github.com/wailsapp/wails/v2 v2.12.0
 	golang.org/x/sys v0.30.0
 )
@@ -31,7 +32,6 @@ require (
 	github.com/leaanthony/u v1.1.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mewkiz/flac v1.0.12 // indirect
 	github.com/mewkiz/pkg v0.0.0-20230226050401-4010bf0fec14 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect

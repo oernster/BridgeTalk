@@ -1338,10 +1338,11 @@ Rationale: a machine that builds the setup program fills its own folder from the
 copied by hand. `models/` is not committed; `.gitignore` ignores it.
 Acceptance: Given `models/` holding a `model.onnx` that matches the list and no `bf_alice.bin`, when
 the tool runs, then `model.onnx` is not downloaded and `bf_alice.bin` is.
-Verified by: in part, `TestOnlyWhatDoesNotMatchIsDownloaded` and `TestTheFolderIsMadeWhereItIsMissing`
-in `internal/infrastructure/modelfiles/fetch_test.go` over a local server, with
+Verified by: `TestOnlyWhatDoesNotMatchIsDownloaded` and `TestTheFolderIsMadeWhereItIsMissing` in
+`internal/infrastructure/modelfiles/fetch_test.go` over a local server, with
 `TestTheToolFillsTheFolderThenChecksIt` in `tools/models/main_test.go`, proved by planting a matching
-file being downloaded again; a real download from the listed addresses has not been run.
+file being downloaded again. On 2026-09-14 the tool run over `models/` holding five matching files
+left those alone, downloaded the other 26 from the listed addresses, then `-check` passed.
 
 **FR-537 If a downloaded model file does not match the list, then refuse it**
 Priority: Must.

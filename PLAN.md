@@ -43,7 +43,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
   `1939ad2a`, ONNX Runtime release v1.23.2. `go run ./tools/models` fills `models/` at the repository
   root (FR-536, FR-537); `-check` downloads nothing (FR-538). The folder is found by walking up to
   `go.mod` in `internal/infrastructure/reporoot`, which the structural tests use too. On 2026-09-14
-  `-check` over the five files copied in named only the 26 style files still to download.
+  the tool downloaded the 26 style files this machine lacked; `models/` now holds all 31 and `-check`
+  passes.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
   stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
@@ -108,10 +109,3 @@ its saved speech sounds show a misread word; a spelling is given only where no r
 (FR-529). When the last group lands, `scriptComplete` in `tests/structural/script_test.go` is
 switched on, so FR-507 fails the build from then on.
 
-## Waiting on Oliver
-
-
-- Approval before the tool downloads the 26 style files not on this machine: 522,240 bytes each,
-  13,578,240 in all, from the pinned Hugging Face revision. The model, ONNX Runtime, the tokenizer
-  file and two style files sit in an old session scratchpad, checked on 2026-09-14 against their
-  published digests; they are copied into `models/` rather than downloaded again.

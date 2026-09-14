@@ -49,14 +49,14 @@ func verify(path string, file File) error {
 	return matches(path, file, size, digest)
 }
 
-// matches answers nil where size and digest are the listed ones; otherwise it refuses path, saying
-// what differs.
-func matches(path string, file File, size int64, digest hash.Hash) error {
+// matches answers nil where size and digest are the listed ones; otherwise it refuses the file named
+// by what, saying what differs.
+func matches(what string, file File, size int64, digest hash.Hash) error {
 	if size != file.Size {
-		return fmt.Errorf("%s is %d bytes where the list gives %d: %w", path, size, file.Size, ErrDiffers)
+		return fmt.Errorf("%s is %d bytes where the list gives %d: %w", what, size, file.Size, ErrDiffers)
 	}
 	if sum := hex.EncodeToString(digest.Sum(nil)); sum != file.SHA256 {
-		return fmt.Errorf("%s has SHA-256 %s where the list gives %s: %w", path, sum, file.SHA256, ErrDiffers)
+		return fmt.Errorf("%s has SHA-256 %s where the list gives %s: %w", what, sum, file.SHA256, ErrDiffers)
 	}
 	return nil
 }

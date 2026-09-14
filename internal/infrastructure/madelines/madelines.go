@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"os"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/appdata"
+	"github.com/oernster/bridge-talk/internal/infrastructure/wholefile"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
@@ -99,17 +101,11 @@ func (s Store) Write(voice machinevoice.Voice, key string, samples []float32) er
 	if err := os.MkdirAll(folder, folderPerm); err != nil {
 		return fmt.Errorf("making %s: %w", folder, refusal.Reason(err))
 	}
-	line := s.Path(voice, key)
-	part := line + partSuffix
-	if err := os.WriteFile(part, encode(sixteenBits(samples)), filePerm); err != nil {
-		os.Remove(part)
-		return fmt.Errorf("writing %s: %w", part, refusal.Reason(err))
-	}
-	if err := os.Rename(part, line); err != nil {
-		os.Remove(part)
-		return fmt.Errorf("writing %s: %w", line, refusal.Reason(err))
-	}
-	return nil
+	encoded := encode(sixteenBits(samples))
+	return wholefile.Write(s.Path(voice, key), partSuffix, filePerm, func(part io.Writer) error {
+		_, err := part.Write(encoded)
+		return err
+	})
 }
 
 // DeleteAllBut deletes the made lines of every voice except the one given (FR-527), going on past

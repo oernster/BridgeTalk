@@ -43,9 +43,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/voicefiles` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
-| `internal/infrastructure/madelines` | 98.5% | 98% | `test.ps1` |
+| `internal/infrastructure/modelfiles` | 99.0% | 99% | `test.ps1` |
+| `internal/infrastructure/madelines` | 98.4% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
@@ -160,7 +161,7 @@ release is for.
   application. Each is reached through a field on the facade, so the behaviour AROUND
   the call is fully tested and only the call itself is not: the tests substitute the
   field and assert what the facade decided.
-- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.1%).** Only a walk from outside
+- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.0%).** Only a walk from outside
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.

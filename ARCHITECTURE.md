@@ -765,7 +765,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
   package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `taskbar`
   67%, `tools/sounds` 38%, `tools/models` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
-  `status`, `tomlfile`, `voicefiles` and `internal/refusal` at 100%. `internal/infrastructure/window`,
+  `status`, `tomlfile`, `voicefiles`, `wholefile` and `internal/refusal` at 100%. `internal/infrastructure/window`,
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
   the platform behind them; the last is test support exercised by the `modelfiles` tests.
   TESTING.md names what each shortfall is.

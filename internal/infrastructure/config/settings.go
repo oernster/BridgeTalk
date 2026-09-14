@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
+	"github.com/oernster/bridge-talk/internal/infrastructure/wholefile"
 	"github.com/oernster/bridge-talk/internal/product"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
@@ -106,15 +108,10 @@ func (s *Settings) Save(chosen ports.Settings) error {
 	if err := os.MkdirAll(dir, dirPerm); err != nil {
 		return fmt.Errorf("creating %s: %w", dir, refusal.Reason(err))
 	}
-	temporary := s.path + writingSuffix
-	if err := os.WriteFile(temporary, raw, filePerm); err != nil {
-		return fmt.Errorf("writing %s: %w", s.path, refusal.Reason(err))
-	}
-	if err := os.Rename(temporary, s.path); err != nil {
-		_ = os.Remove(temporary)
-		return fmt.Errorf("replacing %s: %w", s.path, refusal.Reason(err))
-	}
-	return nil
+	return wholefile.Write(s.path, writingSuffix, filePerm, func(file io.Writer) error {
+		_, err := file.Write(raw)
+		return err
+	})
 }
 
 // Forget removes the stored choices, for an uninstall that has been asked to forget them.

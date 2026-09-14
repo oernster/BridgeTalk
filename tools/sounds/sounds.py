@@ -1,9 +1,9 @@
 """Turn lines into speech sounds with misaki, called the way Kokoro calls it (FR-532).
 
-Reads a JSON list of lines on standard input and writes a JSON list of their speech sounds,
-in the same order, on standard output. Pass --british for British English; American
-otherwise. The Go half of the sounds tool owns the script, its spellings and the saved
-file, so this half only speaks to misaki.
+Reads a JSON list of lines on standard input and writes a JSON list of their speech
+sounds, in the same order, on standard output. Pass --british for British English;
+American otherwise. The Go half of the sounds tool owns the script, its spellings and
+the saved file, so this half only speaks to misaki.
 """
 
 import argparse

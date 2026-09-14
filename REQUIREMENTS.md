@@ -1060,13 +1060,16 @@ Rationale: making a line takes longer than the 150 ms NFR-P-202 allows between a
 speech, so every line is made before it is needed.
 Acceptance: Given `bf_emma` with no made lines, when she is cast, then making starts; once it ends,
 every line in the script has a current made line for her.
-Verified by: not built.
+Verified by: in part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
+`TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
+the lines still to make; making them on cast is not built.
 
 **FR-512 Starting with a machine voice cast makes its missing lines**
 Priority: Must.
 When the application starts with a machine voice cast, the application shall make every line of
 the script that voice has no current made line for.
-Verified by: not built.
+Verified by: in part, the tests FR-511 names in `internal/domain/making/making_test.go` for the lines
+still to make; making them at start is not built.
 
 **FR-513 A made line is current only while what it was made from is unchanged**
 Priority: Must.
@@ -1076,7 +1079,9 @@ Rationale: an edited line, new speech sounds, a new voice file or a new model ar
 must be heard, rather than an old rendering of it.
 Acceptance: Given current made lines for `bf_emma`, when the line "Docking complete." is changed to
 "Docked." and the application starts, then that line is made again and no other line is.
-Verified by: not built.
+Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
+`TestANewStyleFileMakesEveryLineAgain` and `TestAKeyChangesWithTheSoundsTheStyleFileOrTheModel` in
+`internal/domain/making/making_test.go` for the key; the made lines on disk are not built.
 
 **FR-514 While lines are being made, the voice speaks what is made**
 Priority: Must.
@@ -1090,7 +1095,8 @@ While a machine voice's lines are being made, the Cast pane shall show how many 
 lines are current out of how many lines the script holds.
 Acceptance: Given a script of 768 lines, when `bf_emma` is cast with 100 current, then the pane
 reads 100 of 768 and the figure rises as lines are made.
-Verified by: not built.
+Verified by: in part, `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in
+`internal/domain/making/making_test.go` for the count; the Cast pane is not built.
 
 **FR-516 Casting another voice stops making**
 Priority: Must.
@@ -1135,7 +1141,9 @@ Verified by: not built.
 Priority: Should.
 The Cast pane shall show, for a machine voice, the number of cues with at least one current made
 line out of the size of the cue vocabulary.
-Verified by: not built.
+Verified by: in part, `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in
+`internal/domain/making/making_test.go` for the cues with a current made line; the Cast pane is not
+built.
 
 **FR-523 Made lines live apart from recordings**
 Priority: Must.

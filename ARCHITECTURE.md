@@ -42,7 +42,7 @@ exactly like one that holds.
 
 ## Layers
 
-- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `script`, `selection`, `speech`): pure Go. Values are validated on
+- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `making`, `script`, `selection`, `speech`): pure Go. Values are validated on
   construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
   `CooldownGate.Allow` and `DedupeWindow.Fresh`, while randomness arrives through the injected
   `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
@@ -51,6 +51,8 @@ exactly like one that holds.
   one home of the model's voice ids. `speech` holds the speech sound symbols the model reads with their
   numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives.
   `script` checks the script against the cue table, naming the cue and the line behind every problem.
+  `making` keys each made line by its speech sounds, style file and model, then works out which lines
+  a voice still has to make.
 - **Application** (`internal/application`): the reaction and scheduling services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
   never imports Infrastructure or the Wails runtime.

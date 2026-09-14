@@ -19,6 +19,9 @@ section 10 says: domain, then application, then infrastructure, then user interf
   saves them to `sounds.toml`, which `config` embeds beside the script. The structural test checks
   them (FR-506, FR-532 to FR-534). Run `go run ./tools/sounds` from the repository root after
   changing `script.toml`.
+- `internal/domain/making` gives each line's key from its speech sounds, the style file and the
+  model (FR-513). Set against the keys on disk, it lists the lines still to make and counts how many
+  are current and how many cues are served (FR-511, FR-512, FR-515, FR-522).
 - Nothing else of machine voices is built.
 - `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
   `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
@@ -31,15 +34,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M5 Domain: what to make
-
-In `machinevoice` or a sibling package.
-
-- A made line's currency key from the line's saved speech sounds, the style file's digest and the model's digest
-  (FR-513).
-- Given the script, a voice and the keys already on disk: the lines still to make (FR-511, FR-512),
-  how many are current (FR-515) and how many cues have at least one (FR-522).
 
 ## M6 Application: the port and the making service
 

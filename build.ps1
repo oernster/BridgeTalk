@@ -6,7 +6,8 @@
 # Outputs:
 #   build/bin/BridgeTalk.exe                 the application
 #   dist-installer/BridgeTalkSetup.exe       the setup program, carrying the
-#                                                application as an embedded payload
+#                                                application and the model files as an
+#                                                embedded payload
 #
 # The version is read from VERSION and passed into the setup program with -ldflags,
 # so no version literal lives anywhere in the source. Note that -X only reaches a
@@ -80,29 +81,36 @@ if ($SkipInstaller) {
     exit 0
 }
 
-Write-Host 'Packaging the application as the setup payload...'
+Write-Host 'Packing the application and the model files as the setup payload...'
 $payload = Join-Path $root 'installer/payload.zip'
-if (Test-Path $payload) { Remove-Item $payload -Force }
-Compress-Archive -Path (Join-Path $root 'build/bin/*') -DestinationPath $payload
+# tools/payload checks models/ against the list before it packs anything, downloading nothing,
+# then takes from it every file the application reads beside itself (FR-543). The list is the one
+# place those files are named, so nothing here names them again. The archive is written whole: a
+# packing that is refused leaves the placeholder where it was.
+go run ./tools/payload -app (Join-Path $root 'build/bin') -out $payload
+if ($LASTEXITCODE -ne 0) { throw "tools/payload failed with exit code $LASTEXITCODE" }
 
-Write-Host 'Building the setup program...'
-Push-Location (Join-Path $root 'installer')
 try {
-    wails build -ldflags "-X main.appVersion=$version"
-    if ($LASTEXITCODE -ne 0) { throw "wails build failed with exit code $LASTEXITCODE" }
+    Write-Host 'Building the setup program...'
+    Push-Location (Join-Path $root 'installer')
+    try {
+        wails build -ldflags "-X main.appVersion=$version"
+        if ($LASTEXITCODE -ne 0) { throw "wails build failed with exit code $LASTEXITCODE" }
+    } finally {
+        Pop-Location
+    }
+
+    Write-Host 'Collecting the setup program...'
+    $distDir = Join-Path $root 'dist-installer'
+    New-Item -ItemType Directory -Force -Path $distDir | Out-Null
+    $built = Join-Path $root 'installer/build/bin/BridgeTalkSetup.exe'
+    Copy-Item $built (Join-Path $distDir 'BridgeTalkSetup.exe') -Force
 } finally {
-    Pop-Location
+    # Put the empty-zip placeholder back whether or not the setup program built, so
+    # `go build ./...` and the tests keep working without a full build and a payload of
+    # over 300 MB is never left where a commit could pick it up.
+    $empty = [byte[]](0x50, 0x4B, 0x05, 0x06) + (New-Object byte[] 18)
+    [System.IO.File]::WriteAllBytes($payload, $empty)
 }
-
-Write-Host 'Collecting the setup program...'
-$distDir = Join-Path $root 'dist-installer'
-New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-$built = Join-Path $root 'installer/build/bin/BridgeTalkSetup.exe'
-Copy-Item $built (Join-Path $distDir 'BridgeTalkSetup.exe') -Force
-
-# Put the empty-zip placeholder back, so `go build ./...` and the tests keep working
-# without a full build and so a multi-megabyte payload never reaches a commit.
-$empty = [byte[]](0x50, 0x4B, 0x05, 0x06) + (New-Object byte[] 18)
-[System.IO.File]::WriteAllBytes($payload, $empty)
 
 Write-Host "Done: dist-installer/BridgeTalkSetup.exe ($version)"

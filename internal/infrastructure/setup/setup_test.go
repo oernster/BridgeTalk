@@ -9,8 +9,10 @@ import (
 	"testing"
 )
 
-// zipOf builds an in-memory archive from a name-to-content map.
-func zipOf(t *testing.T, entries map[string]string) []byte {
+// zipOf builds an in-memory archive from a name-to-content map, with a name ending in a
+// separator taken as a directory entry. It answers as a string, the form the setup
+// program embeds its payload in.
+func zipOf(t *testing.T, entries map[string]string) string {
 	t.Helper()
 	var buffer bytes.Buffer
 	writer := zip.NewWriter(&buffer)
@@ -26,7 +28,7 @@ func zipOf(t *testing.T, entries map[string]string) []byte {
 	if err := writer.Close(); err != nil {
 		t.Fatalf("closing archive: %v", err)
 	}
-	return buffer.Bytes()
+	return buffer.String()
 }
 
 func TestExtractZipWritesEveryEntry(t *testing.T) {
@@ -68,7 +70,7 @@ func TestExtractZipRejectsAPathThatEscapes(t *testing.T) {
 
 func TestExtractZipRejectsAnArchiveItCannotRead(t *testing.T) {
 	t.Parallel()
-	if err := ExtractZip([]byte("not a zip"), t.TempDir()); err == nil {
+	if err := ExtractZip("not a zip", t.TempDir()); err == nil {
 		t.Fatal("extraction accepted something that is not an archive")
 	}
 }

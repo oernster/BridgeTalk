@@ -19,9 +19,21 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
 
-// TokenizerFile is the model's tokenizer file. Setup does not install it; the test that holds the
-// speech sound symbols to the model reads it.
+// TokenizerFile is the model's tokenizer file. Setup does not install it (Installed); the test that
+// holds the speech sound symbols to the model reads it.
 const TokenizerFile = "tokenizer.json"
+
+// Installed names the listed files setup installs, in list order: every one but the tokenizer file
+// (FR-524, FR-543).
+func Installed(files []File) []string {
+	var names []string
+	for _, file := range files {
+		if file.Name != TokenizerFile {
+			names = append(names, file.Name)
+		}
+	}
+	return names
+}
 
 // File is one listed file.
 type File struct {

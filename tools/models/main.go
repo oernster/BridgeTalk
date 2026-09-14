@@ -10,14 +10,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles"
 )
@@ -64,11 +62,7 @@ func run(ctx context.Context, args []string, dir string, client *http.Client, fi
 		fmt.Fprintf(out, "%s holds every listed file\n", dir)
 		return nil
 	}
-	missing, err := modelfiles.Check(dir, files)
-	if len(missing) > 0 {
-		err = errors.Join(fmt.Errorf("%s is missing %s", dir, strings.Join(missing, ", ")), err)
-	}
-	if err != nil {
+	if err := modelfiles.Verify(dir, files); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "%s matches the list\n", dir)

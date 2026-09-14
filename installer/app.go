@@ -21,7 +21,7 @@ const uninstallExeName = "uninstall.exe"
 // goes through a method here.
 type App struct {
 	ctx           context.Context
-	payload       []byte
+	payload       string
 	version       string
 	uninstallMode bool
 	prefersDark   bool
@@ -29,7 +29,7 @@ type App struct {
 
 // NewApp builds the facade. Started with -uninstall, setup opens on the removal
 // screen rather than on the manage one.
-func NewApp(payload []byte, version string, prefersDark bool) *App {
+func NewApp(payload string, version string, prefersDark bool) *App {
 	uninstall := len(os.Args) > 1 && os.Args[1] == setup.UninstallFlag
 	return &App{
 		payload:       payload,

@@ -625,10 +625,13 @@ Non-Windows builds compile a no-op tray rather than taking on a desktop toolkit 
 
 Delivery is a second Wails application. `installer/` is its own `main` package inside the same module,
 embedding the built application as a zip and the setup page as assets, so one file is the whole
-distribution. `build.ps1` zips the built application into `installer/payload.zip`, builds the setup
-program with the version from `VERSION` passed in through `-ldflags`, then puts the empty placeholder zip
-back so a full payload never reaches a commit. A setup program built without that flag reports its
-version as `dev`.
+distribution. `build.ps1` runs `tools/payload`, which checks `models/` against the list, downloading
+nothing, then packs the built application with every model file the application reads beside itself into
+`installer/payload.zip` (FR-543). It builds the setup program with the version from `VERSION` passed in
+through `-ldflags`, then puts the empty placeholder zip back whether or not that build succeeded, so a full
+payload never reaches a commit. A setup program built without that flag reports its version as `dev`. The
+payload is embedded as a string rather than a byte slice, which a stand-in program measured at 12.8 MB of
+private memory at start against 323.6 MB (FR-524).
 
 It is split the way the application is. `internal/infrastructure/setup` holds the machine work: the
 paths, the payload extraction with its fence against an archive entry that climbs out of the install

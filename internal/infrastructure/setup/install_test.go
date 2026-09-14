@@ -6,34 +6,11 @@ package setup
 // act on the machine itself, which a test must not.
 
 import (
-	"archive/zip"
-	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
-
-// archiveOf builds a zip in memory from a name-to-contents map, with a name ending in
-// a separator taken as a directory entry.
-func archiveOf(t *testing.T, entries map[string]string) []byte {
-	t.Helper()
-	var buffer bytes.Buffer
-	writer := zip.NewWriter(&buffer)
-	for name, body := range entries {
-		file, err := writer.Create(name)
-		if err != nil {
-			t.Fatalf("adding %q: %v", name, err)
-		}
-		if _, err := file.Write([]byte(body)); err != nil {
-			t.Fatalf("writing %q: %v", name, err)
-		}
-	}
-	if err := writer.Close(); err != nil {
-		t.Fatalf("closing the archive: %v", err)
-	}
-	return buffer.Bytes()
-}
 
 // Installing under the local application data is what keeps the whole flow free of an
 // administrator prompt, so the directory is derived from the environment rather than
@@ -76,7 +53,7 @@ func TestAMachineWithNoApplicationDataIsReportedRatherThanGuessedAt(t *testing.T
 func TestAPayloadIsExtractedWithItsDirectoriesMade(t *testing.T) {
 	t.Parallel()
 	dest := filepath.Join(t.TempDir(), "install")
-	payload := archiveOf(t, map[string]string{
+	payload := zipOf(t, map[string]string{
 		"app.exe":            "the program",
 		"assets/readme.txt":  "a readme",
 		"assets/nested/a.md": "a note",
@@ -106,7 +83,7 @@ func TestAPayloadIsExtractedWithItsDirectoriesMade(t *testing.T) {
 func TestAnEntryThatClimbsOutOfTheDestinationIsRefused(t *testing.T) {
 	t.Parallel()
 	dest := filepath.Join(t.TempDir(), "install")
-	payload := archiveOf(t, map[string]string{"../escaped.txt": "somewhere else"})
+	payload := zipOf(t, map[string]string{"../escaped.txt": "somewhere else"})
 
 	err := ExtractZip(payload, dest)
 	if err == nil {
@@ -119,7 +96,7 @@ func TestAnEntryThatClimbsOutOfTheDestinationIsRefused(t *testing.T) {
 
 func TestAPayloadThatIsNotAnArchiveIsReported(t *testing.T) {
 	t.Parallel()
-	if err := ExtractZip([]byte("this is not a zip file"), t.TempDir()); err == nil {
+	if err := ExtractZip("this is not a zip file", t.TempDir()); err == nil {
 		t.Fatal("bytes that are not an archive extracted")
 	}
 }
@@ -131,7 +108,7 @@ func TestAnInstallDirectoryThatCannotBeMadeIsReported(t *testing.T) {
 		t.Fatalf("planting the blocker: %v", err)
 	}
 
-	err := ExtractZip(archiveOf(t, map[string]string{"a.txt": "x"}),
+	err := ExtractZip(zipOf(t, map[string]string{"a.txt": "x"}),
 		filepath.Join(blocker, "install"))
 	if err == nil {
 		t.Fatal("an install directory under a file was created")
@@ -148,7 +125,7 @@ func TestAnEntryThatCannotBeWrittenStopsTheExtraction(t *testing.T) {
 		t.Fatalf("planting the blocker: %v", err)
 	}
 
-	if err := ExtractZip(archiveOf(t, map[string]string{"app.exe": "x"}), dest); err == nil {
+	if err := ExtractZip(zipOf(t, map[string]string{"app.exe": "x"}), dest); err == nil {
 		t.Fatal("an entry was written over a directory")
 	}
 }
@@ -161,7 +138,7 @@ func TestAnEntrysParentDirectoryThatCannotBeMadeStopsTheExtraction(t *testing.T)
 		t.Fatalf("planting the blocker: %v", err)
 	}
 
-	err := ExtractZip(archiveOf(t, map[string]string{"assets/readme.txt": "x"}), dest)
+	err := ExtractZip(zipOf(t, map[string]string{"assets/readme.txt": "x"}), dest)
 	if err == nil {
 		t.Fatal("an entry was written beneath a file")
 	}

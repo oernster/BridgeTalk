@@ -4,6 +4,7 @@ package setup
 // the reader would type it, with the reason in plain words and no system call.
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,6 +24,13 @@ func TestSetupRefusalsNameTheirPathOnce(t *testing.T) {
 	blockedCopy := filepath.Join(blocked, "uninstall.exe")
 	undeletable := base + string(os.PathSeparator) + "."
 	_, measured := DirSizeKB(missing)
+	built := filepath.Join(base, "Built App")
+	plant(t, built, ExeName, "the program")
+	unbuilt := filepath.Join(base, "Empty Build")
+	if err := os.Mkdir(unbuilt, dirPerm); err != nil {
+		t.Fatalf("making %s: %v", unbuilt, err)
+	}
+	missingModel := filepath.Join(base, "Missing Voice.bin")
 
 	cases := []struct {
 		act     string
@@ -34,6 +42,10 @@ func TestSetupRefusalsNameTheirPathOnce(t *testing.T) {
 		{"extracting into a folder that cannot exist", ExtractZip(zipOf(t, map[string]string{ExeName: "x"}), blocked), blocked},
 		{"measuring a folder that is not there", measured, missing},
 		{"removing a tree that cannot go", RemoveTree(undeletable), undeletable},
+		{"packing a folder with no application", Pack(io.Discard, Payload{App: unbuilt}), unbuilt},
+		{"packing a model file that is not there", Pack(io.Discard, Payload{
+			App: built, ModelsDir: base, Folder: modelsFolder, Models: []string{filepath.Base(missingModel)},
+		}), missingModel},
 	}
 	for _, each := range cases {
 		for _, problem := range refusal.Check(each.refused, each.path) {

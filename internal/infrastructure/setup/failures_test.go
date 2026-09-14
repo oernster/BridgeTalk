@@ -24,7 +24,7 @@ const unknownMethod uint16 = 99
 // rawZipOf builds an archive holding one entry written exactly as given: nothing is
 // compressed and no checksum is computed, so a test can hand extraction an entry the
 // writer would never produce on its own.
-func rawZipOf(t *testing.T, header *zip.FileHeader, content []byte) []byte {
+func rawZipOf(t *testing.T, header *zip.FileHeader, content []byte) string {
 	t.Helper()
 	var buffer bytes.Buffer
 	writer := zip.NewWriter(&buffer)
@@ -38,7 +38,7 @@ func rawZipOf(t *testing.T, header *zip.FileHeader, content []byte) []byte {
 	if err := writer.Close(); err != nil {
 		t.Fatalf("closing archive: %v", err)
 	}
-	return buffer.Bytes()
+	return buffer.String()
 }
 
 // A payload can carry a directory as an entry of its own, not only as the parent of a

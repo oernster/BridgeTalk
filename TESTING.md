@@ -45,17 +45,18 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/modelfiles` | 99.0% | 99% | `test.ps1` |
+| `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 98.4% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
-| `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
+| `internal/infrastructure/setup` | 73.9% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 91.5% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
-| `tools/models` | 53.1% | 53% | `test.ps1` |
+| `tools/models` | 48.3% | 48% | `test.ps1` |
+| `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `tools/sounds` | 38.5% | 38% | `test.ps1` |
-| `internal/infrastructure/modelfiles/modelfilestest` | test support, run by the `modelfiles` and `tools/models` tests | none | not gated |
+| `internal/infrastructure/modelfiles/modelfilestest` | test support, run by the `modelfiles`, `tools/models` and `tools/payload` tests | none | not gated |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
@@ -189,7 +190,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (72.5% overall).**
+- **The registry writes in `internal/infrastructure/setup` (73.9% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -207,10 +208,15 @@ release is for.
   Making every line in each accent from its spelling and matching the answers back to their
   lines is tested in `makeSounds` over a hand-written maker. What the real tool wrote is checked
   by the structural test over `sounds.toml`.
-- **`tools/models` (53.1%).** The model files tool. `main` and `start` read the real list, find
+- **`tools/models` (48.3%).** The model files tool. `main` and `start` read the real list, find
   `models/` in the repository and hand `run` a client that reaches the internet. `run` itself is tested
   in both modes over a local server, as `internal/infrastructure/modelfiles` is: no test downloads
-  anything or writes outside a temporary folder.
+  anything or writes outside a temporary folder. The figure was 53.1% until checking the folder moved
+  into `modelfiles.Verify`, which the payload tool shares; the check is tested there, so the fall is
+  statements leaving `run` rather than cover lost.
+- **`tools/payload` (53.3%).** The payload tool. `main` and `start` read the real list and find
+  `models/` in the repository. `run` is tested over temporary folders: a packing, a models folder that
+  does not match, an application folder without the application and a missing flag.
 
 ### It could not happen, so it is gone
 

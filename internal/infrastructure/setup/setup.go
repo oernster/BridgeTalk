@@ -8,7 +8,6 @@ package setup
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -61,8 +60,12 @@ func StateDir() (string, error) {
 
 // ExtractZip extracts a zip archive into dest, creating directories as needed and
 // refusing any entry whose path would escape dest.
-func ExtractZip(data []byte, dest string) error {
-	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+//
+// The archive arrives as a string because the setup program embeds its payload as one:
+// an embedded byte slice is charged to the process as private memory from the moment it
+// starts, which for a payload carrying the model files is over 300 MB (FR-524).
+func ExtractZip(data string, dest string) error {
+	reader, err := zip.NewReader(strings.NewReader(data), int64(len(data)))
 	if err != nil {
 		return fmt.Errorf("opening the payload: %w", err)
 	}

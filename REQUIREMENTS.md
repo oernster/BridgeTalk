@@ -1208,7 +1208,18 @@ Priority: Must.
 When setup writes the application's files (FR-802), it shall write every file a machine voice is
 made from: the model, the 28 voice style files and ONNX Runtime. Nothing shall be downloaded.
 Rationale: the setup program carries the model files (Oliver, 2026-09-14), so NFR-S-1 holds.
-Verified by: not built.
+Note: the payload is embedded in the setup program as a string rather than a byte slice (Oliver,
+2026-09-14). Measured the same day with a stand-in program that embeds the full payload and extracts it
+the way `setup.ExtractZip` does: as a byte slice the payload is charged to the process as 323.6 MB of
+private memory from the moment it starts, peaking at 329.1 MB; as a string, 12.8 MB at start and
+17.6 MB at peak. Extracting took about 1.9 s either way.
+Verified by: `TestPackedModelFilesAreExtractedIntoTheFolderBesideTheApplication` in
+`internal/infrastructure/setup/pack_test.go` for where the files land and
+`TestSetupInstallsEveryListedFileButTheTokenizerFile` in `internal/infrastructure/modelfiles/installed_test.go`
+for which files, proved by planting the model files packed at the archive's root and the tokenizer file
+kept. On 2026-09-14 `tools/payload` packed `models/` into a 326.3 MB archive holding the application and
+the 30 installed files in `models`. Not verified: a built setup program installing them, nor its memory;
+neither has been built or run.
 
 **FR-525 Uninstall removes the made lines**
 Priority: Must.
@@ -1460,6 +1471,33 @@ Rationale: looking again reads the recordings. A machine voice is not among them
 recorded voice in its place would change a choice nobody changed.
 Verified by: `TestLookingAgainKeepsACastMachineVoice` in `machine_test.go`, over a rescan; a newly
 chosen library root takes the same path.
+
+**FR-543 The payload is packed from the list**
+Priority: Must.
+When `go run ./tools/payload` runs with `-app` naming the built application's folder and `-out` naming
+the archive, the tool shall check `models/` as FR-538 does, then write the archive holding every file
+under the application's folder at its root and every listed file but the tokenizer file in `models`.
+If a listed file is missing or differs from the list, then the tool shall exit with a failure naming
+each such file and leave the archive as it was. If the application's folder holds no `BridgeTalk.exe`,
+then the tool shall refuse naming the folder and leave the archive as it was.
+Rationale: FR-524 has setup carry exactly the files the application reads beside itself (FR-539). The
+list is the one place those files are named, so the packing reads it rather than `build.ps1` keeping a
+second list; a glob over `models/` would carry the tokenizer file, which only a test reads. `build.ps1`
+runs the tool where it once zipped the application alone (recommended by Claude, 2026-09-14).
+Acceptance: Given the application's folder holding `BridgeTalk.exe` and `models/` holding every listed
+file, when the tool runs, then the archive holds `BridgeTalk.exe` and `models/bf_alice.bin` and holds no
+`models/tokenizer.json`. Given `bf_alice.bin` altered and `model.onnx` missing, when the tool runs, then
+the failure names both and the archive is as it was.
+Verified by: `TestThePayloadHoldsTheApplicationThenEveryModelFileSetupInstalls`,
+`TestAModelsFolderThatDoesNotMatchLeavesTheArchiveAsItWas`,
+`TestAnApplicationFolderWithoutTheApplicationLeavesTheArchiveAsItWas` and `TestTheToolIsToldBothFolders` in
+`tools/payload/main_test.go`, with `TestVerifyNamesEveryFileMissingOrDifferent` in
+`internal/infrastructure/modelfiles/check_test.go` and the two packing refusals in
+`TestSetupRefusalsNameTheirPathOnce`. Proved by planting the tokenizer file kept, the check skipped, the
+application left unlooked for and the archive packed in place; each planted fault failed its test. On
+2026-09-14 the tool took 5.5 s over the repository's `models/` with an application built earlier, writing
+326,264,502 bytes: `BridgeTalk.exe` at the root, 30 files in `models`, no `tokenizer.json`. `build.ps1`
+was checked by the PowerShell parser only; it has not been run.
 
 ### 6.2 Machine voices, non-functional
 

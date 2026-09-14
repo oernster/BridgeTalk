@@ -86,20 +86,7 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## M9 Setup
 
-- The setup program carries every file a machine voice is made from, downloading nothing (FR-524).
 - Uninstall deletes the made lines (FR-525).
-- `build.ps1` runs `go run ./tools/models -check` before it packs anything, then takes the files from
-  `models/` (FR-538).
-- Embed the payload as a `string` rather than a `[]byte` (Oliver, 2026-09-14). Measured the same day
-  with a stand-in program that embeds the full payload and extracts it the way `setup.ExtractZip`
-  does: as a `[]byte` the payload is charged to the process as 323.6 MB of private memory from the
-  moment it starts, peaking at 329.1 MB; as a `string`, 12.8 MB at start and 17.6 MB at peak.
-  Extracting took about 1.9 s either way.
-- What the model files cost, measured the same day: they take the payload from 6.0 MB to 326.2 MB
-  (367.9 MB before zipping), so the setup program is projected at about 338 MB against 17.7 MB today.
-  Building a program that embeds the payload took about 3.1 s against 0.37 s. Only 2 of the 28 style
-  files were on this machine; copies of those stood in for the rest. The real setup program was not
-  built or run for this, so its own build time and the memory its window uses are not measured.
 
 ## Content track, alongside M3 onwards
 

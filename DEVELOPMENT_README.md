@@ -131,8 +131,10 @@ It does five things in order and stops at the first failure:
 4. Runs `wails build` for the application. That runs the front end's `npm run build`,
    which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type error
    stops the build here.
-5. Zips the result as the setup program's payload, builds the setup program with the
-   version passed in through `-ldflags`, then collects it.
+5. Packs the result with every model file the application reads as the setup program's
+   payload through `go run ./tools/payload`, which checks `models/` against the list
+   first and downloads nothing. It then builds the setup program with the version
+   passed in through `-ldflags` and collects it.
 
 | Output | What it is |
 |---|---|
@@ -148,11 +150,12 @@ when only the application has changed:
 
 ### A note on the payload
 
-The setup program carries the application as an embedded zip at
+The setup program carries the application and the model files as an embedded zip at
 `installer/payload.zip`. `build.ps1` fills it, builds, then writes an empty zip back
-over it, so `go build ./...` and the tests keep working without a full build and a
-multi-megabyte payload never reaches a commit. If a build is interrupted between
-those steps, run `./build.ps1` again rather than committing what is there.
+over it even when the setup program fails to build, so `go build ./...` and the tests
+keep working without a full build and a payload of over 300 MB never reaches a commit.
+If a build is interrupted between those steps, run `./build.ps1` again rather than
+committing what is there.
 
 ### A note on `-ldflags`
 

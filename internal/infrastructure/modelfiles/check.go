@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
@@ -31,6 +32,17 @@ func Check(dir string, files []File) ([]string, error) {
 		}
 	}
 	return missing, errors.Join(problems...)
+}
+
+// Verify answers nil where dir holds every listed file as listed, downloading nothing (FR-538).
+// Otherwise it answers with one error naming the missing files, then each file that differs or
+// cannot be read, so every tool that checks the folder says so in the same words.
+func Verify(dir string, files []File) error {
+	missing, err := Check(dir, files)
+	if len(missing) > 0 {
+		err = errors.Join(fmt.Errorf("%s is missing %s", dir, strings.Join(missing, ", ")), err)
+	}
+	return err
 }
 
 // verify answers nil where the file at path has the listed size and SHA-256. A file that is not

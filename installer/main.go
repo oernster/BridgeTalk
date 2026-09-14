@@ -22,8 +22,12 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// payload is embedded as a string rather than a byte slice (FR-524). Measured with a
+// stand-in program carrying the full payload: as a byte slice it was charged to the
+// process as 323.6 MB of private memory from the moment it started; as a string, 12.8 MB.
+//
 //go:embed payload.zip
-var payload []byte
+var payload string
 
 // appVersion is overridden at build time with -ldflags "-X main.appVersion=x.y.z",
 // so the setup program never holds a version literal of its own.

@@ -120,7 +120,8 @@ $measured = [ordered]@{
     './internal/infrastructure/wholefile' = 100
     './internal/refusal'                  = 100
     './tools/sounds'                      = 38
-    './tools/models'                      = 53
+    './tools/models'                      = 48
+    './tools/payload'                     = 53
 }
 
 Write-Host 'Measuring the rest of the tree...'

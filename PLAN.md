@@ -12,6 +12,9 @@ section 10 says: domain, then application, then infrastructure, then user interf
   copied from its tokenizer file by a script. It turns speech sounds into those numbers, refusing
   more than 510 (FR-506). It reads the spellings a line gives, refusing every broken form (FR-529,
   FR-531).
+- `internal/domain/script` holds the script checked against the cue table (FR-503 to FR-505,
+  FR-531). `config` embeds `script.toml`, which holds the `Docked` example alone. A structural test
+  reads it through those rules; FR-507's test reports progress until `scriptComplete` is switched on.
 - Nothing else of machine voices is built.
 - `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
   `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
@@ -25,18 +28,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
   eSpeak NG caller, the dictionary lookup with misaki's rules and the FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
 
-## M3 Domain plus structural tests: the script
-
-Package `internal/domain/script`; `script.toml` embedded by infrastructure through `tomlfile.Decode`.
-
-- A script is built from cue ids to lines against the cue table. An unknown cue (FR-504), a cue
-  without three distinct lines (FR-505), a line over the limit (FR-506) or a broken spelling (FR-531)
-  is refused, naming the cue and the line.
-- Structural tests over the embedded file for FR-504, FR-505 and FR-531, each proved by planting a
-  violation.
-- FR-507 (every cue has lines) is a test that fails until the script is complete. It is switched on
-  when the content track ends, not before.
-
 ## M4 Domain: pronunciation
 
 In `speech`. Words to speech sounds in each accent: misaki's gold then silver dictionaries, the -s,
@@ -45,6 +36,9 @@ replacements. A word no dictionary holds goes to an injected fallback, eSpeak NG
 A spelling given in the line (FR-529) bypasses all of it.
 
 - NFR-Q-501 against a committed reference file of misaki's own output for all 256 purposes.
+- FR-506 for each line: the script refuses a line whose speech sounds come to more than 510 in
+  either accent, naming the cue and the line. It needs pronunciation, so it lands here rather than
+  with the script.
 - **Measure first:** how many of those words reach the fallback. If the reference test cannot pass
   without eSpeak NG, it becomes an infrastructure test that skips where eSpeak NG is absent; the
   requirement is amended to say so.
@@ -117,7 +111,8 @@ package still builds and vets on any platform.
 `script.toml`: three lines for each of the 256 cues, 768 in all (FR-505, FR-507). Claude drafts a
 group of cues at a time from each cue's purpose; Oliver reviews each group. A line is reworded where
 the pronunciation test shows a misread word; a spelling is given only where no rewording serves
-(FR-529).
+(FR-529). When the last group lands, `scriptComplete` in `tests/structural/script_test.go` is
+switched on, so FR-507 fails the build from then on.
 
 ## Waiting on Oliver
 

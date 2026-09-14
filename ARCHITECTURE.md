@@ -42,7 +42,7 @@ exactly like one that holds.
 
 ## Layers
 
-- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `selection`, `speech`): pure Go. Values are validated on
+- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `script`, `selection`, `speech`): pure Go. Values are validated on
   construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
   `CooldownGate.Allow` and `DedupeWindow.Fresh`, while randomness arrives through the injected
   `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
@@ -50,12 +50,13 @@ exactly like one that holds.
   28 machine voices offered, the accent each speaks with and the name each is shown by; the list is the
   one home of the model's voice ids. `speech` holds the speech sound symbols the model reads with their
   numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives.
+  `script` checks the script against the cue table, naming the cue and the line behind every problem.
 - **Application** (`internal/application`): the reaction and scheduling services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
   never imports Infrastructure or the Wails runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
-  folder maker (`library`), the audio engine (`audio`), the cue table and the settings store (`config`),
+  folder maker (`library`), the audio engine (`audio`), the cue table, the script and the settings store (`config`),
   the strict reading both TOML files share (`tomlfile`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
   (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
@@ -677,6 +678,7 @@ directory, so running setup leaves no folder beside the application's.
 | Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
 | Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
 | Cue table | embedded in the binary |
+| Script | `script.toml`, embedded in the binary beside the cue table |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
 | Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |

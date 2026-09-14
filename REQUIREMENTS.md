@@ -973,7 +973,9 @@ Rationale: one set of words for every machine voice, edited as a file (Oliver, 2
 the reasons section 3.3 gives.
 Acceptance: Given `script.toml` holding three lines for `Docked`, when a machine voice is cast, then
 that voice's takes for `Docked` are made from exactly those three lines.
-Verified by: not built.
+Verified by: in part, `TestAScriptHoldsTheLinesItIsGiven` in `internal/domain/script/script_test.go`
+and `TestTheShippedScriptLoadsAgainstTheShippedTable` in `internal/infrastructure/config/script_test.go`
+for reading the script; making a voice's takes from it is not built.
 
 **FR-504 If the script names something that is not a cue, then the build fails**
 Priority: Must.
@@ -981,7 +983,9 @@ If `script.toml` holds a key that is not a cue id in `cues.toml`, then a structu
 naming that key.
 Acceptance: Given `script.toml` holding `"Dockd"`, when the structural tests run, then one fails
 naming `Dockd`.
-Verified by: not built.
+Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go`, proved by
+planting `"Dockd"`; the rule is `TestAKeyThatIsNotACueIsRefusedNamingIt` in
+`internal/domain/script/script_test.go`.
 
 **FR-505 A cue in the script holds three lines**
 Priority: Must.
@@ -990,7 +994,9 @@ Rationale: three so an event heard often does not sound the same each time (Oliv
 FR-610 already keeps the same take from playing twice running.
 Acceptance: Given `"Docked"` holding two lines, when the structural tests run, then one fails naming
 `Docked`.
-Verified by: not built.
+Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go`, proved by
+planting a cue with two lines; the rules are `TestACueWithoutThreeLinesIsRefused`,
+`TestAnEmptyLineIsRefused` and `TestARepeatedLineIsRefused` in `internal/domain/script/script_test.go`.
 
 **FR-506 A line fits the model**
 Priority: Must.
@@ -1005,7 +1011,9 @@ Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before ma
 `script.toml` shall hold lines for every cue id in `cues.toml`.
 Note: until it does, a machine voice is silent for a cue with no lines, as FR-220 says of a recorded
 voice.
-Verified by: not built.
+Verified by: not enforced yet. `TestTheScriptHoldsLinesForEveryCue` in `tests/structural/script_test.go`
+reports how many cues have lines and skips until `scriptComplete` is switched on with the last group
+of lines; proved by planting it on while the script is incomplete.
 
 **FR-508 The machine voices offered**
 Priority: Must.
@@ -1208,8 +1216,9 @@ from its tokenizer file on 2026-09-14; square brackets and slashes are not among
 code drops a symbol the model does not hold without complaint, so nothing later would catch one.
 Acceptance: Given `"Docked"` holding a line with `[record](/ˈɹɛkɔːd)`, when the structural tests run,
 then one fails naming `Docked` and that line.
-Verified by: in part, `TestABrokenSpellingIsRefusedSayingWhy` in `internal/domain/speech/speech_test.go`
-for every broken form; the structural test over `script.toml` is not built.
+Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go`, proved by
+planting a broken spelling; every broken form is `TestABrokenSpellingIsRefusedSayingWhy` in
+`internal/domain/speech/speech_test.go`.
 
 ### 6.2 Machine voices, non-functional
 

@@ -1,7 +1,7 @@
-// Package config loads the shipped cue table.
+// Package config loads the shipped cue table and the script machine voices speak.
 //
-// It is embedded in the binary so the application runs from a single executable. It
-// can be overridden from disk so a cue can be retuned without a rebuild.
+// Both are embedded in the binary so the application runs from a single executable. The
+// cue table can be overridden from disk so a cue can be retuned without a rebuild.
 package config
 
 import (

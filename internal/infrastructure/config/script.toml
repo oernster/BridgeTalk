@@ -1,0 +1,7 @@
+# The words each moment is spoken with, shared by every machine voice.
+#
+# Each key is a cue id from cues.toml, in quotes, holding three different lines. Where a word is
+# misread and no rewording serves, give its speech sounds after it: [record](/ˈɹɛkɔːd/) serves
+# both accents; [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) gives British then American.
+[lines]
+"Docked" = ["Docking complete.", "We're down safely.", "Docked and secure, commander."]

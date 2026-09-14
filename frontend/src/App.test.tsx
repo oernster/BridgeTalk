@@ -56,6 +56,7 @@ vi.mock('./api', () => ({
     machineVoices: () => Promise.resolve([]),
     making: () => Promise.resolve(nothingMade),
     castMachineVoice: () => Promise.resolve(),
+    openDonation: () => Promise.resolve(),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -264,6 +265,40 @@ describe('what the backend tells the window', () => {
     act(() => handlers.get('state')?.())
 
     await waitFor(() => expect(state.mock.calls.length).toBeGreaterThan(before))
+  })
+})
+
+describe('the strip along the foot', () => {
+  // FR-717: the strip belongs to the window rather than to a pane, so it stays put beneath
+  // whichever pane is open.
+  it('draws the strip beneath whichever pane is open', async () => {
+    await show()
+
+    for (const label of ['Cast', 'Audition', 'Status', 'Missing takes', 'Settings', 'Guide']) {
+      band(label)
+      const strip = document.querySelector('main.pane + footer.strip') as HTMLElement | null
+      expect(strip, `no strip beneath the ${label} pane`).not.toBeNull()
+      const inStrip = within(strip as HTMLElement)
+      expect(inStrip.getByRole('button', { name: /^Donate to support/ })).toBeTruthy()
+      expect((strip as HTMLElement).querySelector('[aria-live="polite"]')).not.toBeNull()
+    }
+  })
+
+  // FR-718 and FR-713: the donate button takes its place after everything above it, so
+  // stepping back from the neutral start lands on it and stepping on wraps to the first stop.
+  it('puts the donate button last on the ring', async () => {
+    layOut()
+    try {
+      await show()
+
+      fireEvent.keyDown(document, { key: 'Tab', shiftKey: true })
+      expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Donate to support/)
+
+      fireEvent.keyDown(document, { key: 'Tab' })
+      expect(document.activeElement?.textContent).toBe('File')
+    } finally {
+      unlayOut()
+    }
   })
 })
 

@@ -5,20 +5,27 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 	"testing"
 )
 
-// purposeRule is the style part holding the Missing takes purpose line's rule;
+// secondaryRule is the style part holding the rule the secondary text lines share;
 // themeTokens is the palette that rule's colour is read from.
 var (
-	purposeRule = filepath.Join("frontend", "src", "theme", "controls.css")
-	themeTokens = filepath.Join("frontend", "src", tokenFile)
+	secondaryRule = filepath.Join("frontend", "src", "theme", "controls.css")
+	themeTokens   = filepath.Join("frontend", "src", tokenFile)
 )
 
-// minimumPurposeContrast is the ratio FR-318 requires: the WCAG 2 enhanced level for
+// secondaryLines are the lines drawn in the theme's secondary text colour: the Missing
+// takes purpose line (FR-318) and the Status cards' taglines (FR-716). They share one rule,
+// so the one token measured here is the colour every one of them is drawn in.
+var secondaryLines = []string{".row .purpose", ".card .tagline"}
+
+// minimumSecondaryContrast is the ratio FR-318 requires: the WCAG 2 enhanced level for
 // normal text.
-const minimumPurposeContrast = 7.0
+const minimumSecondaryContrast = 7.0
 
 // themeSelectors name the palette's two blocks, light then dark; backgroundTokens are the
 // grounds a row can stand on.
@@ -44,12 +51,13 @@ const (
 	flareOffset     = 0.05
 )
 
-// purposeColour captures the token the purpose rule draws its colour from; themeBlock
-// captures one palette block by selector; tokenLine captures one token's hex value.
+// ruleColour captures the token a rule's own color declaration reads, passing over a
+// background-color or a border-color; themeBlock captures one palette block by selector;
+// tokenLine captures one token's hex value.
 var (
-	purposeColour = regexp.MustCompile(`(?s)\.row \.purpose \{[^}]*?color:\s*var\(--([\w-]+)\)`)
-	themeBlock    = regexp.MustCompile(`(?ms)^(:root[^{\n]*?)\s*\{(.*?)^\}`)
-	tokenLine     = regexp.MustCompile(`--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;`)
+	ruleColour = regexp.MustCompile(`(?:^|[\s;])color:\s*var\(--([\w-]+)\)`)
+	themeBlock = regexp.MustCompile(`(?ms)^(:root[^{\n]*?)\s*\{(.*?)^\}`)
+	tokenLine  = regexp.MustCompile(`--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;`)
 )
 
 // luminance reads a six digit hex colour as WCAG 2 relative luminance.
@@ -102,24 +110,51 @@ func palettes(t *testing.T, root string) map[string]map[string]string {
 	return out
 }
 
-// TestThePurposeLineContrastsInBothThemes holds FR-318: whatever token the purpose line
-// is drawn in reads at 7 to 1 or better against every ground a row stands on, in each
-// theme. The token is read from the rule rather than named here, so recolouring the line
-// is measured rather than trusted.
-//
-// Proved by pointing the rule at the muted token, which measures under 7 to 1 in the
-// light theme, then reading the exit code. A paler light secondary token was caught too.
-func TestThePurposeLineContrastsInBothThemes(t *testing.T) {
-	root := repoRoot(t)
-	rule, err := os.ReadFile(filepath.Join(root, purposeRule))
+// secondaryToken reads the token drawn by the one rule that names every secondary line.
+// A line given a rule of its own is not found here, since its colour would then be a second
+// statement this test never measures.
+func secondaryToken(t *testing.T, root string) string {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(root, secondaryRule))
 	if err != nil {
-		t.Fatalf("reading %s: %v", filepath.ToSlash(purposeRule), err)
+		t.Fatalf("reading %s: %v", filepath.ToSlash(secondaryRule), err)
 	}
-	found := purposeColour.FindSubmatch(rule)
-	if found == nil {
-		t.Fatalf("%s has no .row .purpose rule drawing its colour from a token", filepath.ToSlash(purposeRule))
+	for _, rule := range parseRules(filepath.Base(secondaryRule), raw) {
+		if !namesEvery(rule.selectors, secondaryLines) {
+			continue
+		}
+		if found := ruleColour.FindStringSubmatch(rule.body); found != nil {
+			return found[1]
+		}
 	}
-	token := string(found[1])
+	t.Fatalf(
+		"%s has no one rule naming %s that draws its colour from a token",
+		filepath.ToSlash(secondaryRule), strings.Join(secondaryLines, " and "),
+	)
+	return ""
+}
+
+// namesEvery reports whether a rule's selectors include every one wanted.
+func namesEvery(selectors, wanted []string) bool {
+	for _, each := range wanted {
+		if !slices.Contains(selectors, each) {
+			return false
+		}
+	}
+	return true
+}
+
+// TestTheSecondaryLinesContrastInBothThemes holds FR-318 for every line drawn in the
+// secondary text colour, the Status cards' taglines of FR-716 among them: whatever token
+// their shared rule draws in reads at 7 to 1 or better against every ground a row stands
+// on, in each theme. The token is read from the rule rather than named here, so recolouring
+// the lines is measured rather than trusted.
+//
+// Proved by pointing the rule at the muted token, which measures under 7 to 1 in the light
+// theme, then reading the exit code. A paler light secondary token was caught too.
+func TestTheSecondaryLinesContrastInBothThemes(t *testing.T) {
+	root := repoRoot(t)
+	token := secondaryToken(t, root)
 
 	themes := palettes(t, root)
 	for _, selector := range themeSelectors {
@@ -130,7 +165,7 @@ func TestThePurposeLineContrastsInBothThemes(t *testing.T) {
 		}
 		fore, ok := tokens[token]
 		if !ok {
-			t.Errorf("%s defines no --%s for the purpose line", selector, token)
+			t.Errorf("%s defines no --%s for the secondary lines", selector, token)
 			continue
 		}
 		for _, ground := range backgroundTokens {
@@ -139,10 +174,10 @@ func TestThePurposeLineContrastsInBothThemes(t *testing.T) {
 				t.Errorf("%s defines no --%s", selector, ground)
 				continue
 			}
-			if ratio := contrast(t, fore, back); ratio < minimumPurposeContrast {
+			if ratio := contrast(t, fore, back); ratio < minimumSecondaryContrast {
 				t.Errorf(
 					"%s: --%s on --%s measures %.2f to 1, under the %.0f to 1 FR-318 requires",
-					selector, token, ground, ratio, minimumPurposeContrast,
+					selector, token, ground, ratio, minimumSecondaryContrast,
 				)
 			}
 		}

@@ -296,7 +296,12 @@ python tools/genicons.py
 That writes the nav band icons into `frontend/src/assets/icons`, composes the muted
 speaker from the sounding one and a slash, turns `assets/application-icon.png` into the
 `.ico` beside it plus the copy the About dialog shows, then writes the setup page's
-header mark and its two theme icons. The `.ico` is committed rather than left for
+header mark and its two theme icons. Last it derives the donate artwork from
+`assets/donate.png`, which is not a band icon and is never squared into one: trimmed to
+its content, scaled by height alone to four times the height the window's foot strip
+draws it at (read from the strip's tokens in `frontend/src/theme/footer.css`), then the
+one render is written to `frontend/src/assets/donate.png` and to the site's
+`docs/images/donate.png`. The `.ico` is committed rather than left for
 Wails to derive at build time: Wails only derives one when the file is absent, so
 relying on that would mean deleting and hoping.
 

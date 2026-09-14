@@ -18,9 +18,12 @@
   color: var(--muted);
 }
 
+/* auto-fit rather than auto-fill: auto-fill keeps an empty track wherever the width holds
+   more columns than there are cards, which left a block of space beside them in a wide
+   window. With auto-fit the cards widen to share the row (FR-716). */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -53,13 +56,12 @@
   word-break: break-all;
 }
 
-/* A figure that would read as a shortfall says what it means underneath itself,
-   quietly enough that it does not compete with the figure. */
-.card .hint {
+/* What a card's figure means, underneath it, quietly enough that it does not compete with
+   the figure (FR-716). Its size and colour are the secondary line's, set in controls.css
+   beside the purpose line it shares them with; this places it. */
+.card .tagline {
   margin-top: 4px;
-  font-size: 14px;
   line-height: 1.35;
-  color: var(--muted);
 }
 /* Something a pane has to say before anything else it says. The accent is already the
    colour this window uses for something that wants reading, so the rule down the side

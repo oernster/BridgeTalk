@@ -107,6 +107,8 @@ export interface Audition {
 export interface Reaction {
   at: string
   cue: string
+  /** The moment's full title, as every list names it (FR-233); the live indicator says it (FR-719). */
+  title: string
   clip: string
   outcome: string
 }
@@ -195,6 +197,7 @@ interface Bridge {
   VoiceDirectories(): Promise<string[]>
   Checklist(voice: string): Promise<Checklist>
   OpenMomentFolder(voice: string, id: string): Promise<void>
+  OpenDonation(): Promise<void>
   SetLaunchOnBoot(enabled: boolean): Promise<void>
   MinimiseToTray(): Promise<void>
   RequestQuit(): Promise<void>
@@ -287,6 +290,12 @@ export const api = {
    */
   openMomentFolder: (voice: string, id: string): Promise<void> =>
     bridge()?.OpenMomentFolder(voice, id) ?? Promise.resolve(),
+
+  /**
+   * Hands the donation page to the desktop to open in the browser (FR-718). It rejects where that
+   * could not be done. With no bridge there is no desktop to hand it to, so it does nothing.
+   */
+  openDonation: (): Promise<void> => bridge()?.OpenDonation() ?? Promise.resolve(),
 
   /**
    * Starts or stops the application being launched at sign-in. It rejects rather than

@@ -835,7 +835,7 @@ row reads "Cast: confirmed", then the purpose of `Cast.Confirmed`, then
 `<library root>\Oliver\Cast_Confirmed`, the purpose drawn in the secondary colour.
 Verified by: `frontend/src/missingTakes.test.tsx` for the line and its place in the row;
 `TestTheChecklistCountsWhatIsRecorded` for the purpose reaching the page;
-`TestThePurposeLineContrastsInBothThemes` in `tests/structural/contrast_test.go` for the colour.
+`TestTheSecondaryLinesContrastInBothThemes` in `tests/structural/contrast_test.go` for the colour.
 
 **FR-316 Offer only the voices still missing takes**
 Priority: Must.
@@ -2398,6 +2398,144 @@ setup program. Not verified by a test: finding that a run has no error output, s
 always has one (measured instead with a windowed probe on 2026-09-14); `main` keeping the log before
 anything else; setup finding the file through `runlog.Path`; a real crash of the application.
 
+**FR-716 The Status cards fill the pane's width and say what they mean**
+Priority: Should.
+The Status pane shall lay its cards across the pane's whole width, the cards widening to share the row
+rather than leaving an empty stretch beside them and dropping to fewer a row only where the pane is too
+narrow. Under each card's value the pane shall show a tagline, smaller than the value and in the
+theme's secondary text colour (FR-318), saying what the card means:
+
+| Card | Tagline |
+|---|---|
+| Cast | The voice that speaks when something happens in the game. Change it on the Cast pane. |
+| Moments covered | A moment is something that happens in the game that a voice can speak for, such as docking. Then the line for its situation below. |
+| Journal | The folder where Elite Dangerous records what happens in your game. The product listens to it for moments to speak. |
+| Status file | The file the game rewrites as your ship's state changes. The product reads it for things the journal does not record. |
+
+The card once labelled "Cues served" shall be labelled "Moments covered". Its second line shall be:
+
+| Situation | Line |
+|---|---|
+| A recorded voice with every moment covered | Every game moment has a recording. |
+| A recorded voice with one moment not covered | The other moment has no recording yet, so it stays silent. Nothing is wrong: Missing takes lists it and where its recording goes. |
+| A recorded voice with N moments not covered, N above one | The other N moments have no recording yet, so they stay silent. Nothing is wrong: Missing takes lists them and where each recording goes. |
+| A machine voice | A machine voice makes a moment's lines the first time it happens, so this number grows as you play. Nothing is missing. |
+| No voice cast | Cast a voice to hear the game. |
+
+The figure on Moments covered shall never take a warning colour. The product is named as `api.about()`
+gives it, never written into the page.
+Rationale: read on 2026-09-14 in `frontend/src/theme/panes.css`, the cards sit in a grid of
+`repeat(auto-fill, minmax(215px, 1fr))`, which keeps empty tracks wherever the width holds more than
+four, so a wide window leaves a block of empty space to their right (Oliver, 2026-09-14). "Cues served"
+used the application's own word; a shortfall read as a fault the player could not fix. For a
+recorded voice the figure counts moments with a take; for a machine voice it counts moments with a line
+made so far, which rises as the game is played (read in `library.Catalogue.Coverage` and the making
+service's `Lookup` on 2026-09-14). The window already says moment ("Moments spoken for", Missing takes).
+Wording proposed by Claude; approved by Oliver on 2026-09-14.
+Acceptance: Given a window wide enough for six 215 px columns, when the Status pane opens, then its four
+cards fill the pane's width in one row. Given `bf_emma` cast with lines made for 3 moments, then Moments
+covered reads "3 of 256" with the machine voice line beneath its tagline. Given `Oliver/` holding a take
+for `Docked` alone, then it reads "1 of 256" with "The other 255 moments have no recording yet".
+Verified by: "labels the coverage card Moments covered, its figure in the value colour", "says beneath each
+figure what its card means", "names no product beneath a figure until About answers", "says what the figure
+means for" each of the four situations and "reads the acceptance figures with the line for each" in
+`frontend/src/shell.test.tsx`; `TestTheStatusCardsWidenToShareTheRow` in `tests/structural/strip_test.go`
+for the grid; `TestTheSecondaryLinesContrastInBothThemes` in `tests/structural/contrast_test.go` for the
+taglines' colour. Proved by planting the cards back on auto-fill, the taglines given a rule of their own, a
+machine voice read as a recorded one, the old label put back and the product named before About answers;
+each failed its test. Not verified by a test: the cards filling the pane's width in one row and the
+taglines' size as drawn in the window.
+
+**FR-717 A strip along the foot of the window**
+Priority: Should.
+The window shall show a strip along its foot, below whichever pane is open, three quarters of the
+height of the band of pane buttons at its top, that height derived from the band's own sizes. The strip
+shall hold the donate button at its left (FR-718) and the live indicator at its right (FR-719). A
+tooltip for a control in the strip shall open above that control, wholly inside the window.
+Rationale: Oliver asked for a strip at the base holding a donate button and a live indicator, three
+quarters of the band's height so that it reads as subordinate to it (2026-09-14). The shared tooltip
+opens below its control (`frontend/src/theme/navband.css`, read on 2026-09-14), which at the foot would
+fall outside the window.
+Acceptance: Given any pane open, when the window is drawn, then the strip sits below the pane at three
+quarters of the band's height; hovering the donate button shows its tooltip above it inside the window.
+Verified by: `TestTheStripIsAShareOfTheBandDrawnFromItsOwnSizes`, `TestTheStripsLabelsOpenAboveTheirControls`
+and `TestTheStripIsReadAfterTheBand` in `tests/structural/strip_test.go`; "draws the strip beneath whichever
+pane is open" in `frontend/src/App.test.tsx`. Proved by planting the strip's height as a number, the band's
+icon drawn at a number of its own, the strip's labels left opening below and the strip's style part read
+before the band's; each failed its test. Not verified by a test: the strip's height, its place below the
+pane and its tooltip inside the window as drawn in the window.
+
+**FR-718 The donate button**
+Priority: Should.
+The donate button shall show the donate artwork, which the icon tool derives from `assets/donate.png`
+for the window and for the site alike; it shall carry the tooltip "Donate to support" followed by the
+product's name and "(opens your browser)". When it is pressed, the application shall hand
+`https://www.paypal.com/ncp/payment/DVP73MPL9JPSU` to the desktop to open in the browser, fetching
+nothing itself. The facade shall refuse an address that does not begin `https://`. Where handing the
+address over fails, the live indicator shall say "Could not open a browser for the donation page"
+(FR-719). The button shall take its place in the keyboard ring after everything above it (FR-713).
+Rationale: the address is the one the site's donate section already links, which Oliver confirmed as
+Bridge Talk's own on 2026-09-14. The application opens no connection for the button; the browser does the
+asking. Nothing is withheld behind a donation. A picture alone does not say that pressing it leaves the
+application, so the tooltip does.
+Acceptance: Given the strip, when the donate button is pressed, then the desktop is asked to open exactly
+`https://www.paypal.com/ncp/payment/DVP73MPL9JPSU` and nothing else is opened or fetched.
+Verified by: `TestTheDonateButtonHandsOverTheOneDonationPage`, `TestAnAddressThatIsNotHTTPSIsRefusedHandingNothingOver`,
+`TestAHandOverThatFailsIsReportedToThePage` and `TestAHandOverBeforeTheWindowExistsIsRefused` in
+`donate_test.go`, over a seam in place of the browser; `TestTheBoundSurfaceIsDeclared` in
+`tests/structural/surface_test.go` for `OpenDonation`; "draws the artwork under a label saying the press
+opens the browser", "names no product until About answers", "asks the application to open the donation page
+once for each press" and "says the browser could not be opened for four seconds after a failed press" in
+`frontend/src/strip.test.tsx`; "puts the donate button last on the ring" in `frontend/src/App.test.tsx`.
+`tools/genicons.py` stops rather than square the donate artwork into a band icon. Proved by planting one
+changed character in the donation page, an address check that refuses only an empty address, a press that
+asks twice, a failed press the strip does not remember, the strip drawn above the pane and the donate
+artwork left in the band icons' set; each failed its test or stopped the script. Not verified by a test:
+the browser opening from a running window; the artwork as drawn in the window and on the site.
+
+**FR-719 The live indicator**
+Priority: Should.
+The strip shall show at its right one message saying what the application is doing, changing as the
+state it describes changes and taken from the first row that holds:
+
+| When | Message | Colour token |
+|---|---|---|
+| Handing the donation page to the browser failed, for 4 seconds after (FR-718) | Could not open a browser for the donation page | `--alert` |
+| The journal directory cannot be watched (FR-238) | Not hearing the game: choose a journal folder in Settings | `--alert` |
+| A made line could not be written (FR-520) | Could not save made lines: see the Cast pane | `--alert` |
+| No audio device was available | No audio device: nothing will be heard | `--alert` |
+| Lines are being made (FR-515) | Making lines: C of T ready | `--notice` |
+| Playback is muted (FR-705) | Muted | `--muted` |
+| A moment played within the last 4 seconds | Just played: the moment's full title (FR-233) | `--accent` |
+| No voice is cast | No voice cast | `--muted` |
+| Otherwise | Listening with the cast voice as it is shown | `--ambient` |
+
+Each change shall be announced politely to a screen reader.
+Rationale: Oliver asked for a live feedback indicator in the strip (2026-09-14). Every row reads state
+the window is already sent (the `state`, `making` and `reaction` events, read on 2026-09-14), save the
+moment's full title: the `reaction` event carried the moment's id alone, so it now carries the title Go
+already finds for any voice (Oliver, 2026-09-14). A row that means nothing will be heard comes first. The table was proposed by Claude
+and approved by Oliver on 2026-09-14, naming the moment by its id; its full title replaces the id since
+every moment has one (FR-233).
+Acceptance: Given a machine voice with 13 of 768 lines made while lines are being made, then the
+indicator reads "Making lines: 13 of 768 ready" in the notice colour; with playback muted as well, it
+still reads that. Given the journal directory refused, then it reads "Not hearing the game: choose a
+journal folder in Settings" whatever else holds.
+Verified by: `frontend/src/indicator.test.ts` over the pure selector in `frontend/src/indicator.ts`, whose
+"takes the first row that holds, in the order the table gives" walks the table down from a reading in which
+every row holds, with the acceptance readings and the four seconds on either side of each flash; "says which
+moment was just played for four seconds, then goes back to listening", "gives the last moment played its own
+four seconds", "says nothing of a reaction that played nothing", "reads where making stands when it opens,
+then follows it as it is announced", "says what the application is doing, politely to a screen reader" and
+"takes its timers with it when it goes" in `frontend/src/strip.test.tsx`; `TestEveryIndicatorToneHasItsColourToken`
+in `tests/structural/strip_test.go`; `TestAReactionCarriesItsMomentsFullTitleForARecordedVoice` and
+`TestAReactionCarriesItsMomentsFullTitleForAMachineVoice` in `reaction_title_test.go` for the title, with
+`TestTheWireContractMatchesOnBothSides` holding `title` on both sides of the wire. Proved by planting the
+muted row above making, each flash held one tick too long, timers left behind when the strip goes, the id
+said in place of the title, an indicator that is not announced, the notice tone drawn in the accent and a
+reaction titled with its id; each failed its test. Not verified by a test: the message's colour and place
+as drawn in the window; a screen reader announcing it.
+
 ---
 
 ## 9. The setup program
@@ -2532,7 +2670,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-545 to FR-548, FR-554, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-719, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

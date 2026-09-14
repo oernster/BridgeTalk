@@ -5,11 +5,11 @@
 // HTML embedded on the Go side, which could not reach the artwork: the band's pictures had to
 // be spliced in beside it and every control beyond the band went without one.
 
-import { useEffect, useRef, useState } from 'react'
-import { api } from './api'
+import { useRef } from 'react'
 import { guideSections } from './guideContent'
 import { useAutoScroll, useOverflowStop } from './hooks'
 import { GuideCrest } from './icons'
+import { useProductName } from './productName'
 
 /**
  * GuidePane renders the guide and reads itself, because it is a surface to read through rather
@@ -20,11 +20,8 @@ import { GuideCrest } from './icons'
  * a stale one behind. The sections need no answer, so they are drawn at once.
  */
 export function GuidePane() {
-  const [name, setName] = useState('')
+  const name = useProductName()
   const bodyRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    void api.about().then((about) => setName(about?.name ?? ''))
-  }, [])
   useAutoScroll(bodyRef, true)
   const overflows = useOverflowStop(bodyRef)
 

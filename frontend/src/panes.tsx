@@ -5,29 +5,42 @@ import { useEffect, useRef, useState } from 'react'
 import { api, on, type Reaction, type State } from './api'
 import { Chooser, useChooser } from './chooser'
 import { useOverflowStop } from './hooks'
+import { playedOutcome } from './indicator'
+import { useProductName } from './productName'
+import {
+  castTagline,
+  coveredLine,
+  journalTagline,
+  momentsTagline,
+  statusTagline,
+} from './statusWords'
 
 /**
- * Card renders one labelled figure, with a line beneath it where the figure would
- * otherwise be read as a fault. A shortfall that is expected has to say so where it
- * is shown; sending the reader to another pane to find out is what a defect feels
- * like.
+ * Card renders one labelled figure with the lines saying what it means beneath it, drawn
+ * smaller than the figure in the secondary text colour (FR-716). A shortfall that is
+ * expected has to say so where it is shown; sending the reader to another pane to find
+ * out is what a defect feels like.
  */
 function Card({
   label,
   value,
   plain,
-  hint,
+  lines,
 }: {
   label: string
   value: string
   plain?: boolean
-  hint?: string
+  lines: string[]
 }) {
   return (
     <div className="card">
       <div className="label">{label}</div>
       <div className={plain ? 'value plain' : 'value'}>{value}</div>
-      {hint ? <div className="hint">{hint}</div> : null}
+      {lines.map((line) => (
+        <div className="tagline" key={line}>
+          {line}
+        </div>
+      ))}
     </div>
   )
 }
@@ -44,6 +57,9 @@ export function HomePane({ state }: { state: State | null }) {
   const [log, setLog] = useState<Reaction[]>([])
   const [row, setRow] = useState(0)
   const rowsRef = useRef<HTMLDivElement>(null)
+  const name = useProductName()
+  // A tagline naming the product waits for About to name it; the page keeps no copy of the name.
+  const naming = (tagline: (named: string) => string) => (name === '' ? [] : [tagline(name)])
 
   useEffect(() => {
     void api.reactions().then(setLog)
@@ -81,17 +97,27 @@ export function HomePane({ state }: { state: State | null }) {
       </p>
 
       <div className="cards">
-        <Card label="Cast" value={state ? state.voiceDisplay : '...'} />
-        {/* A shortfall is a gap in the recordings rather than a fault in the
-            application; the hint says what the missing cues do and where they are
-            named, so it is not read as one. */}
+        <Card label="Cast" value={state ? state.voiceDisplay : '...'} lines={[castTagline]} />
+        {/* FR-716: a figure short of the whole is a gap in the recordings or a machine voice
+            still making its lines, never a fault, so the line beneath says which. The figure
+            keeps the value colour every card uses rather than a warning one. */}
         <Card
-          label="Cues served"
+          label="Moments covered"
           value={state ? `${state.bound} of ${state.total}` : '...'}
-          hint="The rest stay silent. The mark beside each voice in the cast pane names them."
+          lines={state ? [momentsTagline, coveredLine(state)] : [momentsTagline]}
         />
-        <Card label="Journal" value={state?.journalDir ?? '...'} plain />
-        <Card label="Status file" value={state?.statusPath ?? '...'} plain />
+        <Card
+          label="Journal"
+          value={state?.journalDir ?? '...'}
+          plain
+          lines={naming(journalTagline)}
+        />
+        <Card
+          label="Status file"
+          value={state?.statusPath ?? '...'}
+          plain
+          lines={naming(statusTagline)}
+        />
       </div>
 
       {/* FR-238: the window opens over a journal directory that cannot be watched, so
@@ -143,7 +169,7 @@ export function HomePane({ state }: { state: State | null }) {
                 aria-selected={index === row}
               >
                 <span className="time">{entry.at}</span>
-                <span className={`badge ${entry.outcome === 'played' ? 'played' : ''}`}>
+                <span className={`badge ${entry.outcome === playedOutcome ? 'played' : ''}`}>
                   {entry.outcome}
                 </span>
                 <span className="cue">{entry.cue}</span>

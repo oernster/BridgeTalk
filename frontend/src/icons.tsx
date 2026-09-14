@@ -1,4 +1,4 @@
-// The nav-band icons.
+// The nav-band icons and the rest of the window's artwork.
 //
 // These are the project's own artwork rather than drawn marks, so they carry their
 // own colour and do not follow the theme the way a currentColor stroke would. That
@@ -9,6 +9,7 @@
 // The files here are generated from the masters in assets/ by tools/genicons.py.
 // Never edit them by hand; edit the master and run the script.
 
+import donate from './assets/donate.png'
 import appIcon from './assets/icons/application-icon.png'
 import audition from './assets/icons/audition.png'
 import cast from './assets/icons/cast.png'
@@ -33,6 +34,12 @@ import unmute from './assets/icons/unmute.png'
 function Icon({ src, className }: { src: string; className?: string }) {
   return <img className={className ?? 'icon'} src={src} alt="" aria-hidden="true" />
 }
+
+/**
+ * DonateArt is the donate button's artwork (FR-718). It is wider than it is tall, so the strip
+ * sizes it by height alone; the button around it carries the label.
+ */
+export const DonateArt = () => <Icon src={donate} className="donate" />
 
 export const StatusIcon = () => <Icon src={status} />
 export const MissingTakesIcon = () => <Icon src={missingTakes} />

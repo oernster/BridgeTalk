@@ -27,7 +27,7 @@ exactly like one that holds.
 | No source file sits in the danger band of 381 to 400 lines | `TestNoFileInDangerBand` | `boundary_test.go` |
 | Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
 | No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
-| The Missing takes purpose line reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestThePurposeLineContrastsInBothThemes` | `contrast_test.go` |
+| The secondary lines, the Missing takes purpose line and the Status cards' taglines, share one rule whose colour reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestTheSecondaryLinesContrastInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
 | Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
@@ -39,6 +39,11 @@ exactly like one that holds.
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | The setup page, the scripts beside it and `setupScripts` stay in step: the page loads every script and every script has a place in the list | `TestTheSetupPageLoadsEveryScript` | `setupring_test.go` |
 | The setup page's body, a keyboard stop because it scrolls, wears a focus ring | `TestTheSetupBodyRingsForTheKeyboard` | `setupring_test.go` |
+| The Status cards widen to share their row: their grid fits its columns to the cards | `TestTheStatusCardsWidenToShareTheRow` | `strip_test.go` |
+| The strip is three quarters of the band's height, derived from the sizes the band's own rules draw it with | `TestTheStripIsAShareOfTheBandDrawnFromItsOwnSizes` | `strip_test.go` |
+| The strip's labels open above their controls, the left-most from its own left edge | `TestTheStripsLabelsOpenAboveTheirControls` | `strip_test.go` |
+| The strip's style part is read after the band's it derives from | `TestTheStripIsReadAfterTheBand` | `strip_test.go` |
+| Every tone the live indicator takes is drawn in the colour token of its name | `TestEveryIndicatorToneHasItsColourToken` | `strip_test.go` |
 | Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
 | The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
 | An address handed to a DLL becomes a uintptr only in the argument list of the call into it; no function takes `...uintptr` | `TestAddressesAreConvertedOnlyWhereTheCallIsMade` | `syscall_test.go` |
@@ -496,6 +501,8 @@ summon it.
 |   main pane: a switched view, not a stack of modal dialogs                                |
 |                                                                                           |
 +-------------------------------------------------------------------------------------------+
+| [Donate]                                                                   live indicator |
++-------------------------------------------------------------------------------------------+
 ```
 
 The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
@@ -520,9 +527,13 @@ control; the close choice lists Minimise first, since Enter straight after press
 mean stop. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
 and the terms the source carries cannot differ; About names the licence in a sentence.
 
-**Status.** The cast voice, how many cues it serves out of the table, the journal directory, the status
-file, whether playback is live or muted, a line where no audio device was found and a line where the
-device has run dry. Beneath them, the reaction list: each decision with its time, its outcome and its cue,
+**Status.** Four cards widen to share their row: the cast voice, Moments covered, the journal directory
+and the status file. Beneath each figure a tagline in the secondary text colour, the colour the purpose
+line on Missing takes is drawn in, says what the card means; a tagline naming the product waits for
+About to name it. Moments covered adds the line for the cast voice's situation, so a figure short of the
+whole reads as a gap in the recordings or a machine voice still making its lines rather than as a fault
+(FR-716). The words live in `frontend/src/statusWords.ts`. Then whether playback is live or muted, a line
+where no audio device was found and a line where the device has run dry. Beneath them, the reaction list: each decision with its time, its outcome and its cue,
 beside the clip's file name, left blank where there was none. The facade keeps the last 200. That list is
 how a cue that never speaks gets diagnosed.
 
@@ -570,6 +581,11 @@ into `frontend/src/assets/icons`, each centred on a square canvas; it composes t
 the sounding one and a slash so the two states cannot drift. The script is not part of the build and its
 output is committed, so a clone needs neither Python nor Pillow to build the application.
 
+`assets/donate.png` is not a band icon and the script stops rather than square it into one. It trims the
+artwork to its content and scales it by height alone to four times the height the strip draws it at, then
+writes that one render to `frontend/src/assets/donate.png` for the window and to `docs/images/donate.png`
+for the site, so the two cannot differ (FR-718).
+
 `assets/application-icon.png` is the whole identity. The same script turns it into a multi-size `.ico`
 beside it, a copy for the About crest and the setup page's header mark, alongside the setup page's two
 theme icons. `build.ps1` stops before building where the `.png` or the `.ico` is missing, then copies both
@@ -616,6 +632,34 @@ themselves.
 default. Every colour value in `frontend/src` lives in one token file with a set per theme and no
 component names a colour directly, so the three ring states hold in both themes by construction. The
 setup page and the window backgrounds set in Go carry colour values of their own, outside that rule.
+
+**The strip.** Along the foot of the window, below whichever pane is open, `frontend/src/strip.tsx`
+draws the donate button at the left and the live indicator at the right (FR-717). Its height is three
+quarters of the band's, derived in `theme/footer.css` from the sizes `theme/navband.css` names once and
+draws the band with. A number of its own would read right until the band changed, then leave the strip
+measuring a band that is no longer on screen; derived, it follows the band, which keeps it reading as
+subordinate. `tools/genicons.py` reads the artwork's drawn height from the same tokens. The band's
+tooltip opens below its control, which at the foot would fall outside the window, so a rule scoped to the
+strip opens its tooltips above their controls, the left-most from its own left edge. The strip comes
+after the pane in the page, so the ring reaches the donate button last.
+
+The donate button calls `OpenDonation` in `donate.go`, which hands `product.DonateURL` to the desktop
+through Wails' `BrowserOpenURL` (FR-718). An unexported helper refuses any address not beginning
+`https://` with a sentinel error before anything is handed over; the Wails call sits behind a field a test
+replaces, so the tests see the one address handed over with no browser opened. The application opens no
+connection for the button and fetches nothing: the browser does the asking, so no network code enters the
+application for it. Wails reports nothing back from the hand-over, so the one failure the facade can see is
+having no window to open from; the page shows a rejection in the indicator for four seconds.
+
+The indicator's message is chosen by `indicate` in `frontend/src/indicator.ts` (FR-719). It is a pure
+function of the state, the last `making` announcement, the last moment played with the time it arrived,
+the time a donation hand-over last failed and the time now, so every row of the table and the order
+between them are tested without a page. Each row names a tone; a class per tone maps it to its colour
+token, so no colour leaves the palette. The strip holds the times. A timer for each message still showing
+wakes the strip when its four seconds are up, which `flashMs` states once for both uses; the timers are
+cleared when the strip goes. The moment is named by its full title, which `ReactionDTO.Title` carries:
+`record` in `reactions.go` finds it in the cue table for any voice, recorded or machine, since before it
+only a recorded voice's breakdown brought titles to the page.
 
 **One control, one place.** Mute and volume live in the band, which is on screen whichever pane is
 open. Neither is repeated in a pane. The status pane still reports the playback state in words, because
@@ -816,8 +860,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 - Structural tests enforce the layer direction, domain purity, the module-size limit and its danger
   band, the composition-root whitelist, the declared bound surface, the wire contract and the rules that
   keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
-  game's own words in the cue table. They also hold the shape of every cue id, the purpose line's
-  contrast, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
+  game's own words in the cue table. They also hold the shape of every cue id, the secondary lines'
+  contrast, the Status cards' grid, the strip's height, labels and tones, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
   against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
   uintptr only where the call into it is made; another fails where `pauses.toml` is stale against the
   script, the machine voices or the listed model files. The invariant table above lists every one of them with

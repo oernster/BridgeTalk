@@ -1,0 +1,80 @@
+/* ------------------------------------------------------------------ strip */
+
+/* The strip along the foot of the window: the donate button at its left, the live
+   indicator at its right (FR-717).
+
+   Its height is a share of the band's, derived from the band's own sizes in
+   navband.css, so it reads as subordinate to the band and follows any change to it.
+   --strip-art is the height the donate artwork is drawn at: what the strip leaves once
+   its rule, its padding and a band button's padding and border are taken away.
+   tools/genicons.py reads that token from here to size the artwork it writes, so the
+   window and the script cannot disagree about it. */
+:root {
+  --strip-share: 0.75;
+  --strip-height: calc(var(--band-height) * var(--strip-share));
+  --strip-art: calc(
+    var(--strip-height) - var(--band-rule) -
+      2 * (var(--band-pad) + var(--band-button-pad) + var(--band-button-rule))
+  );
+}
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: var(--band-gap);
+  height: var(--strip-height);
+  padding: var(--band-pad) var(--band-inset);
+  background: var(--panel);
+  border-top: var(--band-rule) solid var(--border);
+  flex: 0 0 auto;
+}
+
+/* The artwork is wider than it is tall, so only its height is stated; its width follows
+   from its own proportions. */
+.strip .donate {
+  display: block;
+  height: var(--strip-art);
+  width: auto;
+}
+
+/* At the foot of the window a label hung below its control would fall outside the
+   window, so the strip's labels open above their controls (FR-717). */
+.strip [data-label]::after {
+  top: auto;
+  bottom: calc(100% + var(--tip-gap));
+}
+
+/* The left-most control's label starts at its own left edge; centred on the control, it
+   would hang past the window's. */
+.strip > .navbtn:first-child::after {
+  left: 0;
+  transform: none;
+}
+
+/* The indicator takes the rest of the row and says its one message at the right. Each
+   tone is the colour its row of FR-719's table names, read from the palette. */
+.strip .indicator {
+  margin-left: auto;
+  font-size: 15px;
+  text-align: right;
+}
+
+.strip .indicator.tone-alert {
+  color: var(--alert);
+}
+
+.strip .indicator.tone-notice {
+  color: var(--notice);
+}
+
+.strip .indicator.tone-muted {
+  color: var(--muted);
+}
+
+.strip .indicator.tone-accent {
+  color: var(--accent);
+}
+
+.strip .indicator.tone-ambient {
+  color: var(--ambient);
+}

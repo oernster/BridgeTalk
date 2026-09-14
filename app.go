@@ -20,13 +20,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// reactionHistory is how many decisions the home pane keeps. Enough to diagnose a
-// cue that never fires without holding a session's worth of chatter in memory.
-const reactionHistory = 200
-
-// reactionEvent is the Wails event name the front end subscribes to.
-const reactionEvent = "reaction"
-
 // playbackEvent is emitted whenever a sequence starts or ends, carrying whether anything
 // is playing. Play returns as soon as the clip starts, so without this the front end
 // has no way to know when the sound stopped and can only guess.
@@ -93,6 +86,9 @@ type App struct {
 	// reveal opens a folder in the file manager; a field so a test opens no window.
 	reveal func(dir string) error
 
+	// browse hands an address to the desktop's browser (FR-718); a field so a test opens none.
+	browse func(address string) error
+
 	// quitting records that a quit has already been decided, so the close dialog is
 	// not raised over the top of the quit it was just asked to perform.
 	quitting atomic.Bool
@@ -131,40 +127,6 @@ func (a *App) emitToWails(name string, payload any) {
 		return
 	}
 	runtime.EventsEmit(a.ctx, name, payload)
-}
-
-// reporter carries the facade's Reporter port without putting it on the wire.
-//
-// Wails binds every exported method of the object it is given, so an exported method
-// is a public one whether or not it was meant to be. Report exists for the application
-// layer to hand its decisions back; leaving it on the facade offered the page a way to
-// write entries into the reaction log, which is a record of what the application did.
-// Holding it on a type of its own means the port is satisfied and nothing is offered.
-// The history lives on the facade because it exists purely to be displayed; nothing
-// below this line has any use for it.
-type reporter struct{ app *App }
-
-// Report records one decision and tells the front end about it.
-func (r reporter) Report(reaction ports.Reaction) { r.app.record(reaction) }
-
-// record is the body of that report, kept on the facade because it owns the history
-// and the channel to the page.
-func (a *App) record(reaction ports.Reaction) {
-	line := ReactionDTO{
-		At:      reaction.At.Format("15:04:05"),
-		Cue:     string(reaction.Cue),
-		Clip:    baseName(reaction.Clip),
-		Outcome: reaction.Outcome,
-	}
-
-	a.mu.Lock()
-	a.history = append(a.history, line)
-	if len(a.history) > reactionHistory {
-		a.history = a.history[len(a.history)-reactionHistory:]
-	}
-	a.mu.Unlock()
-
-	a.emit(reactionEvent, line)
 }
 
 // startup begins the poll loop once Wails has a context.
@@ -351,26 +313,7 @@ func (a *App) SetVolume(level float64) {
 	}
 }
 
-// Reactions returns the decision history, newest last.
-func (a *App) Reactions() []ReactionDTO {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	out := make([]ReactionDTO, len(a.history))
-	copy(out, a.history)
-	return out
-}
-
 // emitState tells the front end to re-read the state it does not own.
 func (a *App) emitState() {
 	a.emit(stateEvent, a.State())
-}
-
-// baseName trims a clip path down to its file name for display.
-func baseName(path string) string {
-	for index := len(path) - 1; index >= 0; index-- {
-		if path[index] == '/' || path[index] == '\\' {
-			return path[index+1:]
-		}
-	}
-	return path
 }

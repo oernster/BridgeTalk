@@ -5,16 +5,18 @@
 // whole reason the log exists.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import type { Reaction } from './api'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import type { About, Reaction, State } from './api'
 import { watching } from './testState'
 
 const reactions = vi.fn<() => Promise<Reaction[]>>()
+const about = vi.fn<() => Promise<About | null>>()
 const handlers = new Map<string, (...data: unknown[]) => void>()
 
 vi.mock('./api', () => ({
   api: {
     reactions: () => reactions(),
+    about: () => about(),
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
@@ -30,20 +32,43 @@ const { HomePane } = await import('./panes')
 const played: Reaction = {
   at: '09:30:00',
   cue: 'StartJump',
+  title: 'Start jump',
   clip: 'a.mp3',
   outcome: 'played',
 }
 const dropped: Reaction = {
   at: '09:30:01',
   cue: 'ShieldState.ShieldsUp.false',
+  title: 'Shield state: shields up false',
   clip: '',
   outcome: 'dropped',
+}
+
+/** named is About naming the product, so a tagline naming it has a name to show. */
+const named: About = {
+  name: 'The Product',
+  tagline: '',
+  version: '9.9.9',
+  author: '',
+  copyright: '',
+  authorship: '',
+  attribution: '',
+  licence: '',
+  credits: [],
+}
+
+/** taglines reads the lines beneath one card's figure, in order. */
+function taglines(label: string): string[] {
+  const card = screen.getByText(label).closest('.card') as HTMLElement
+  return Array.from(card.querySelectorAll('.tagline')).map((line) => line.textContent ?? '')
 }
 
 beforeEach(() => {
   handlers.clear()
   reactions.mockReset()
   reactions.mockResolvedValue([])
+  about.mockReset()
+  about.mockResolvedValue(named)
 })
 
 describe('the home pane', () => {
@@ -64,13 +89,94 @@ describe('the home pane', () => {
     expect(screen.queryByText('Grace')).toBeNull()
   })
 
-  // A shortfall is a gap in the recordings rather than a fault in the application. The
-  // hint beside it is what stops it reading as one.
-  it('shows the shortfall with the line that says what it means', () => {
+  // FR-716: the card once labelled "Cues served" counts moments, the window's own word; its
+  // figure keeps the value colour every card uses rather than a warning one.
+  it('labels the coverage card Moments covered, its figure in the value colour', () => {
     render(<HomePane state={watching} />)
 
-    expect(screen.getByText('40 of 60')).toBeTruthy()
-    expect(screen.getByText(/The rest stay silent/)).toBeTruthy()
+    const figure = screen.getByText('40 of 60')
+    expect(figure.className).toBe('value')
+    expect(figure.previousElementSibling?.textContent).toBe('Moments covered')
+    expect(screen.queryByText('Cues served')).toBeNull()
+  })
+
+  // FR-716: beneath each figure, what its card means, with the product named as About gives it.
+  it('says beneath each figure what its card means', async () => {
+    render(<HomePane state={watching} />)
+
+    expect(await screen.findByText(/^The folder where Elite Dangerous records/)).toBeTruthy()
+    expect(taglines('Cast')).toEqual([
+      'The voice that speaks when something happens in the game. Change it on the Cast pane.',
+    ])
+    expect(taglines('Moments covered')[0]).toBe(
+      'A moment is something that happens in the game that a voice can speak for, such as docking.',
+    )
+    expect(taglines('Journal')).toEqual([
+      'The folder where Elite Dangerous records what happens in your game. The Product listens to it for moments to speak.',
+    ])
+    expect(taglines('Status file')).toEqual([
+      "The file the game rewrites as your ship's state changes. The Product reads it for things the journal does not record.",
+    ])
+  })
+
+  // The product is named in one place, so a tagline naming it waits for About.
+  it('names no product beneath a figure until About answers', async () => {
+    about.mockResolvedValue(null)
+    render(<HomePane state={watching} />)
+    await waitFor(() => expect(about).toHaveBeenCalled())
+
+    expect(taglines('Journal')).toEqual([])
+    expect(taglines('Status file')).toEqual([])
+  })
+
+  // FR-716: the second line beneath Moments covered, one for each situation the voice cast is in.
+  it.each<[string, State, string]>([
+    [
+      'a recorded voice with every moment covered',
+      { ...watching, bound: 60, total: 60 },
+      'Every game moment has a recording.',
+    ],
+    [
+      'a recorded voice with moments not covered',
+      watching,
+      'The other 20 moments have no recording yet, so they stay silent. Nothing is wrong: Missing takes lists them and where each recording goes.',
+    ],
+    [
+      'a machine voice',
+      { ...watching, voice: 'bf_emma', voiceDisplay: 'Emma', machineVoice: true, bound: 3, total: 256 },
+      "A machine voice makes a moment's lines the first time it happens, so this number grows as you play. Nothing is missing.",
+    ],
+    [
+      'no voice cast',
+      { ...watching, voice: '', voiceDisplay: '', bound: 0, total: 256 },
+      'Cast a voice to hear the game.',
+    ],
+  ])('says what the figure means for %s', (_situation, state, line) => {
+    render(<HomePane state={state} />)
+
+    expect(taglines('Moments covered')).toEqual([
+      'A moment is something that happens in the game that a voice can speak for, such as docking.',
+      line,
+    ])
+  })
+
+  // FR-716's acceptance: one take for Docked out of 256 moments; a machine voice with lines made
+  // for 3 of them.
+  it('reads the acceptance figures with the line for each', () => {
+    const { unmount } = render(
+      <HomePane state={{ ...watching, voice: 'Oliver', voiceDisplay: 'Oliver', bound: 1, total: 256 }} />,
+    )
+    expect(screen.getByText('1 of 256')).toBeTruthy()
+    expect(taglines('Moments covered')[1]).toMatch(/^The other 255 moments have no recording yet/)
+    unmount()
+
+    render(
+      <HomePane
+        state={{ ...watching, voice: 'bf_emma', voiceDisplay: 'Emma', machineVoice: true, bound: 3, total: 256 }}
+      />,
+    )
+    expect(screen.getByText('3 of 256')).toBeTruthy()
+    expect(taglines('Moments covered')[1]).toMatch(/^A machine voice makes a moment's lines/)
   })
 
   // A break in the speech is otherwise something only the listener knows about;

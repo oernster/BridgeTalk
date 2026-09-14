@@ -1,12 +1,30 @@
 /* --------------------------------------------------------------- nav band */
 
+/* The band's own sizes, named once. The band's rules below read them; the strip along
+   the foot of the window derives its height from them (FR-717), so a change to the band
+   carries through to the strip rather than leaving a second number behind.
+   --band-button is one button as drawn: its icon, its padding and its border.
+   --band-height is the band as drawn: a button, the band's padding above and below it,
+   then the rule beneath the band. */
+:root {
+  --band-icon: 83px;
+  --band-button-pad: 5px;
+  --band-button-rule: 2px;
+  --band-pad: 8px;
+  --band-inset: 10px;
+  --band-gap: 8px;
+  --band-rule: 1px;
+  --band-button: calc(var(--band-icon) + 2 * (var(--band-button-pad) + var(--band-button-rule)));
+  --band-height: calc(var(--band-button) + 2 * var(--band-pad) + var(--band-rule));
+}
+
 .navband {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--band-gap);
+  padding: var(--band-pad) var(--band-inset);
   background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--band-rule) solid var(--border);
   flex: 0 0 auto;
 }
 
@@ -21,8 +39,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 5px;
-  border: 2px solid transparent;
+  padding: var(--band-button-pad);
+  border: var(--band-button-rule) solid transparent;
   border-radius: 10px;
   background: var(--raised);
   color: var(--text);
@@ -59,11 +77,13 @@
   }
 }
 
-/* How long the whole appearance lasts, fade in and fade out included. It sits here
-   rather than in the palette at the top of this file, which is the one home for
-   colour and holds nothing else. */
+/* How long the whole appearance lasts, fade in and fade out included, then how far the
+   label stands off its control. They sit here rather than in the palette at the top of
+   this file, which is the one home for colour and holds nothing else. The strip reads
+   the gap too, to open its labels above their controls (FR-717). */
 :root {
   --tip-life: 2.8s;
+  --tip-gap: 7px;
 }
 
 /* The moments control's size. */
@@ -74,7 +94,7 @@
 [data-label]::after {
   content: attr(data-label);
   position: absolute;
-  top: calc(100% + 7px);
+  top: calc(100% + var(--tip-gap));
   left: 50%;
   z-index: 50;
   padding: 4px 9px;
@@ -156,8 +176,8 @@
    detail resolves into something recognisable. At a glyph's size they read as
    coloured blobs, which is worse than no icon at all. */
 .navbtn .icon {
-  width: 83px;
-  height: 83px;
+  width: var(--band-icon);
+  height: var(--band-icon);
   flex: 0 0 auto;
 }
 

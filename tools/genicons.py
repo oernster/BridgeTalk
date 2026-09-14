@@ -1,6 +1,6 @@
 """Generate the icons from the master artwork in assets/.
 
-Two kinds come out of it.
+Three kinds come out of it.
 
 The nav-band icons: the masters are around 1300 pixels square and a couple of
 megabytes each, which is right for artwork and wrong for a band that draws them
@@ -19,6 +19,12 @@ which is in turn where the taskbar button, the tray icon and both shortcuts take
 theirs, because each of those reads the icon out of the binary rather than
 carrying a copy of its own.
 
+The donate artwork: assets/donate.png is a wide picture rather than an icon, so it
+never goes through the square path. It is trimmed to its content and scaled by
+height alone, keeping its proportions, then the one render is written for the
+window's foot strip and for the site alike (FR-718). The height is read from the
+strip's own style part rather than written here.
+
 Run it when a master changes:
 
     python tools/genicons.py
@@ -30,6 +36,7 @@ Python nor Pillow to build the application.
 from __future__ import annotations
 
 import pathlib
+import re
 import sys
 
 try:
@@ -56,6 +63,19 @@ SOUNDING_MASTER = "unmute.png"
 SLASH_MASTER = "muteslash.png"
 MUTED_ICON = "mute.png"
 
+# DONATE_MASTER is the donate artwork (FR-718). It is drawn by height in the
+# window's foot strip and on the site; squared, it would be padded into a band icon
+# nothing draws, so it is left out of the band icons too.
+DONATE_MASTER = "donate.png"
+
+# NOT_BAND_ICONS are the masters in assets/ that are not band icons.
+NOT_BAND_ICONS = (APP_MASTER, SLASH_MASTER, DONATE_MASTER)
+
+# DONATE_DENSITY is how many times the height the strip draws the donate artwork at
+# it is written at, so it stays crisp on a high-density display. The site draws it
+# smaller than the strip does, so the same file serves both.
+DONATE_DENSITY = 4
+
 # ICO_SIZES are the sizes Windows chooses between: the small tray and menu sizes,
 # the taskbar and shortcut sizes, then the large one Explorer uses in its biggest
 # view. Leaving one out makes Windows scale a neighbour, which looks soft.
@@ -79,12 +99,46 @@ HEADER = SETUP / "icon.png"
 # bundler, so each is copied in at a size it can load as it finds it.
 SETUP_ICONS = ("light-mode.png", "dark-mode.png")
 
+# STRIP_STYLES are the style parts stating the strip's sizes and the band's sizes
+# they derive from; STRIP_ART is the token there naming the height the strip draws
+# the donate artwork at.
+THEME = REPO / "frontend" / "src" / "theme"
+STRIP_STYLES = (THEME / "navband.css", THEME / "footer.css")
+STRIP_ART = "strip-art"
+
+# DONATE_TARGETS are where the one donate render goes: beside the artwork the window
+# imports and where the site's page loads it.
+DONATE_TARGETS = (
+    REPO / "frontend" / "src" / "assets" / DONATE_MASTER,
+    REPO / "docs" / "images" / DONATE_MASTER,
+)
+
+# CSS_COMMENT, CSS_TOKEN and CSS_VAR take a style part apart: comments out, then each
+# custom property with its value, then each var() a value names. ARITHMETIC is all a
+# resolved calc() of pixel lengths and plain numbers may hold.
+CSS_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
+CSS_TOKEN = re.compile(r"--([\w-]+)\s*:\s*([^;]+);")
+CSS_VAR = re.compile(r"var\(--([\w-]+)\)")
+ARITHMETIC = re.compile(r"[0-9.+\-*/() ]+")
+
 
 def trimmed(master: pathlib.Path) -> Image.Image:
     """Open a master and crop away the transparent margin around its artwork."""
     image = Image.open(master).convert("RGBA")
     box = image.getbbox()
     return image.crop(box) if box is not None else image
+
+
+def band_masters() -> list[pathlib.Path]:
+    """Return the masters that become band icons, sorted by name.
+
+    The donate artwork's absence is checked rather than trusted: squared into a band
+    icon it would be resampled through the one path FR-718 rules out.
+    """
+    masters = sorted(p for p in MASTERS.glob("*.png") if p.name not in NOT_BAND_ICONS)
+    if any(master.name == DONATE_MASTER for master in masters):
+        sys.exit(f"{DONATE_MASTER} is not a band icon; it must not be squared into one")
+    return masters
 
 
 def slashed(sounding: pathlib.Path, slash: pathlib.Path) -> Image.Image:
@@ -155,9 +209,63 @@ def render_ico(master: pathlib.Path, target: pathlib.Path) -> int:
     return target.stat().st_size
 
 
+def style_tokens(parts: tuple[pathlib.Path, ...]) -> dict[str, str]:
+    """Read every custom property the style parts declare, by name."""
+    tokens: dict[str, str] = {}
+    for part in parts:
+        text = CSS_COMMENT.sub("", part.read_text(encoding="utf-8"))
+        for name, value in CSS_TOKEN.findall(text):
+            tokens[name] = " ".join(value.split())
+    return tokens
+
+
+def css_pixels(tokens: dict[str, str], name: str) -> float:
+    """Resolve a length token to CSS pixels, following each var() it names.
+
+    Only the arithmetic a calc() over pixel lengths and plain numbers can hold is
+    evaluated; anything else stops the script rather than being guessed at.
+    """
+    if name not in tokens:
+        sys.exit(f"no --{name} is declared in {[part.name for part in STRIP_STYLES]}")
+    expression = CSS_VAR.sub(
+        lambda found: f"({css_pixels(tokens, found.group(1))})", tokens[name]
+    )
+    expression = expression.replace("calc", "").replace("px", "")
+    if not ARITHMETIC.fullmatch(expression):
+        sys.exit(f"--{name} is not arithmetic over pixels: {tokens[name]}")
+    return float(eval(expression, {"__builtins__": {}}, {}))
+
+
+def donate_art(master: pathlib.Path, height: int) -> Image.Image:
+    """Return the donate artwork trimmed to its content and scaled by height alone.
+
+    The width follows from the artwork's own proportions, so it is never squared,
+    padded or stretched the way a band icon is.
+    """
+    art = trimmed(master)
+    width = max(1, round(art.width * height / art.height))
+    return art.resize((width, height), Image.LANCZOS)
+
+
+def write_donate() -> None:
+    """Write the one donate render to every place that shows it (FR-718)."""
+    master = MASTERS / DONATE_MASTER
+    if not master.exists():
+        sys.exit(f"\nno donate artwork at {master}")
+    drawn = css_pixels(style_tokens(STRIP_STYLES), STRIP_ART)
+    art = donate_art(master, round(drawn * DONATE_DENSITY))
+    source = master.stat().st_size
+    print(f"\n{master.name:<22} {source:>9,} bytes, drawn {drawn:g} px high")
+    for target in DONATE_TARGETS:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        art.save(target, "PNG", optimize=True)
+        written = target.stat().st_size
+        where = target.relative_to(REPO).as_posix()
+        print(f"{'':<22} {art.width}x{art.height} -> {written:>7,} bytes  ({where})")
+
+
 def main() -> int:
-    skip = (APP_MASTER, SLASH_MASTER)
-    masters = sorted(p for p in MASTERS.glob("*.png") if p.name not in skip)
+    masters = band_masters()
     if not masters:
         sys.exit(f"no master artwork found in {MASTERS}")
     OUTPUT.mkdir(parents=True, exist_ok=True)
@@ -218,6 +326,8 @@ def main() -> int:
             target, "PNG", optimize=True
         )
         print(f"{'':<22} {'':>9} -> {target.stat().st_size:>7,} bytes  (setup {name})")
+
+    write_donate()
     return 0
 
 

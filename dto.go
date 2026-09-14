@@ -38,9 +38,14 @@ type VoiceDTO struct {
 // it. Either belongs back here the day a column wants it, which is one line. The event
 // name is not coming back: every cue id begins with it, so a column showing it only
 // repeated the id beside it (FR-234).
+//
+// Title is the moment's full title (FR-233), which the live indicator says as the moment just
+// played (FR-719). It is found here for any voice, recorded or machine, so the page never
+// works a title out of an id.
 type ReactionDTO struct {
 	At      string `json:"at"`
 	Cue     string `json:"cue"`
+	Title   string `json:"title"`
 	Clip    string `json:"clip"`
 	Outcome string `json:"outcome"`
 }

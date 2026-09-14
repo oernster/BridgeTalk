@@ -23,6 +23,7 @@ import { CastPane } from './cast'
 import { GuidePane } from './guide'
 import { MissingTakesPane } from './missingTakes'
 import { HomePane, SettingsPane } from './panes'
+import { Strip } from './strip'
 
 type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'takes' | 'guide'
 type Menu = 'file' | 'audio' | 'settings' | 'help' | null
@@ -329,6 +330,9 @@ export function App() {
         )}
         {pane === 'guide' && <GuidePane />}
       </main>
+
+      {/* FR-717: the strip sits after the pane, so the ring reaches its donate button last. */}
+      <Strip state={state} />
 
       <AboutDialog open={about} onClose={() => setAbout(false)} />
       <LicenceDialog open={licence} onClose={() => setLicence(false)} />

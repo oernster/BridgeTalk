@@ -1197,14 +1197,16 @@ Rationale: FLAC took 56.7 percent of the space of 16-bit WAV over ten made lines
 16-bit sample, through the FLAC library the application already uses (Oliver, 2026-09-14). The model
 makes 32-bit floating-point samples, which FLAC cannot hold. The output device is opened for 16-bit
 samples, so nothing finer than 16 bits reaches it either way; Oliver chose 16 bits on 2026-09-14.
-Note: measured on 2026-09-14, that library logs a line for every frame it reads at 24 kHz; playing a
-made line must not fill the output with them.
+Note: measured on 2026-09-14, that library logs a line for every frame whose header names 24 kHz;
+playing a made line must not fill the output with them. A frame header that leaves the rate to the
+stream info is read without one, so made lines are written that way.
 Acceptance: Given the model's samples -1.5, -0.5, 0, 0.5 and 1.5, when they are stored and the file is
 decoded, then it gives -32767, -16384, 0, 16384 and 32767.
 Verified by: `TestAMadeLineDecodesToItsSamplesRoundedToSixteenBits` and
 `TestALongLineComesBackSampleForSample` in `internal/infrastructure/madelines/madelines_test.go`,
-decoding through the FLAC library the player uses. Playing a made line without its log lines is not
-built.
+decoding through the FLAC library the player uses. The note is held by
+`TestAMadeLinePlaysWithoutTheFlacLibraryLogging` in `internal/infrastructure/audio/madeline_test.go`,
+proved by putting the rate back in every frame header.
 
 **FR-527 Only the cast machine voice keeps its made lines**
 Priority: Must.

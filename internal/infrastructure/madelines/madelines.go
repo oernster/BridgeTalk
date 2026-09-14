@@ -44,8 +44,12 @@ const (
 	shortestPredicted = predictorOrder + 1
 	// maxRiceParameter is the largest Rice parameter the 4-bit field holds; 15 is FLAC's escape.
 	maxRiceParameter = 14
-	folderPerm       = 0o755
-	filePerm         = 0o644
+	// rateFromStreamInfo is the sample rate a frame header states to leave the rate to the stream
+	// info. A frame header naming 24 kHz itself makes the FLAC library log a line for every frame it
+	// reads, read in its frame/frame.go on 2026-09-14; the stream info still states SampleRate.
+	rateFromStreamInfo = 0
+	folderPerm         = 0o755
+	filePerm           = 0o644
 )
 
 // Store keeps made lines under one folder.
@@ -189,7 +193,7 @@ func frameOf(number uint64, block []int32) *frame.Frame {
 	}
 	return &frame.Frame{
 		Header: frame.Header{
-			HasFixedBlockSize: true, BlockSize: uint16(len(block)), SampleRate: SampleRate,
+			HasFixedBlockSize: true, BlockSize: uint16(len(block)), SampleRate: rateFromStreamInfo,
 			Channels: frame.ChannelsMono, BitsPerSample: BitsPerSample, Num: number,
 		},
 		Subframes: []*frame.Subframe{sub},

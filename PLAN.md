@@ -27,6 +27,9 @@ section 10 says: domain, then application, then infrastructure, then user interf
   scanned `library.Voice` is the one implementation. `catalogueOf` in `voices.go` builds it for a
   recorded voice; `session.useVoice` in `main.go` rebuilds it with the reaction service on every cast.
   FR-215's files figure is `Voice.Files`, since only a voice on disk has files.
+- `ports/making.go` declares what a machine voice is made through: `SpeechMaker`, `VoiceFiles`
+  (answering a `Material` of style and digests) and `MadeLines`. Nothing implements them yet.
+  `speech.Style` holds a voice's style file and chooses the row for a line's symbol count.
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
@@ -38,10 +41,7 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## M6 Application: the port and the making service
 
-1. Ports for what a machine voice needs: the speech maker (numbers plus style in, samples out), the
-   made-line store (keys on disk, write whole, delete a voice's lines) and
-   the voice's files (one missing or unreadable is refused, FR-519).
-2. `MakingService` over those ports, tested with hand-written fakes. Making starts on cast and on
+1. `MakingService` over the ports in `ports/making.go`, tested with hand-written fakes. Making starts on cast and on
    start (FR-511, FR-512). It stops when another voice is cast, keeping what is made (FR-516). It
    carries on past a line that fails (FR-518) and stops on a write failure (FR-520). It deletes the
    previous voice's lines (FR-527) and says so when it cannot (FR-530). A machine voice's audio

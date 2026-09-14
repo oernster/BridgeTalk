@@ -49,15 +49,18 @@ exactly like one that holds.
   so all of it is testable without a filesystem, a clock or an audio device. `machinevoice` holds the
   28 machine voices offered, the accent each speaks with and the name each is shown by; the list is the
   one home of the model's voice ids. `speech` holds the speech sound symbols the model reads with their
-  numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives.
+  numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives
+  and chooses the row of a voice's style file the model reads beside a line.
   `script` checks the script against the cue table, naming the cue and the line behind every problem.
   `making` keys each made line by its speech sounds, style file and model, then works out which lines
   a voice still has to make.
 - **Application** (`internal/application`): the reaction and scheduling services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
-  any kind of voice without knowing where its audio came from (FR-501, FR-502). It never imports
-  Infrastructure or the Wails runtime.
+  any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
+  through three more: `SpeechMaker` turns a line's numbers and style row into samples, `VoiceFiles`
+  reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
+  made lines (FR-517, FR-523, FR-527). It never imports Infrastructure or the Wails runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
   folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),

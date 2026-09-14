@@ -62,18 +62,22 @@ func (a *App) SelectVoice(name string) error {
 // Nothing here is worth an error. No acknowledgement material, no audio device and a
 // clip that will not decode all mean the same thing to the commander: no confirming
 // sound, on a cast that has already succeeded.
-func (a *App) acknowledge() {
+//
+// It reports whether the voice had a confirmation to give, played or not, so a machine
+// voice's confirmation still being made can be waited for (FR-521).
+func (a *App) acknowledge() bool {
 	if a.session.muted || a.session.player == nil || a.session.catalogue == nil {
-		return
+		return false
 	}
 	clip, ok := a.session.catalogue.Acknowledgement()
 	if !ok {
-		return
+		return false
 	}
 	// Casting ends what was playing on purpose, so this is Play rather than PlayIfIdle.
 	if a.session.player.Play([]string{clip}, auditionGap) == nil {
 		a.announcePlayback()
 	}
+	return true
 }
 
 // CueBreakdown is one voice's whole relationship with the cue table: what it can

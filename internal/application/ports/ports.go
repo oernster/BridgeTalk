@@ -135,4 +135,6 @@ const (
 	OutcomeUnbound = "unbound"
 	// OutcomeDropped means a low-priority request was discarded while busy.
 	OutcomeDropped = "dropped"
+	// OutcomeMaking means the cue fired with no line made, so its line is being made for it (FR-514).
+	OutcomeMaking = "making"
 )

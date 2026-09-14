@@ -7,6 +7,7 @@ package ports
 import (
 	"context"
 
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/speech"
@@ -23,6 +24,15 @@ import (
 // model mid-line checks it before starting one; either way the line is not written.
 type SpeechMaker interface {
 	Make(ctx context.Context, tokens []int64, style []float32) ([]float32, error)
+}
+
+// CueMaker makes a cue's lines when the cue fires with none made (FR-514).
+//
+// MakeNext asks for the cue's lines with no current made line to be made next, first line first,
+// after any line already being made. It answers whether a line is on its way: false where the cue has
+// none to make, where making has ended or where the cast it belongs to is over.
+type CueMaker interface {
+	MakeNext(id cue.ID) bool
 }
 
 // Material is what a machine voice's lines are made from besides their speech sounds: the style

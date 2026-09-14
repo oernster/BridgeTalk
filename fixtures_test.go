@@ -135,7 +135,7 @@ func offeredFiles(refused map[string]error) makingtest.Files {
 func fixtureMaking(t *testing.T, current *session, files ports.VoiceFiles, store *makingtest.Store) *makingtest.Maker {
 	t.Helper()
 	maker := makingtest.NewMaker()
-	current.making = services.NewMakingService(fixtureScript(t), files, maker, store)
+	current.making = services.NewMakingService(fixtureScript(t), nil, files, maker, store)
 	current.maker = maker
 	t.Cleanup(current.making.Stop)
 	return maker

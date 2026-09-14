@@ -33,9 +33,18 @@ func voiceNamed(t *testing.T, id string) machinevoice.Voice {
 	return voice
 }
 
-// makingWith builds the service over a script giving Docked and Undocked three lines each.
-// lastBritish is Undocked's third British sounds; "bə" there matches Docked's first.
+// makingWith builds the service over twoCues, in the script's own order.
 func makingWith(t *testing.T, lastBritish string, files makingtest.Files, maker *makingtest.Maker, store *makingtest.Store) *services.MakingService {
+	t.Helper()
+	if files.Material.Files == (making.Files{}) {
+		files.Material = makingtest.Material()
+	}
+	return services.NewMakingService(twoCues(t, lastBritish), nil, files, maker, store)
+}
+
+// twoCues is a script giving Docked and Undocked three lines each. lastBritish is Undocked's third
+// British sounds; "bə" there matches Docked's first.
+func twoCues(t *testing.T, lastBritish string) script.Voiced {
 	t.Helper()
 	voiced, err := scripttest.Build(map[string]script.Saved{
 		"Docked": {
@@ -50,10 +59,7 @@ func makingWith(t *testing.T, lastBritish string, files makingtest.Files, maker 
 	if err != nil {
 		t.Fatalf("Build: %v", err)
 	}
-	if files.Material.Files == (making.Files{}) {
-		files.Material = makingtest.Material()
-	}
-	return services.NewMakingService(voiced, files, maker, store)
+	return voiced
 }
 
 // FR-511, FR-512, FR-514 and FR-515: casting makes every line with no current made line, in the

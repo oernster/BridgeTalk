@@ -10,6 +10,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles/modelfilestest"
@@ -42,10 +43,7 @@ const measuredVoice = "bf_emma"
 // passed, then with each limit cut below what was measured, which failed naming that requirement.
 func TestMakingACompleteScriptKeepsWithinTimeAndDisk(t *testing.T) {
 	dir := modelfilestest.Require(t)
-	table, err := config.LoadCueTable("")
-	if err != nil {
-		t.Fatalf("loading the shipped cue table: %v", err)
-	}
+	table, voiced := shipped(t)
 	loaded, err := config.LoadScript(table)
 	if err != nil {
 		t.Fatalf("script.toml: %v", err)
@@ -53,10 +51,6 @@ func TestMakingACompleteScriptKeepsWithinTimeAndDisk(t *testing.T) {
 	if missing := loaded.Missing(table); len(missing) > 0 {
 		t.Skipf("script.toml holds lines for %d of %d cues; a complete script is measured",
 			table.Len()-len(missing), table.Len())
-	}
-	voiced, err := config.LoadVoicedScript(table)
-	if err != nil {
-		t.Fatalf("script.toml with sounds.toml: %v", err)
 	}
 	voice, err := machinevoice.Parse(measuredVoice)
 	if err != nil {
@@ -66,7 +60,7 @@ func TestMakingACompleteScriptKeepsWithinTimeAndDisk(t *testing.T) {
 	store := t.TempDir()
 	maker := speechmodel.New(dir)
 	defer maker.Close()
-	service := services.NewMakingService(voiced, voicefiles.New(dir), maker, madelines.New(store))
+	service := services.NewMakingService(voiced, making.Order(table), voicefiles.New(dir), maker, madelines.New(store))
 	defer service.Stop()
 
 	started := time.Now()

@@ -15,6 +15,18 @@ import (
 // not to rate-limit anything.
 const dedupeWindow = 900 * time.Millisecond
 
+// madeOnCallLimit is how long a cue that fired with no line made waits for that line before it is
+// let go (FR-514). The measured worst case is about 1.25 s: a line under way, the cue's own line and
+// loading the model (Oliver, 2026-09-14).
+const madeOnCallLimit = 2 * time.Second
+
+// waiting is a cue that fired with no line made, waiting for its line to be written.
+type waiting struct {
+	matched   cue.Cue
+	candidate event.Event
+	fired     time.Time
+}
+
 // ReactionService turns events into playback requests.
 //
 // It owns the whole decision for one event: find the cue, check it is not a repeat,
@@ -31,6 +43,11 @@ type ReactionService struct {
 	reporter  ports.Reporter
 	clock     ports.Clock
 	muted     bool
+
+	// maker makes a cue's lines when it fires with none; nil for a voice whose lines are all on disk.
+	maker ports.CueMaker
+	// waiting holds the cues waiting for their lines, in the order they fired.
+	waiting []waiting
 }
 
 // NewReactionService wires the decision path.
@@ -58,6 +75,31 @@ func NewReactionService(
 // keeps showing what would have been said.
 func (r *ReactionService) SetMuted(muted bool) { r.muted = muted }
 
+// SetCueMaker hands over what makes a cue's lines when it fires with none made (FR-514). A machine
+// voice is given one; a recorded voice has every line it will ever have on disk, so it is not.
+func (r *ReactionService) SetCueMaker(maker ports.CueMaker) { r.maker = maker }
+
+// Tick hands over each waiting cue whose line has been written, as though it fired now; lets go of
+// each that has waited longer than madeOnCallLimit; then lets the scheduler start whatever should now
+// be speaking (FR-514). The poll loop calls it on every tick.
+func (r *ReactionService) Tick() {
+	now := r.clock.Now()
+	var still []waiting
+	for _, each := range r.waiting {
+		performance, served := r.catalogue.Clips(each.matched.ID())
+		switch {
+		case served && len(performance.Clips) > 0:
+			r.speak(each.matched, each.candidate, performance.Clips, now)
+		case now.Sub(each.fired) > madeOnCallLimit:
+			r.report(each.matched, each.candidate, "", ports.OutcomeDropped)
+		default:
+			still = append(still, each)
+		}
+	}
+	r.waiting = still
+	r.scheduler.Advance()
+}
+
 // Muted reports whether playback is currently silenced.
 func (r *ReactionService) Muted() bool { return r.muted }
 
@@ -65,6 +107,10 @@ func (r *ReactionService) Muted() bool { return r.muted }
 func (r *ReactionService) Handle(candidate event.Event) {
 	matched, ok := r.table.Resolve(candidate)
 	if !ok {
+		return
+	}
+	if r.isWaiting(matched.ID()) {
+		r.report(matched, candidate, "", ports.OutcomeDuplicate)
 		return
 	}
 
@@ -80,18 +126,37 @@ func (r *ReactionService) Handle(candidate event.Event) {
 
 	performance, served := r.catalogue.Clips(matched.ID())
 	if !served || len(performance.Clips) == 0 {
+		r.makeOnCall(matched, candidate, now)
+		return
+	}
+	r.speak(matched, candidate, performance.Clips, now)
+}
+
+// makeOnCall answers a cue with no take: where a line is on its way for it, it waits for that line,
+// or is dropped while muted with the line still made (FR-514, FR-611); otherwise it is unbound.
+func (r *ReactionService) makeOnCall(matched cue.Cue, candidate event.Event, now time.Time) {
+	if r.maker == nil || !r.maker.MakeNext(matched.ID()) {
 		r.report(matched, candidate, "", ports.OutcomeUnbound)
 		return
 	}
+	if r.muted {
+		r.report(matched, candidate, "", ports.OutcomeDropped)
+		return
+	}
+	r.waiting = append(r.waiting, waiting{matched: matched, candidate: candidate, fired: now})
+	r.report(matched, candidate, "", ports.OutcomeMaking)
+}
 
+// speak hands a cue with takes to the scheduler, as though it fired at now.
+func (r *ReactionService) speak(matched cue.Cue, candidate event.Event, clips []string, now time.Time) {
 	if r.muted {
 		r.report(matched, candidate, "", ports.OutcomeDropped)
 		return
 	}
 
 	// The picker declines only an empty list; an empty list has already been answered
-	// above, so there is nothing left here to decline.
-	chosen, _ := r.picker.Pick(matched.ID(), performance.Clips)
+	// before a cue reaches here, so there is nothing left here to decline.
+	chosen, _ := r.picker.Pick(matched.ID(), clips)
 
 	// A firing counts against the repeat window and the cooldown only once the scheduler
 	// takes it. One that was muted, had no take or was let go was never heard, so it holds
@@ -100,6 +165,16 @@ func (r *ReactionService) Handle(candidate event.Event) {
 		r.dedupe.Mark(matched.ID(), now)
 		r.cooldown.Record(matched.ID(), now)
 	}
+}
+
+// isWaiting reports whether a cue is waiting for its line.
+func (r *ReactionService) isWaiting(id cue.ID) bool {
+	for _, each := range r.waiting {
+		if each.matched.ID() == id {
+			return true
+		}
+	}
+	return false
 }
 
 // HandleAll processes a batch in arrival order, then lets the scheduler start

@@ -67,7 +67,7 @@ func TestAKeyChangesWithTheSoundsTheStyleFileOrTheModel(t *testing.T) {
 // FR-511 and FR-515: with nothing made, every line is to make in the voice's own accent, cue by
 // cue in order; none is current.
 func TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent(t *testing.T) {
-	plan := making.New(voiced(t, "bə"), machinevoice.British, files, nil)
+	plan := making.New(voiced(t, "bə"), nil, machinevoice.British, files, nil)
 	toMake := plan.ToMake()
 	if len(toMake) != 6 || plan.Current() != 0 || plan.Total() != 6 {
 		t.Fatalf("to make %d, current %d of %d; want 6, 0 of 6", len(toMake), plan.Current(), plan.Total())
@@ -78,7 +78,7 @@ func TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent(t *testing.T) {
 	if last := toMake[5]; last.Cue != "Undocked" || last.Index != 2 {
 		t.Errorf("last line = %+v, want Undocked's third", last)
 	}
-	if american := making.New(voiced(t, "bə"), machinevoice.American, files, nil).ToMake()[0]; american.Sounds != "æə" {
+	if american := making.New(voiced(t, "bə"), nil, machinevoice.American, files, nil).ToMake()[0]; american.Sounds != "æə" {
 		t.Errorf("an American voice's first sounds = %q, want æə", american.Sounds)
 	}
 }
@@ -86,8 +86,8 @@ func TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent(t *testing.T) {
 // FR-511, FR-515 and FR-522: a line whose key is on disk is current and the rest are to make, in
 // order. A key on disk for no line counts for nothing.
 func TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake(t *testing.T) {
-	all := making.New(voiced(t, "bə"), machinevoice.British, files, nil).ToMake()
-	plan := making.New(voiced(t, "bə"), machinevoice.British, files, []string{all[0].Key, all[2].Key, "no line's key"})
+	all := making.New(voiced(t, "bə"), nil, machinevoice.British, files, nil).ToMake()
+	plan := making.New(voiced(t, "bə"), nil, machinevoice.British, files, []string{all[0].Key, all[2].Key, "no line's key"})
 	if got, want := plan.ToMake(), []making.Line{all[1], all[3], all[4], all[5]}; !slices.Equal(got, want) {
 		t.Errorf("to make = %+v, want %+v", got, want)
 	}
@@ -101,8 +101,8 @@ func TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake(t *testing.T) {
 
 // FR-513's acceptance: a line whose speech sounds changed is made again and no other line is.
 func TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain(t *testing.T) {
-	made := keysOf(making.New(voiced(t, "bə"), machinevoice.British, files, nil).ToMake())
-	again := making.New(voiced(t, "bəz"), machinevoice.British, files, made).ToMake()
+	made := keysOf(making.New(voiced(t, "bə"), nil, machinevoice.British, files, nil).ToMake())
+	again := making.New(voiced(t, "bəz"), nil, machinevoice.British, files, made).ToMake()
 	if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 0 {
 		t.Errorf("to make again = %+v, want Docked's first line alone", again)
 	}
@@ -110,8 +110,8 @@ func TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain(t *testing.T) {
 
 // FR-513: a new style file makes every line again.
 func TestANewStyleFileMakesEveryLineAgain(t *testing.T) {
-	made := keysOf(making.New(voiced(t, "bə"), machinevoice.British, files, nil).ToMake())
-	plan := making.New(voiced(t, "bə"), machinevoice.British, making.Files{Style: "style-2", Model: files.Model}, made)
+	made := keysOf(making.New(voiced(t, "bə"), nil, machinevoice.British, files, nil).ToMake())
+	plan := making.New(voiced(t, "bə"), nil, machinevoice.British, making.Files{Style: "style-2", Model: files.Model}, made)
 	if len(plan.ToMake()) != 6 || plan.Current() != 0 {
 		t.Errorf("to make %d, current %d; want every line to make again", len(plan.ToMake()), plan.Current())
 	}
@@ -120,7 +120,7 @@ func TestANewStyleFileMakesEveryLineAgain(t *testing.T) {
 // FR-514 and FR-515: a line made while making is under way is current in the plan WithMade
 // answers, which counts it and hands its key out for its cue. The plan it came from is unchanged.
 func TestAMadeLineIsCurrentInThePlanThatHoldsIt(t *testing.T) {
-	plan := making.New(voiced(t, "bə"), machinevoice.British, files, nil)
+	plan := making.New(voiced(t, "bə"), nil, machinevoice.British, files, nil)
 	first := plan.ToMake()[0]
 
 	made := plan.WithMade(first.Key)
@@ -137,8 +137,8 @@ func TestAMadeLineIsCurrentInThePlanThatHoldsIt(t *testing.T) {
 // FR-514: a cue's takes are the distinct keys of its current lines in line order. Two lines with
 // the same sounds share one made line, so it is one take; a cue with nothing current has none.
 func TestACuesTakesAreTheDistinctKeysOfItsCurrentLines(t *testing.T) {
-	all := making.New(voiced(t, "bi"), machinevoice.British, files, nil).ToMake()
-	plan := making.New(voiced(t, "bi"), machinevoice.British, files, []string{all[2].Key, all[1].Key})
+	all := making.New(voiced(t, "bi"), nil, machinevoice.British, files, nil).ToMake()
+	plan := making.New(voiced(t, "bi"), nil, machinevoice.British, files, []string{all[2].Key, all[1].Key})
 
 	if got, want := plan.Takes("Docked"), []string{all[0].Key, all[1].Key}; !slices.Equal(got, want) {
 		t.Errorf("Docked's takes = %v, want %v", got, want)

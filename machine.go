@@ -107,14 +107,15 @@ func (a *App) announceMaking() {
 //
 // A voice that is not offered is refused with nothing changed; so is one whose files cannot be read
 // (FR-519).
-// Otherwise the voice confirms in a made line where one is current (FR-521), the page is told and
-// the voice is kept for the next run (FR-540). As with a recorded voice, a failure to keep it is
+// Otherwise the voice confirms in a made line as soon as one is current (FR-521), the page is told
+// and the voice is kept for the next run (FR-540). As with a recorded voice, a failure to keep it is
 // reported without the cast being undone.
 func (a *App) CastMachineVoice(id string) error {
 	if err := a.session.castMachine(id); err != nil {
 		return err
 	}
-	a.acknowledge()
+	a.session.confirming.Store(true)
+	a.confirmWhenMade()
 	a.emitState()
 	return a.rememberMachineVoice(id)
 }
@@ -178,6 +179,33 @@ func filesUnless(files ports.VoiceFiles, unavailable error) ports.VoiceFiles {
 		return refusedFiles{reason: unavailable}
 	}
 	return files
+}
+
+// tickMaking runs on every poll tick: it hands over each cue whose line was written since it fired
+// (FR-514), then plays a confirmation written since the cast (FR-521).
+func (a *App) tickMaking() {
+	if a.session.hasVoice() {
+		a.session.reactions.Tick()
+	}
+	a.confirmWhenMade()
+}
+
+// confirmWhenMade plays the cast machine voice's confirmation once one of its lines is current
+// (FR-521): at once where one already is, otherwise on the poll tick after it is written. It stops
+// waiting once the confirmation is had, once playback is muted or no device is open, once making has
+// ended without one and once another voice is cast (session.speakWith).
+//
+// Whether making is under way is read before the confirmation is looked for: a line written between
+// the two is then found rather than taken for a making that ended without it.
+func (a *App) confirmWhenMade() {
+	s := a.session
+	if !s.confirming.Load() {
+		return
+	}
+	making := s.making.Progress().Making
+	if a.acknowledge() || s.muted || s.player == nil || !making {
+		s.confirming.Store(false)
+	}
 }
 
 // release stops making, keeping every line written (FR-517), then lets the model go. Nothing is made

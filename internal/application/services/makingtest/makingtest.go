@@ -53,11 +53,14 @@ func (f Files) Open(voice machinevoice.Voice) (ports.Material, error) {
 
 // Maker answers each line with one sample: the count of numbers it was handed. Counting calls from
 // one, call FailOn fails with ErrModel and call BlockOn closes Started then waits for its context to
-// end. It counts the times it is closed.
+// end. Call PauseOn closes Started then waits for Resume to be closed, making its line; where its
+// context ends first, it answers why. It counts the times it is closed.
 type Maker struct {
 	FailOn  int
 	BlockOn int
+	PauseOn int
 	Started chan struct{}
+	Resume  chan struct{}
 
 	mu     sync.Mutex
 	calls  int
@@ -65,7 +68,7 @@ type Maker struct {
 }
 
 // NewMaker makes a Maker that neither fails nor blocks until told to.
-func NewMaker() *Maker { return &Maker{Started: make(chan struct{})} }
+func NewMaker() *Maker { return &Maker{Started: make(chan struct{}), Resume: make(chan struct{})} }
 
 // Make answers one line's samples.
 func (f *Maker) Make(ctx context.Context, tokens []int64, _ []float32) ([]float32, error) {
@@ -78,6 +81,13 @@ func (f *Maker) Make(ctx context.Context, tokens []int64, _ []float32) ([]float3
 		close(f.Started)
 		<-ctx.Done()
 		return nil, ctx.Err()
+	case f.PauseOn:
+		close(f.Started)
+		select {
+		case <-f.Resume:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	case f.FailOn:
 		return nil, ErrModel
 	}

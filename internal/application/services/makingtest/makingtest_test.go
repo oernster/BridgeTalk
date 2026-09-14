@@ -73,6 +73,30 @@ func TestTheMakerCountsFailsBlocksAndCloses(t *testing.T) {
 	}
 }
 
+func TestTheMakerPausesUntilResumedOrStopped(t *testing.T) {
+	t.Parallel()
+	resumed := makingtest.NewMaker()
+	resumed.PauseOn = 1
+	go func() {
+		<-resumed.Started
+		close(resumed.Resume)
+	}()
+	if samples, err := resumed.Make(context.Background(), []int64{1}, nil); err != nil || !slices.Equal(samples, []float32{1}) {
+		t.Errorf("resumed Make = %v, %v; want its line", samples, err)
+	}
+
+	stopped := makingtest.NewMaker()
+	stopped.PauseOn = 1
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-stopped.Started
+		cancel()
+	}()
+	if _, err := stopped.Make(ctx, nil, nil); !errors.Is(err, context.Canceled) {
+		t.Errorf("stopped Make = %v, want it to end with its context", err)
+	}
+}
+
 func TestTheStoreKeepsLogsAndFailsWhenTold(t *testing.T) {
 	t.Parallel()
 	voice := emma(t)

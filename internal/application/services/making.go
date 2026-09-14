@@ -48,6 +48,7 @@ type Progress struct {
 // lines it belongs with are deleted.
 type MakingService struct {
 	voiced script.Voiced
+	order  []cue.ID
 	files  ports.VoiceFiles
 	maker  ports.SpeechMaker
 	store  ports.MadeLines
@@ -61,6 +62,8 @@ type MakingService struct {
 	cast       bool
 	voice      machinevoice.Voice
 	plan       making.Plan
+	// queue is the lines still to make, in the order they are made; MakeNext reorders it.
+	queue      []making.Line
 	running    *run
 	making     bool
 	failed     []LineFailure
@@ -74,11 +77,12 @@ type run struct {
 	done   chan struct{}
 }
 
-// NewMakingService makes lines from the voiced script through the ports given.
+// NewMakingService makes lines from the voiced script through the ports given, cue by cue in the order
+// given (making.Order).
 func NewMakingService(
-	voiced script.Voiced, files ports.VoiceFiles, maker ports.SpeechMaker, store ports.MadeLines,
+	voiced script.Voiced, order []cue.ID, files ports.VoiceFiles, maker ports.SpeechMaker, store ports.MadeLines,
 ) *MakingService {
-	return &MakingService{voiced: voiced, files: files, maker: maker, store: store}
+	return &MakingService{voiced: voiced, order: order, files: files, maker: maker, store: store}
 }
 
 // Cast casts a machine voice and starts making every line it has no current made line for, which
@@ -98,18 +102,18 @@ func (m *MakingService) Cast(voice machinevoice.Voice) (ports.AudioSource, error
 	}
 	m.endRun(true)
 	notDeleted := m.store.DeleteAllBut(voice)
-	plan := making.New(m.voiced, voice.Accent(), material.Files, m.store.Keys(voice))
+	plan := making.New(m.voiced, m.order, voice.Accent(), material.Files, m.store.Keys(voice))
 	ctx, cancel := context.WithCancel(context.Background())
 	started := &run{cancel: cancel, done: make(chan struct{})}
 
 	m.mu.Lock()
 	m.generation++
 	source := madeVoice{service: m, generation: m.generation}
-	m.cast, m.voice, m.plan, m.running = true, voice, plan, started
+	m.cast, m.voice, m.plan, m.queue, m.running = true, voice, plan, plan.ToMake(), started
 	m.making, m.failed, m.stopped, m.notDeleted = true, nil, nil, notDeleted
 	m.mu.Unlock()
 
-	go m.makeLines(ctx, started, voice, material.Style, plan.ToMake())
+	go m.makeLines(ctx, started, voice, material.Style)
 	return source, nil
 }
 
@@ -164,15 +168,13 @@ func (m *MakingService) endRun(stopping bool) {
 	<-running.done
 }
 
-// makeLines makes each line in turn, recording what happens for Progress. A line that shares its
-// sounds with one already made is made once.
-func (m *MakingService) makeLines(
-	ctx context.Context, running *run, voice machinevoice.Voice, style speech.Style, lines []making.Line,
-) {
+// makeLines makes each line the queue gives in turn, recording what happens for Progress.
+func (m *MakingService) makeLines(ctx context.Context, running *run, voice machinevoice.Voice, style speech.Style) {
 	defer m.finish(running)
-	for _, line := range lines {
-		if m.made(line.Key) {
-			continue
+	for {
+		line, ok := m.next()
+		if !ok {
+			return
 		}
 		samples, err := m.makeLine(ctx, style, line)
 		if ctx.Err() != nil {
@@ -208,11 +210,22 @@ func (m *MakingService) makeLine(ctx context.Context, style speech.Style, line m
 	return m.maker.Make(ctx, tokens, row)
 }
 
-// made reports whether a line's made line is current.
-func (m *MakingService) made(key string) bool {
+// next takes the next line to make off the queue. A line whose made line is already current is passed
+// over: one sharing its sounds with a line made before it; one MakeNext put ahead twice. With nothing
+// left, making is over; that is recorded under the same lock, so MakeNext never answers that a line is
+// on its way once no line will be made.
+func (m *MakingService) next() (making.Line, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return m.plan.Made(key)
+	for len(m.queue) > 0 {
+		line := m.queue[0]
+		m.queue = m.queue[1:]
+		if !m.plan.Made(line.Key) {
+			return line, true
+		}
+	}
+	m.making = false
+	return making.Line{}, false
 }
 
 // finish records that a making has ended, then lets whoever waits for it go on.
@@ -228,6 +241,25 @@ func (m *MakingService) finish(running *run) {
 type madeVoice struct {
 	service    *MakingService
 	generation int
+}
+
+// MakeNext puts a cue's unmade lines at the front of the queue, first line first, so they are made
+// after the line under way (FR-514). It answers whether a line is on its way: false where the cue has
+// none to make, where making has ended or where this cast is over.
+func (v madeVoice) MakeNext(id cue.ID) bool {
+	m := v.service
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if v.generation != m.generation || !m.making {
+		return false
+	}
+	unmade := m.plan.Unmade(id)
+	if len(unmade) == 0 {
+		return false
+	}
+	rest := slices.DeleteFunc(slices.Clone(m.queue), func(line making.Line) bool { return line.Cue == id })
+	m.queue = append(unmade, rest...)
+	return true
 }
 
 // Lookup returns where a cue's current made lines are played from; false where there are none or

@@ -48,14 +48,15 @@ type Plan struct {
 	current map[string]bool
 }
 
-// New sets every line of the script, in the voice's accent, against the keys already on disk.
-func New(voiced script.Voiced, accent machinevoice.Accent, files Files, onDisk []string) Plan {
+// New sets every line of the script, in the voice's accent, against the keys already on disk. The
+// lines follow the order given (Order); a cue it leaves out follows in the script's own order.
+func New(voiced script.Voiced, order []cue.ID, accent machinevoice.Accent, files Files, onDisk []string) Plan {
 	current := make(map[string]bool, len(onDisk))
 	for _, key := range onDisk {
 		current[key] = true
 	}
 	var lines []Line
-	for _, id := range voiced.Cues() {
+	for _, id := range sequence(voiced.Cues(), order) {
 		sounds, _ := voiced.Sounds(id, accent)
 		for index, each := range sounds {
 			lines = append(lines, Line{Cue: id, Index: index, Sounds: each, Key: Key(each, files)})
@@ -64,7 +65,7 @@ func New(voiced script.Voiced, accent machinevoice.Accent, files Files, onDisk [
 	return Plan{lines: lines, current: current}
 }
 
-// ToMake returns the lines with no current made line, cue by cue in order (FR-511, FR-512).
+// ToMake returns the lines with no current made line, cue by cue in the plan's order (FR-511, FR-512).
 func (p Plan) ToMake() []Line {
 	var toMake []Line
 	for _, line := range p.lines {
@@ -73,6 +74,18 @@ func (p Plan) ToMake() []Line {
 		}
 	}
 	return toMake
+}
+
+// Unmade returns a cue's lines with no current made line in line order: what is made next when the cue
+// fires with none (FR-514).
+func (p Plan) Unmade(id cue.ID) []Line {
+	var unmade []Line
+	for _, line := range p.lines {
+		if line.Cue == id && !p.current[line.Key] {
+			unmade = append(unmade, line)
+		}
+	}
+	return unmade
 }
 
 // Total returns how many lines the voice speaks (FR-515).

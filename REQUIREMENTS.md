@@ -779,7 +779,8 @@ since how full that buffer is cannot be read. The journal poll before a cue fire
 counted (Oliver, 2026-09-13).
 Note: Stop and a take that interrupts another both drop the audio still queued, so the cut is heard at
 once. A take that starts after silence drops the queued silence. A take that follows another closely
-waits for the end of the one before it rather than cutting it off.
+waits for the end of the one before it rather than cutting it off. A cue whose line is made when it
+fires (FR-514) is counted from when that line is handed over, not from the firing.
 Verified by: `TestPlaybackBeginsWithinTheLatencyBudget` in
 `internal/infrastructure/audio/latency_test.go`, which read 100.5 milliseconds at the 95th
 percentile on 2026-09-13, almost all of it the Windows buffer counted at its full 100 milliseconds;
@@ -949,7 +950,9 @@ the tests run. Last, he chose to make every line's speech sounds before the buil
 run by a tool with its own venv in the repository, so that neither misaki nor eSpeak NG ships (CON-8).
 Once casting came to be wired, he accepted Claude's recommendations on where the application reads the
 model files, on keeping a cast machine voice apart from a recorded one and on starting when that voice
-cannot be cast (FR-539 to FR-542).
+cannot be cast (FR-539 to FR-542). Last, he ruled that casting a voice takes no more than 5 seconds
+and accepted Option B: the confirmation is made first, a cue that fires before its line exists has
+that line made on the spot and the rest are made after the cast (FR-511, FR-514, FR-521, NFR-P-205).
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -1063,15 +1066,26 @@ Verified by: in part, `TestAVoiceSpeaksWithTheAccentItsIdNames` in
 `internal/domain/machinevoice/voice_test.go` for the accent read from the id; making lines with that
 accent's pronunciation is not built.
 
-**FR-511 Casting a machine voice makes its missing lines**
+**FR-511 Casting a machine voice makes its lines, the confirmation first**
 Priority: Must.
 When a machine voice is cast, the application shall make every line of the script that voice has
-no current made line for (FR-513).
+no current made line for (FR-513) in this order: the lines of the cue played on a cast (FR-521);
+then the lines of `alert` cues; then those of `notice` cues, `ambient` cues and `flavour` cues, in
+that order. Cues of one priority shall be made in the order the cue table lists them.
 Rationale: making a line takes longer than the 150 ms NFR-P-202 allows between an event and its
-speech, so every line is made before it is needed.
-Acceptance: Given `bf_emma` with no made lines, when she is cast, then making starts; once it ends,
-every line in the script has a current made line for her.
-Verified by: in part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
+speech, so lines are made ahead of need. Oliver ruled on 2026-09-14 that casting a voice takes no
+more than 5 seconds (NFR-P-205), while making the whole script took 3 m 18 s for `bf_alice`; so the
+confirmation is made first and the rest after the cast. Nothing records how often a cue fires, so
+priority stands in for how likely it is (Option B, recommended by Claude; accepted by Oliver on
+2026-09-14). A cue that fires before its lines are made is FR-514's.
+Acceptance: Given `bf_emma` with no made lines, when she is cast, then the confirmation's lines are
+made first, then every `alert` cue's; once making ends, every line in the script has a current made
+line for her.
+Verified by: `TestTheCuePlayedOnACastComesFirstThenEachPriorityInTableOrder` and
+`TestAPlansLinesFollowTheOrder` in `internal/domain/making/order_test.go` with
+`TestLinesAreMadeInTheOrderGiven` in `internal/application/services/making_next_test.go` for the order,
+proved on 2026-09-14 by planting the confirmation ranked lowest, priorities sorted lowest first and a
+plan that ignores the order; each failed its test. In part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
 `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
 the lines still to make and `TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent` in
 `internal/application/services/making_test.go` for making them on cast over fakes, with
@@ -1102,11 +1116,38 @@ Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 `internal/infrastructure/voicefiles/voicefiles_test.go` for the digests; the made lines on disk are not
 built.
 
-**FR-514 While lines are being made, the voice speaks what is made**
+**FR-514 A cue with nothing made is made when it fires**
 Priority: Must.
 While a machine voice's lines are being made, the application shall play that voice's current made
-lines for the cues that fire; a cue with none yet shall be silent.
-Verified by: in part, `TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade` in
+lines for the cues that fire. When a cue fires while the cast machine voice has no current made line
+for it, the application shall record `making`, make that cue's first line next after any line already
+being made, then hand the cue over to be spoken (FR-612) as though it fired when the line was written.
+The cue's other lines shall be made straight after it. If the line is not written within 2 seconds of
+the cue firing, then the application shall let the cue go and record `dropped`. While a cue waits for
+its line, a further firing of it shall be recorded as `duplicate`. While playback is muted, such a cue
+shall be recorded as `dropped` (FR-611); its line shall still be made next.
+Rationale: FR-511 makes lines after the cast, so a cue can fire before its lines exist. A line took
+204 to 348 ms, the model 539 ms to load and a line under way cannot be interrupted, so the measured
+worst case comes to about 1.25 s; 2 s bounds how late a line may be heard. Making the cue's first line
+rather than one at random, recording `making` and the 2 s limit were recommended by Claude and
+accepted by Oliver on 2026-09-14.
+Acceptance: Given `bf_emma` cast with no made line for `Docked`, when `Docked` fires, then `making` is
+recorded and `Docked`'s first line is the next made; once it is written, the line is played. Given the
+line still unwritten 2 seconds after `Docked` fired, then `dropped` is recorded and nothing is played.
+Verified by: `TestUnmadeGivesACuesLinesStillToMakeInLineOrder` in `internal/domain/making/order_test.go`;
+`TestMakeNextPutsACuesUnmadeLinesAheadOfTheRest` and `TestMakeNextAnswersWhetherALineIsOnItsWay` in
+`internal/application/services/making_next_test.go`; `TestACueWithNothingMadeWaitsForItsLineThenSpeaks`,
+`TestALineStillUnwrittenAfterTheLimitLetsTheCueGo`, `TestAFurtherFiringWhileACueWaitsIsADuplicate`,
+`TestAMutedCueIsDroppedWhileItsLineIsStillMade` and `TestACueNoLineIsOnItsWayForIsUnbound` in
+`internal/application/services/reaction_made_test.go`; `TestACueFiredBeforeItsLineIsMadeWaitsThroughTheFacade`
+in `made_on_call_test.go`. Proved on 2026-09-14 by planting fourteen faults, each of which failed its
+test: a cue's made lines counted as unmade, a line on its way for a cast that is over or a making that
+has ended, the cue's lines put at the back, a made line made again, a further firing not taken for a
+duplicate, a cue let go at the limit rather than past it, a cue handed over as though it fired when it
+first did, a muted cue left waiting, a cue with no line on its way left waiting, a missing cue maker
+asked all the same, no cue maker handed over on a machine cast, a tick that hands nothing over and a
+poll loop that never ticks. With the real model, `TestAMachineVoiceIsCastWithinFiveSeconds` measured a
+line asked for on call written 590 ms later. Before Option B, in part, `TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade` in
 `internal/application/services/making_test.go` over fakes, with `TestACuesTakesAreTheDistinctKeysOfItsCurrentLines`
 in `internal/domain/making/making_test.go`; playing them through the catalogue is not built.
 
@@ -1177,9 +1218,16 @@ FR-518 names.
 **FR-521 Casting a machine voice plays its confirmation**
 Priority: Must.
 When a machine voice is cast, the application shall play one current made line of `Cast.Confirmed`
-from that voice, as FR-232 does for a recorded voice. If none is current yet, the output is muted
-or no audio device is open, then the cast shall succeed with nothing played.
-Verified by: `TestCastingAMachineVoiceIsConfirmedInAMadeLine` and
+from that voice, as FR-232 does for a recorded voice, as soon as one is current: at once where one
+already is, otherwise when the first is written. If none can be made, the output is muted or no audio
+device is open, then the cast shall succeed with nothing played. A voice cast before the confirmation
+is written shall leave it unplayed.
+Rationale: FR-511 makes the confirmation first, so on a first cast it is heard a moment after the cast
+(NFR-P-205) rather than not at all (Option B, accepted by Oliver on 2026-09-14).
+Verified by: `TestAConfirmationWrittenAfterTheCastIsPlayedOnTheNextTick` and
+`TestAConfirmationIsForgottenWhenAnotherVoiceIsCastFirst` in `made_on_call_test.go`, proved on
+2026-09-14 by planting a cast that waits for no confirmation, a wait that stops at once and a cast of
+another voice that leaves the confirmation waiting; each failed its test. Also `TestCastingAMachineVoiceIsConfirmedInAMadeLine` and
 `TestAMachineVoiceWithNothingMadeYetIsCastInSilence` in `machine_test.go`, the second proved on
 2026-09-14 by planting an acknowledgement that answers with nothing recorded. Not verified by a test
 for a machine voice: muted and no audio device, which pass through the same `acknowledge` as FR-232.
@@ -1520,7 +1568,8 @@ was checked by the PowerShell parser only; it has not been run.
 | ID | Requirement | Method |
 |---|---|---|
 | NFR-P-203 | Making all 768 lines of a complete script for one machine voice takes no more than 10 minutes on the development machine | `TestMakingACompleteScriptKeepsWithinTimeAndDisk` in `tests/machinevoice`, which makes the shipped script for `bf_emma` with the real model and fails over the limit. It runs with `./test.ps1 -Benchmarks` and on every build, never in the everyday gate (Oliver, 2026-09-14); it skips while the script lacks lines for any cue. Basis: 204 to 348 ms a short line, which projects to about 4 minutes. Not yet measured: the script is incomplete. The test was proved on 2026-09-14 by planting its skip away over the incomplete script: it made the 3 lines in 1.5 s and passed, then failed naming NFR-P-203 with the limit cut to a nanosecond |
-| NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated |
+| NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated. Option B makes lines while the game is played, so this matters more than it did |
+| NFR-P-205 | From casting a machine voice with none of its lines made, its confirmation reaches the player within 5 seconds on the development machine | `TestAMachineVoiceIsCastWithinFiveSeconds` in `tests/machinevoice/cast_test.go` casts `bf_emma` over an empty store with the real model and measures until the confirmation's first line is current, adding the 250 ms poll (FR-615) through which the facade hands it over; it fails over the limit. It also measures a cue made when it fires, failing over FR-514's 2 seconds. It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14: `bf_emma`'s confirmation reached the player 1.316 s after the cast, the 250 ms counted in full; a line asked for on call was written 590 ms later. The projection before measuring was about 0.9 s: 539 ms to load plus a line at 204 to 348 ms (Oliver, 2026-09-14) |
 | NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
 | NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 339 MB |
 | NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | The same test as NFR-P-203, summing the made lines' files once making ends and failing over the limit. Measured on 2026-09-14: ten lines at 56.7 percent of their WAV size, projecting 50.4 MB. Not yet measured over a complete script. Proved the same way as NFR-P-203: the 3 lines took 0.2 MB and passed, then the test failed naming NFR-C-502 with the limit cut to one byte |
@@ -1689,7 +1738,7 @@ Verified by: `TestAPlaybackFailureIsRecordedAndLeavesNothingSpeaking` in
 **FR-614 The reaction log keeps the newest 200 decisions**
 Priority: Must.
 The application shall record every decision this section names (`duplicate`, `cooldown`, `unbound`,
-`dropped`, `queued` and `played`) with its time of day, its cue id and the file name of its take
+`making`, `dropped`, `queued` and `played`) with its time of day, its cue id and the file name of its take
 alone. It shall keep the 200 newest, newest last, adding each to the reaction log on the Status pane
 as it is made.
 Verified by: `TestADecisionIsRecordedAndAnnounced`, `TestTheHistoryKeepsOnlyTheMostRecentDecisions`
@@ -2095,7 +2144,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-P-205, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

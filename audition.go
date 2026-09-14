@@ -109,6 +109,7 @@ func (a *App) announcePlayback() {
 func (a *App) pollAndAnnounce() {
 	was := a.Playing()
 	a.poll()
+	a.tickMaking()
 	if !was && a.Playing() {
 		a.announcePlayback()
 	}

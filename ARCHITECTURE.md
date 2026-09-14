@@ -61,7 +61,11 @@ exactly like one that holds.
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
   through three more: `SpeechMaker` turns a line's numbers and style row into samples, `VoiceFiles`
   reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
-  made lines (FR-517, FR-523, FR-527). It never imports Infrastructure or the Wails runtime.
+  made lines (FR-517, FR-523, FR-527). Lines are made in `making.Order`: the confirmation first, then
+  by priority (FR-511). The audio source a cast answers with is also a `CueMaker`, through which the
+  reaction service has a cue's lines made next when it fires with none; the cue waits for them for up
+  to 2 seconds, handed over on the poll tick (FR-514). It never imports Infrastructure or the Wails
+  runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
   folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),

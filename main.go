@@ -13,11 +13,13 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
@@ -115,6 +117,9 @@ type session struct {
 	maker  releaser
 	// announced is what the page was last told about making, so it is told only of a change.
 	announced makingKey
+	// confirming is set while a cast machine voice's confirmation waits for its line (FR-521). The
+	// cast sets it from the window's goroutine; the poll tick reads it from its own.
+	confirming atomic.Bool
 
 	active    castVoice
 	catalogue *library.Catalogue
@@ -147,6 +152,7 @@ func (s *session) useVoice(chosen library.Voice) {
 // is correct: those clip paths belong to the voice being left behind.
 func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 	s.player.Stop()
+	s.confirming.Store(false)
 
 	s.active = cast
 	s.catalogue = catalogueOver(source, cast.Display, s.table, s.chooser)
@@ -155,6 +161,11 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 		s.table, s.catalogue, s.scheduler, s.chooser, s.reporter, systemClock{},
 	)
 	s.reactions.SetMuted(s.muted)
+	// A machine voice makes a cue's lines when the cue fires with none (FR-514); a recorded voice has
+	// nothing more to make.
+	if maker, ok := source.(ports.CueMaker); ok {
+		s.reactions.SetCueMaker(maker)
+	}
 	if s.tray != nil {
 		s.tray.SetActiveVoice(cast.Name, cast.Machine)
 	}
@@ -355,5 +366,5 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	dir := voicefiles.Beside(executable)
 	maker := speechmodel.New(dir)
 	files := filesUnless(voicefiles.New(dir), errors.Join(notFound, noStore))
-	return services.NewMakingService(voiced, files, maker, madelines.New(made)), maker, nil
+	return services.NewMakingService(voiced, making.Order(table), files, maker, madelines.New(made)), maker, nil
 }

@@ -79,7 +79,14 @@ section 10 says: domain, then application, then infrastructure, then user interf
   whether the cast voice is a machine voice, so a recordings folder carrying its id is not marked cast.
 - The tray's Voice menu lists the machine voices after the recorded voices under a separator, each
   cast by its id; its check mark and hover text match a voice by name and kind (FR-509, FR-540).
-- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 358. New code
+- A cast makes its lines in `making.Order`: the confirmation first, then cues by priority in table
+  order (FR-511). `MakingService` makes from a queue that `MakeNext` reorders; the audio source a cast
+  answers with is also a `ports.CueMaker` (FR-514).
+- `ReactionService` records `making` for a cue with nothing made, waits up to 2 s for its line and
+  hands it over on `Tick`, which the poll tick calls through `tickMaking` in `machine.go`. A machine
+  cast's confirmation plays once it is written (FR-521). `TestAMachineVoiceIsCastWithinFiveSeconds`
+  in `tests/machinevoice` measured 1.316 s for NFR-P-205 on 2026-09-14.
+- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 370. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the

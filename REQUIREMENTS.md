@@ -51,7 +51,7 @@ project.
 | Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
 | Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
 | Changing a machine voice's speed or pitch | Every line is made at the model's own speed |
-| Working out a word's part of speech to choose its pronunciation | A line whose word is misread is put right in the script; see OQ-19 |
+| Working out a word's part of speech to choose its pronunciation | A line whose word is misread is put right in the script (FR-529) |
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
@@ -939,7 +939,11 @@ on 2026-09-14. His rulings that day: a machine voice is cast apart from a record
 live inside the application rather than in a separate program; every machine voice speaks one shared
 script holding three lines a cue; the setup program carries the files they are made from. This
 answers OQ-6: the additional source is built in behind the section 6 port rather than supplied by an
-extension, so FR-501 is raised to Must.
+extension, so FR-501 is raised to Must. Later the same day Oliver accepted Claude's recommendations
+on naming a machine voice, on putting a misread word right and on a complete script. He chose
+lossless FLAC for made lines, kept for the cast machine voice alone. He then accepted the form a
+line uses to give a word's speech sounds, with a second spelling for American voices, checked when
+the tests run.
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -995,7 +999,7 @@ Rationale: the model reads at most 510 symbols; Kokoro cuts a longer string shor
 Verified by: not built.
 
 **FR-507 Every cue has lines**
-Priority: Should (OQ-21).
+Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before machine voices ship.
 `script.toml` shall hold lines for every cue id in `cues.toml`.
 Note: until it does, a machine voice is silent for a cue with no lines, as FR-220 says of a recorded
 voice.
@@ -1008,8 +1012,8 @@ The Cast pane shall offer 28 machine voices, listed apart from the recorded voic
 `bm_lewis`. American female: `af_alloy`, `af_aoede`, `af_bella`, `af_heart`, `af_jessica`, `af_kore`,
 `af_nicole`, `af_nova`, `af_river`, `af_sarah`, `af_sky`. American male: `am_adam`, `am_echo`,
 `am_eric`, `am_fenrir`, `am_liam`, `am_michael`, `am_onyx`, `am_puck`, `am_santa`.
-Rationale: machine voices and recorded voices are cast separately (Oliver, 2026-09-14). How each is
-named on screen is OQ-18.
+Rationale: machine voices and recorded voices are cast separately (Oliver, 2026-09-14). FR-528 says
+how each is named.
 Acceptance: Given a library root holding `Alice/`, when the Cast pane opens, then Alice is listed
 among the recorded voices and the 28 machine voices are listed apart from her.
 Verified by: not built.
@@ -1072,7 +1076,7 @@ Verified by: not built.
 Priority: Must.
 When another voice is cast while a machine voice's lines are being made, the application shall stop
 making them, keeping every made line written so far.
-Note: whether made lines are kept once their voice is no longer cast is OQ-20.
+Note: FR-527 then deletes the made lines of the voice that was cast.
 Verified by: not built.
 
 **FR-517 A made line is written whole or not at all**
@@ -1135,6 +1139,66 @@ Rationale: made lines are the application's own and can be made again. FR-805's 
 never touches the recordings still holds, since a made line is not one.
 Verified by: not built.
 
+**FR-526 Made lines are stored as lossless FLAC**
+Priority: Must.
+The application shall store each made line as a FLAC file that decodes to exactly the samples the
+model made.
+Rationale: FLAC took 56.7 percent of the space of WAV over ten made lines with nothing lost, through
+the FLAC library the application already uses (Oliver, 2026-09-14).
+Note: measured on 2026-09-14, that library logs a line for every frame it reads at 24 kHz; playing a
+made line must not fill the output with them.
+Acceptance: Given a made line, when it is decoded, then every sample equals the sample the model made.
+Verified by: not built.
+
+**FR-527 Only the cast machine voice keeps its made lines**
+Priority: Must.
+When another voice is cast, the application shall delete every made line of the machine voice that
+was cast before.
+Rationale: disk use stays near 50 MB however many voices are tried (Oliver, 2026-09-14). Casting a
+voice again makes its lines again, a projected 4 minutes.
+Acceptance: Given `bf_emma` cast with her lines made, when `am_michael` is cast, then no made line of
+`bf_emma` remains.
+Verified by: not built.
+
+**FR-528 A machine voice's name on screen**
+Priority: Must.
+The application shall name a machine voice by the name in its id, capitalised, followed by its accent
+and sex in brackets, such as "Emma (British, female)" for `bf_emma`.
+Rationale: recommended by Claude; accepted by Oliver on 2026-09-14.
+Verified by: not built.
+
+**FR-529 A line may give a word's speech sounds**
+Priority: Should.
+Where a line writes a word as `[word](/sounds/)`, the application shall make that word with those
+speech sounds, speaking the word alone and never the brackets or the sounds. Where the round brackets
+hold two spellings, `[word](/British/American/)`, a British machine voice shall use the first and an
+American machine voice the second; one spelling serves both accents.
+Rationale: a word whose sound depends on its part of speech is put right by rewording its line first;
+where no rewording serves, the line says how the word sounds (Oliver, 2026-09-14). The form is
+misaki's own, read in its source on 2026-09-14. The second spelling is added because one script
+serves both accents (FR-510).
+Acceptance: Given the line "Flight [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) saved.", when it is made for `bf_emma`,
+then the word record is made from `ˈɹɛkɔːd`; when made for `am_michael`, from `ˈɹɛkɚd`.
+Verified by: not built.
+
+**FR-530 If the old voice's made lines cannot be deleted, then say so**
+Priority: Must.
+If a made line of the voice that was cast before cannot be deleted, then the application shall say so
+on the Cast pane and complete the cast.
+Verified by: not built.
+
+**FR-531 If a line's given speech sounds cannot be read, then the build fails**
+Priority: Should.
+If a line in `script.toml` opens a `[word](` it does not close, gives a spelling not held between
+slashes, gives more than two spellings or gives a symbol the model does not read, then a structural
+test shall fail naming the cue and the line.
+Rationale: a mistake in a spelling is caught when the tests run rather than heard in play (Oliver,
+2026-09-14). The model reads 115 symbols, counted from its tokenizer file on 2026-09-14; square
+brackets and slashes are not among them.
+Acceptance: Given `"Docked"` holding a line with `[record](/ˈɹɛkɔːd)`, when the structural tests run,
+then one fails naming `Docked` and that line.
+Verified by: not built.
+
 ### 6.2 Machine voices, non-functional
 
 | ID | Requirement | Method |
@@ -1143,6 +1207,7 @@ Verified by: not built.
 | NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated |
 | NFR-Q-501 | Over the purposes of every cue in `cues.toml`, at least 99 percent of words receive the speech sounds misaki 0.9.4 gives them, in each accent | A test against a reference file made once with misaki and committed. Measured on 2026-09-14: 99.4 percent in each accent |
 | NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 370 MB |
+| NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | A test that makes a complete script for one voice and sums its files; it skips where the model files are absent. Measured on 2026-09-14: ten lines at 56.7 percent of their WAV size, projecting 50.4 MB |
 
 ---
 
@@ -1664,12 +1729,7 @@ headless test is how it gets tested.
 
 ## 11. Open questions
 
-| ID | Question | Blocks | Owner |
-|---|---|---|---|
-| **OQ-18** | How is a machine voice named on screen? The model's ids read `bf_emma`. Recommendation: the name capitalised with its accent and sex, as "Emma (British, female)". | FR-508, FR-509 | Oliver, with a recommendation from Claude |
-| **OQ-19** | How does the script put right a word misaki's dictionaries misread for its line, such as a word whose sound depends on its part of speech? Recommendation: reword the line; where no rewording serves, give that word's speech sounds inside the line. | NFR-Q-501 | Oliver, with a recommendation from Claude |
-| **OQ-20** | Are a machine voice's made lines kept once another voice is cast? Keeping them makes casting that voice again immediate; each voice's lines take about 95 MB, an estimate from the length of the probe clips rather than a measurement over a script. Recommendation: keep them. | FR-516 | Oliver, with a recommendation from Claude |
-| **OQ-21** | Must the script hold lines for every cue before machine voices ship? Recommendation: yes, which makes FR-507 a Must. | FR-507 | Oliver |
+There are no open questions.
 
 ---
 
@@ -1677,8 +1737,8 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-506, FR-508, FR-510 to FR-521, FR-523 to FR-525, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-Q-501, NFR-C-501 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-507, FR-509, FR-522, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-Q-501, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out a word's part of speech to choose its pronunciation; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

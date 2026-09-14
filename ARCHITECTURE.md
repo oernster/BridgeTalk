@@ -471,6 +471,16 @@ on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Au
 Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.
 
+**Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` lists them under their own heading
+after the recorded voices, one cast control a row, in the row a recorded voice uses. The cast one reads
+how far making has got: it asks `Making` once, then follows the `making` event, which the poll loop
+sends only when the answer has moved, so an idle tick says nothing. Failed lines, a stopped making,
+undeleted lines and a refused cast each get a callout beneath the list. `StateDTO.MachineVoice` says
+which kind of voice is cast, since a recordings folder may carry a machine voice's id. The words both
+lists share, the part a cast voice plays and the counted figures, live in `frontend/src/castWords.ts`;
+where making stands before anything is made lives in `frontend/src/making.ts`, apart from `api.ts`,
+because a test replaces that module whole.
+
 Four surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
 licence, the close choice and the breakdown of what one voice speaks for. Each opens focused on its first
 control; the close choice lists Minimise first, since Enter straight after pressing the cross must not

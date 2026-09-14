@@ -22,4 +22,5 @@ export const watching: State = {
   stalls: 0,
   worstStall: 0,
   journalProblem: '',
+  machineVoice: false,
 }

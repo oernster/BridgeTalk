@@ -70,6 +70,41 @@ type StateDTO struct {
 	// JournalProblem says why the journal directory is not being watched, naming it
 	// once; empty while it is. The window opens either way, so the panes say it (FR-238).
 	JournalProblem string `json:"journalProblem"`
+	// MachineVoice says whether the cast voice is a machine voice, since a recordings folder may
+	// carry a machine voice's id as its name (FR-540).
+	MachineVoice bool `json:"machineVoice"`
+}
+
+// MachineVoiceDTO is one machine voice the Cast pane offers: its id, which a cast sends back,
+// and the name the screen shows (FR-508, FR-528).
+type MachineVoiceDTO struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// MakingDTO is how far making the cast machine voice's lines has got, as the Cast pane shows it.
+//
+// Current of Total lines are made (FR-515); CuesServed moments have a current made line, which
+// the pane reads against StateDTO.Total (FR-522). Failed lists the lines that could not be made
+// (FR-518). Stopped says why making stopped short (FR-520) and NotDeleted why the last cast
+// could not delete what it had to (FR-530); each is empty where nothing went wrong.
+type MakingDTO struct {
+	Voice      string           `json:"voice"`
+	Making     bool             `json:"making"`
+	Current    int              `json:"current"`
+	Total      int              `json:"total"`
+	CuesServed int              `json:"cuesServed"`
+	Failed     []LineFailureDTO `json:"failed"`
+	Stopped    string           `json:"stopped"`
+	NotDeleted string           `json:"notDeleted"`
+}
+
+// LineFailureDTO is one line that could not be made: its moment named for a reader, its place
+// among that moment's lines counting from one and why (FR-518).
+type LineFailureDTO struct {
+	Cue    CueDTO `json:"cue"`
+	Line   int    `json:"line"`
+	Reason string `json:"reason"`
 }
 
 // PlaybackDTO reports whether the output device is sounding anything.

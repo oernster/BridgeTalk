@@ -38,6 +38,9 @@ vi.mock('./api', () => ({
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
+    machineVoices: () => Promise.resolve([]),
+    making: async () => (await import('./making')).nothingMade,
+    castMachineVoice: () => Promise.resolve(),
     // Two folders with the cast voice second, so a pane that ignored the cast and fell
     // back to the first folder would name the wrong voice.
     voiceDirectories: () => Promise.resolve(['Hugo', 'Grace']),

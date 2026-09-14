@@ -310,6 +310,7 @@ func (a *App) State() StateDTO {
 		Stalls:         stalls,
 		WorstStall:     int(worst.Milliseconds()),
 		JournalProblem: a.journalProblem,
+		MachineVoice:   a.session.active.Machine,
 	}
 }
 

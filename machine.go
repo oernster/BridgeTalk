@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
@@ -25,6 +26,81 @@ type castVoice struct {
 
 // releaser is the model's hold on memory, let go when the application closes.
 type releaser interface{ Close() }
+
+// makingEvent is emitted when making the cast machine voice's lines has moved.
+const makingEvent = "making"
+
+// MachineVoices lists every machine voice offered, in the order FR-508 gives, by the name the screen
+// shows (FR-528). Every one can be cast; one whose files cannot be read is refused when it is.
+func (a *App) MachineVoices() []MachineVoiceDTO {
+	offered := machinevoice.All()
+	out := make([]MachineVoiceDTO, 0, len(offered))
+	for _, voice := range offered {
+		out = append(out, MachineVoiceDTO{ID: voice.ID(), Name: voice.Name()})
+	}
+	return out
+}
+
+// Making reports how far making the cast machine voice's lines has got (FR-515, FR-518, FR-520,
+// FR-522, FR-530). The failures always cross as a list, empty where there are none, so the page
+// never reads a missing one.
+func (a *App) Making() MakingDTO {
+	progress := a.session.making.Progress()
+	failed := make([]LineFailureDTO, 0, len(progress.Failed))
+	for _, failure := range progress.Failed {
+		failed = append(failed, LineFailureDTO{
+			Cue: a.session.cueEntry(failure.Cue), Line: failure.Index + 1, Reason: failure.Reason.Error(),
+		})
+	}
+	return MakingDTO{
+		Voice: progress.Voice, Making: progress.Making,
+		Current: progress.Current, Total: progress.Total, CuesServed: progress.CuesServed,
+		Failed: failed, Stopped: said(progress.Stopped), NotDeleted: said(progress.NotDeleted),
+	}
+}
+
+// said words a reason for the page; empty where there is none.
+func said(reason error) string {
+	if reason == nil {
+		return ""
+	}
+	return reason.Error()
+}
+
+// cueEntry names a cue for a reader by its id. The script is checked against the cue table, so
+// every cue a line belongs to is found there; an id that is not still reads as its own title.
+func (s *session) cueEntry(id cue.ID) CueDTO {
+	for _, item := range s.table.All() {
+		if item.ID() == id {
+			return cueLines([]cue.Cue{item})[0]
+		}
+	}
+	return CueDTO{ID: string(id), Title: id.Title(), Folder: id.Folder()}
+}
+
+// makingKey is what the page is told about making, reduced to what can be compared: a change in
+// any of it is news; a tick that changes none of it is not.
+type makingKey struct {
+	voice                          string
+	making                         bool
+	current, total, served, failed int
+	stopped, notDeleted            string
+}
+
+// announceMaking tells the page how far making has got, once for each change (FR-515). The poll
+// loop calls it on every tick, so an answer that has not moved says nothing.
+func (a *App) announceMaking() {
+	now := a.Making()
+	key := makingKey{
+		voice: now.Voice, making: now.Making, current: now.Current, total: now.Total,
+		served: now.CuesServed, failed: len(now.Failed), stopped: now.Stopped, notDeleted: now.NotDeleted,
+	}
+	if key == a.session.announced {
+		return
+	}
+	a.session.announced = key
+	a.emit(makingEvent, now)
+}
 
 // CastMachineVoice casts the machine voice with the id given, which starts making every line it has
 // no current made line for (FR-511).

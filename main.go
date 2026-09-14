@@ -112,6 +112,8 @@ type session struct {
 	// when the application closes.
 	making *services.MakingService
 	maker  releaser
+	// announced is what the page was last told about making, so it is told only of a change.
+	announced makingKey
 
 	active    castVoice
 	catalogue *library.Catalogue

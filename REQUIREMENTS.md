@@ -1039,8 +1039,9 @@ how each is named.
 Acceptance: Given a library root holding `Alice/`, when the Cast pane opens, then Alice is listed
 among the recorded voices and the 28 machine voices are listed apart from her.
 Verified by: in part, `TestTheVoicesOfferedAreTheTwentyEightOfFR508` in
-`internal/domain/machinevoice/voice_test.go` for the voices offered; the Cast pane listing them apart
-is not built.
+`internal/domain/machinevoice/voice_test.go` for the voices offered;
+`TestTheCastPaneOffersEveryMachineVoiceByItsName` in `machinepane_test.go`; "lists every machine voice
+apart, by the name each is shown by" in `frontend/src/machineVoices.test.tsx`.
 
 **FR-509 The tray offers the machine voices**
 Priority: Should.
@@ -1112,7 +1113,11 @@ lines are current out of how many lines the script holds.
 Acceptance: Given a script of 768 lines, when `bf_emma` is cast with 100 current, then the pane
 reads 100 of 768 and the figure rises as lines are made.
 Verified by: in part, `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in
-`internal/domain/making/making_test.go` for the count; the Cast pane is not built.
+`internal/domain/making/making_test.go` for the count; `TestMakingReportsHowFarItHasGot` and
+`TestAPollAnnouncesMakingOnlyWhenItHasMoved` in `machinepane_test.go`, the second proved on 2026-09-14 by
+planting an announcement on every tick; "reads how far making has got for the cast voice and follows
+it" in `frontend/src/machineVoices.test.tsx`, proved the same day by planting a pane that ignores the
+announcement.
 
 **FR-516 Casting another voice stops making**
 Priority: Must.
@@ -1141,7 +1146,9 @@ Verified by: in part, `TestALineThatCannotBeMadeIsReportedAndMakingGoesOn` in
 `TestAModelThatCannotBeLoadedIsTriedAgain` and `TestALineTheModelRefusesLeavesItLoaded` in
 `internal/infrastructure/speechmodel/maker_test.go` and the refusals naming a missing runtime, a library
 that is not ONNX Runtime, a missing or damaged model and an impossible path once in
-`internal/infrastructure/speechmodel`; the Cast pane showing it is not built.
+`internal/infrastructure/speechmodel`; `TestMakingReportsWhatWentWrong` in `machinepane_test.go` and
+"says which lines could not be made, why making stopped and what could not be deleted" in
+`frontend/src/machineVoices.test.tsx` for the Cast pane.
 
 **FR-519 If a machine voice's files are missing, then refuse the cast**
 Priority: Must.
@@ -1152,16 +1159,16 @@ Verified by: in part, `TestAVoiceWhoseFilesCannotBeReadIsRefusedChangingNothing`
 `internal/application/services/making_test.go` over a fake, with
 `TestAMissingOrUnreadableFileIsRefusedNamingItOnce` and `TestAnotherVoicesStyleFileIsNoStandIn` in
 `internal/infrastructure/voicefiles/voicefiles_test.go` for reading the files and
-`TestAMachineVoiceThatCannotBeCastChangesNothing` in `machine_test.go` for the facade; refusing a cast
-from the Cast pane is not built.
+`TestAMachineVoiceThatCannotBeCastChangesNothing` in `machine_test.go` for the facade; "says why a
+machine voice could not be cast" in `frontend/src/machineVoices.test.tsx` for the Cast pane.
 
 **FR-520 If a made line cannot be written, then stop and say why**
 Priority: Must.
 If a made line cannot be written, whether for want of space or permission, then the application
 shall stop making that voice's lines and show the reason on the Cast pane.
 Verified by: in part, `TestAWriteFailureStopsMakingAndSaysWhy` in
-`internal/application/services/making_test.go` for stopping with the reason; writing the files and the
-Cast pane are not built.
+`internal/application/services/making_test.go` for stopping with the reason, with the Cast pane tests
+FR-518 names.
 
 **FR-521 Casting a machine voice plays its confirmation**
 Priority: Must.
@@ -1178,8 +1185,8 @@ Priority: Should.
 The Cast pane shall show, for a machine voice, the number of cues with at least one current made
 line out of the size of the cue vocabulary.
 Verified by: in part, `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in
-`internal/domain/making/making_test.go` for the cues with a current made line; the Cast pane is not
-built.
+`internal/domain/making/making_test.go` for the cues with a current made line, with the Cast pane tests
+FR-515 names.
 
 **FR-523 Made lines live apart from recordings**
 Priority: Must.
@@ -1249,7 +1256,7 @@ The application shall name a machine voice by the name in its id, capitalised, f
 and sex in brackets, such as "Emma (British, female)" for `bf_emma`.
 Rationale: recommended by Claude; accepted by Oliver on 2026-09-14.
 Verified by: in part, `TestAVoiceIsNamedByItsNameThenItsAccentAndSex` in
-`internal/domain/machinevoice/voice_test.go` for the name; showing it on the Cast pane is not built.
+`internal/domain/machinevoice/voice_test.go` for the name, with the Cast pane tests FR-508 names.
 
 **FR-529 A line may give a word's speech sounds**
 Priority: Should.
@@ -1274,8 +1281,8 @@ If a made line of the voice that was cast before cannot be deleted, then the app
 on the Cast pane and complete the cast.
 Verified by: in part, the tests FR-527 names for the reason being kept, with
 `TestLinesThatCannotBeDeletedAreRefusedNamingThemOnce` in
-`internal/infrastructure/madelines/madelines_test.go` for the reason itself; the Cast pane showing it
-is not built.
+`internal/infrastructure/madelines/madelines_test.go` for the reason itself, with the Cast pane tests
+FR-518 names.
 
 **FR-531 If a line's given speech sounds cannot be read, then the build fails**
 Priority: Should.

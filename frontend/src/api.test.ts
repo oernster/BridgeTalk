@@ -11,6 +11,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api, on } from './api'
+import { nothingMade } from './making'
 
 /** installBridge puts a recording double where Wails would put the real binding. */
 function installBridge(overrides: Record<string, unknown> = {}) {
@@ -26,6 +27,9 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     State: record('State', { voice: 'Alpha' }),
     Voices: record('Voices', [{ name: 'Alpha' }]),
     SelectVoice: record('SelectVoice', undefined),
+    MachineVoices: record('MachineVoices', [{ id: 'bf_emma', name: 'Emma (British, female)' }]),
+    CastMachineVoice: record('CastMachineVoice', undefined),
+    Making: record('Making', { voice: 'bf_emma' }),
     Muted: record('Muted', true),
     SetMuted: record('SetMuted', undefined),
     Volume: record('Volume', 0.5),
@@ -79,6 +83,9 @@ describe('with the window bridge present', () => {
     await api.state()
     await api.voices()
     await api.selectVoice('Alpha')
+    await api.machineVoices()
+    await api.castMachineVoice('bf_emma')
+    await api.making()
     await api.setMuted(true)
     await api.volume()
     await api.setVolume(0.25)
@@ -106,6 +113,9 @@ describe('with the window bridge present', () => {
       'State',
       'Voices',
       'SelectVoice',
+      'MachineVoices',
+      'CastMachineVoice',
+      'Making',
       'SetMuted',
       'Volume',
       'SetVolume',
@@ -135,6 +145,7 @@ describe('with the window bridge present', () => {
     const calls = installBridge()
 
     await api.selectVoice('Beta')
+    await api.castMachineVoice('am_michael')
     await api.setMuted(false)
     await api.setVolume(0.75)
     await api.auditionGroups('Beta')
@@ -147,6 +158,7 @@ describe('with the window bridge present', () => {
 
     expect(calls.map((call) => call.args)).toEqual([
       ['Beta'],
+      ['am_michael'],
       [false],
       [0.75],
       ['Beta'],
@@ -164,6 +176,8 @@ describe('with the window bridge present', () => {
 
     expect(await api.state()).toEqual({ voice: 'Alpha' })
     expect(await api.voices()).toEqual([{ name: 'Alpha' }])
+    expect(await api.machineVoices()).toEqual([{ id: 'bf_emma', name: 'Emma (British, female)' }])
+    expect(await api.making()).toEqual({ voice: 'bf_emma' })
     expect(await api.volume()).toBe(0.5)
     expect(await api.auditionGroups('Alpha')).toEqual([{ key: 'ShieldState' }])
     expect(await api.audition('Alpha', 'ShieldState')).toEqual({
@@ -213,6 +227,9 @@ describe('with no window bridge at all', () => {
     expect(await api.state()).toBeNull()
     expect(await api.voices()).toEqual([])
     expect(await api.selectVoice('Alpha')).toBeUndefined()
+    expect(await api.machineVoices()).toEqual([])
+    expect(await api.castMachineVoice('bf_emma')).toBeUndefined()
+    expect(await api.making()).toEqual(nothingMade)
     expect(await api.setMuted(true)).toBeUndefined()
     expect(await api.setVolume(0.5)).toBeUndefined()
     expect(await api.auditionGroups('Alpha')).toEqual([])

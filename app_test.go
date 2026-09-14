@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/services"
+	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 )
 
 // fakePlayer stands in for the output device. Every method records what it was
@@ -153,6 +154,7 @@ func newTestApp(t *testing.T, player *fakePlayer) (*App, *recorder) {
 	t.Helper()
 	current := &session{player: player}
 	current.scheduler = services.NewScheduler(player, nil, systemClock{})
+	fixtureMaking(t, current, offeredFiles(nil), makingtest.NewStore())
 	app := newApp(current, fixtureWatch, "library-root", nil)
 	log := newRecorder()
 	app.emit = log.emit

@@ -70,7 +70,12 @@ section 10 says: domain, then application, then infrastructure, then user interf
   opens with the kept machine voice, falling back to a recorded one with a warning (FR-512, FR-541);
   a rescan keeps it (FR-542); closing stops making, then releases the model. `newMaking` in `main.go`
   reads the model files from `models` beside the executable (FR-539), refusing every machine voice
-  where that or the made lines' folder cannot be found (FR-523). Nothing on the page calls it yet.
+  where that or the made lines' folder cannot be found (FR-523).
+- The Cast pane lists the machine voices under their own heading by name (FR-508, FR-528), from
+  `frontend/src/machineVoices.tsx`. The cast one reads its lines made and moments spoken, following
+  a `making` event the poll loop sends on each change (FR-515, FR-522); failed lines, a stopped making,
+  undeleted lines and a refused cast each get a callout (FR-518 to FR-520, FR-530). The state says
+  whether the cast voice is a machine voice, so a recordings folder carrying its id is not marked cast.
 - Line counts that decide placement: `app.go` 373, `library/voice.go` 348, `main.go` 356. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
@@ -79,10 +84,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## M8 Composition root and user interface
 
-- Cast pane, casting through `CastMachineVoice`: machine voices listed apart (FR-508) by name (FR-528), how far making has got (FR-515),
-  line and write failures (FR-518, FR-520, FR-530) and completeness (FR-522). Tray Voice menu
-  (FR-509).
-- Wire shapes stated in Go and TypeScript, compared by the wire structural test.
+- Tray Voice menu (FR-509): the machine voices after the recorded voices, casting through
+  `CastMachineVoice`.
 - ARCHITECTURE.md gains the layers, ports, data location and design decisions as each part lands.
 
 ## M9 Setup

@@ -112,6 +112,7 @@ func (a *App) pollAndAnnounce() {
 	if !was && a.Playing() {
 		a.announcePlayback()
 	}
+	a.announceMaking()
 }
 
 // label turns a group key into the words the pane shows, by the same reading that

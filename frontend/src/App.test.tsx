@@ -13,6 +13,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import type { State, Voice } from './api'
 import { layOut, unlayOut } from './testLayout'
 import { watching } from './testState'
+import { nothingMade } from './making'
 
 const state = vi.fn<() => Promise<State | null>>()
 const setMuted = vi.fn<(muted: boolean) => Promise<void>>()
@@ -52,6 +53,9 @@ vi.mock('./api', () => ({
     voiceDirectories: () => Promise.resolve([]),
     checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
     rescan: () => Promise.resolve(0),
+    machineVoices: () => Promise.resolve([]),
+    making: () => Promise.resolve(nothingMade),
+    castMachineVoice: () => Promise.resolve(),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)

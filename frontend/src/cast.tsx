@@ -7,29 +7,11 @@
 
 import { useEffect, useState } from 'react'
 import { api, type Voice, type VoiceFolders } from './api'
+import { castLabel, counted } from './castWords'
 import { MomentsIcon } from './icons'
+import { MachineVoices } from './machineVoices'
 import { MomentsDialog } from './moments'
 import type { Outcome } from './chooser'
-
-/** casting is the part every cast voice holds, whoever it is. */
-const casting = "your ship's voice"
-
-/**
- * castLabel names the act a row offers.
- *
- * A cast row names the part as well as the fact, because "Grace is cast" says the job
- * has been given out without saying what the job is. The part is the same for every
- * voice. That it does not vary is why it is written here beside
- * the sentence it belongs to rather than carried across with the voice.
- */
-function castLabel(voice: Voice, cast: boolean): string {
-  return cast ? `${voice.display} is cast as ${casting}` : `Cast ${voice.display}`
-}
-
-/** counted names a number of things, in the singular where there is one. */
-function counted(count: number, one: string, many: string): string {
-  return `${count.toLocaleString()} ${count === 1 ? one : many}`
-}
 
 /**
  * figures reads a voice's two completeness figures (FR-215): the moments it has a recording
@@ -93,7 +75,7 @@ function VoiceRow({
         type="button"
         onClick={() => onSelect(voice.name)}
       >
-        <span className="name">{castLabel(voice, cast)}</span>
+        <span className="name">{castLabel(voice.display, cast)}</span>
         <br />
         <span className="meta">{figures(voice, total)}</span>
         {/* The credit from the voice's manifest, under the figures it belongs beside
@@ -134,11 +116,14 @@ function VoiceRow({
  */
 export function CastPane({
   active,
+  machine,
   total,
   libraryRoot,
   onSelect,
 }: {
   active: string
+  /** Whether the cast voice is a machine voice, so a folder carrying its id is not marked cast. */
+  machine: boolean
   total: number
   libraryRoot: string
   onSelect: (name: string) => void
@@ -227,7 +212,7 @@ export function CastPane({
             key={voice.name}
             voice={voice}
             total={total}
-            cast={voice.name === active}
+            cast={voice.name === active && !machine}
             onSelect={onSelect}
             onShowMoments={setShowing}
           />
@@ -275,6 +260,8 @@ export function CastPane({
           {outcome.text}
         </p>
       )}
+
+      <MachineVoices active={active} machine={machine} total={total} />
 
       <MomentsDialog
         voice={showing}

@@ -4,6 +4,8 @@
 // here keeps the binding shape in one file, so a rename on the Go side is one edit
 // rather than a search across components.
 
+import { nothingMade } from './making'
+
 export interface State {
   /** Identifies the cast voice; empty while none is cast. */
   voice: string
@@ -32,6 +34,41 @@ export interface State {
    * The window opens either way, so the panes are where it is said (FR-238).
    */
   journalProblem: string
+  /** Whether the cast voice is a machine voice, since a recordings folder may carry its id (FR-540). */
+  machineVoice: boolean
+}
+
+/** MachineVoice is one machine voice the Cast pane offers (FR-508). */
+export interface MachineVoice {
+  /** The voice's id, which a cast sends back. */
+  id: string
+  /** The name the screen shows, such as "Emma (British, female)" (FR-528). */
+  name: string
+}
+
+/** LineFailure is one line that could not be made (FR-518). */
+export interface LineFailure {
+  cue: CueEntry
+  /** The line's place among its moment's lines, counting from one. */
+  line: number
+  reason: string
+}
+
+/**
+ * Making is how far making the cast machine voice's lines has got: current of total lines made
+ * (FR-515), cuesServed moments with a made line (FR-522), the lines that failed (FR-518), why making
+ * stopped (FR-520) and why old lines were not deleted (FR-530). The two reasons are empty where
+ * nothing went wrong.
+ */
+export interface Making {
+  voice: string
+  making: boolean
+  current: number
+  total: number
+  cuesServed: number
+  failed: LineFailure[]
+  stopped: string
+  notDeleted: string
 }
 
 export interface Voice {
@@ -132,6 +169,9 @@ interface Bridge {
   State(): Promise<State>
   Voices(): Promise<Voice[]>
   SelectVoice(name: string): Promise<void>
+  MachineVoices(): Promise<MachineVoice[]>
+  CastMachineVoice(id: string): Promise<void>
+  Making(): Promise<Making>
   Muted(): Promise<boolean>
   SetMuted(muted: boolean): Promise<void>
   Volume(): Promise<number>
@@ -176,6 +216,13 @@ export const api = {
   voices: (): Promise<Voice[]> => bridge()?.Voices() ?? Promise.resolve([]),
   selectVoice: (name: string): Promise<void> =>
     bridge()?.SelectVoice(name) ?? Promise.resolve(),
+  /** Every machine voice offered, by the name the screen shows (FR-508, FR-528). */
+  machineVoices: (): Promise<MachineVoice[]> => bridge()?.MachineVoices() ?? Promise.resolve([]),
+  /** Casts a machine voice by id; rejects with the reason where it is refused (FR-519). */
+  castMachineVoice: (id: string): Promise<void> =>
+    bridge()?.CastMachineVoice(id) ?? Promise.resolve(),
+  /** How far making the cast machine voice's lines has got. */
+  making: (): Promise<Making> => bridge()?.Making() ?? Promise.resolve(nothingMade),
   setMuted: (muted: boolean): Promise<void> =>
     bridge()?.SetMuted(muted) ?? Promise.resolve(),
   volume: (): Promise<number> => bridge()?.Volume() ?? Promise.resolve(1),

@@ -35,6 +35,9 @@ vi.mock('./api', () => ({
     chooseLibraryRoot: () => Promise.resolve(''),
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
+    machineVoices: () => Promise.resolve([]),
+    making: async () => (await import('./making')).nothingMade,
+    castMachineVoice: () => Promise.resolve(),
   },
   on: () => () => undefined,
 }))

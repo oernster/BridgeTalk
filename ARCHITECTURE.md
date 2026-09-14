@@ -65,7 +65,8 @@ exactly like one that holds.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
   folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),
-  the strict reading both TOML files share (`tomlfile`),
+  the strict reading both TOML files share (`tomlfile`), the files a machine voice is made from
+  (`voicefiles`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
   (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
   Domain or Application.

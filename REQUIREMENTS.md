@@ -1085,7 +1085,9 @@ Acceptance: Given current made lines for `bf_emma`, when the line "Docking compl
 "Docked." and the application starts, then that line is made again and no other line is.
 Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 `TestANewStyleFileMakesEveryLineAgain` and `TestAKeyChangesWithTheSoundsTheStyleFileOrTheModel` in
-`internal/domain/making/making_test.go` for the key; the made lines on disk are not built.
+`internal/domain/making/making_test.go` for the key with `TestAVoicesMaterialIsReadFromItsFiles` in
+`internal/infrastructure/voicefiles/voicefiles_test.go` for the digests; the made lines on disk are not
+built.
 
 **FR-514 While lines are being made, the voice speaks what is made**
 Priority: Must.
@@ -1132,7 +1134,10 @@ If a file a machine voice is made from is missing or cannot be read, then the ap
 refuse to cast that voice, changing nothing, with a reason that names the file once (FR-237).
 Rationale: a damaged install is put right by Repair (FR-804); saying which file is gone says so.
 Verified by: in part, `TestAVoiceWhoseFilesCannotBeReadIsRefusedChangingNothing` in
-`internal/application/services/making_test.go` over a fake; reading the real files is not built.
+`internal/application/services/making_test.go` over a fake, with
+`TestAMissingOrUnreadableFileIsRefusedNamingItOnce` and `TestAnotherVoicesStyleFileIsNoStandIn` in
+`internal/infrastructure/voicefiles/voicefiles_test.go` for reading the files; refusing a cast from the
+Cast pane is not built.
 
 **FR-520 If a made line cannot be written, then stop and say why**
 Priority: Must.

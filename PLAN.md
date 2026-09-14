@@ -34,6 +34,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
   (answering a `Material` of style and digests) and `MadeLines`. Only test fakes implement them;
   nothing of machine voices outside the domain and application layers is built.
   `speech.Style` holds a voice's style file and chooses the row for a line's symbol count.
+- `internal/infrastructure/voicefiles` reads the model, ONNX Runtime and a voice's style file from
+  one folder laid out flat as `model.onnx`, `onnxruntime.dll` and `<id>.bin`. It refuses a file that
+  is missing or cannot be read, naming it once (FR-519). It gives the digests made lines are keyed by
+  (FR-513).
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
@@ -53,8 +57,6 @@ package still builds and vets on any platform.
   directory, never the library root (FR-523). The data directory resolution in `library/root.go` is
   extracted and shared rather than repeated.
 - ONNX Runtime caller through the OrtApi v23 table, no cgo.
-- Voice files: the model, the 28 style files and ONNX Runtime. A missing
-  one is refused by name (FR-519) through `internal/refusal`.
 - A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
   that file is present, so a new model cannot leave the table behind.
 - **Reproduce before fixing:** the FLAC library's line per frame at 24 kHz, in an audio player
@@ -80,7 +82,7 @@ package still builds and vets on any platform.
 
 - The setup program carries every file a machine voice is made from, downloading nothing (FR-524).
 - Uninstall deletes the made lines (FR-525).
-- Embed the payload as a `string` rather than a `[]byte`, if Oliver agrees. Measured on 2026-09-14
+- Embed the payload as a `string` rather than a `[]byte` (Oliver, 2026-09-14). Measured the same day
   with a stand-in program that embeds the full payload and extracts it the way `setup.ExtractZip`
   does: as a `[]byte` the payload is charged to the process as 323.6 MB of private memory from the
   moment it starts, peaking at 329.1 MB; as a `string`, 12.8 MB at start and 17.6 MB at peak.
@@ -101,10 +103,14 @@ switched on, so FR-507 fails the build from then on.
 
 ## Waiting on Oliver
 
+- FR-526 as written cannot be met. The model makes 32-bit floating-point samples and FLAC holds whole
+  numbers; the earlier "bit-identical" measurement compared FLAC with 16-bit WAV files made by
+  rounding. Recommended: store 16-bit, which the player already sends to the output device
+  (`oto.FormatSignedInt16LE`); FR-526 is then reworded to say so. The made-line store waits on this.
+
 - Where the model files live on the build machine, since the model alone is 310.5 MB. Recommended: a
   folder outside the repository named by an environment variable that `build.ps1` reads, each file
   checked against a committed list of its name, size and SHA-256 before it is zipped. Today the
   model, ONNX Runtime and two style files sit only in an old session scratchpad, which may vanish.
-- Whether the setup payload is embedded as a `string` (M9).
 - Approval before downloading any file not already on this machine, each named with its source and
   size. Which files those are is measured before M7.

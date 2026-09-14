@@ -56,7 +56,7 @@ exactly like one that holds.
   never imports Infrastructure or the Wails runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
-  folder maker (`library`), the audio engine (`audio`), the cue table, the script and the settings store (`config`),
+  folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),
   the strict reading both TOML files share (`tomlfile`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
   (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
@@ -65,6 +65,10 @@ exactly like one that holds.
   services and maps what they return into the shapes in `dto.go`.
 - **Outside the layers**: `internal/product` holds the product's name and `internal/refusal` words a
   refusal over a path. Each is a leaf that several layers read, so it belongs to none of them.
+- **The sounds tool** (`tools/sounds`): a command run while developing, never shipped. It reads the
+  script through `config` and `speech`, asks misaki in the tool's own Python venv for every line's
+  speech sounds in each accent and writes `sounds.toml`. Python only turns text into speech sounds;
+  the spelling rules and the file's shape stay in Go, so each keeps one home.
 
 ## Composition root
 
@@ -679,6 +683,7 @@ directory, so running setup leaves no folder beside the application's.
 | Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
+| Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
 | Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |

@@ -15,6 +15,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - `internal/domain/script` holds the script checked against the cue table (FR-503 to FR-505,
   FR-531). `config` embeds `script.toml`, which holds the `Docked` example alone. A structural test
   reads it through those rules; FR-507's test reports progress until `scriptComplete` is switched on.
+- `tools/sounds` makes every line's speech sounds in each accent with misaki in its own venv and
+  saves them to `sounds.toml`, which `config` embeds beside the script. The structural test checks
+  them (FR-506, FR-532 to FR-534). Run `go run ./tools/sounds` from the repository root after
+  changing `script.toml`.
 - Nothing else of machine voices is built.
 - `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
   `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
@@ -27,24 +31,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M4 The sounds tool
-
-Oliver chose on 2026-09-14 to make every line's speech sounds before the build with misaki itself
-(FR-532 to FR-534, CON-8).
-
-- `tools/sounds/`: a Go command in this module plus `sounds.py`, with its own `venv/` on Python 3.11
-  and its packages pinned in `requirements.txt` to the versions section 6.1 measured with.
-- Go reads `script.toml` through `config` and `speech`, writes each line for each accent with its
-  spelling in the one-spelling form misaki reads, hands every line to `sounds.py` in one call and
-  writes `sounds.toml` beside `script.toml`. Python only turns text into speech sounds, so the
-  spelling rules and the file's shape each keep one home in Go.
-- `speech.Line` gains writing a line for one accent.
-- `config` embeds `sounds.toml`. A structural test fails naming the cue and the line where saved
-  sounds are missing, stale or left over (FR-533). It also fails where a line's sounds come to more
-  than 510 symbols or hold one the model does not read (FR-506).
-- **Measure first, in the new venv:** that it reproduces all 512 reference lines without torch or
-  the transformer packages. They are added back only if it does not.
 
 ## M5 Domain: what to make
 
@@ -110,7 +96,7 @@ package still builds and vets on any platform.
 ## Content track, alongside M3 onwards
 
 `script.toml`: three lines for each of the 256 cues, 768 in all (FR-505, FR-507). Claude drafts a
-group of cues at a time from each cue's purpose; Oliver reviews each group. A line is reworded where
+group of cues at a time from each cue's purpose; Oliver reviews each group, then the sounds tool runs over it. A line is reworded where
 its saved speech sounds show a misread word; a spelling is given only where no rewording serves
 (FR-529). When the last group lands, `scriptComplete` in `tests/structural/script_test.go` is
 switched on, so FR-507 fails the build from then on.

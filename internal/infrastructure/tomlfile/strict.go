@@ -1,10 +1,11 @@
-// Package tomlfile reads the TOML files the application is given: the cue table and a voice's
-// manifest.
+// Package tomlfile reads the TOML files the application is given: the cue table, the script, the
+// saved speech sounds and a voice's manifest. It also writes the saved speech sounds for the
+// sounds tool.
 //
-// Both are read strictly. A key the shape does not hold is refused rather than dropped in
+// Every file is read strictly. A key the shape does not hold is refused rather than dropped in
 // silence, because a file edited by hand with a misspelled key would otherwise appear to say
-// something it does not. That rule is written once, here, so the two readers cannot come to
-// disagree about it.
+// something it does not. That rule is written once, here, so the readers cannot come to disagree
+// about it.
 package tomlfile
 
 import (

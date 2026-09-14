@@ -46,6 +46,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
+| `tools/sounds` | 38.5% | 38% | `test.ps1` |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
@@ -173,6 +174,11 @@ release is for.
   deleting the install directory through a detached shell that outlives the setup
   program. Enumerating processes is tested: `processIDs` must find the test binary by
   its own name, which is the one process a test can be certain is running.
+- **`tools/sounds` (38.5%).** The sounds tool. `run` rewrites `sounds.toml` in the repository
+  and `python.Make` runs `sounds.py` in the tool's own venv, which a test machine need not have.
+  Making every line in each accent from its spelling and matching the answers back to their
+  lines is tested in `makeSounds` over a hand-written maker. What the real tool wrote is checked
+  by the structural test over `sounds.toml`.
 
 ### It could not happen, so it is gone
 

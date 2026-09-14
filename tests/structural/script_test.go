@@ -11,20 +11,22 @@ import (
 // build; from then on it fails.
 const scriptComplete = false
 
-// TestTheShippedScriptHoldsNoProblem holds FR-504, FR-505 and FR-531 over script.toml.
+// TestTheShippedScriptHoldsNoProblem holds FR-504 to FR-506, FR-531 and FR-533 over script.toml
+// and the speech sounds saved beside it.
 //
-// The rules live in the domain; this reads the shipped file through them, so they are written
+// The rules live in the domain; this reads the shipped files through them, so they are written
 // once. Every problem is named with its cue and its line, not the first alone.
 //
 // Proved by planting a key that is not a cue, a cue with two lines and a broken spelling in
-// script.toml, reading the exit code each time.
+// script.toml; then a line edited without running the sounds tool, sounds saved for a cue that is
+// gone and a symbol the model does not read in sounds.toml, reading the exit code each time.
 func TestTheShippedScriptHoldsNoProblem(t *testing.T) {
 	table, err := config.LoadCueTable("")
 	if err != nil {
 		t.Fatalf("loading the shipped cue table: %v", err)
 	}
-	if _, err := config.LoadScript(table); err != nil {
-		t.Errorf("script.toml: %v", err)
+	if _, err := config.LoadVoicedScript(table); err != nil {
+		t.Errorf("script.toml with sounds.toml: %v", err)
 	}
 }
 

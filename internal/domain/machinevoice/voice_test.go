@@ -107,3 +107,15 @@ func TestTheVoicesOfferedCannotBeChangedByACaller(t *testing.T) {
 		t.Error("changing the returned list changed the voices offered")
 	}
 }
+
+// Every accent is listed, British first; the list handed out is the caller's own.
+func TestEveryAccentIsListedBritishFirst(t *testing.T) {
+	got := machinevoice.Accents()
+	if len(got) != 2 || got[0] != machinevoice.British || got[1] != machinevoice.American {
+		t.Fatalf("Accents() = %v, want British then American", got)
+	}
+	got[0] = machinevoice.American
+	if machinevoice.Accents()[0] != machinevoice.British {
+		t.Error("changing the returned accents changed them")
+	}
+}

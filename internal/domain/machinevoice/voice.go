@@ -29,6 +29,9 @@ var accentWords = [...]string{British: "British", American: "American"}
 // String returns the accent as a voice's name writes it.
 func (a Accent) String() string { return accentWords[a] }
 
+// Accents returns every accent a voice may speak, British first. The slice is the caller's own.
+func Accents() []Accent { return []Accent{British, American} }
+
 // Sex is whether a voice is female or male.
 type Sex int
 

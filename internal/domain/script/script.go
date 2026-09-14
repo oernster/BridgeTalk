@@ -86,6 +86,12 @@ func (s Script) Lines(id cue.ID) ([]speech.Line, bool) {
 	return slices.Clone(lines), ok
 }
 
+// Cues returns the cues the script gives lines, sorted, so anything written from the script is
+// written in a stable order.
+func (s Script) Cues() []cue.ID {
+	return slices.Sorted(maps.Keys(s.byCue))
+}
+
 // Missing returns the cues the table holds that the script gives no lines, in the table's
 // order (FR-507).
 func (s Script) Missing(table cue.Table) []cue.ID {

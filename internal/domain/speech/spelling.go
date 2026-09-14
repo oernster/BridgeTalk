@@ -48,6 +48,7 @@ func (p Piece) Sounds(accent machinevoice.Accent) string {
 
 // Line is a script line read into its pieces.
 type Line struct {
+	text   string
 	pieces []Piece
 }
 
@@ -69,7 +70,7 @@ func Read(text string) (Line, error) {
 	if rest != "" {
 		pieces = append(pieces, Piece{text: rest})
 	}
-	return Line{pieces: pieces}, nil
+	return Line{text: text, pieces: pieces}, nil
 }
 
 // Pieces returns the line's pieces in order. The slice is the caller's own.

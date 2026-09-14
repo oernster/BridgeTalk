@@ -956,6 +956,9 @@ Measured before any of this was written, on the development machine, processor o
   alone matched 81.0 percent British and 77.1 percent American.
 - misaki 0.9.4 itself, called the way Kokoro calls it, reproduced all 512 reference lines exactly:
   loading took 2.9 s and making all 512 took 0.76 s, in Python 3.11.9.
+- In the sounds tool's own venv, holding only the packages pinned in `tools/sounds/requirements.txt`
+  (71 packages, 292.9 MB, no torch), misaki reproduced all 512 lines again: loading took 1.6 s and
+  making took 0.71 s. spaCy imports click, which nothing else installed, so it is pinned by hand.
 - The files a machine voice is made from sum to about 339 MB: the model 310.5 MB, the 28 voice style
   files 14.6 MB and ONNX Runtime 14.2 MB. misaki's dictionaries and eSpeak NG do not ship.
 
@@ -1004,9 +1007,10 @@ planting a cue with two lines; the rules are `TestACueWithoutThreeLinesIsRefused
 Priority: Must.
 Each line in `script.toml` shall come to no more than 510 speech-sound symbols in either accent.
 Rationale: the model reads at most 510 symbols; Kokoro cuts a longer string short.
-Verified by: in part, `TestALineOfAtMostFiveHundredAndTenSymbolsIsAccepted` in
-`internal/domain/speech/speech_test.go` for turning speech sounds into the model's numbers; checking
-each line's saved speech sounds (FR-533) is not built.
+Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go` over every
+line's saved speech sounds, proved by planting a symbol the model does not read in `sounds.toml`; the
+limit is `TestALineOfAtMostFiveHundredAndTenSymbolsIsAccepted` in `internal/domain/speech/speech_test.go`
+and `TestSoundsTheModelCannotTakeAreRefused` in `internal/domain/script/voice_test.go`.
 
 **FR-507 Every cue has lines**
 Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before machine voices ship.
@@ -1196,8 +1200,9 @@ serves both accents (FR-510).
 Acceptance: Given the line "Flight [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) saved.", when it is made for `bf_emma`,
 then the word record is made from `ˈɹɛkɔːd`; when made for `am_michael`, from `ˈɹɛkɚd`.
 Verified by: in part, `TestOneSpellingServesBothAccents` and `TestTwoSpellingsGiveBritishThenAmerican`
-in `internal/domain/speech/speech_test.go` for reading the spellings; making the word with them is not
-built.
+in `internal/domain/speech/speech_test.go` for reading the spellings and `TestEveryLineIsMadeInEachAccentFromItsSpelling` in
+`tools/sounds/make_test.go` for handing each accent its spelling; making the word from its saved sounds
+is not built.
 
 **FR-530 If the old voice's made lines cannot be deleted, then say so**
 Priority: Must.
@@ -1232,7 +1237,10 @@ do better (Oliver, 2026-09-14). misaki's own output is exact where a Go port rea
 the setup program also carries about 30 MB less.
 Acceptance: Given the line "Fuel reserves are running low, commander.", when the sounds tool runs,
 then the last word's British saved sounds read `kəmˈɑːndə` and its American saved sounds `kəmˈændəɹ`.
-Verified by: not built.
+Verified by: in part, `TestTheShippedScriptIsVoiced` in `internal/infrastructure/config/sounds_test.go`
+and `TestEveryLineIsMadeInEachAccentFromItsSpelling` in `tools/sounds/make_test.go`; making a line from
+its saved sounds is not built. Measured on 2026-09-14: `sounds.py` gave `kəmˈɑːndə` and `kəmˈændəɹ`
+for commander.
 
 **FR-533 If a line's saved speech sounds are missing or stale, then the build fails**
 Priority: Must.
@@ -1242,7 +1250,9 @@ test shall fail naming the cue and the line.
 Rationale: an edited line whose sounds were not made again would be spoken with its old words.
 Acceptance: Given "Docking complete." changed to "Docked." in `script.toml` without running the sounds
 tool, when the structural tests run, then one fails naming `Docked` and that line.
-Verified by: not built.
+Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go`, proved by
+planting an edited line, sounds saved for a cue that is gone and a symbol the model does not read; the
+rules are tested in `internal/domain/script/voice_test.go`.
 
 **FR-534 The sounds tool**
 Priority: Must.
@@ -1253,7 +1263,8 @@ Rationale: the tool keeps its own venv in the repository rather than borrowing a
 (Oliver, 2026-09-14). One run over the whole script leaves no saved sounds behind for a line that is
 gone.
 Note: the venv is not committed; `.gitignore` already ignores `venv/`.
-Verified by: not built.
+Verified by: inspection. `tools/sounds/requirements.txt` pins every package; the tool's run on
+2026-09-14 wrote `sounds.toml` whole.
 
 ### 6.2 Machine voices, non-functional
 

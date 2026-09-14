@@ -4,33 +4,49 @@
 // pane holding a running action; panes.tsx is already close to the size cap.
 
 import { useCallback, useEffect, useState } from 'react'
-import { api, on, type Group, type Playback, type Voice } from './api'
+import { api, on, type Group, type MachineVoice, type Playback, type Voice } from './api'
 import { PlayIcon } from './icons'
+
+/**
+ * machinePrefix marks a machine voice's value in the chooser. A recordings folder may carry
+ * a machine voice's id as its name, so the two are kept apart; no folder name holds a slash.
+ */
+const machinePrefix = 'machine/'
+
+/** chosenFor is the chooser's value for a voice: a folder's name as it is; a machine voice's id marked. */
+function chosenFor(name: string, machine: boolean): string {
+  if (!name) return ''
+  return machine ? machinePrefix + name : name
+}
 
 /**
  * AuditionPane plays a random sample from a chosen group.
  *
  * The voice being auditioned starts as the one that is cast but is not tied to it,
  * because hearing a voice before committing to it is the entire point of an
- * audition. Casting stays a separate act on the cast pane.
+ * audition. Casting stays a separate act on the cast pane. The recorded voices come
+ * first, then every machine voice (FR-545); `machine` says the cast voice is one.
  */
-export function AuditionPane({ cast }: { cast: string }) {
+export function AuditionPane({ cast, machine = false }: { cast: string; machine?: boolean }) {
   const [voices, setVoices] = useState<Voice[]>([])
-  // Whether the list has arrived. An empty list and an unanswered one look the same,
+  const [machines, setMachines] = useState<MachineVoice[]>([])
+  // Whether the lists have arrived. An empty list and an unanswered one look the same,
   // so the pane says no voices exist only once it has been told so.
   const [loaded, setLoaded] = useState(false)
-  const [voice, setVoice] = useState(cast)
+  const [voice, setVoice] = useState(chosenFor(cast, machine))
   const [groups, setGroups] = useState<Group[]>([])
   const [playing, setPlaying] = useState('')
-  // Whether anything at all is sounding, the ship's reactions to the game included.
-  // Every button is held while it is, because a press must never cut a clip short
-  // (FR-236); the backend ignores one that slips through regardless.
+  // Whether anything at all is sounding or being made, the ship's reactions to the game
+  // included. Every button is held while it is, because a press must never cut a clip
+  // short (FR-236) or set a second line making (FR-547); the backend ignores one that
+  // slips through regardless.
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState('')
 
   useEffect(() => {
-    void api.voices().then((found) => {
+    void Promise.all([api.voices(), api.machineVoices()]).then(([found, offered]) => {
       setVoices(found)
+      setMachines(offered)
       setLoaded(true)
     })
   }, [])
@@ -38,14 +54,18 @@ export function AuditionPane({ cast }: { cast: string }) {
   // The pane opens on whoever is cast. Later changes to the cast do not drag the
   // audition along with them, so a switch made here survives.
   useEffect(() => {
-    setVoice((current) => current || cast)
-  }, [cast])
+    setVoice((current) => current || chosenFor(cast, machine))
+  }, [cast, machine])
+
+  // The machine voice chosen, by id; empty while a recorded voice is.
+  const machineId = voice.startsWith(machinePrefix) ? voice.slice(machinePrefix.length) : ''
 
   useEffect(() => {
     if (!voice) return
     setFailure('')
-    void api.auditionGroups(voice).then(setGroups)
-  }, [voice])
+    const asked = machineId ? api.machineAuditionGroups() : api.auditionGroups(voice)
+    void asked.then(setGroups)
+  }, [voice, machineId])
 
   // The pulse has to end when the sound does; only the backend knows that. The
   // audition call returns the moment the clip starts. The same event says when
@@ -75,27 +95,31 @@ export function AuditionPane({ cast }: { cast: string }) {
       // Nothing clears the pulse or frees the buttons here. audition resolves when the
       // clip STARTS, so the end of the sound arrives later as a playback event; only a
       // failure is known to mean no sound at all.
-      void api.audition(voice, group.key).catch((error: unknown) => {
+      const played = machineId
+        ? api.auditionMachineVoice(machineId, group.key)
+        : api.audition(voice, group.key)
+      void played.catch((error: unknown) => {
         setPlaying('')
         setBusy(false)
         setFailure(String(error))
       })
     },
-    [voice],
+    [voice, machineId],
   )
 
   const total = groups.reduce((sum, group) => sum + group.clips, 0)
   // No voice exists to choose. The chooser still stands at its full width holding
   // None, because an empty control shrunk to its arrow reads as a rendering fault
   // rather than as an answer.
-  const none = loaded && voices.length === 0
+  const none = loaded && voices.length === 0 && machines.length === 0
 
   return (
     <>
       <h2>Audition</h2>
       <p className="lede">
         Hear what a voice actually has. Each button plays one sample at random from
-        that part of the game, so pressing it again can give you a different take. This
+        that part of the game, so pressing it again can give you a different take. A
+        machine voice makes a line it has not made yet first, which takes a moment. This
         ignores the mute, which silences reactions to the game rather than the
         application.
       </p>
@@ -113,7 +137,13 @@ export function AuditionPane({ cast }: { cast: string }) {
             {voices.map((item) => (
               <option key={item.name} value={item.name}>
                 {item.display}
-                {item.name === cast ? ' (cast)' : ''}
+                {!machine && item.name === cast ? ' (cast)' : ''}
+              </option>
+            ))}
+            {machines.map((item) => (
+              <option key={machinePrefix + item.id} value={machinePrefix + item.id}>
+                {item.name}
+                {machine && item.id === cast ? ' (cast)' : ''}
               </option>
             ))}
           </select>

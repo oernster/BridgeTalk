@@ -321,7 +321,9 @@ export function App() {
             onSelect={selectVoice}
           />
         )}
-        {pane === 'audition' && <AuditionPane cast={state?.voice ?? ''} />}
+        {pane === 'audition' && (
+          <AuditionPane cast={state?.voice ?? ''} machine={state?.machineVoice ?? false} />
+        )}
         {pane === 'takes' && (
           <MissingTakesPane cast={state?.voice ?? ''} libraryRoot={state?.libraryRoot} />
         )}

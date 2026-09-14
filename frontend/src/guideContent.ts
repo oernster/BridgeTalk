@@ -97,12 +97,12 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The audition pane',
     intro:
-      'Choose any voice to hear, whether it is cast or not. The square beside it stops a recording part way through.',
+      'Choose any voice to hear, recorded or machine, whether it is cast or not. The square beside it stops a recording part way through.',
     entries: [
       {
         icons: [artwork.play],
         name: 'Play',
-        text: "one button for each part of the game. A press plays one of that voice's recordings for it at random, so pressing again can give a different take. An audition ignores the mute, which silences answers to the game rather than the window.",
+        text: "one button for each part of the game. A press plays one of that voice's recordings or lines for it at random, so pressing again can give a different take. A machine voice makes a line it has not made yet first, which takes a moment. An audition ignores the mute, which silences answers to the game rather than the window.",
       },
     ],
   },

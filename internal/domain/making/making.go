@@ -120,6 +120,18 @@ func (p Plan) WithMade(key string) Plan {
 	return Plan{lines: p.lines, current: current, onDisk: p.onDisk}
 }
 
+// Group returns the lines of every cue in a group, made or not, in the plan's order: what a machine
+// voice is auditioned on for that group (FR-546).
+func (p Plan) Group(key string) []Line {
+	var lines []Line
+	for _, line := range p.lines {
+		if line.Cue.Group() == key {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
 // Made reports whether the made line under key is current.
 func (p Plan) Made(key string) bool { return p.current[key] }
 

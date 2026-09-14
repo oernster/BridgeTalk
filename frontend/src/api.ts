@@ -179,6 +179,8 @@ interface Bridge {
   AuditionGroups(voice: string): Promise<Group[]>
   Audition(voice: string, group: string): Promise<Audition>
   StopAudition(): Promise<void>
+  MachineAuditionGroups(): Promise<Group[]>
+  AuditionMachineVoice(id: string, group: string): Promise<Audition>
   Playing(): Promise<boolean>
   TakeKeyboard(): Promise<void>
   Quit(): Promise<void>
@@ -233,6 +235,12 @@ export const api = {
   audition: (voice: string, group: string): Promise<Audition | null> =>
     bridge()?.Audition(voice, group) ?? Promise.resolve(null),
   stopAudition: (): Promise<void> => bridge()?.StopAudition() ?? Promise.resolve(),
+  /** The script's groups a machine voice is auditioned on, each counting its lines (FR-546). */
+  machineAuditionGroups: (): Promise<Group[]> =>
+    bridge()?.MachineAuditionGroups() ?? Promise.resolve([]),
+  /** Plays a line of a group for a machine voice, making it first where it is not yet made (FR-546). */
+  auditionMachineVoice: (id: string, group: string): Promise<Audition | null> =>
+    bridge()?.AuditionMachineVoice(id, group) ?? Promise.resolve(null),
   /** Whether the device is sounding anything, asked once when the audition pane opens. */
   playing: (): Promise<boolean> => bridge()?.Playing() ?? Promise.resolve(false),
   takeKeyboard: (): Promise<void> => bridge()?.TakeKeyboard() ?? Promise.resolve(),

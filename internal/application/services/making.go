@@ -73,6 +73,9 @@ type MakingService struct {
 	failed     []LineFailure
 	stopped    error
 	notDeleted error
+
+	// turn hands the model to a run or an audition, one at a time (FR-546).
+	turn *modelTurn
 }
 
 // run is one making under way and when it has ended.
@@ -85,7 +88,9 @@ type run struct {
 func NewMakingService(
 	voiced script.Voiced, confirmation cue.ID, files ports.VoiceFiles, maker ports.SpeechMaker, store ports.MadeLines,
 ) *MakingService {
-	return &MakingService{voiced: voiced, confirmation: confirmation, files: files, maker: maker, store: store}
+	return &MakingService{
+		voiced: voiced, confirmation: confirmation, files: files, maker: maker, store: store, turn: newModelTurn(),
+	}
 }
 
 // Cast casts a machine voice, which casting at start does as well (FR-511, FR-512), making the
@@ -208,29 +213,41 @@ func (m *MakingService) makeLines(ctx context.Context, running *run, voice machi
 		if !ok {
 			return
 		}
-		samples, err := m.makeLine(ctx, style, line)
-		if ctx.Err() != nil {
-			m.mu.Lock()
-			m.making = false
-			m.mu.Unlock()
+		m.turn.take()
+		over := m.makeOne(ctx, voice, style, line)
+		m.turn.give()
+		if over {
 			return
 		}
-		if err != nil {
-			m.mu.Lock()
-			m.failed = append(m.failed, LineFailure{Cue: line.Cue, Index: line.Index, Reason: err})
-			m.mu.Unlock()
-			continue
-		}
-		if err := m.store.Write(voice, line.Key, samples); err != nil {
-			m.mu.Lock()
-			m.stopped, m.making = err, false
-			m.mu.Unlock()
-			return
-		}
-		m.mu.Lock()
-		m.plan = m.plan.WithMade(line.Key)
-		m.mu.Unlock()
 	}
+}
+
+// makeOne makes one line of a run and writes it, recording what happens; it answers whether the run is
+// over. The caller holds the model's turn.
+func (m *MakingService) makeOne(ctx context.Context, voice machinevoice.Voice, style speech.Style, line making.Line) bool {
+	samples, err := m.makeLine(ctx, style, line)
+	if ctx.Err() != nil {
+		m.mu.Lock()
+		m.making = false
+		m.mu.Unlock()
+		return true
+	}
+	if err != nil {
+		m.mu.Lock()
+		m.failed = append(m.failed, LineFailure{Cue: line.Cue, Index: line.Index, Reason: err})
+		m.mu.Unlock()
+		return false
+	}
+	if err := m.store.Write(voice, line.Key, samples); err != nil {
+		m.mu.Lock()
+		m.stopped, m.making = err, false
+		m.mu.Unlock()
+		return true
+	}
+	m.mu.Lock()
+	m.plan = m.plan.WithMade(line.Key)
+	m.mu.Unlock()
+	return false
 }
 
 // makeLine makes one line's samples: its numbers, its style row, then the model.

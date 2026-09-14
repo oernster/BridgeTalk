@@ -7,6 +7,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,6 +17,9 @@ import (
 // auditionGap is the pause between clips when a group is auditioned. An audition
 // plays one clip, so it exists only to satisfy the player's signature.
 const auditionGap = 0
+
+// errNoDevice refuses an audition with nothing to play through.
+var errNoDevice = errors.New("there is no audio device to play through")
 
 // GroupDTO is one auditionable group as the pane shows it.
 type GroupDTO struct {
@@ -62,11 +66,21 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	}
 	clip, ok := a.session.catalogueFor(chosen).Audition(group)
 	if !ok {
-		return AuditionDTO{}, fmt.Errorf("%s has nothing for %s", voice, label(group))
+		return AuditionDTO{}, nothingFor(voice, group)
 	}
 	if a.session.player == nil {
-		return AuditionDTO{}, fmt.Errorf("there is no audio device to play through")
+		return AuditionDTO{}, errNoDevice
 	}
+	return a.play(group, clip)
+}
+
+// nothingFor refuses a group a voice has nothing for, naming the group in the words the pane shows.
+func nothingFor(voice, group string) error {
+	return fmt.Errorf("%s has nothing for %s", voice, label(group))
+}
+
+// play plays the clip an audition drew from a group, answering what it played.
+func (a *App) play(group, clip string) (AuditionDTO, error) {
 	// FR-236: a press never cuts short what is already sounding, whether an earlier
 	// audition or the ship speaking. The question and the start are one call on the
 	// player, since asking first and playing second leaves a gap another caller can use.
@@ -83,18 +97,24 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	return AuditionDTO{Group: group, Clip: clipName(clip)}, nil
 }
 
-// StopAudition ends whatever is playing, so a long clip can be cut short.
+// StopAudition ends whatever is playing, so a long clip can be cut short. A machine voice's
+// line still being made for an audition is let go: it is kept once written but never played,
+// and the page is told nothing is under way (FR-547).
 func (a *App) StopAudition() {
+	letGo := a.session.auditions.stop()
 	if a.session.player != nil {
 		a.session.player.Stop()
 	}
+	if letGo {
+		a.announcePlayback()
+	}
 }
 
-// Playing reports whether the device is sounding anything. A pane opened part way
-// through a clip asks, so its buttons are held from the start rather than from the
-// next event (FR-236).
+// Playing reports whether the device is sounding anything or a machine voice's line is being
+// made for an audition. A pane opened part way through either asks, so its buttons are held
+// from the start rather than from the next event (FR-236, FR-547).
 func (a *App) Playing() bool {
-	return a.session.player != nil && a.session.player.Playing()
+	return a.session.auditions.busy() || (a.session.player != nil && a.session.player.Playing())
 }
 
 // announcePlayback tells the front end whether anything is sounding. The run loop

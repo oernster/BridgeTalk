@@ -37,6 +37,8 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     AuditionGroups: record('AuditionGroups', [{ key: 'ShieldState' }]),
     Audition: record('Audition', { group: 'ShieldState', clip: 'a.mp3' }),
     StopAudition: record('StopAudition', undefined),
+    MachineAuditionGroups: record('MachineAuditionGroups', [{ key: 'Docked' }]),
+    AuditionMachineVoice: record('AuditionMachineVoice', { group: 'Docked', clip: 'k.flac' }),
     TakeKeyboard: record('TakeKeyboard', undefined),
     Quit: record('Quit', undefined),
     Reactions: record('Reactions', [{ cue: 'ShieldState.ShieldsUp.false' }]),
@@ -92,6 +94,8 @@ describe('with the window bridge present', () => {
     await api.auditionGroups('Alpha')
     await api.audition('Alpha', 'ShieldState')
     await api.stopAudition()
+    await api.machineAuditionGroups()
+    await api.auditionMachineVoice('bf_emma', 'Docked')
     await api.takeKeyboard()
     await api.quit()
     await api.reactions()
@@ -122,6 +126,8 @@ describe('with the window bridge present', () => {
       'AuditionGroups',
       'Audition',
       'StopAudition',
+      'MachineAuditionGroups',
+      'AuditionMachineVoice',
       'TakeKeyboard',
       'Quit',
       'Reactions',
@@ -150,6 +156,7 @@ describe('with the window bridge present', () => {
     await api.setVolume(0.75)
     await api.auditionGroups('Beta')
     await api.audition('Beta', 'combat')
+    await api.auditionMachineVoice('am_michael', 'combat')
     await api.cueBreakdown('Beta')
     await api.makeVoiceFolders('Beta')
     await api.checklist('Beta')
@@ -163,6 +170,7 @@ describe('with the window bridge present', () => {
       [0.75],
       ['Beta'],
       ['Beta', 'combat'],
+      ['am_michael', 'combat'],
       ['Beta'],
       ['Beta'],
       ['Beta'],
@@ -183,6 +191,11 @@ describe('with the window bridge present', () => {
     expect(await api.audition('Alpha', 'ShieldState')).toEqual({
       group: 'ShieldState',
       clip: 'a.mp3',
+    })
+    expect(await api.machineAuditionGroups()).toEqual([{ key: 'Docked' }])
+    expect(await api.auditionMachineVoice('bf_emma', 'Docked')).toEqual({
+      group: 'Docked',
+      clip: 'k.flac',
     })
     expect(await api.reactions()).toEqual([{ cue: 'ShieldState.ShieldsUp.false' }])
     expect(await api.about()).toEqual({ name: 'the application' })
@@ -235,6 +248,8 @@ describe('with no window bridge at all', () => {
     expect(await api.auditionGroups('Alpha')).toEqual([])
     expect(await api.audition('Alpha', 'ShieldState')).toBeNull()
     expect(await api.stopAudition()).toBeUndefined()
+    expect(await api.machineAuditionGroups()).toEqual([])
+    expect(await api.auditionMachineVoice('bf_emma', 'Docked')).toBeNull()
     expect(await api.takeKeyboard()).toBeUndefined()
     expect(await api.quit()).toBeUndefined()
     expect(await api.reactions()).toEqual([])

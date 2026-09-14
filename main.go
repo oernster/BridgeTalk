@@ -121,6 +121,8 @@ type session struct {
 	// confirming is set while a cast machine voice's confirmation waits for its line (FR-521). The
 	// cast sets it from the window's goroutine; the poll tick reads it from its own.
 	confirming atomic.Bool
+	// auditions holds the machine voice audition whose line is being made (FR-547).
+	auditions auditionGate
 
 	active    castVoice
 	catalogue *library.Catalogue

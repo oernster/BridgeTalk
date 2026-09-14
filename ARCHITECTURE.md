@@ -102,7 +102,7 @@ either cannot be found, every machine voice is refused with why rather than the 
 to start. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
-facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`,
+facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
 `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`.
 
@@ -362,7 +362,8 @@ is playing and claims the device under the one lock, so a press while a clip sou
 started over it (FR-236). The page is told when something starts as well as when it ends: from an
 audition, from the cast confirmation and from any poll that set a reaction playing. The audition buttons
 are held for as long as anything plays; a pane opened part way through a clip asks whether anything is
-playing, so its buttons are held from the start. Casting still ends what is playing through `Play`; so
+playing, so its buttons are held from the start. A machine voice's line being made for an audition counts
+as playing too (FR-547). Casting still ends what is playing through `Play`; so
 does an alert over a reaction of lower priority. Muting stops the player too, as does the audition
 pane's Stop button.
 
@@ -527,6 +528,16 @@ to the game included. The voice being auditioned starts as the cast one but is n
 voice before committing to it is what an audition is for. An audition ignores the mute, which silences
 reactions to the game rather than the application, because answering a deliberate press with silence
 would read as a fault.
+
+A machine voice is auditioned on the script's groups instead, each counting its lines (FR-546). A press
+draws one line; one not yet made is made on the model's next turn, ahead of the cast voice's next line,
+then kept as every made line is, so casting the voice later does not make it again. The making service
+hands the model to a run or an audition one turn at a time, a turn covering the line's write as well, so
+lines are written in the order the turns were taken. While the line is made the buttons are held and a
+further press is ignored; Stop lets it go, so it is kept once written yet never played (FR-547). A
+recordings folder may carry a machine voice's id as its name, so the chooser keeps the two apart and a
+machine voice goes through `MachineAuditionGroups` and `AuditionMachineVoice` rather than the recorded
+voice's pair.
 
 **Volume.** A slider in the nav band, from silence to the clip as recorded, in twenty steps. Perceived
 loudness is roughly logarithmic in gain, so the slider position picks a point up to six halvings below

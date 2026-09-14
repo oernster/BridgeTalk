@@ -446,6 +446,8 @@ When the user chooses a voice on the Audition pane and presses a group's button,
 application shall play one take drawn at random from the distinct takes of that group,
 where a group is every cue sharing the first segment of its id. Any voice found may be
 auditioned whether cast or not; an audition plays while muted.
+Note: a machine voice is auditioned from its made lines, the line drawn being made on the press
+where it is not yet made (FR-545 to FR-548).
 Verified by: `TestTheAuditionPaneListsWhatAVoiceCanBeHeardOn` and
 `TestAnAuditionPlaysEvenWhileMuted` in `audition_test.go`; `TestAnAuditionDrawsFromTheNamedGroup`
 in `internal/infrastructure/library/catalogue_test.go`.
@@ -955,7 +957,9 @@ and accepted Option B: the confirmation is made first, a cue that fires before i
 that line made on the spot and the rest are made after the cast (FR-511, FR-514, FR-521, NFR-P-205).
 Later the same day he replaced the making of every line after the cast: a cast makes its confirmation
 alone, every other line is made the first time its cue fires and every machine voice keeps its made
-lines (FR-511, FR-527).
+lines (FR-511, FR-527). Later still he asked to hear every machine voice on the Audition pane; he
+accepted Claude's recommendation that a press makes the line it plays where that line is not yet made,
+keeping it (FR-545 to FR-548).
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -1588,7 +1592,8 @@ Priority: Should.
 When a machine voice is cast, at start (FR-512) or later, the application shall begin loading the model
 at once rather than when its first line is made, completing the cast without waiting for the load. If
 the model cannot be loaded, then the application shall say nothing of it until a line is made, which
-reports why (FR-518). While only recorded voices are cast, the application shall not load the model.
+reports why (FR-518). While only recorded voices are cast, the application shall not load the model
+until a machine voice is auditioned (FR-546).
 Rationale: loading the model took 539 ms (section 6.1). A cast whose confirmation is already made makes
 no line, so the first cue to fire with nothing made paid for the load inside FR-514's 2 seconds; loaded
 at the cast, that cue waits for its line alone. Loading the model and making one line peaked at 408.5
@@ -1598,7 +1603,7 @@ accepted loading the model when a run starts with a machine voice the same day. 
 included so its first cue is spared the load too (recommended by Claude; accepted by Oliver on 2026-09-14).
 Acceptance: Given `bf_emma` kept with her confirmation's three lines made, when the application starts,
 then the model is loaded with no line made and the cast completes while the load is under way. Given
-only recorded voices cast in a run, then the model is never loaded.
+only recorded voices cast in a run with no machine voice auditioned, then the model is never loaded.
 Verified by: `TestCastingLoadsTheModelAtOnceWithoutWaitingForIt` and
 `TestCastingARecordedVoiceLoadsNothing` in `internal/application/services/making_test.go` over fakes,
 with `TestLoadingAheadLoadsTheModelOnceForTheLinesAfter` and
@@ -1606,6 +1611,93 @@ with `TestLoadingAheadLoadsTheModelOnceForTheLinesAfter` and
 Proved on 2026-09-14 by planting a cast that loads nothing, a cast that waits for the load, a recorded
 cast that loads the model, a load that ignores a stopped making, a closed maker that loads and a loaded
 model loaded again; each failed its test. Not verified by a test: the load over the real model files.
+An audition loads the model through the line it makes, `Make` loading the model where it is not loaded
+(read in `internal/infrastructure/speechmodel/speechmodel.go`); no test of its own holds that.
+
+**FR-545 The Audition pane offers the machine voices**
+Priority: Must.
+The Auditioning chooser on the Audition pane shall list the 28 machine voices of FR-508 after the
+recorded voices, each named as FR-528 says.
+Rationale: the chooser listed recorded voices alone, filled from the voices the scan found (read in
+`frontend/src/audition.tsx` on 2026-09-14), so a machine voice could be heard only by casting it.
+Oliver asked for every machine voice there on 2026-09-14.
+Acceptance: Given a library root holding `Alice/`, when the Audition pane opens, then the Auditioning
+chooser lists Alice, then the 28 machine voices with `bf_emma` among them as "Emma (British, female)".
+Verified by: "offers the machine voices after the recorded voices", "offers the machine voices with no
+recorded voice at all" and "opens on a cast machine voice and marks it rather than a folder of the same
+name" in `frontend/src/audition.machine.test.tsx`. Proved on 2026-09-14 by planting a chooser that
+offers no machine voice, one that shows None beside them and one that marks the folder in place of the
+cast machine voice; each failed its test. Not verified by a test: the chooser as drawn in the window.
+
+**FR-546 Auditioning a machine voice plays a line of the group pressed**
+Priority: Must.
+When a machine voice is chosen on the Audition pane and a group's button is pressed, the application
+shall play one line drawn at random from the lines the script holds for that group's cues, first
+making that line next after any line already being made where the voice has no current made line for
+it (FR-513).
+Note: a line made for an audition is kept as every made line is (FR-527), so casting the voice later
+does not make it again. A group's button counts its samples as the lines the script holds for the
+group. As FR-216 says of a recorded voice, a machine voice need not be cast to be auditioned; an
+audition plays while muted.
+Rationale: a machine voice's lines are made the first time they are needed (FR-511, FR-514), so a
+voice never cast has none to play. Loading the model took 539 ms (section 6.1) and a line asked for
+on call was written 595 ms later (NFR-P-205). Making the line on the press and keeping it were
+recommended by Claude; accepted by Oliver on 2026-09-14.
+Acceptance: Given `bf_emma` not cast with no made lines, when she is chosen on the Audition pane and
+the `CarrierCrewServices` group's button is pressed, then one of the 12 lines of that group's four
+cues is made, kept and played; none of her other lines is made. Given that line already made, when it
+is drawn again, then it is played without being made again.
+Verified by: `TestTheGroupsAuditionedAreTheScriptsCountingTheirLines`,
+`TestAnAuditionMakesTheLineDrawnKeepsItAndAnswersWhereItPlays`, `TestAnAuditionOfALineAlreadyMadeMakesNothing`,
+`TestALineAuditionedForTheCastVoiceCountsAsMade`, `TestAnAuditionIsMadeNextAfterTheLineUnderWay` and
+`TestAnAuditionOfAGroupTheScriptLacksIsRefused` in `internal/application/services/making_audition_test.go`
+over fakes, with `TestGroupsGatherCuesByTheirFirstSegmentCountingTheirLines` in
+`internal/domain/script/groups_test.go` and `TestAGroupGivesItsCuesLinesInOrderMadeOrNot` in
+`internal/domain/making/group_test.go`; `TestAMachineVoiceIsAuditionedOnTheScriptsGroups`,
+`TestAMachineVoiceAuditionMakesTheLineDrawnKeepsItAndPlaysIt`,
+`TestAMachineVoiceAuditionOfALineAlreadyMadeMakesNothing` and
+`TestAMachineVoiceAuditionOfAGroupTheScriptLacksIsRefusedByName` in `audition_machine_test.go` for the
+facade; "auditions a machine voice through the machine voice calls" in
+`frontend/src/audition.machine.test.tsx`. Proved on 2026-09-14 by planting an audition that waits behind
+the run's next line, a line auditioned for the cast voice left uncounted, a made line made again, groups
+counting cues rather than lines, a group taking the other cues and a machine voice played through the
+recorded voice's call; each failed its test. Not verified by a test: a line made by the real model on a
+press and heard.
+
+**FR-547 While an audition's line is being made, the audition buttons are held**
+Priority: Must.
+While a line is being made for an audition, the Audition pane shall show each audition button as
+unavailable until that line has played to its end, Stop is pressed or the making fails.
+When Stop is pressed while an audition's line is being made, the application shall keep the line once
+it is written and play nothing.
+Rationale: FR-236 holds the buttons while a clip plays. A line still being made is a press already
+answered, so a second press must not set a second line making. A line under way cannot be
+interrupted (FR-514), so Stop keeps it rather than wasting it.
+Acceptance: Given `bf_emma` chosen with nothing made, when a group's button is pressed, then every
+audition button is disabled until the line made has played. Given a line being made, when Stop is
+pressed, then nothing plays, the buttons are enabled again and the line is current once written.
+Verified by: `TestAPressWhileAnAuditionsLineIsBeingMadeIsIgnored` and
+`TestStopWhileAnAuditionsLineIsBeingMadePlaysNothingAndKeepsIt` in `audition_machine_test.go`; "holds the
+buttons while a line is made and says why one cannot be" in `frontend/src/audition.machine.test.tsx`.
+Proved on 2026-09-14 by planting a Playing that ignores a line being made, a press while one is made
+that is not ignored, a Stop that does not let the line go and a Stop that tells the page nothing; each
+failed its test. Not verified by a test: the buttons as drawn in the window.
+
+**FR-548 If an audition's line cannot be made, then say why**
+Priority: Must.
+If a line cannot be made for an audition, whether a file the voice is made from is missing or
+unreadable, the model refuses the line or the made line cannot be written, then the Audition pane
+shall show the reason with any file named once (FR-237), playing nothing.
+Rationale: FR-518 and FR-519 report the same failures on the Cast pane; an audition is asked for on
+the Audition pane, so its answer belongs there.
+Acceptance: Given `bf_emma`'s style file missing, when she is chosen on the Audition pane and a
+group's button is pressed, then the pane shows a reason naming that file once, nothing plays and the
+buttons are enabled again.
+Verified by: `TestAnAuditionThatCannotBeMadeAnswersWhyKeepingNothing` in
+`internal/application/services/making_audition_test.go` for files refused, a line the model refuses and a
+failed write; `TestAMachineVoiceAuditionThatCannotBeMadeSaysWhy` in `audition_machine_test.go`; "holds the
+buttons while a line is made and says why one cannot be" in `frontend/src/audition.machine.test.tsx`.
+Proved on 2026-09-14 by planting a failure that leaves the buttons held; it failed its test.
 
 ### 6.2 Machine voices, non-functional
 
@@ -2188,7 +2280,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-545 to FR-548, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

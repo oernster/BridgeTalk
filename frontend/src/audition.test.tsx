@@ -9,58 +9,30 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { Audition, Group, Voice } from './api'
+import type { Voice } from './api'
+import {
+  audition,
+  auditionGroups,
+  grace,
+  groupButton,
+  handlers,
+  kate,
+  playing,
+  resetAudition,
+  shown,
+  stopAudition,
+  voices,
+} from './testAudition'
 
-const voices = vi.fn<() => Promise<Voice[]>>()
-const auditionGroups = vi.fn<(voice: string) => Promise<Group[]>>()
-const audition = vi.fn<(voice: string, group: string) => Promise<Audition | null>>()
-const stopAudition = vi.fn<() => Promise<void>>()
-const playing = vi.fn<() => Promise<boolean>>()
-
-/** handlers holds whatever the pane subscribed to, so a test can raise the event. */
-const handlers = new Map<string, (...data: unknown[]) => void>()
-
-vi.mock('./api', () => ({
-  api: {
-    voices: () => voices(),
-    auditionGroups: (voice: string) => auditionGroups(voice),
-    audition: (voice: string, group: string) => audition(voice, group),
-    stopAudition: () => stopAudition(),
-    playing: () => playing(),
-  },
-  on: (name: string, handler: (...data: unknown[]) => void) => {
-    handlers.set(name, handler)
-    return () => handlers.delete(name)
-  },
-}))
+vi.mock('./api', async () => (await import('./testAudition')).mockedApi)
 
 const { AuditionPane } = await import('./audition')
 
-const grace: Voice = { name: 'Grace', display: 'Grace', credit: '', cues: 90, inUse: 100, present: 100 }
-const kate: Voice = { name: 'Kate', display: 'Kate', credit: '', cues: 10, inUse: 12, present: 12 }
-
-const shields: Group = { key: 'shields', label: 'Shields', clips: 4 }
-const combat: Group = { key: 'combat', label: 'Combat', clips: 1 }
-
-beforeEach(() => {
-  handlers.clear()
-  for (const spy of [voices, auditionGroups, audition, stopAudition, playing]) spy.mockReset()
-  voices.mockResolvedValue([grace, kate])
-  auditionGroups.mockResolvedValue([shields, combat])
-  audition.mockResolvedValue({ group: 'shields', clip: 'a.mp3' })
-  stopAudition.mockResolvedValue(undefined)
-  playing.mockResolvedValue(false)
-})
+beforeEach(resetAudition)
 
 /** show renders the pane over whoever is cast and waits for its groups. */
 async function show(cast = 'Grace') {
-  render(<AuditionPane cast={cast} />)
-  await screen.findByRole('button', { name: /Shields/ })
-}
-
-/** groupButton finds one group's play button by the label it shows. */
-function groupButton(name: RegExp): HTMLButtonElement {
-  return screen.getByRole('button', { name }) as HTMLButtonElement
+  await shown(<AuditionPane cast={cast} />)
 }
 
 describe('the audition pane', () => {

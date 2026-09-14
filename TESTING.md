@@ -51,7 +51,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
-| `internal/infrastructure/speechmodel` | 91.5% with `models/` filled, 26.5% without | 26% | `test.ps1` |
+| `internal/infrastructure/speechmodel` | 91.5% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
 | `tools/models` | 53.1% | 53% | `test.ps1` |
 | `tools/sounds` | 38.5% | 38% | `test.ps1` |
@@ -173,8 +173,8 @@ release is for.
   `windows.DLLError`, which `golang.org/x/sys/windows` answers every load and lookup failure as. What a
   test can reach is tested: a missing runtime, a library that is not ONNX Runtime, a missing or
   damaged model, a path no file can have and a shipped line made by the real model. The tests that need
-  the model files skip where `models/` lacks one, which is why the floor is the 26.5% measured without
-  them.
+  the model files skip where `models/` lacks one; `test.ps1` checks the files before anything else and
+  stops where one is missing, so the floor holds the 91.5% measured with them.
 - **`main`, `run`, `launch` and `startTray` in `main.go`.** The composition root. It
   opens a device, scans the disk, builds a tray and hands the assembled application
   to Wails. Running it in a test would be running the application.
@@ -258,6 +258,13 @@ same for the setup page, whose ring is a script of its own loaded as the page sh
 Every command below is PowerShell, run from the repository root unless it says
 otherwise.
 
+The gate needs the model files in `models/`, which the model files tool downloads from
+their pinned addresses, fetching only what is missing or different:
+
+```powershell
+go run ./tools/models
+```
+
 The whole backend gate, which `build.ps1` runs before it builds and cannot be told
 to skip:
 
@@ -265,9 +272,11 @@ to skip:
 ./test.ps1
 ```
 
-It checks formatting, runs `go vet`, runs every test, holds the domain and the
-application layers at 100%, then holds each of the nine other gated packages at its
-floor. Read the exit code rather than the last line of output.
+It checks `models/` against the model files list first and stops where a file is
+missing or differs, saying to run the tool above. It then checks formatting, runs
+`go vet`, runs every test, holds the domain and the application layers at 100%, then
+holds each other gated package at its floor. Read the exit code rather than the last
+line of output.
 
 The stricter Go analysis, which `test.ps1` does not run:
 

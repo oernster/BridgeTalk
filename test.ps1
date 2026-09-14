@@ -34,6 +34,13 @@ $gated = './internal/domain/...', './internal/application/...'
 $packages = go list ./... | Where-Object { $_ -notmatch '/node_modules/' }
 if ($LASTEXITCODE -ne 0) { throw "go list failed with exit code $LASTEXITCODE" }
 
+# The model files come first, because the tests that make lines with the real model skip where
+# one is missing; a suite that skipped them would pass having proved nothing about the model
+# (Oliver, 2026-09-14). The check downloads nothing; the message says how to fill the folder.
+Write-Host 'Checking the model files...'
+go run ./tools/models -check
+if ($LASTEXITCODE -ne 0) { throw "the model files are not all in models/ as the list gives them: run go run ./tools/models, then run this again" }
+
 Write-Host 'Checking formatting...'
 $unformatted = gofmt -l . | Where-Object { $_ -notmatch '^frontend' }
 if ($unformatted) { throw "gofmt reports unformatted files:`n$($unformatted -join "`n")" }
@@ -101,7 +108,7 @@ $measured = [ordered]@{
     './internal/infrastructure/modelfiles' = 99
     './internal/infrastructure/reporoot'  = 100
     './internal/infrastructure/setup'     = 61
-    './internal/infrastructure/speechmodel' = 26
+    './internal/infrastructure/speechmodel' = 91
     './internal/infrastructure/status'    = 100
     './internal/infrastructure/taskbar'   = 67
     './internal/infrastructure/tomlfile'  = 100

@@ -127,6 +127,13 @@ can be.
 
 ## Testing
 
+The tests make lines with the real voice model, so fill `models/` first. This downloads about 340 MB
+once and afterwards only what is missing or different:
+
+```powershell
+go run ./tools/models
+```
+
 ```powershell
 ./test.ps1
 ```

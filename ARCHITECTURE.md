@@ -760,10 +760,11 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   Elsewhere a cue id, a journal event or a status value is read as data rather than written down. The
   guard knows the real words because it reads the table, so it never has to guess which strings look
   like one.
-- `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
+- `test.ps1` first checks `models/` against the model files list, stopping where a file is missing or
+  differs (FR-538). It then checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `speechmodel` 26%, `taskbar`
+  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `speechmodel` 91%, `taskbar`
   67%, `tools/sounds` 38%, `tools/models` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
   `status`, `tomlfile`, `voicefiles`, `wholefile` and `internal/refusal` at 100%. `internal/infrastructure/window`,
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without

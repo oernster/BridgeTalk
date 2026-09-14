@@ -1371,8 +1371,11 @@ Priority: Must.
 When the tool runs with `-check`, it shall download nothing and exit with a failure naming each listed
 file that is missing from `models/` or differs from the list. A test that needs the model files shall
 skip where one is missing and fail where one differs.
+`test.ps1` shall run the check before anything else and stop where it fails, saying how to fill the
+folder (Oliver, 2026-09-14).
 Rationale: the build checks the files before packing them without reaching the network. A file that
-is present but wrong is a fault to be told about, never a reason to skip.
+is present but wrong is a fault to be told about, never a reason to skip. A gate that let the
+tests needing the model skip would pass having proved nothing about the model.
 Acceptance: Given `models/` with `bf_alice.bin` missing and `am_adam.bin` altered, when the tool runs
 with `-check`, then nothing is requested from any address and the failure names both files.
 Verified by: `TestCheckNamesWhatIsMissingAndWhatDiffersAskingForNothing` and

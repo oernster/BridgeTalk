@@ -30,27 +30,31 @@ func acknowledgement(table cue.Table) (cue.ID, bool) {
 
 // Catalogue answers, for a cue, what the chosen voice can play for it.
 //
-// There is one resolution rule and no chain: the voice either recorded that cue or it
-// did not. Nothing is substituted from another cue, because a wrong line delivered
+// There is one resolution rule and no chain: the voice either has that cue or it does
+// not. Nothing is substituted from another cue, because a wrong line delivered
 // confidently is worse than silence. A voice is expected to be complete anyway;
 // a gap is a thing to go and record, not a thing to paper over.
+//
+// The takes arrive through the audio source port (FR-501), so the catalogue knows
+// nothing of where they came from: a scanned voice is one source among any.
 type Catalogue struct {
-	voice   Voice
+	source  ports.AudioSource
+	shown   string
 	table   cue.Table
 	chooser selection.Chooser
 }
 
-// NewCatalogue builds a catalogue over one voice.
-func NewCatalogue(voice Voice, table cue.Table, chooser selection.Chooser) *Catalogue {
-	return &Catalogue{voice: voice, table: table, chooser: chooser}
+// NewCatalogue builds a catalogue over one audio source, shown by the name given.
+func NewCatalogue(source ports.AudioSource, shown string, table cue.Table, chooser selection.Chooser) *Catalogue {
+	return &Catalogue{source: source, shown: shown, table: table, chooser: chooser}
 }
 
 // ActiveVoice returns the name the voice in use is shown by (FR-210).
-func (c *Catalogue) ActiveVoice() string { return c.voice.Display() }
+func (c *Catalogue) ActiveVoice() string { return c.shown }
 
-// Clips returns the takes recorded for a cue; false when this voice has none.
+// Clips returns the takes the source holds for a cue; false when it has none.
 func (c *Catalogue) Clips(id cue.ID) (ports.Performance, bool) {
-	clips, ok := c.voice.Lookup(id)
+	clips, ok := c.source.Lookup(id)
 	if !ok {
 		return ports.Performance{}, false
 	}
@@ -66,7 +70,7 @@ func (c *Catalogue) Acknowledgement() (string, bool) {
 	if !named {
 		return "", false
 	}
-	clips, ok := c.voice.Lookup(id)
+	clips, ok := c.source.Lookup(id)
 	if !ok {
 		return "", false
 	}
@@ -77,34 +81,16 @@ func (c *Catalogue) Acknowledgement() (string, bool) {
 func (c *Catalogue) Coverage() (int, int) {
 	served := 0
 	for _, item := range c.table.All() {
-		if _, ok := c.voice.Lookup(item.ID()); ok {
+		if _, ok := c.source.Lookup(item.ID()); ok {
 			served++
 		}
 	}
 	return served, c.table.Len()
 }
 
-// Files reports the distinct files this voice uses against the recordings present in its
-// directory (FR-215).
-//
-// The two numbers are expected to be equal, since a voice is recorded against the
-// vocabulary and every file it holds should answer a cue. They are reported beside
-// Coverage because they fail differently: a shortfall in Coverage means lines were never
-// recorded, while a gap here means files are present that nothing can reach, which is a
-// naming mistake rather than a missing performance.
-func (c *Catalogue) Files() (used int, present int) {
-	seen := map[string]struct{}{}
-	for _, clips := range c.voice.byCue {
-		for _, clip := range clips {
-			seen[clip] = struct{}{}
-		}
-	}
-	return len(seen), c.voice.Present
-}
-
 // Served lists the cues this voice can serve, sorted by id.
 //
-// It is the exact complement of Unbound, which is why both ask the voice rather than
+// It is the exact complement of Unbound, which is why both ask the source rather than
 // one deriving itself from the other: a cue is in one list or the other, never in
 // neither and never in both; one predicate is what keeps that true.
 func (c *Catalogue) Served() []cue.Cue { return c.partition(true) }
@@ -116,7 +102,7 @@ func (c *Catalogue) Unbound() []cue.Cue { return c.partition(false) }
 func (c *Catalogue) partition(served bool) []cue.Cue {
 	var out []cue.Cue
 	for _, item := range c.table.All() {
-		if _, ok := c.voice.Lookup(item.ID()); ok == served {
+		if _, ok := c.source.Lookup(item.ID()); ok == served {
 			out = append(out, item)
 		}
 	}

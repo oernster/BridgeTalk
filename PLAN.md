@@ -23,9 +23,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
   model (FR-513). Set against the keys on disk, it lists the lines still to make and counts how many
   are current and how many cues are served (FR-511, FR-512, FR-515, FR-522).
 - Nothing else of machine voices is built.
-- `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
-  `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
-  (FR-501).
+- `library.Catalogue` answers from `ports.AudioSource` under the name it is given (FR-501); a
+  scanned `library.Voice` is the one implementation. `catalogueOf` in `voices.go` builds it for a
+  recorded voice; `session.useVoice` in `main.go` rebuilds it with the reaction service on every cast.
+  FR-215's files figure is `Voice.Files`, since only a voice on disk has files.
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
@@ -37,13 +38,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## M6 Application: the port and the making service
 
-1. FR-501 first, changing no behaviour. `ports.AudioSource` answers the takes for a cue id.
-   `library.Voice` already has `Lookup(id)` and becomes the first implementation; the catalogue
-   depends on the port. The suite stays green with only wiring edited.
-2. Ports for what a machine voice needs: the speech maker (numbers plus style in, samples out), the
+1. Ports for what a machine voice needs: the speech maker (numbers plus style in, samples out), the
    made-line store (keys on disk, write whole, delete a voice's lines) and
    the voice's files (one missing or unreadable is refused, FR-519).
-3. `MakingService` over those ports, tested with hand-written fakes. Making starts on cast and on
+2. `MakingService` over those ports, tested with hand-written fakes. Making starts on cast and on
    start (FR-511, FR-512). It stops when another voice is cast, keeping what is made (FR-516). It
    carries on past a line that fails (FR-518) and stops on a write failure (FR-520). It deletes the
    previous voice's lines (FR-527) and says so when it cannot (FR-530). A machine voice's audio

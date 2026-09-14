@@ -130,7 +130,7 @@ func (s *session) useVoice(chosen library.Voice) {
 	s.player.Stop()
 
 	s.active = chosen
-	s.catalogue = library.NewCatalogue(chosen, s.table, s.chooser)
+	s.catalogue = s.catalogueFor(chosen)
 	s.scheduler = services.NewScheduler(s.player, s.reporter, systemClock{})
 	s.reactions = services.NewReactionService(
 		s.table, s.catalogue, s.scheduler, s.chooser, s.reporter, systemClock{},
@@ -145,7 +145,7 @@ func (s *session) useVoice(chosen library.Voice) {
 // on voices the user has not chosen and the audition pane plays from them, so the
 // catalogue cannot be tied to the active one.
 func (s *session) catalogueFor(voice library.Voice) *library.Catalogue {
-	return library.NewCatalogue(voice, s.table, s.chooser)
+	return catalogueOf(voice, s.table, s.chooser)
 }
 
 // voiceNamed finds a voice by exact name among those found at startup.
@@ -164,7 +164,7 @@ func (s *session) voiceNamed(name string) (library.Voice, bool) {
 func (s *session) coverageOf(voice library.Voice) (int, int, int) {
 	catalogue := s.catalogueFor(voice)
 	covered, _ := catalogue.Coverage()
-	used, present := catalogue.Files()
+	used, present := voice.Files()
 	return covered, used, present
 }
 

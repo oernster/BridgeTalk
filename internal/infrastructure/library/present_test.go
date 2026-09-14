@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
@@ -26,5 +27,21 @@ func TestPresentCountsEveryRecognisedRecordingUnderTheVoice(t *testing.T) {
 	if found.Takes != 1 || found.Present != 5 {
 		t.Fatalf("got %d takes of %d present, want the one that plays of the five recordings there",
 			found.Takes, found.Present)
+	}
+}
+
+// FR-215, second figure: distinct files used against the recordings present. One file
+// answering two cues is one file used; a recording present that answers nothing is not used.
+func TestFilesCountDistinctFilesUsedAgainstRecordingsPresent(t *testing.T) {
+	voice := voiceOf("Ivy", map[cue.ID][]string{
+		"DockingGranted":              {"shared.wav"},
+		"ShieldState.ShieldsUp.false": {"shared.wav", "own.wav"},
+	})
+	voice.Present = 4
+
+	used, present := voice.Files()
+
+	if used != 2 || present != 4 {
+		t.Errorf("files = %d used of %d present, want 2 of 4", used, present)
 	}
 }

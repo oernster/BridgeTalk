@@ -915,21 +915,23 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 
 **FR-501 The audio source is a port**
 Priority: Must. Raised from Should on 2026-09-14: machine voices are its first implementation.
-Not built today: no audio source interface is declared and `library.Catalogue` is built
-directly over a scanned `library.Voice`. The reaction service does depend on the
-`VoiceCatalogue` port.
 The application layer shall declare an audio source interface that answers, for a
 cue id, the takes available; the catalogue shall depend on that interface rather
 than on any concrete scanner.
 Rationale: an additional source of audio can then be supplied without the
 catalogue knowing anything about where it came from. Declaring the seam now costs
 nothing; retrofitting it later is a rewrite of the catalogue.
+Note: `ports.AudioSource` is the interface and a scanned `library.Voice` is its first
+implementation. The name a voice is shown by is handed to the catalogue beside it.
+Verified by: `TestTheCatalogueAnswersFromAnyAudioSource` in
+`internal/infrastructure/library/catalogue_test.go`.
 
 **FR-502 An extension supplies audio, never behaviour**
 Priority: Must.
-Not built today: there is no port for an implementation to supply.
 An implementation of the port shall supply takes for cue ids and nothing else. It
 shall not add cues, alter the cue table or change playback behaviour.
+Verified by: in part, `ports.AudioSource` declares one method, which answers takes for a cue id;
+no implementation but a recorded voice is built.
 
 ### 6.1 Machine voices
 

@@ -39,6 +39,16 @@ type Performance struct {
 	Clips []string
 }
 
+// AudioSource answers, for a cue id, the takes a voice can play for it (FR-501).
+//
+// It answers takes and nothing else (FR-502). The name a voice is shown by, the files it
+// holds and whatever else one kind of voice knows about itself stay with that kind, so a
+// second kind can be supplied without the catalogue learning where its audio came from.
+// The boolean is true only with at least one take.
+type AudioSource interface {
+	Lookup(id cue.ID) ([]string, bool)
+}
+
 // VoiceCatalogue resolves a cue into the takes the chosen voice can play for it.
 //
 // The boolean reports whether the voice can serve the cue at all. One that cannot is

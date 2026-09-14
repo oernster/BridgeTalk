@@ -346,25 +346,3 @@ func (from disk) refuse(voiceDir, found string) (Reason, bool) {
 	}
 	return Reason{Path: found, Why: fmt.Sprintf("this will not play (%v), so it is left out", err)}, true
 }
-
-// recordingsUnder counts the files with a recognised extension under a directory at any
-// depth. It is the second figure's measure of what is there (FR-215), so it counts what the
-// scan passed over as well as what it took: a recording nothing reaches is the shortfall
-// that figure exists to show.
-func (from disk) recordingsUnder(dir string) int {
-	entries, err := from.read(dir)
-	if err != nil {
-		return 0
-	}
-	count := 0
-	for _, entry := range entries {
-		if entry.IsDir() {
-			count += from.recordingsUnder(filepath.Join(dir, entry.Name()))
-			continue
-		}
-		if audio.Recognised(entry.Name()) {
-			count++
-		}
-	}
-	return count
-}

@@ -24,7 +24,7 @@ type Group struct {
 func (c *Catalogue) Groups() []Group {
 	gathered := make(map[string]map[string]struct{})
 	for _, item := range c.table.All() {
-		clips, ok := c.voice.Lookup(item.ID())
+		clips, ok := c.source.Lookup(item.ID())
 		if !ok {
 			continue
 		}

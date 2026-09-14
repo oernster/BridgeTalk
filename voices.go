@@ -78,9 +78,15 @@ func pick(found []library.Voice, want string) (library.Voice, error) {
 	return library.Voice{}, fmt.Errorf("voice %q not found, choose one of: %s", want, strings.Join(names, ", "))
 }
 
+// catalogueOf builds the catalogue over a recorded voice: its takes answered through the
+// audio source port (FR-501), under the name the voice is shown by (FR-210).
+func catalogueOf(voice library.Voice, table cue.Table, chooser randomChooser) *library.Catalogue {
+	return library.NewCatalogue(voice, voice.Display(), table, chooser)
+}
+
 // unboundReport prints the cues a voice has nothing recorded for, then exits.
 func unboundReport(chosen library.Voice, table cue.Table, chooser randomChooser) error {
-	catalogue := library.NewCatalogue(chosen, table, chooser)
+	catalogue := catalogueOf(chosen, table, chooser)
 	unbound := catalogue.Unbound()
 	fmt.Printf("%s has nothing recorded for %d of %d cues:\n",
 		chosen.Name, len(unbound), table.Len())
@@ -128,7 +134,7 @@ func warnAbout(report library.Report) {
 func listing(found []library.Voice, table cue.Table, chooser randomChooser) error {
 	fmt.Printf("%-20s %8s  %s\n", "voice", "takes", "cues recorded")
 	for _, voice := range found {
-		catalogue := library.NewCatalogue(voice, table, chooser)
+		catalogue := catalogueOf(voice, table, chooser)
 		served, total := catalogue.Coverage()
 		fmt.Printf("%-20s %8d  %d of %d\n", voice.Name, voice.Takes, served, total)
 	}

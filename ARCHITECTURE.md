@@ -54,8 +54,10 @@ exactly like one that holds.
   `making` keys each made line by its speech sounds, style file and model, then works out which lines
   a voice still has to make.
 - **Application** (`internal/application`): the reaction and scheduling services plus the ports they
-  depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `Clock`, `SettingsStore`, `Reporter`). It
-  never imports Infrastructure or the Wails runtime.
+  depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
+  `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
+  any kind of voice without knowing where its audio came from (FR-501, FR-502). It never imports
+  Infrastructure or the Wails runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
   folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),

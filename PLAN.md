@@ -7,7 +7,12 @@ section 10 says: domain, then application, then infrastructure, then user interf
 ## What exists today
 
 - `internal/domain/machinevoice` holds the 28 voices offered, the accent each speaks with and the name
-  each is shown by (FR-508, FR-510, FR-528). Nothing else of machine voices is built.
+  each is shown by (FR-508, FR-510, FR-528).
+- `internal/domain/speech` holds the 114 speech sound symbols the model reads with their numbers,
+  copied from its tokenizer file by a script. It turns speech sounds into those numbers, refusing
+  more than 510 (FR-506). It reads the spellings a line gives, refusing every broken form (FR-529,
+  FR-531).
+- Nothing else of machine voices is built.
 - `library.Catalogue` is built straight over a scanned `library.Voice`; `session.useVoice` in
   `main.go` rebuilds it with the reaction service on every cast. There is no audio source port yet
   (FR-501).
@@ -19,16 +24,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller, the
   eSpeak NG caller, the dictionary lookup with misaki's rules and the FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M2 Domain: speech sounds
-
-Package `internal/domain/speech`.
-
-- The 115 symbols the model reads, with each symbol's number, as a committed table. An
-  infrastructure test compares it with the model's tokenizer file where that file is present.
-- Speech sounds to the model's numbers, refusing more than 510 (FR-506).
-- Reading `[word](/sounds/)` and `[word](/British/American/)` out of a line (FR-529). Every broken
-  form FR-531 lists is refused with a reason.
 
 ## M3 Domain plus structural tests: the script
 
@@ -92,6 +87,8 @@ package still builds and vets on any platform.
 - ONNX Runtime caller through the OrtApi v23 table, no cgo.
 - Voice files: the model, the 28 style files, ONNX Runtime plus eSpeak NG with its data. A missing
   one is refused by name (FR-519) through `internal/refusal`.
+- A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
+  that file is present, so a new model cannot leave the table behind.
 - **Reproduce before fixing:** the FLAC library's line per frame at 24 kHz, in an audio player
   test, before silencing it (FR-526 note).
 - Tests needing the model files skip where they are absent: NFR-P-203 (768 lines within 10 minutes)

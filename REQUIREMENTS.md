@@ -996,7 +996,9 @@ Verified by: not built.
 Priority: Must.
 Each line in `script.toml` shall come to no more than 510 speech-sound symbols in either accent.
 Rationale: the model reads at most 510 symbols; Kokoro cuts a longer string short.
-Verified by: not built.
+Verified by: in part, `TestALineOfAtMostFiveHundredAndTenSymbolsIsAccepted` in
+`internal/domain/speech/speech_test.go` for turning speech sounds into the model's numbers; checking
+each line of `script.toml` is not built.
 
 **FR-507 Every cue has lines**
 Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before machine voices ship.
@@ -1184,7 +1186,9 @@ misaki's own, read in its source on 2026-09-14. The second spelling is added bec
 serves both accents (FR-510).
 Acceptance: Given the line "Flight [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) saved.", when it is made for `bf_emma`,
 then the word record is made from `ˈɹɛkɔːd`; when made for `am_michael`, from `ˈɹɛkɚd`.
-Verified by: not built.
+Verified by: in part, `TestOneSpellingServesBothAccents` and `TestTwoSpellingsGiveBritishThenAmerican`
+in `internal/domain/speech/speech_test.go` for reading the spellings; making the word with them is not
+built.
 
 **FR-530 If the old voice's made lines cannot be deleted, then say so**
 Priority: Must.
@@ -1194,15 +1198,18 @@ Verified by: not built.
 
 **FR-531 If a line's given speech sounds cannot be read, then the build fails**
 Priority: Should.
-If a line in `script.toml` opens a `[word](` it does not close, gives a spelling not held between
-slashes, gives more than two spellings or gives a symbol the model does not read, then a structural
-test shall fail naming the cue and the line.
+If a line in `script.toml` opens a `[word](` it does not close, gives speech sounds for no word or
+for more than one word, gives a spelling not held between slashes, gives an empty spelling, gives
+more than two spellings or gives a symbol the model does not read, then a structural test shall fail
+naming the cue and the line.
 Rationale: a mistake in a spelling is caught when the tests run rather than heard in play (Oliver,
-2026-09-14). The model reads 115 symbols, counted from its tokenizer file on 2026-09-14; square
-brackets and slashes are not among them.
+2026-09-14). The model reads 114 speech sound symbols plus a marker at each end of a line, counted
+from its tokenizer file on 2026-09-14; square brackets and slashes are not among them. Kokoro's own
+code drops a symbol the model does not hold without complaint, so nothing later would catch one.
 Acceptance: Given `"Docked"` holding a line with `[record](/ˈɹɛkɔːd)`, when the structural tests run,
 then one fails naming `Docked` and that line.
-Verified by: not built.
+Verified by: in part, `TestABrokenSpellingIsRefusedSayingWhy` in `internal/domain/speech/speech_test.go`
+for every broken form; the structural test over `script.toml` is not built.
 
 ### 6.2 Machine voices, non-functional
 

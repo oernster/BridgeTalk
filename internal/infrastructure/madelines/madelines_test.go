@@ -206,54 +206,43 @@ func TestALineThatCannotBeWrittenIsRefusedNamingItOnce(t *testing.T) {
 
 // FR-527: DeleteAllBut deletes every other voice's made lines, keeping the voice named; DeleteAll
 // deletes every one. Where nothing was ever made there is nothing to refuse.
-func TestDeletingKeepsOnlyTheVoiceNamed(t *testing.T) {
+// FR-527: deleting removes the voice's lines under the keys given and nothing else; a key with no
+// line is no failure.
+func TestDeletingRemovesOnlyTheKeysGiven(t *testing.T) {
 	t.Parallel()
 	emma, michael := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael")
-	never := madelines.New(filepath.Join(t.TempDir(), "never made"))
-	if err := never.DeleteAllBut(emma); err != nil {
-		t.Errorf("DeleteAllBut with nothing made: %v", err)
-	}
-	if err := never.DeleteAll(); err != nil {
-		t.Errorf("DeleteAll with nothing made: %v", err)
-	}
-
 	store := madelines.New(t.TempDir())
 	written(t, store, emma, "a", []float32{0})
-	written(t, store, michael, "b", []float32{0})
+	written(t, store, emma, "b", []float32{0})
+	written(t, store, michael, "a", []float32{0})
 
-	if err := store.DeleteAllBut(emma); err != nil {
-		t.Fatalf("DeleteAllBut: %v", err)
+	if err := store.Delete(emma, []string{"a", "never made"}); err != nil {
+		t.Fatalf("Delete: %v", err)
 	}
-	if len(store.Keys(michael)) != 0 || !slices.Equal(store.Keys(emma), []string{"a"}) {
-		t.Errorf("after keeping bf_emma: bf_emma %v, am_michael %v", store.Keys(emma), store.Keys(michael))
-	}
-	if err := store.DeleteAll(); err != nil {
-		t.Fatalf("DeleteAll: %v", err)
-	}
-	if len(store.Keys(emma)) != 0 {
-		t.Errorf("bf_emma's lines %v survived DeleteAll", store.Keys(emma))
+
+	if !slices.Equal(store.Keys(emma), []string{"b"}) || !slices.Equal(store.Keys(michael), []string{"a"}) {
+		t.Errorf("after deleting bf_emma's a: bf_emma %v, am_michael %v", store.Keys(emma), store.Keys(michael))
 	}
 }
 
-// FR-530 and FR-237: a voice's made lines that cannot be deleted are refused naming its folder once;
-// the other voices' lines are still deleted.
+// FR-530 and FR-237: a made line that cannot be deleted is refused naming it once; the other keys are
+// still deleted.
 func TestLinesThatCannotBeDeletedAreRefusedNamingThemOnce(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
-	store := madelines.New(dir)
-	emma, michael, daniel := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael"), voiceNamed(t, "bm_daniel")
-	written(t, store, michael, "held", []float32{0})
-	written(t, store, daniel, "free", []float32{0})
-	held, err := os.Open(store.Path(michael, "held"))
+	store := madelines.New(t.TempDir())
+	emma := voiceNamed(t, "bf_emma")
+	written(t, store, emma, "held", []float32{0})
+	written(t, store, emma, "free", []float32{0})
+	held, err := os.Open(store.Path(emma, "held"))
 	if err != nil {
 		t.Fatalf("holding a line open: %v", err)
 	}
 	defer held.Close()
 
-	refusedOnce(t, "a line held open", store.DeleteAllBut(emma), filepath.Join(dir, michael.ID()))
+	refusedOnce(t, "a line held open", store.Delete(emma, []string{"held", "free"}), store.Path(emma, "held"))
 
-	if len(store.Keys(daniel)) != 0 {
-		t.Errorf("bm_daniel's lines %v were not deleted past the refusal", store.Keys(daniel))
+	if !slices.Equal(store.Keys(emma), []string{"held"}) {
+		t.Errorf("bf_emma's lines %v; want free deleted past the refusal", store.Keys(emma))
 	}
 }
 

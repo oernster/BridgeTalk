@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
@@ -112,21 +111,22 @@ func TestTheCastMachineVoiceIsKeptApartFromARecordedOne(t *testing.T) {
 	}
 }
 
-// FR-527: casting a recorded voice deletes every made line and ends the machine voice's cast.
-func TestCastingARecordedVoiceDeletesEveryMadeLine(t *testing.T) {
+// FR-527: casting a recorded voice keeps every made line and ends the machine voice's cast.
+func TestCastingARecordedVoiceKeepsEveryMadeLine(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	store := makingtest.NewStore()
 	fixtureMaking(t, app.session, offeredFiles(nil), store)
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
+	untilMade(t, app)
 
 	if err := app.SelectVoice("Alpha"); err != nil {
 		t.Fatalf("casting Alpha: %v", err)
 	}
 
-	if held := store.Held("bf_emma"); len(held) != 0 || app.session.making.Progress().Voice != "" {
-		t.Errorf("left %v with progress %+v; want no made line and no machine voice", held, app.session.making.Progress())
+	if held := store.Held("bf_emma"); len(held) != 3 || app.session.making.Progress().Voice != "" {
+		t.Errorf("left %v with progress %+v; want the confirmation's 3 lines kept and no machine voice", held, app.session.making.Progress())
 	}
 }
 
@@ -213,11 +213,7 @@ func TestShuttingDownStopsMakingThenReleasesTheModel(t *testing.T) {
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
-	select {
-	case <-maker.Started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("making never started")
-	}
+	makingtest.Await(t, maker.Started, "making starting")
 
 	app.shutdown(context.Background())
 

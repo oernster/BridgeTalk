@@ -1,7 +1,7 @@
 package services_test
 
 // FR-511 to FR-520, FR-527 and FR-530: making a machine voice's lines over fakes of the model, the
-// voice's files and the store.
+// voice's files and the store. Docked stands for the confirmation throughout.
 
 import (
 	"errors"
@@ -33,13 +33,13 @@ func voiceNamed(t *testing.T, id string) machinevoice.Voice {
 	return voice
 }
 
-// makingWith builds the service over twoCues, in the script's own order.
+// makingWith builds the service over twoCues with Docked as the confirmation.
 func makingWith(t *testing.T, lastBritish string, files makingtest.Files, maker *makingtest.Maker, store *makingtest.Store) *services.MakingService {
 	t.Helper()
 	if files.Material.Files == (making.Files{}) {
 		files.Material = makingtest.Material()
 	}
-	return services.NewMakingService(twoCues(t, lastBritish), nil, files, maker, store)
+	return services.NewMakingService(twoCues(t, lastBritish), "Docked", files, maker, store)
 }
 
 // twoCues is a script giving Docked and Undocked three lines each. lastBritish is Undocked's third
@@ -62,9 +62,9 @@ func twoCues(t *testing.T, lastBritish string) script.Voiced {
 	return voiced
 }
 
-// FR-511, FR-512, FR-514 and FR-515: casting makes every line with no current made line, in the
-// voice's own accent, then answers every cue with its made lines.
-func TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent(t *testing.T) {
+// FR-511, FR-512 and FR-515: a cast makes the confirmation's lines not yet made in the voice's own
+// accent, making no other line; with nothing stale, nothing is deleted.
+func TestCastingMakesOnlyTheConfirmationsUnmadeLines(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	emma, michael := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael")
 	store.Hold(emma.ID(), makingtest.Key("bə"))
@@ -76,15 +76,18 @@ func TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent(t *testing.T) {
 	}
 	service.Wait()
 
-	if maker.Made() != 5 || len(store.Held(emma.ID())) != 6 {
-		t.Errorf("made %d lines leaving %d on disk; want 5 made and all 6 on disk", maker.Made(), len(store.Held(emma.ID())))
+	if got, want := store.Held(emma.ID()), keys("bə", "bɪ", "bi"); maker.Made() != 2 || !slices.Equal(got, want) {
+		t.Errorf("made %d leaving %v; want the confirmation's 2 unmade lines: %v", maker.Made(), got, want)
 	}
-	if takes, ok := source.Lookup("Undocked"); !ok || len(takes) != 3 || takes[0] != store.Path(emma, makingtest.Key("du")) {
-		t.Errorf("Undocked answered %v, %v; want its three made lines", takes, ok)
+	if takes, ok := source.Lookup("Docked"); !ok || len(takes) != 3 {
+		t.Errorf("Docked answered %v, %v; want its three made lines", takes, ok)
+	}
+	if _, ok := source.Lookup("Undocked"); ok {
+		t.Error("a cue nothing asked for was made")
 	}
 	got := service.Progress()
-	if got.Voice != "bf_emma" || got.Making || got.Current != 6 || got.Total != 6 || got.CuesServed != 2 {
-		t.Errorf("progress = %+v, want bf_emma done with 6 of 6 current over 2 cues", got)
+	if got.Voice != "bf_emma" || got.Making || got.Current != 3 || got.Total != 6 || got.CuesServed != 1 {
+		t.Errorf("progress = %+v, want bf_emma with 3 of 6 current over 1 cue", got)
 	}
 
 	if _, err := service.Cast(michael); err != nil {
@@ -93,6 +96,9 @@ func TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent(t *testing.T) {
 	service.Wait()
 	if !slices.Contains(store.Held(michael.ID()), makingtest.Key("æə")) {
 		t.Errorf("am_michael's lines %v were not made in his accent", store.Held(michael.ID()))
+	}
+	if slices.ContainsFunc(store.Entries(), func(entry string) bool { return entry == "delete bf_emma" || entry == "delete am_michael" }) {
+		t.Errorf("store saw %v, want no delete with nothing stale", store.Entries())
 	}
 }
 
@@ -109,7 +115,7 @@ func TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	defer service.Stop()
 
 	if takes, ok := source.Lookup("Docked"); !ok || !slices.Equal(takes, []string{store.Path(emma, makingtest.Key("bə"))}) {
@@ -123,12 +129,11 @@ func TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade(t *testing.T) {
 	}
 }
 
-// FR-516 and FR-527: casting another voice stops making, keeping every line written so far, before
-// the other voices' lines are deleted. The line being made when it stopped is no failure; the voice
-// cast before answers nothing from then on.
+// FR-516 and FR-527: casting another voice stops making, keeping every line written so far by either
+// voice. The line being made when it stopped is no failure; the voice cast before answers nothing.
 func TestCastingAnotherVoiceStopsMakingKeepingWhatWasWritten(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
-	maker.BlockOn = 3
+	maker.BlockOn = 2
 	emma, michael := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael")
 	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
@@ -136,34 +141,41 @@ func TestCastingAnotherVoiceStopsMakingKeepingWhatWasWritten(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	if _, err := service.Cast(michael); err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
 	service.Wait()
 
-	if got, want := store.Entries()[:4], []string{"keep bf_emma", "write bf_emma", "write bf_emma", "keep am_michael"}; !slices.Equal(got, want) {
+	want := []string{"write bf_emma", "write am_michael", "write am_michael", "write am_michael"}
+	if got := store.Entries(); !slices.Equal(got, want) {
 		t.Errorf("store saw %v, want %v", got, want)
 	}
-	if got := service.Progress(); got.Voice != "am_michael" || len(got.Failed) != 0 || got.Current != 6 {
-		t.Errorf("progress = %+v, want am_michael done with no failure", got)
+	if got := service.Progress(); got.Voice != "am_michael" || len(got.Failed) != 0 || got.Current != 3 {
+		t.Errorf("progress = %+v, want am_michael's confirmation made with no failure", got)
+	}
+	if len(store.Held(emma.ID())) != 1 {
+		t.Errorf("bf_emma's lines %v, want the one written kept", store.Held(emma.ID()))
 	}
 	if _, ok := before.Lookup("Docked"); ok {
 		t.Error("the voice cast before still answered")
 	}
 }
 
-// FR-518: a line that cannot be made is reported with its cue and the reason; making goes on. A
-// line of no sounds is one; the model failing is another.
+// FR-518: a line that cannot be made is reported with its cue and the reason; making goes on. A line
+// of no sounds is one; the model failing is another.
 func TestALineThatCannotBeMadeIsReportedAndMakingGoesOn(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	maker.FailOn = 1
 	emma := voiceNamed(t, "bf_emma")
 	service := makingWith(t, "", makingtest.Files{}, maker, store)
 
-	if _, err := service.Cast(emma); err != nil {
+	source, err := service.Cast(emma)
+	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
+	service.Wait()
+	cueMaker(t, source).MakeNext("Undocked")
 	service.Wait()
 
 	got := service.Progress()
@@ -182,14 +194,15 @@ func TestALineThatCannotBeMadeIsReportedAndMakingGoesOn(t *testing.T) {
 	}
 }
 
-// FR-520: a made line that cannot be written stops making, saying why.
+// FR-520: a made line that cannot be written stops making, saying why; no line is on its way after.
 func TestAWriteFailureStopsMakingAndSaysWhy(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	store.FailWrite = 2
 	emma := voiceNamed(t, "bf_emma")
 	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
-	if _, err := service.Cast(emma); err != nil {
+	source, err := service.Cast(emma)
+	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
 	service.Wait()
@@ -197,6 +210,9 @@ func TestAWriteFailureStopsMakingAndSaysWhy(t *testing.T) {
 	got := service.Progress()
 	if !errors.Is(got.Stopped, makingtest.ErrDisk) || got.Making || got.Current != 1 || maker.Made() != 2 {
 		t.Errorf("progress = %+v after %d made; want stopped by the disk after the second", got, maker.Made())
+	}
+	if cueMaker(t, source).MakeNext("Undocked") {
+		t.Error("a line was on its way after making stopped")
 	}
 }
 
@@ -227,13 +243,14 @@ func TestAVoiceWhoseFilesCannotBeReadIsRefusedChangingNothing(t *testing.T) {
 	}
 }
 
-// FR-527 and FR-530: casting deletes every other voice's made lines; where one cannot be deleted
-// the cast says so and completes.
-func TestCastingDeletesOtherVoicesLinesSayingWhereItCannot(t *testing.T) {
+// FR-527 and FR-530: a cast deletes that voice's lines no longer current and no other voice's; where
+// one cannot be deleted the cast says so and completes.
+func TestCastingDeletesOnlyTheVoicesStaleLinesSayingWhereItCannot(t *testing.T) {
 	emma, michael := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael")
 	for _, deleteErr := range []error{nil, errDelete} {
 		store := makingtest.NewStore()
 		store.Hold(michael.ID(), "an old line")
+		store.Hold(emma.ID(), "an old line", makingtest.Key("bə"))
 		store.DeleteErr = deleteErr
 		service := makingWith(t, "di", makingtest.Files{}, makingtest.NewMaker(), store)
 
@@ -243,37 +260,38 @@ func TestCastingDeletesOtherVoicesLinesSayingWhereItCannot(t *testing.T) {
 		service.Wait()
 
 		got := service.Progress()
-		if !errors.Is(got.NotDeleted, deleteErr) || got.Current != 6 {
-			t.Errorf("progress = %+v, want the cast complete with NotDeleted %v", got, deleteErr)
+		if !errors.Is(got.NotDeleted, deleteErr) || got.Current != 3 {
+			t.Errorf("progress = %+v, want the confirmation made with NotDeleted %v", got, deleteErr)
 		}
-		if deleteErr == nil && len(store.Held(michael.ID())) != 0 {
-			t.Errorf("am_michael's lines %v survived the cast", store.Held(michael.ID()))
+		if !slices.Equal(store.Held(michael.ID()), []string{"an old line"}) {
+			t.Errorf("am_michael's lines %v, want them untouched", store.Held(michael.ID()))
+		}
+		if old := slices.Contains(store.Held(emma.ID()), "an old line"); old != (deleteErr != nil) {
+			t.Errorf("bf_emma's lines %v with delete failing %v", store.Held(emma.ID()), deleteErr)
 		}
 	}
 }
 
-// FR-516, FR-527 and FR-530: casting a recorded voice stops making and deletes every made line,
-// saying where it cannot; the machine voice cast before answers nothing from then on.
-func TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine(t *testing.T) {
+// FR-516 and FR-527: casting a recorded voice stops making and keeps every made line; the machine
+// voice cast before answers nothing from then on.
+func TestCastingARecordedVoiceStopsMakingKeepingEveryLine(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
-	maker.BlockOn = 1
+	maker.BlockOn = 2
 	emma := voiceNamed(t, "bf_emma")
 	service := makingWith(t, "di", makingtest.Files{}, maker, store)
-	service.CastRecorded()
 
 	source, err := service.Cast(emma)
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
-	<-maker.Started
-	store.DeleteErr = errDelete
+	makingtest.Await(t, maker.Started, "making starting")
 	service.CastRecorded()
 
-	if got, want := store.Entries(), []string{"delete all", "keep bf_emma", "delete all"}; !slices.Equal(got, want) {
+	if got, want := store.Entries(), []string{"write bf_emma"}; !slices.Equal(got, want) {
 		t.Errorf("store saw %v, want %v", got, want)
 	}
-	if got := service.Progress(); got.Voice != "" || got.Making || !errors.Is(got.NotDeleted, errDelete) {
-		t.Errorf("progress = %+v, want no machine voice, not making, the delete failure", got)
+	if got := service.Progress(); got.Voice != "" || got.Making || got.NotDeleted != nil {
+		t.Errorf("progress = %+v, want no machine voice, not making, nothing to delete", got)
 	}
 	if _, ok := source.Lookup("Docked"); ok {
 		t.Error("the machine voice cast before still answered")
@@ -290,6 +308,8 @@ func TestALineSharingSoundsWithOneMadeIsMadeOnce(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
+	service.Wait()
+	cueMaker(t, source).MakeNext("Undocked")
 	service.Wait()
 
 	shared := store.Path(emma, makingtest.Key("bə"))

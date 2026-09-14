@@ -10,7 +10,6 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
-	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
@@ -47,8 +46,8 @@ func shipped(t *testing.T) (cue.Table, script.Voiced) {
 
 // TestAMachineVoiceIsCastWithinFiveSeconds casts the measured voice over an empty store with the real
 // model, then holds how soon its confirmation is current, with the hand-over added, to NFR-P-205. It
-// then asks for the last cue in the making order, which is certainly unmade; it holds how soon that
-// cue's first line is written to FR-514.
+// then asks for the last cue in the table, which nothing has made; it holds how soon that cue's first
+// line is written to FR-514.
 func TestAMachineVoiceIsCastWithinFiveSeconds(t *testing.T) {
 	dir := modelfilestest.Require(t)
 	table, voiced := shipped(t)
@@ -56,12 +55,16 @@ func TestAMachineVoiceIsCastWithinFiveSeconds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse(%q): %v", measuredVoice, err)
 	}
-	order := making.Order(table)
-	confirmation, last := order[0], order[len(order)-1]
+	confirmation, found := table.Confirmation()
+	if !found {
+		t.Fatal("the shipped cue table has no confirmation")
+	}
+	all := table.All()
+	last := all[len(all)-1].ID()
 
 	maker := speechmodel.New(dir)
 	defer maker.Close()
-	service := services.NewMakingService(voiced, order, voicefiles.New(dir), maker, madelines.New(t.TempDir()))
+	service := services.NewMakingService(voiced, confirmation, voicefiles.New(dir), maker, madelines.New(t.TempDir()))
 	defer service.Stop()
 
 	started := time.Now()

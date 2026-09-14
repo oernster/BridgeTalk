@@ -64,6 +64,22 @@ func (t Table) All() []Cue {
 	return out
 }
 
+// Confirmation returns the cue played when a voice is cast (FR-232, FR-521), so the choice is
+// confirmed by hearing it rather than by text changing on screen.
+//
+// It is found by its source rather than by its id, because the id is a word in the cue table and the
+// table is the one place such words live. The game emits nothing with an application source, so the
+// only cues carrying one are the application's own moments. Exactly one such cue exists today; a
+// second would need something to tell them apart; this is where that would go.
+func (t Table) Confirmation() (ID, bool) {
+	for _, item := range t.all {
+		if item.source == event.SourceApplication {
+			return item.id, true
+		}
+	}
+	return "", false
+}
+
 // Len reports how many cues the table holds.
 func (t Table) Len() int { return len(t.all) }
 

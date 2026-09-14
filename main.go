@@ -19,7 +19,6 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
-	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
@@ -48,7 +47,9 @@ const pollInterval = 250 * time.Millisecond
 const appTitle = product.Name
 
 // Window geometry. The default is wide enough for the reaction log's columns without
-// horizontal scrolling; the minimum is where the nav band stops fitting on one row.
+// horizontal scrolling and tall enough for the Cast pane to reach its machine voices,
+// which sit below the recorded ones; the minimum is where the nav band stops fitting
+// on one row.
 //
 // The minimum is measured rather than chosen; it is re-measured whenever the band
 // gains a button. The band needs 1022 pixels for its eight buttons, the volume slider
@@ -57,8 +58,8 @@ const appTitle = product.Name
 // visibly apart. The default grew with the icons, so a window opened at it has room
 // for the band and a useful pane rather than the band and a sliver.
 const (
-	windowWidth     = 1120
-	windowHeight    = 800
+	windowWidth     = 1344
+	windowHeight    = 960
 	windowMinWidth  = 1045
 	windowMinHeight = 600
 )
@@ -366,5 +367,7 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	dir := voicefiles.Beside(executable)
 	maker := speechmodel.New(dir)
 	files := filesUnless(voicefiles.New(dir), errors.Join(notFound, noStore))
-	return services.NewMakingService(voiced, making.Order(table), files, maker, madelines.New(made)), maker, nil
+	// A table without the confirmation's cue makes nothing on a cast; every line is then made on call.
+	confirmation, _ := table.Confirmation()
+	return services.NewMakingService(voiced, confirmation, files, maker, madelines.New(made)), maker, nil
 }

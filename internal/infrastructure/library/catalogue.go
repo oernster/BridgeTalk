@@ -5,28 +5,8 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
-	"github.com/oernster/bridge-talk/internal/domain/event"
 	"github.com/oernster/bridge-talk/internal/domain/selection"
 )
-
-// acknowledgement finds the cue played once when a voice is chosen, so the choice is
-// confirmed by hearing it rather than by text changing on screen.
-//
-// It is found by its source rather than by its id, because the id is a word in the cue
-// table and the table is the one place such words live; writing it here would be a
-// second home for it that has to be kept in step. The game emits nothing with an
-// application source, so the only cues carrying one are the application's own moments.
-//
-// Exactly one such cue exists today. A second would need something to tell them apart,
-// and this is where that would go.
-func acknowledgement(table cue.Table) (cue.ID, bool) {
-	for _, item := range table.All() {
-		if item.Source() == event.SourceApplication {
-			return item.ID(), true
-		}
-	}
-	return "", false
-}
 
 // Catalogue answers, for a cue, what the chosen voice can play for it.
 //
@@ -66,7 +46,7 @@ func (c *Catalogue) Clips(id cue.ID) (ports.Performance, bool) {
 // Nothing here is worth an error. A voice with no acknowledgement recorded is silent
 // when it is chosen rather than broken.
 func (c *Catalogue) Acknowledgement() (string, bool) {
-	id, named := acknowledgement(c.table)
+	id, named := c.table.Confirmation()
 	if !named {
 		return "", false
 	}

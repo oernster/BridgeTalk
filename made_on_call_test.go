@@ -14,14 +14,10 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/event"
 )
 
-// makingDeadline is how long a test waits for the fakes to finish making, far beyond the moment they
-// take.
-const makingDeadline = 2 * time.Second
-
-// untilMade waits for making to end, failing the test past makingDeadline.
+// untilMade waits for making to end, failing the test past makingtest.AwaitLimit.
 func untilMade(t *testing.T, app *App) {
 	t.Helper()
-	deadline := time.Now().Add(makingDeadline)
+	deadline := time.Now().Add(makingtest.AwaitLimit)
 	for app.session.making.Progress().Making {
 		if time.Now().After(deadline) {
 			t.Fatal("making never ended")
@@ -46,7 +42,7 @@ func TestAConfirmationWrittenAfterTheCastIsPlayedOnTheNextTick(t *testing.T) {
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	app.tickMaking()
 	if got := playedSoFar(player); len(got) != 0 {
 		t.Fatalf("played %v before the confirmation was written", got)
@@ -80,7 +76,7 @@ func TestACueFiredBeforeItsLineIsMadeWaitsThroughTheFacade(t *testing.T) {
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	source.events = []event.Event{event.New(
 		event.SourceJournal, "Docked", event.EdgeNone, map[string]any{}, time.Date(2026, 9, 14, 11, 0, 0, 0, time.UTC),
 	)}
@@ -109,7 +105,7 @@ func TestAConfirmationIsForgottenWhenAnotherVoiceIsCastFirst(t *testing.T) {
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	if err := app.SelectVoice("Alpha"); err != nil {
 		t.Fatalf("casting Alpha: %v", err)
 	}

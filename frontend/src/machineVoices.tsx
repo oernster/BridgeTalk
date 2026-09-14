@@ -12,18 +12,18 @@ import { castLabel, counted } from './castWords'
 import type { Outcome } from './chooser'
 import { nothingMade } from './making'
 
-/** notCast is what an uncast machine voice's row says: only the cast voice keeps made lines. */
-const notCast = 'Its lines are made when it is cast.'
+/** notCast is what an uncast machine voice's row says: its lines are made as they are needed. */
+const notCast = 'Its lines are made as they are needed.'
 
 /**
  * progressText reads how far making has got for the cast voice: the lines made out of the lines
  * the script holds (FR-515), then the moments with a made line out of every moment (FR-522).
  */
 function progressText(making: Making, total: number): string {
-  const figures =
+  return (
     `${making.current.toLocaleString()} of ${counted(making.total, 'line', 'lines')} made; ` +
     `${making.cuesServed.toLocaleString()} of ${counted(total, 'moment', 'moments')} spoken`
-  return making.making ? `Still making: ${figures}` : figures
+  )
 }
 
 /**
@@ -69,9 +69,8 @@ export function MachineVoices({
     <>
       <h3>Machine voices</h3>
       <p className="lede">
-        The application speaks these itself, making each line on this machine once the voice is
-        cast. Only the cast machine voice keeps its lines, so casting another makes its lines
-        afresh.
+        The application speaks these itself, making each line on this machine the first time it is
+        needed and keeping it.
       </p>
       <div className="voices">
         {voices.map((voice) => {

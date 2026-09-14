@@ -57,7 +57,7 @@ describe('the machine voices', () => {
     expect(screen.getByRole('heading', { name: 'Machine voices' })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Cast Emma \(British, female\)/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: /^Cast Michael \(American, male\)/ })).toBeTruthy()
-    expect(screen.getAllByText('Its lines are made when it is cast.')).toHaveLength(2)
+    expect(screen.getAllByText('Its lines are made as they are needed.')).toHaveLength(2)
   })
 
   it('casts a machine voice by its id', async () => {
@@ -80,7 +80,7 @@ describe('the machine voices', () => {
     making.mockResolvedValue({ ...idle, voice: 'bf_emma', making: true, current: 100, total: 768, cuesServed: 12 })
     await show('bf_emma', true)
 
-    expect(await screen.findByText('Still making: 100 of 768 lines made; 12 of 256 moments spoken')).toBeTruthy()
+    expect(await screen.findByText('100 of 768 lines made; 12 of 256 moments spoken')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Emma \(British, female\) is cast as your ship's voice/ })).toBeTruthy()
 
     act(() => handlers.get('making')?.({ ...idle, voice: 'bf_emma', current: 768, total: 768, cuesServed: 256 }))

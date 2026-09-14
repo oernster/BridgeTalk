@@ -108,32 +108,13 @@ func (s Store) Write(voice machinevoice.Voice, key string, samples []float32) er
 	})
 }
 
-// DeleteAllBut deletes the made lines of every voice except the one given (FR-527), going on past
-// any that cannot be deleted and naming each (FR-530).
-func (s Store) DeleteAllBut(voice machinevoice.Voice) error { return s.deleteExcept(voice.ID()) }
-
-// DeleteAll deletes every made line (FR-527), naming any that cannot be deleted (FR-530).
-func (s Store) DeleteAll() error { return s.deleteExcept(noFolder) }
-
-// noFolder is a name no folder has, so deleting except it keeps nothing.
-const noFolder = ""
-
-// deleteExcept deletes everything under the store's folder but the folder named keep.
-func (s Store) deleteExcept(keep string) error {
-	entries, err := os.ReadDir(s.dir)
-	if errors.Is(err, fs.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", s.dir, refusal.Reason(err))
-	}
+// Delete deletes a voice's made lines under the keys given (FR-527), going on past any that cannot be
+// deleted and naming each once (FR-530). A key with no made line deletes nothing and is no failure.
+func (s Store) Delete(voice machinevoice.Voice, keys []string) error {
 	var failed []error
-	for _, entry := range entries {
-		if entry.Name() == keep {
-			continue
-		}
-		path := filepath.Join(s.dir, entry.Name())
-		if err := os.RemoveAll(path); err != nil {
+	for _, key := range keys {
+		path := s.Path(voice, key)
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			failed = append(failed, fmt.Errorf("deleting %s: %w", path, refusal.Reason(err)))
 		}
 	}

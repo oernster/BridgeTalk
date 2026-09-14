@@ -46,23 +46,23 @@ func Key(sounds string, files Files) string {
 type Plan struct {
 	lines   []Line
 	current map[string]bool
+	onDisk  []string
 }
 
-// New sets every line of the script, in the voice's accent, against the keys already on disk. The
-// lines follow the order given (Order); a cue it leaves out follows in the script's own order.
-func New(voiced script.Voiced, order []cue.ID, accent machinevoice.Accent, files Files, onDisk []string) Plan {
+// New sets every line of the script, in the voice's accent, against the keys already on disk.
+func New(voiced script.Voiced, accent machinevoice.Accent, files Files, onDisk []string) Plan {
 	current := make(map[string]bool, len(onDisk))
 	for _, key := range onDisk {
 		current[key] = true
 	}
 	var lines []Line
-	for _, id := range sequence(voiced.Cues(), order) {
+	for _, id := range voiced.Cues() {
 		sounds, _ := voiced.Sounds(id, accent)
 		for index, each := range sounds {
 			lines = append(lines, Line{Cue: id, Index: index, Sounds: each, Key: Key(each, files)})
 		}
 	}
-	return Plan{lines: lines, current: current}
+	return Plan{lines: lines, current: current, onDisk: slices.Clone(onDisk)}
 }
 
 // ToMake returns the lines with no current made line, cue by cue in the plan's order (FR-511, FR-512).
@@ -88,6 +88,22 @@ func (p Plan) Unmade(id cue.ID) []Line {
 	return unmade
 }
 
+// Stale returns the keys on disk that no line holds, in the order they were given: made lines no
+// longer current, which casting the voice deletes (FR-513, FR-527).
+func (p Plan) Stale() []string {
+	held := make(map[string]bool, len(p.lines))
+	for _, line := range p.lines {
+		held[line.Key] = true
+	}
+	var stale []string
+	for _, key := range p.onDisk {
+		if !held[key] {
+			stale = append(stale, key)
+		}
+	}
+	return stale
+}
+
 // Total returns how many lines the voice speaks (FR-515).
 func (p Plan) Total() int { return len(p.lines) }
 
@@ -101,7 +117,7 @@ func (p Plan) WithMade(key string) Plan {
 	current := make(map[string]bool, len(p.current)+1)
 	maps.Copy(current, p.current)
 	current[key] = true
-	return Plan{lines: p.lines, current: current}
+	return Plan{lines: p.lines, current: current, onDisk: p.onDisk}
 }
 
 // Made reports whether the made line under key is current.

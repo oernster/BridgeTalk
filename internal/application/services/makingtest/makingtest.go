@@ -8,6 +8,8 @@ import (
 	"errors"
 	"slices"
 	"sync"
+	"testing"
+	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
@@ -116,8 +118,8 @@ func (f *Maker) Closed() int {
 }
 
 // Store keeps made lines in memory by voice id, logging every write and delete in order.
-// Counting writes from one, write FailWrite fails with ErrDisk; every delete fails with DeleteErr
-// where one is given.
+// Counting writes from one, write FailWrite fails with ErrDisk; every delete fails with DeleteErr,
+// deleting nothing, where one is given.
 type Store struct {
 	FailWrite int
 	DeleteErr error
@@ -160,27 +162,15 @@ func (f *Store) Path(voice machinevoice.Voice, key string) string { return PathO
 // PathOf is where Store plays a made line from: the voice's id, then the key.
 func PathOf(id, key string) string { return id + "/" + key + ".flac" }
 
-// DeleteAllBut deletes every other voice's made lines, logging it.
-func (f *Store) DeleteAllBut(voice machinevoice.Voice) error {
+// Delete deletes a voice's made lines under the keys given, logging it.
+func (f *Store) Delete(voice machinevoice.Voice, keys []string) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.log = append(f.log, "keep "+voice.ID())
+	f.log = append(f.log, "delete "+voice.ID())
 	if f.DeleteErr != nil {
 		return f.DeleteErr
 	}
-	f.keys = map[string][]string{voice.ID(): f.keys[voice.ID()]}
-	return nil
-}
-
-// DeleteAll deletes every made line, logging it.
-func (f *Store) DeleteAll() error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.log = append(f.log, "delete all")
-	if f.DeleteErr != nil {
-		return f.DeleteErr
-	}
-	f.keys = map[string][]string{}
+	f.keys[voice.ID()] = slices.DeleteFunc(f.keys[voice.ID()], func(key string) bool { return slices.Contains(keys, key) })
 	return nil
 }
 
@@ -196,4 +186,22 @@ func (f *Store) Entries() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return slices.Clone(f.log)
+}
+
+// AwaitLimit is how long a test waits on the fakes. They answer in microseconds, so reaching it means
+// what was waited for is never going to happen.
+const AwaitLimit = 2 * time.Second
+
+// Await waits for ch to close, failing the test with what never happened once AwaitLimit passes, so a
+// test whose making never starts fails at once rather than blocking until the whole run times out.
+func Await(t testing.TB, ch <-chan struct{}, what string) { awaitWithin(t, ch, what, AwaitLimit) }
+
+// awaitWithin is Await with the limit given.
+func awaitWithin(t testing.TB, ch <-chan struct{}, what string, limit time.Duration) {
+	t.Helper()
+	select {
+	case <-ch:
+	case <-time.After(limit):
+		t.Fatalf("%s did not happen within %v", what, limit)
+	}
 }

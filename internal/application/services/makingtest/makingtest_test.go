@@ -97,6 +97,13 @@ func TestTheMakerPausesUntilResumedOrStopped(t *testing.T) {
 	}
 }
 
+func TestAwaitReturnsOnceTheChannelCloses(t *testing.T) {
+	t.Parallel()
+	closed := make(chan struct{})
+	close(closed)
+	makingtest.Await(t, closed, "a closed channel closing")
+}
+
 func TestTheStoreKeepsLogsAndFailsWhenTold(t *testing.T) {
 	t.Parallel()
 	voice := emma(t)
@@ -116,21 +123,16 @@ func TestTheStoreKeepsLogsAndFailsWhenTold(t *testing.T) {
 	if got := store.Path(voice, "a"); got != "bf_emma/a.flac" || got != makingtest.PathOf("bf_emma", "a") {
 		t.Errorf("Path = %q, want bf_emma/a.flac as PathOf gives it", got)
 	}
-	if err := store.DeleteAllBut(voice); err != nil || len(store.Held("am_michael")) != 0 {
-		t.Errorf("DeleteAllBut = %v leaving %v; want am_michael's line gone", err, store.Held("am_michael"))
-	}
-	if err := store.DeleteAll(); err != nil || len(store.Held("bf_emma")) != 0 {
-		t.Errorf("DeleteAll = %v leaving %v; want nothing left", err, store.Held("bf_emma"))
-	}
-
 	store.DeleteErr = errRefused
-	if err := store.DeleteAllBut(voice); !errors.Is(err, errRefused) {
-		t.Errorf("DeleteAllBut = %v, want the delete failing", err)
+	if err := store.Delete(voice, []string{"a"}); !errors.Is(err, errRefused) || !slices.Equal(store.Keys(voice), []string{"a"}) {
+		t.Errorf("Delete = %v leaving %v; want the delete failing with the line kept", err, store.Keys(voice))
 	}
-	if err := store.DeleteAll(); !errors.Is(err, errRefused) {
-		t.Errorf("DeleteAll = %v, want the delete failing", err)
+	store.DeleteErr = nil
+	if err := store.Delete(voice, []string{"a"}); err != nil || len(store.Keys(voice)) != 0 || len(store.Held("am_michael")) != 1 {
+		t.Errorf("Delete = %v leaving %v and %v; want bf_emma's line gone and am_michael's kept",
+			err, store.Keys(voice), store.Held("am_michael"))
 	}
-	want := []string{"write bf_emma", "keep bf_emma", "delete all", "keep bf_emma", "delete all"}
+	want := []string{"write bf_emma", "delete bf_emma", "delete bf_emma"}
 	if got := store.Entries(); !slices.Equal(got, want) {
 		t.Errorf("Entries = %v, want %v", got, want)
 	}

@@ -4,6 +4,20 @@ Open work only. Each milestone ends with the gate green (`test.ps1`: gofmt, go v
 and the coverage floor) plus staticcheck, then a commit block. Built inside out, as REQUIREMENTS.md
 section 10 says: domain, then application, then infrastructure, then user interface.
 
+## M11: Each line made the first time it is needed, every voice keeping its lines
+
+Oliver accepted on 2026-09-14, replacing Option B's making of every line: FR-511, FR-512, FR-514's first
+sentence, FR-515, FR-516's note, FR-527 and FR-530 amended; NFR-P-203 withdrawn; NFR-C-502 kept. His
+three choices: a voice's lines no longer current are deleted when it is cast; the model is loaded in
+the background when a run starts with a machine voice, after its memory is measured and shown to him;
+the complete-script benchmark stays on every build for NFR-C-502 without a time limit.
+
+1. Build the background load: the model loaded when a run starts with a machine voice. Loading it and
+   making one line peaked at 408.5 MB working set and 452.8 MB private bytes against 4.0 to 7.6 MB and
+   33.5 to 46.5 MB without it (measured 2026-09-14, three runs each); Oliver accepted building it the
+   same day. Whether that grows over hundreds of lines is not measured.
+2. The gate, staticcheck, the sweeps, then a commit block.
+
 ## What exists today
 
 - `internal/domain/machinevoice` holds the 28 voices offered, the accent each speaks with and the name
@@ -21,12 +35,15 @@ section 10 says: domain, then application, then infrastructure, then user interf
   them (FR-506, FR-532 to FR-534). Run `go run ./tools/sounds` from the repository root after
   changing `script.toml`.
 - `internal/domain/making` gives each line's key from its speech sounds, the style file and the
-  model (FR-513). Set against the keys on disk, it lists the lines still to make and counts how many
-  are current and how many cues are served (FR-511, FR-512, FR-515, FR-522).
-- `services.MakingService` makes a cast machine voice's missing lines over the ports in
-  `ports/making.go`, tested with hand-written fakes (FR-511, FR-512, FR-514, FR-516, FR-518 to
-  FR-520, FR-527, FR-530). The audio source a cast answers with plays current made lines alone.
-  `script/scripttest` builds a voiced script for every suite that needs one.
+  model (FR-513). Set against the keys on disk, it lists the lines still to make, a cue's lines still
+  to make and the keys on disk no line holds; it counts how many lines are current and how many cues
+  are served (FR-511, FR-512, FR-514, FR-515, FR-522, FR-527).
+- `services.MakingService` makes a cast machine voice's confirmation when it is cast and every other
+  line the first time its cue asks through `MakeNext`, over the ports in `ports/making.go`, tested with
+  hand-written fakes (FR-511, FR-512, FR-514, FR-516, FR-518 to FR-520, FR-527, FR-530). A cast deletes
+  that voice's lines no longer current; casting a recorded voice deletes nothing. The audio source a
+  cast answers with plays current made lines alone. `script/scripttest` builds a voiced script for
+  every suite that needs one.
 - `library.Catalogue` answers from `ports.AudioSource` under the name it is given (FR-501); a
   scanned `library.Voice` is the one implementation. `catalogueOf` in `voices.go` builds it for a
   recorded voice; `session.speakWith` in `main.go` rebuilds it over either kind of voice on every cast.
@@ -52,22 +69,23 @@ section 10 says: domain, then application, then infrastructure, then user interf
   model is loaded when the first line is made, then kept until `Close`; a load that fails is tried
   again on the next line. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
   shipped `Docked` line for `bf_emma` from the real model files.
-- `tests/machinevoice` makes the shipped script for `bf_emma` with the real model, store and making
-  service, failing over NFR-P-203's ten minutes or NFR-C-502's 60 MB. It carries the `benchmarks`
-  build tag: `./test.ps1 -Benchmarks` and every build run it, the everyday gate does not (Oliver,
-  2026-09-14). It skipped while the script lacked lines for any cue; it has not yet been run over the
-  complete script.
+- `tests/machinevoice` holds two tests over the real model, store and making service, carrying the
+  `benchmarks` build tag: `./test.ps1 -Benchmarks` and every build run them, the everyday gate does not
+  (Oliver, 2026-09-14). `TestMakingACompleteScriptKeepsWithinDisk` asks `MakeNext` for every cue's
+  lines for `bf_emma`, then fails over NFR-C-502's 60 MB with no time limit; on 2026-09-14 it made all
+  768 lines in 3 m 17 s, taking 51.7 MB. `TestAMachineVoiceIsCastWithinFiveSeconds` holds NFR-P-205.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
-  stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
-  (or all of them), naming what it cannot delete (FR-527, FR-530). Its folder sits in the product's local
-  data folder, which `internal/infrastructure/appdata` finds for it and for `library` (FR-523).
+  stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes a
+  voice's made lines under the keys given, naming once each it cannot delete (FR-527, FR-530). Its
+  folder sits in the product's local data folder, which `internal/infrastructure/appdata` finds for it
+  and for `library` (FR-523).
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
 - Casting a machine voice is wired behind the facade. `CastMachineVoice` in `machine.go` casts through
   the making service and confirms in a current made line (FR-511, FR-519, FR-521); casting a recorded
-  voice deletes every made line (FR-527); either kind is kept apart from the other (FR-540). A run
+  voice keeps every made line (FR-527); either kind is kept apart from the other (FR-540). A run
   opens with the kept machine voice, falling back to a recorded one with a warning (FR-512, FR-541);
   a rescan keeps it (FR-542); closing stops making, then releases the model. `newMaking` in `main.go`
   reads the model files from `models` beside the executable (FR-539), refusing every machine voice
@@ -79,15 +97,15 @@ section 10 says: domain, then application, then infrastructure, then user interf
   whether the cast voice is a machine voice, so a recordings folder carrying its id is not marked cast.
 - The tray's Voice menu lists the machine voices after the recorded voices under a separator, each
   cast by its id; its check mark and hover text match a voice by name and kind (FR-509, FR-540).
-- A cast makes its lines in `making.Order`: the confirmation first, then cues by priority in table
-  order (FR-511). `MakingService` makes from a queue that `MakeNext` reorders; the audio source a cast
-  answers with is also a `ports.CueMaker` (FR-514).
+- `MakingService` makes from a queue that `MakeNext` reorders, starting a run where none is going. A
+  cast's audio source carries that cast's generation, so an old cast never adds to a new cast's queue.
+  The audio source a cast answers with is also a `ports.CueMaker` (FR-514).
 - `ReactionService` records `making` for a cue with nothing made, waits up to 2 s for its line and
   hands it over on `Tick`, which the poll tick calls through `tickMaking` in `machine.go`. A machine
   cast's confirmation plays once it is written (FR-521). `TestAMachineVoiceIsCastWithinFiveSeconds`
-  in `tests/machinevoice` measured 1.316 s for NFR-P-205 on 2026-09-14.
-- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 370. New code
+  in `tests/machinevoice` measured 1.304 s for NFR-P-205 on 2026-09-14.
+- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 373. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
-  FLAC writer. They are the
-  starting point for the infrastructure, rewritten to the house standard rather than copied.
+  FLAC writer. They are the starting point for the infrastructure, rewritten to the house standard
+  rather than copied.

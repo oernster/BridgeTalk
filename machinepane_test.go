@@ -51,7 +51,8 @@ func TestTheCastPaneOffersEveryMachineVoiceByItsName(t *testing.T) {
 	}
 }
 
-// FR-515 and FR-522: once making ends, the pane reads every line made and the moments spoken for.
+// FR-511, FR-515 and FR-522: once a cast's making ends, the pane reads the confirmation's lines made
+// out of every line and the one moment spoken for.
 func TestMakingReportsHowFarItHasGot(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	if idle := app.Making(); idle.Voice != "" || idle.Failed == nil {
@@ -63,7 +64,7 @@ func TestMakingReportsHowFarItHasGot(t *testing.T) {
 
 	got := madeOut(t, app)
 
-	want := MakingDTO{Voice: "bf_emma", Current: 6, Total: 6, CuesServed: 2, Failed: []LineFailureDTO{}}
+	want := MakingDTO{Voice: "bf_emma", Current: 3, Total: 6, CuesServed: 1, Failed: []LineFailureDTO{}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Making = %+v, want %+v", got, want)
 	}
@@ -76,6 +77,7 @@ func TestMakingReportsWhatWentWrong(t *testing.T) {
 	store := makingtest.NewStore()
 	store.FailWrite = 2
 	store.DeleteErr = errors.New("a made line is in use")
+	store.Hold("bf_emma", "a line no longer current")
 	fixtureMaking(t, app.session, offeredFiles(nil), store).FailOn = 1
 	if err := app.CastMachineVoice("bf_emma"); err != nil {
 		t.Fatalf("casting bf_emma: %v", err)
@@ -114,8 +116,8 @@ func TestAPollAnnouncesMakingOnlyWhenItHasMoved(t *testing.T) {
 	if seen := log.countEmitted(makingEvent); seen != 1 {
 		t.Errorf("announced making %d times over two polls, want once", seen)
 	}
-	if got, ok := log.lastEmitted(t, makingEvent).(MakingDTO); !ok || got.Current != 6 {
-		t.Errorf("announced %+v, want the six lines made", got)
+	if got, ok := log.lastEmitted(t, makingEvent).(MakingDTO); !ok || got.Current != 3 {
+		t.Errorf("announced %+v, want the confirmation's three lines made", got)
 	}
 }
 

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
-	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles/modelfilestest"
@@ -22,8 +22,6 @@ import (
 const bytesPerMB = 1 << 20
 
 const (
-	// timeLimit is the longest making a complete script for one voice may take (NFR-P-203).
-	timeLimit = 10 * time.Minute
 	// diskLimit is the most a complete script's made lines for one voice may take (NFR-C-502).
 	diskLimit = 60 * bytesPerMB
 	// pollInterval is how often the test asks how far making has got.
@@ -34,14 +32,10 @@ const (
 // section 6.1 were measured with.
 const measuredVoice = "bf_emma"
 
-// TestMakingACompleteScriptKeepsWithinTimeAndDisk makes every line of the shipped script for one
-// voice, then holds how long that took to NFR-P-203 and what the made lines take on disk to
-// NFR-C-502. While the script lacks lines for some cues it skips, saying how far the script has got,
-// since a part of the script measures neither requirement.
-//
-// Proved by planting the skip away over the incomplete script, first with the real limits, which
-// passed, then with each limit cut below what was measured, which failed naming that requirement.
-func TestMakingACompleteScriptKeepsWithinTimeAndDisk(t *testing.T) {
+// TestMakingACompleteScriptKeepsWithinDisk asks for every cue's lines of the shipped script for one
+// voice, then holds what the made lines take on disk to NFR-C-502, logging how long making took. While
+// the script lacks lines for some cues it skips, since a part of the script measures nothing.
+func TestMakingACompleteScriptKeepsWithinDisk(t *testing.T) {
 	dir := modelfilestest.Require(t)
 	table, voiced := shipped(t)
 	loaded, err := config.LoadScript(table)
@@ -60,24 +54,29 @@ func TestMakingACompleteScriptKeepsWithinTimeAndDisk(t *testing.T) {
 	store := t.TempDir()
 	maker := speechmodel.New(dir)
 	defer maker.Close()
-	service := services.NewMakingService(voiced, making.Order(table), voicefiles.New(dir), maker, madelines.New(store))
+	confirmation, _ := table.Confirmation()
+	service := services.NewMakingService(voiced, confirmation, voicefiles.New(dir), maker, madelines.New(store))
 	defer service.Stop()
 
 	started := time.Now()
-	if _, err := service.Cast(voice); err != nil {
+	source, err := service.Cast(voice)
+	if err != nil {
 		t.Fatalf("Cast(%s): %v", measuredVoice, err)
 	}
-	for service.Progress().Making && time.Since(started) <= timeLimit {
+	onCall, ok := source.(ports.CueMaker)
+	if !ok {
+		t.Fatalf("the audio source %T makes no line on call", source)
+	}
+	for _, id := range voiced.Cues() {
+		onCall.MakeNext(id)
+	}
+	for service.Progress().Making {
 		time.Sleep(pollInterval)
 	}
 	took := time.Since(started)
-	service.Stop()
 
 	progress := service.Progress()
 	t.Logf("made %d of %d lines for %s in %v", progress.Current, progress.Total, measuredVoice, took.Round(time.Millisecond))
-	if took > timeLimit {
-		t.Errorf("NFR-P-203: making took %v, over the %v limit", took.Round(time.Millisecond), timeLimit)
-	}
 	if len(progress.Failed) > 0 || progress.Stopped != nil || progress.Current != progress.Total {
 		t.Fatalf("made %d of %d lines; %d failed, stopped by %v", progress.Current, progress.Total, len(progress.Failed), progress.Stopped)
 	}

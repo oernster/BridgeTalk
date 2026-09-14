@@ -46,13 +46,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
-| `internal/infrastructure/madelines` | 98.4% | 98% | `test.ps1` |
+| `internal/infrastructure/madelines` | 100% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 82% | 75% | `test.ps1` |
+| `internal/infrastructure/audio` | 94.1% | 80% | `test.ps1` |
+| the root package (the Wails facade) | 81.5% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 91.5% | 91% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 67.4% | 67% | `test.ps1` |
 | `internal/infrastructure/runlog` | 51.9% | 51% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
@@ -62,7 +62,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-612 test functions, which expand to 673 runs once their subtests are counted (measured on
+614 test functions, which expand to 675 runs once their subtests are counted (measured on
 2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
 Twenty-four of them are the structural tests in `tests/structural`, which scan the source
@@ -85,22 +85,27 @@ to the model's tokenizer file.
 | `audition.tsx` | 100% | 100% |
 | `autoscroll.ts` | 100% | 100% |
 | `cast.tsx` | 100% | 100% |
+| `castWords.ts` | 100% | 100% |
 | `chooser.tsx` | 100% | 100% |
 | `guideContent.ts` | 100% | 100% |
 | `icons.tsx` | 100% | 100% |
+| `machineVoices.tsx` | 100% | 100% |
+| `making.ts` | 100% | 100% |
 | `missingTakes.tsx` | 100% | 100% |
 | `moments.tsx` | 100% | 100% |
 | `preferences.ts` | 100% | 100% |
-| `App.tsx` | 100% | 97.3% |
-| `panes.tsx` | 100% | 94.8% |
-| `hooks.ts` | 100% | 94.6% |
-| `chrome.tsx` | 100% | 94.1% |
+| `testLayout.ts` | 100% | 100% |
+| `testState.ts` | 100% | 100% |
+| `App.tsx` | 100% | 97.5% |
+| `hooks.ts` | 100% | 96.3% |
+| `panes.tsx` | 100% | 95.5% |
+| `chrome.tsx` | 100% | 94.3% |
 | `guide.tsx` | 100% | 89.5% |
-| `dialogs.tsx` | 99.2% | 64.5% |
+| `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
-| **all files** | **99.2%** | **95.7%** |
+| **all files** | **99.3%** | **96.3%** |
 
-194 tests across 16 files, run under Vitest with jsdom.
+200 tests across 17 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit

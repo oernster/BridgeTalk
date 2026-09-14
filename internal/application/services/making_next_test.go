@@ -1,24 +1,15 @@
 package services_test
 
-// FR-511 and FR-514: the order a machine voice's lines are made in; a cue's lines made next when
-// the cue fires with none made.
+// FR-514: a cue's lines made next when the cue fires with none made, starting a run where none is
+// going.
 
 import (
 	"slices"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
-	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
-	"github.com/oernster/bridge-talk/internal/domain/cue"
 )
-
-// makingInOrder builds the service over twoCues, making cues in the order given.
-func makingInOrder(t *testing.T, order []cue.ID, maker *makingtest.Maker, store *makingtest.Store) *services.MakingService {
-	t.Helper()
-	files := makingtest.Files{Material: makingtest.Material()}
-	return services.NewMakingService(twoCues(t, "di"), order, files, maker, store)
-}
 
 // cueMaker is the audio source's way of making a cue's lines on call.
 func cueMaker(t *testing.T, source ports.AudioSource) ports.CueMaker {
@@ -39,36 +30,20 @@ func keys(sounds ...string) []string {
 	return out
 }
 
-// FR-511: a cast makes the cues in the order given.
-func TestLinesAreMadeInTheOrderGiven(t *testing.T) {
-	store, maker := makingtest.NewStore(), makingtest.NewMaker()
-	emma := voiceNamed(t, "bf_emma")
-	service := makingInOrder(t, []cue.ID{"Undocked"}, maker, store)
-
-	if _, err := service.Cast(emma); err != nil {
-		t.Fatalf("Cast: %v", err)
-	}
-	service.Wait()
-
-	if got, want := store.Held(emma.ID()), keys("du", "dɪ", "di", "bə", "bɪ", "bi"); !slices.Equal(got, want) {
-		t.Errorf("made %v, want Undocked's lines before Docked's: %v", got, want)
-	}
-}
-
-// FR-514: a cue's unmade lines are made next, first line first, after the line already being made;
-// each line is made once.
+// A cue's unmade lines are made next, first line first, after the line already being made; each line
+// is made once.
 func TestMakeNextPutsACuesUnmadeLinesAheadOfTheRest(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	maker.PauseOn = 1
 	emma := voiceNamed(t, "bf_emma")
 	store.Hold(emma.ID(), makingtest.Key("dɪ"))
-	service := makingInOrder(t, []cue.ID{"Docked", "Undocked"}, maker, store)
+	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
 	source, err := service.Cast(emma)
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	if !cueMaker(t, source).MakeNext("Undocked") {
 		t.Fatal("MakeNext(Undocked) said no line is on its way")
 	}
@@ -83,41 +58,59 @@ func TestMakeNextPutsACuesUnmadeLinesAheadOfTheRest(t *testing.T) {
 	}
 }
 
-// FR-514: no line is on its way for a cue with none to make, a cue the script lacks, a cue asked for
-// once making has ended or a cast that is over.
+// With nothing being made, a cue asked for starts making of its own.
+func TestMakeNextStartsMakingWhenNothingIsUnderWay(t *testing.T) {
+	store, maker := makingtest.NewStore(), makingtest.NewMaker()
+	emma := voiceNamed(t, "bf_emma")
+	service := makingWith(t, "di", makingtest.Files{}, maker, store)
+
+	source, err := service.Cast(emma)
+	if err != nil {
+		t.Fatalf("Cast: %v", err)
+	}
+	service.Wait()
+	if service.Progress().Making {
+		t.Fatal("making was still under way once the confirmation was made")
+	}
+
+	if !cueMaker(t, source).MakeNext("Undocked") {
+		t.Fatal("MakeNext(Undocked) said no line is on its way")
+	}
+	service.Wait()
+
+	if got := service.Progress(); got.Current != 6 || got.Making {
+		t.Errorf("progress = %+v, want every line made and making over", got)
+	}
+}
+
+// No line is on its way for a cue with none to make, a cue the script lacks, a cast that is over or a
+// cast stopped as the application closes.
 func TestMakeNextAnswersWhetherALineIsOnItsWay(t *testing.T) {
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	maker.PauseOn = 1
 	emma, michael := voiceNamed(t, "bf_emma"), voiceNamed(t, "am_michael")
 	store.Hold(emma.ID(), keys("du", "dɪ", "di")...)
-	service := makingInOrder(t, nil, maker, store)
+	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
 	before, err := service.Cast(emma)
 	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
-	<-maker.Started
+	makingtest.Await(t, maker.Started, "making starting")
 	asked := cueMaker(t, before)
 	if asked.MakeNext("Undocked") || asked.MakeNext("Scanned") {
 		t.Error("a line was on its way for a cue with every line made or no lines at all")
 	}
-	if _, err := service.Cast(michael); err != nil {
+	after, err := service.Cast(michael)
+	if err != nil {
 		t.Fatalf("Cast: %v", err)
 	}
 	if asked.MakeNext("Docked") {
 		t.Error("a line was on its way for a cast that is over")
 	}
-	service.Wait()
 
-	// am_michael's six lines took calls 2 to 7; bf_emma's lines went with his cast, so her first line
-	// is call 8, which fails and stays unmade once making ends.
-	maker.FailOn = 8
-	after, err := service.Cast(emma)
-	if err != nil {
-		t.Fatalf("Cast: %v", err)
-	}
-	service.Wait()
-	if cueMaker(t, after).MakeNext("Docked") {
-		t.Error("a line was on its way once making had ended")
+	service.Stop()
+	if cueMaker(t, after).MakeNext("Undocked") {
+		t.Error("a line was on its way once making was stopped")
 	}
 }

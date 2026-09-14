@@ -66,11 +66,8 @@ type MadeLines interface {
 	// Path returns where a made line is played from.
 	Path(voice machinevoice.Voice, key string) string
 
-	// DeleteAllBut deletes the made lines of every machine voice except the one given (FR-527),
-	// answering why where one cannot be deleted (FR-530).
-	DeleteAllBut(voice machinevoice.Voice) error
-
-	// DeleteAll deletes every made line, as casting a recorded voice does (FR-527), answering
-	// why where one cannot be deleted (FR-530).
-	DeleteAll() error
+	// Delete deletes a voice's made lines under the keys given, as casting it does with those no
+	// longer current (FR-527), answering why for each that cannot be deleted (FR-530). A key with
+	// no made line deletes nothing and is no failure.
+	Delete(voice machinevoice.Voice, keys []string) error
 }

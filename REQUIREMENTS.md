@@ -1590,7 +1590,7 @@ at the cast, that cue waits for its line alone. Loading the model and making one
 MB working set and 452.8 MB private bytes, against 4.0 to 7.6 MB and 33.5 to 46.5 MB without it,
 measured on 2026-09-14 over three runs each by sampling the test process; Oliver saw the figures and
 accepted loading the model when a run starts with a machine voice the same day. A later cast is
-included so its first cue is spared the load too (recommended by Claude; not yet ruled on by Oliver).
+included so its first cue is spared the load too (recommended by Claude; accepted by Oliver on 2026-09-14).
 Acceptance: Given `bf_emma` kept with her confirmation's three lines made, when the application starts,
 then the model is loaded with no line made and the cast completes while the load is under way. Given
 only recorded voices cast in a run, then the model is never loaded.

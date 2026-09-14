@@ -24,30 +24,33 @@ section 10 says: domain, then application, then infrastructure, then user interf
   direct.
 - Line counts that decide placement: `app.go` 372, `library/voice.go` 370, `main.go` 318. New code
   goes in new files.
-- The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller, the
-  eSpeak NG caller, the dictionary lookup with misaki's rules and the FLAC writer. They are the
+- The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
+  FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
 
-## M4 Domain: pronunciation
+## M4 The sounds tool
 
-In `speech`. Words to speech sounds in each accent: misaki's gold then silver dictionaries, the -s,
--ed and -ing stem rules, the special cases, the next-vowel flag and the final flap and glottal stop
-replacements. A word no dictionary holds goes to an injected fallback, eSpeak NG in infrastructure.
-A spelling given in the line (FR-529) bypasses all of it.
+Oliver chose on 2026-09-14 to make every line's speech sounds before the build with misaki itself
+(FR-532 to FR-534, CON-8).
 
-- NFR-Q-501 against a committed reference file of misaki's own output for all 256 purposes.
-- FR-506 for each line: the script refuses a line whose speech sounds come to more than 510 in
-  either accent, naming the cue and the line. It needs pronunciation, so it lands here rather than
-  with the script.
-- **Measure first:** how many of those words reach the fallback. If the reference test cannot pass
-  without eSpeak NG, it becomes an infrastructure test that skips where eSpeak NG is absent; the
-  requirement is amended to say so.
+- `tools/sounds/`: a Go command in this module plus `sounds.py`, with its own `venv/` on Python 3.11
+  and its packages pinned in `requirements.txt` to the versions section 6.1 measured with.
+- Go reads `script.toml` through `config` and `speech`, writes each line for each accent with its
+  spelling in the one-spelling form misaki reads, hands every line to `sounds.py` in one call and
+  writes `sounds.toml` beside `script.toml`. Python only turns text into speech sounds, so the
+  spelling rules and the file's shape each keep one home in Go.
+- `speech.Line` gains writing a line for one accent.
+- `config` embeds `sounds.toml`. A structural test fails naming the cue and the line where saved
+  sounds are missing, stale or left over (FR-533). It also fails where a line's sounds come to more
+  than 510 symbols or hold one the model does not read (FR-506).
+- **Measure first, in the new venv:** that it reproduces all 512 reference lines without torch or
+  the transformer packages. They are added back only if it does not.
 
 ## M5 Domain: what to make
 
 In `machinevoice` or a sibling package.
 
-- A made line's currency key from the line's text, the style file's digest and the model's digest
+- A made line's currency key from the line's saved speech sounds, the style file's digest and the model's digest
   (FR-513).
 - Given the script, a voice and the keys already on disk: the lines still to make (FR-511, FR-512),
   how many are current (FR-515) and how many cues have at least one (FR-522).
@@ -58,7 +61,7 @@ In `machinevoice` or a sibling package.
    `library.Voice` already has `Lookup(id)` and becomes the first implementation; the catalogue
    depends on the port. The suite stays green with only wiring edited.
 2. Ports for what a machine voice needs: the speech maker (numbers plus style in, samples out), the
-   fallback pronouncer, the made-line store (keys on disk, write whole, delete a voice's lines) and
+   made-line store (keys on disk, write whole, delete a voice's lines) and
    the voice's files (one missing or unreadable is refused, FR-519).
 3. `MakingService` over those ports, tested with hand-written fakes. Making starts on cast and on
    start (FR-511, FR-512). It stops when another voice is cast, keeping what is made (FR-516). It
@@ -76,10 +79,8 @@ package still builds and vets on any platform.
   4096 (FR-526); written to a temporary file then renamed (FR-517); under the per user data
   directory, never the library root (FR-523). The data directory resolution in `library/root.go` is
   extracted and shared rather than repeated.
-- Dictionary loader for misaki's four English dictionaries.
-- eSpeak NG caller, the fallback.
 - ONNX Runtime caller through the OrtApi v23 table, no cgo.
-- Voice files: the model, the 28 style files, ONNX Runtime plus eSpeak NG with its data. A missing
+- Voice files: the model, the 28 style files and ONNX Runtime. A missing
   one is refused by name (FR-519) through `internal/refusal`.
 - A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
   that file is present, so a new model cannot leave the table behind.
@@ -103,14 +104,14 @@ package still builds and vets on any platform.
 - The setup program carries every file a machine voice is made from, downloading nothing (FR-524).
 - Uninstall deletes the made lines (FR-525).
 - **Measure before M7 starts:** the setup program's size, build time and memory while it runs, today
-  against the same with about 370 MB of model files embedded. The answer may change how those files
+  against the same with about 339 MB of model files embedded. The answer may change how those files
   travel.
 
 ## Content track, alongside M3 onwards
 
 `script.toml`: three lines for each of the 256 cues, 768 in all (FR-505, FR-507). Claude drafts a
 group of cues at a time from each cue's purpose; Oliver reviews each group. A line is reworded where
-the pronunciation test shows a misread word; a spelling is given only where no rewording serves
+its saved speech sounds show a misread word; a spelling is given only where no rewording serves
 (FR-529). When the last group lands, `scriptComplete` in `tests/structural/script_test.go` is
 switched on, so FR-507 fails the build from then on.
 

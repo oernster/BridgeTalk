@@ -51,7 +51,7 @@ project.
 | Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
 | Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
 | Changing a machine voice's speed or pitch | Every line is made at the model's own speed |
-| Working out a word's part of speech to choose its pronunciation | A line whose word is misread is put right in the script (FR-529) |
+| Working out pronunciation while the application runs | Every line's speech sounds are made before the build by the sounds tool (FR-532); a misread word is put right in the script (FR-529) |
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
@@ -121,8 +121,7 @@ Windows. Go with Wails hosting a React and TypeScript front end. No CGO: `build.
 sets `CGO_ENABLED` to `0`. Elite Dangerous journal files in their standard location
 unless another directory is chosen in Settings or passed with `-journal`. No network
 dependency at runtime: the application makes no outbound request. Machine voices run on the
-processor alone through two native libraries loaded with cgo disabled, ONNX Runtime and eSpeak NG
-(CON-8).
+processor alone through one native library loaded with cgo disabled, ONNX Runtime (CON-8).
 
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
 built yet and comes after all other work. The library
@@ -139,7 +138,7 @@ schema in section 3 is already portable, so nothing there changes either way.
 | CON-5 | No recording ships inside the application or its setup program. The files a machine voice is made from do (FR-524); amended on 2026-09-14. |
 | CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
-| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. A word's speech sounds come from misaki's English dictionaries, with eSpeak NG for a word they lack. No Python runs; no network is used. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1. |
+| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. |
 
 ### 2.5 Assumptions
 
@@ -907,8 +906,8 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 - The application does not verify who a recording is of or who owns it.
 - The application does not record, process, clean up or improve audio.
 - The application cannot control the game.
-- A machine voice does not work out a word's part of speech, so a word whose sound depends on it can be
-  misread; the script is where such a line is put right.
+- A word's part of speech is misaki's guess, made with spaCy's tagger when the sounds tool runs, so a
+  word whose sound depends on it can be misread; the script is where such a line is put right.
 
 ---
 
@@ -943,7 +942,8 @@ extension, so FR-501 is raised to Must. Later the same day Oliver accepted Claud
 on naming a machine voice, on putting a misread word right and on a complete script. He chose
 lossless FLAC for made lines, kept for the cast machine voice alone. He then accepted the form a
 line uses to give a word's speech sounds, with a second spelling for American voices, checked when
-the tests run.
+the tests run. Last, he chose to make every line's speech sounds before the build with misaki itself,
+run by a tool with its own venv in the repository, so that neither misaki nor eSpeak NG ships (CON-8).
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -951,11 +951,13 @@ Measured before any of this was written, on the development machine, processor o
   against 228 to 341 ms from Python through PyTorch. Loading the model took 539 ms. The 8-bit model
   took 946 to 1,528 ms a line, so it is not used.
 - Over the purposes of all 256 cues, speech sounds taken from misaki's English dictionaries, with
-  eSpeak NG for a word they lack, matched misaki's own on 99.4 percent of words in each accent.
-  eSpeak NG alone matched 81.0 percent British and 77.1 percent American.
-- The files a machine voice is made from sum to about 370 MB: the model 310.5 MB, eSpeak NG's data
-  17.5 MB, the 28 voice style files 14.6 MB, ONNX Runtime 14.2 MB, misaki's four English
-  dictionaries 12.0 MB and eSpeak NG's library 0.4 MB.
+  eSpeak NG for a word they lack, matched misaki's own on 99.4 percent of words in each accent;
+  without eSpeak NG, 97.7 percent. Seven distinct words in each accent reached eSpeak NG. eSpeak NG
+  alone matched 81.0 percent British and 77.1 percent American.
+- misaki 0.9.4 itself, called the way Kokoro calls it, reproduced all 512 reference lines exactly:
+  loading took 2.9 s and making all 512 took 0.76 s, in Python 3.11.9.
+- The files a machine voice is made from sum to about 339 MB: the model 310.5 MB, the 28 voice style
+  files 14.6 MB and ONNX Runtime 14.2 MB. misaki's dictionaries and eSpeak NG do not ship.
 
 The script, `script.toml`, sits beside `cues.toml`:
 
@@ -1004,7 +1006,7 @@ Each line in `script.toml` shall come to no more than 510 speech-sound symbols i
 Rationale: the model reads at most 510 symbols; Kokoro cuts a longer string short.
 Verified by: in part, `TestALineOfAtMostFiveHundredAndTenSymbolsIsAccepted` in
 `internal/domain/speech/speech_test.go` for turning speech sounds into the model's numbers; checking
-each line of `script.toml` is not built.
+each line's saved speech sounds (FR-533) is not built.
 
 **FR-507 Every cue has lines**
 Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before machine voices ship.
@@ -1064,10 +1066,10 @@ Verified by: not built.
 
 **FR-513 A made line is current only while what it was made from is unchanged**
 Priority: Must.
-The application shall treat a made line as current only while its line's text, its voice's style
-file and the model file are the ones it was made from.
-Rationale: an edited line, a new voice file or a new model arriving in an update must be heard,
-rather than an old rendering of it.
+The application shall treat a made line as current only while its line's saved speech sounds, its
+voice's style file and the model file are the ones it was made from.
+Rationale: an edited line, new speech sounds, a new voice file or a new model arriving in an update
+must be heard, rather than an old rendering of it.
 Acceptance: Given current made lines for `bf_emma`, when the line "Docking complete." is changed to
 "Docked." and the application starts, then that line is made again and no other line is.
 Verified by: not built.
@@ -1141,8 +1143,7 @@ Verified by: not built.
 **FR-524 Setup installs everything a machine voice is made from**
 Priority: Must.
 When setup writes the application's files (FR-802), it shall write every file a machine voice is
-made from: the model, the 28 voice style files, misaki's English dictionaries, ONNX Runtime plus
-eSpeak NG with its data. Nothing shall be downloaded.
+made from: the model, the 28 voice style files and ONNX Runtime. Nothing shall be downloaded.
 Rationale: the setup program carries the model files (Oliver, 2026-09-14), so NFR-S-1 holds.
 Verified by: not built.
 
@@ -1220,14 +1221,48 @@ Verified by: `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_te
 planting a broken spelling; every broken form is `TestABrokenSpellingIsRefusedSayingWhy` in
 `internal/domain/speech/speech_test.go`.
 
+**FR-532 Every line's speech sounds are saved with the script**
+Priority: Must.
+The sounds tool shall save, beside `script.toml`, the speech sounds of every line in each accent,
+made by misaki 0.9.4 the way Kokoro calls it. The application shall make each line from its saved
+speech sounds.
+Rationale: the script is embedded, so every word the application speaks is known when it is built;
+working out pronunciation while it runs has nothing to do that making the sounds beforehand does not
+do better (Oliver, 2026-09-14). misaki's own output is exact where a Go port reached 99.4 percent;
+the setup program also carries about 30 MB less.
+Acceptance: Given the line "Fuel reserves are running low, commander.", when the sounds tool runs,
+then the last word's British saved sounds read `kəmˈɑːndə` and its American saved sounds `kəmˈændəɹ`.
+Verified by: not built.
+
+**FR-533 If a line's saved speech sounds are missing or stale, then the build fails**
+Priority: Must.
+If a line in `script.toml` has no saved speech sounds in either accent, its saved sounds were made
+from different text or saved sounds remain for a line the script no longer holds, then a structural
+test shall fail naming the cue and the line.
+Rationale: an edited line whose sounds were not made again would be spoken with its old words.
+Acceptance: Given "Docking complete." changed to "Docked." in `script.toml` without running the sounds
+tool, when the structural tests run, then one fails naming `Docked` and that line.
+Verified by: not built.
+
+**FR-534 The sounds tool**
+Priority: Must.
+The repository shall hold the sounds tool under `tools/sounds` with its own Python venv, its packages
+pinned to the versions section 6.1 measured with. The tool shall rewrite the saved speech sounds of
+the whole script in one run.
+Rationale: the tool keeps its own venv in the repository rather than borrowing another project's
+(Oliver, 2026-09-14). One run over the whole script leaves no saved sounds behind for a line that is
+gone.
+Note: the venv is not committed; `.gitignore` already ignores `venv/`.
+Verified by: not built.
+
 ### 6.2 Machine voices, non-functional
 
 | ID | Requirement | Method |
 |---|---|---|
 | NFR-P-203 | Making all 768 lines of a complete script for one machine voice takes no more than 10 minutes on the development machine | A benchmark test that makes the script for one voice and fails over the limit; it skips where the model files are absent. Basis: 204 to 348 ms a short line, which projects to about 4 minutes |
 | NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated |
-| NFR-Q-501 | Over the purposes of every cue in `cues.toml`, at least 99 percent of words receive the speech sounds misaki 0.9.4 gives them, in each accent | A test against a reference file made once with misaki and committed. Measured on 2026-09-14: 99.4 percent in each accent |
-| NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 370 MB |
+| NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
+| NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 339 MB |
 | NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | A test that makes a complete script for one voice and sums its files; it skips where the model files are absent. Measured on 2026-09-14: ten lines at 56.7 percent of their WAV size, projecting 50.4 MB |
 
 ---
@@ -1758,10 +1793,10 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-Q-501, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-534, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
-| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out a word's part of speech to choose its pronunciation; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
+| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

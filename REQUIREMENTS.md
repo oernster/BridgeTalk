@@ -1066,8 +1066,10 @@ every line in the script has a current made line for her.
 Verified by: in part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
 `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
 the lines still to make and `TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent` in
-`internal/application/services/making_test.go` for making them on cast over fakes; the model and the
-store behind the ports are not built.
+`internal/application/services/making_test.go` for making them on cast over fakes, with
+`TestAShippedLineIsMadeByTheRealModel` in `internal/infrastructure/speechmodel/maker_windows_test.go`
+for the real model making a shipped line; the composition root wiring the model and the store to the
+making service is not built.
 
 **FR-512 Starting with a machine voice cast makes its missing lines**
 Priority: Must.
@@ -1129,7 +1131,11 @@ Priority: Must.
 If a line cannot be made, then the application shall report the cue and the reason on the Cast pane
 and go on to the next line.
 Verified by: in part, `TestALineThatCannotBeMadeIsReportedAndMakingGoesOn` in
-`internal/application/services/making_test.go` for the report; the Cast pane showing it is not built.
+`internal/application/services/making_test.go` for the report, with
+`TestAModelThatCannotBeLoadedIsTriedAgain` and `TestALineTheModelRefusesLeavesItLoaded` in
+`internal/infrastructure/speechmodel/maker_test.go` and the refusals naming a missing runtime, a library
+that is not ONNX Runtime, a missing or damaged model and an impossible path once in
+`internal/infrastructure/speechmodel`; the Cast pane showing it is not built.
 
 **FR-519 If a machine voice's files are missing, then refuse the cast**
 Priority: Must.
@@ -1369,12 +1375,13 @@ Rationale: the build checks the files before packing them without reaching the n
 is present but wrong is a fault to be told about, never a reason to skip.
 Acceptance: Given `models/` with `bf_alice.bin` missing and `am_adam.bin` altered, when the tool runs
 with `-check`, then nothing is requested from any address and the failure names both files.
-Verified by: in part, `TestCheckNamesWhatIsMissingAndWhatDiffersAskingForNothing` and
+Verified by: `TestCheckNamesWhatIsMissingAndWhatDiffersAskingForNothing` and
 `TestAFolderWhereAFileShouldBeIsRefusedNamingItOnce` in `internal/infrastructure/modelfiles/check_test.go`,
 with `TestTheToolFillsTheFolderThenChecksIt` and `TestTheCheckFailsOnAFileThatDiffers` in
 `tools/models/main_test.go`, proved by planting a different digest matching and the check reporting
-nothing missing; no test that needs the model files exists yet, so skipping or failing on them is not
-built.
+nothing missing. `modelfilestest.Require` decides for every test that needs the files: on 2026-09-14,
+with `am_santa.bin` set aside, the three tests in `internal/infrastructure/speechmodel` that need them
+skipped; with `bf_emma.bin`'s listed digest altered, they failed.
 
 ### 6.2 Machine voices, non-functional
 

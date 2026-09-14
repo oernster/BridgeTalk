@@ -44,7 +44,13 @@ section 10 says: domain, then application, then infrastructure, then user interf
   root (FR-536, FR-537); `-check` downloads nothing (FR-538). The folder is found by walking up to
   `go.mod` in `internal/infrastructure/reporoot`, which the structural tests use too. On 2026-09-14
   the tool downloaded the 26 style files this machine lacked; `models/` now holds all 31 and `-check`
-  passes.
+  passes. `modelfilestest.Require` hands a test the folder, skipping where a file is missing and
+  failing where one differs (FR-538).
+- `internal/infrastructure/speechmodel` implements `ports.SpeechMaker` through ONNX Runtime's C API
+  with cgo disabled: the OrtApi v23 table read by position, the library loaded by its full path. The
+  model is loaded when the first line is made, then kept until `Close`; a load that fails is tried
+  again on the next line. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
+  shipped `Docked` line for `bf_emma` from the real model files.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
   stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
@@ -64,7 +70,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 Each part behind its port. Windows code sits behind a build tag with stubs beside it, so every
 package still builds and vets on any platform.
 
-- ONNX Runtime caller through the OrtApi v23 table, no cgo.
 - A test compares the symbol table in `internal/domain/speech` with the model's tokenizer file where
   that file is present, so a new model cannot leave the table behind.
 - Tests needing the model files skip where they are absent: NFR-P-203 (768 lines within 10 minutes)

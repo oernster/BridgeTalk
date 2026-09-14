@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -87,6 +89,47 @@ func (s *Server) Asked() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]string(nil), s.asked...)
+}
+
+// The model files in the repository, checked once for every test in the run that needs them.
+var (
+	readiness    sync.Once
+	readyDir     string
+	readyMissing []string
+	readyErr     error
+)
+
+// Require answers with the folder holding the model files, skipping the test where any is missing
+// and failing it where one differs from the list or cannot be read (FR-538).
+func Require(t *testing.T) string {
+	t.Helper()
+	readiness.Do(func() { readyDir, readyMissing, readyErr = checkRepository() })
+	if readyErr != nil {
+		t.Fatalf("the model files cannot be used: %v", readyErr)
+	}
+	if len(readyMissing) > 0 {
+		t.Skipf("%s is missing %d of the model files; go run ./tools/models fills it", readyDir, len(readyMissing))
+	}
+	return readyDir
+}
+
+// checkRepository checks the folder at the root of the repository the test runs in against the
+// shipped list.
+func checkRepository() (string, []string, error) {
+	working, err := os.Getwd()
+	if err != nil {
+		return "", nil, fmt.Errorf("finding the working directory: %w", err)
+	}
+	dir, err := modelfiles.Dir(working)
+	if err != nil {
+		return "", nil, err
+	}
+	files, err := modelfiles.Listed()
+	if err != nil {
+		return dir, nil, err
+	}
+	missing, err := modelfiles.Check(dir, files)
+	return dir, missing, err
 }
 
 // Digest is the SHA-256 of body written as hexadecimal, as the list gives it.

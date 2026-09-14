@@ -763,7 +763,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 - `test.ps1` checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `taskbar`
+  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `setup` 61%, `speechmodel` 26%, `taskbar`
   67%, `tools/sounds` 38%, `tools/models` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
   `status`, `tomlfile`, `voicefiles`, `wholefile` and `internal/refusal` at 100%. `internal/infrastructure/window`,
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
@@ -790,4 +790,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | Priority, cooldown and dedupe | Without them the application is a slot machine rather than a voice worth listening to | A plain queue |
 | The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
 | No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |
+| ONNX Runtime called through its C API table with cgo disabled, loaded by full path | The build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in | cgo bindings, which need a C toolchain on every build machine |
+| The model is loaded when the first line is made and kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start; remembering a failed load |
+| ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
 | Model files found by Go in `models/` beside `go.mod`, filled from a pinned list | Every machine finds them the same way with nothing to set; the rule that a file must match its published SHA-256 lives once, in Go (Oliver, 2026-09-14) | An environment variable naming a folder, with the checksums checked a second time in PowerShell |

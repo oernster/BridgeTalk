@@ -51,6 +51,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
 | the root package (the Wails facade) | 82% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 72.5% | 61% | `test.ps1` |
+| `internal/infrastructure/speechmodel` | 91.5% with `models/` filled, 26.5% without | 26% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.1% | 67% | `test.ps1` |
 | `tools/models` | 53.1% | 53% | `test.ps1` |
 | `tools/sounds` | 38.5% | 38% | `test.ps1` |
@@ -165,6 +166,15 @@ release is for.
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.
+- **ONNX Runtime's own failures in `internal/infrastructure/speechmodel` (91.5% with `models/` filled).**
+  Making the environment, the memory description, the session options or a tensor fails only inside
+  ONNX Runtime; so does reading a made tensor's shape or data. So does a runtime too old to answer
+  the version 23 function table. `loadReason` also keeps a fallback for a load error that is not
+  `windows.DLLError`, which `golang.org/x/sys/windows` answers every load and lookup failure as. What a
+  test can reach is tested: a missing runtime, a library that is not ONNX Runtime, a missing or
+  damaged model, a path no file can have and a shipped line made by the real model. The tests that need
+  the model files skip where `models/` lacks one, which is why the floor is the 26.5% measured without
+  them.
 - **`main`, `run`, `launch` and `startTray` in `main.go`.** The composition root. It
   opens a device, scans the disk, builds a tray and hands the assembled application
   to Wails. Running it in a test would be running the application.

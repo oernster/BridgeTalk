@@ -6,10 +6,10 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 )
 
-// scriptComplete switches FR-507 on. The script is written a group of cues at a time, so until
-// the last group lands a cue without lines is reported as progress rather than failing the
-// build; from then on it fails.
-const scriptComplete = false
+// scriptComplete switches FR-507 on. The script was written a group of cues at a time, so until
+// the last group landed a cue without lines was reported as progress rather than failing the
+// build; the last group landed on 2026-09-14, so from then on it fails.
+const scriptComplete = true
 
 // TestTheShippedScriptHoldsNoProblem holds FR-504 to FR-506, FR-531 and FR-533 over script.toml
 // and the speech sounds saved beside it.
@@ -32,8 +32,9 @@ func TestTheShippedScriptHoldsNoProblem(t *testing.T) {
 
 // TestTheScriptHoldsLinesForEveryCue holds FR-507: every cue in the table has lines.
 //
-// Proved by planting scriptComplete as true while the script is incomplete, reading the exit
-// code.
+// Proved by planting scriptComplete as true while the script was incomplete, then, once complete,
+// by removing one cue's lines from script.toml; each time the test failed naming what was missing,
+// reading the exit code.
 func TestTheScriptHoldsLinesForEveryCue(t *testing.T) {
 	table, err := config.LoadCueTable("")
 	if err != nil {

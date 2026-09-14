@@ -14,8 +14,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
   more than 510 (FR-506). It reads the spellings a line gives, refusing every broken form (FR-529,
   FR-531).
 - `internal/domain/script` holds the script checked against the cue table (FR-503 to FR-505,
-  FR-531). `config` embeds `script.toml`, which holds the `Docked` example alone. A structural test
-  reads it through those rules; FR-507's test reports progress until `scriptComplete` is switched on.
+  FR-531). `config` embeds `script.toml`, which holds three lines for each of the 256 cues. A
+  structural test reads it through those rules and fails the build on a cue without lines (FR-507).
 - `tools/sounds` makes every line's speech sounds in each accent with misaki in its own venv and
   saves them to `sounds.toml`, which `config` embeds beside the script. The structural test checks
   them (FR-506, FR-532 to FR-534). Run `go run ./tools/sounds` from the repository root after
@@ -55,7 +55,8 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - `tests/machinevoice` makes the shipped script for `bf_emma` with the real model, store and making
   service, failing over NFR-P-203's ten minutes or NFR-C-502's 60 MB. It carries the `benchmarks`
   build tag: `./test.ps1 -Benchmarks` and every build run it, the everyday gate does not (Oliver,
-  2026-09-14). It skips until the script holds lines for every cue.
+  2026-09-14). It skipped while the script lacked lines for any cue; it has not yet been run over the
+  complete script.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
   stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
@@ -83,12 +84,3 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## Content track, alongside M3 onwards
-
-`script.toml`: three lines for each of the 256 cues, 768 in all (FR-505, FR-507). Claude drafts a
-group of cues at a time from each cue's purpose; Oliver reviews each group, then the sounds tool runs over it. A line is reworded where
-its saved speech sounds show a misread word; a spelling is given only where no rewording serves
-(FR-529). When the last group lands, `scriptComplete` in `tests/structural/script_test.go` is
-switched on, so FR-507 fails the build from then on.
-

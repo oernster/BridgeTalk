@@ -1021,11 +1021,12 @@ and `TestSoundsTheModelCannotTakeAreRefused` in `internal/domain/script/voice_te
 **FR-507 Every cue has lines**
 Priority: Must. Oliver ruled on 2026-09-14 that the script is complete before machine voices ship.
 `script.toml` shall hold lines for every cue id in `cues.toml`.
-Note: until it does, a machine voice is silent for a cue with no lines, as FR-220 says of a recorded
-voice.
-Verified by: not enforced yet. `TestTheScriptHoldsLinesForEveryCue` in `tests/structural/script_test.go`
-reports how many cues have lines and skips until `scriptComplete` is switched on with the last group
-of lines; proved by planting it on while the script is incomplete.
+Note: were a cue to lose its lines, a machine voice would be silent for it, as FR-220 says of a
+recorded voice.
+Verified by: `TestTheScriptHoldsLinesForEveryCue` in `tests/structural/script_test.go`, enforced since
+the last group of lines landed on 2026-09-14 with `scriptComplete` switched on. Proved before then by
+planting it on while the script was incomplete; proved again once complete by removing the lines for
+`FireGroup.Changed`, when the test failed naming that cue, then passed with the script restored.
 
 **FR-508 The machine voices offered**
 Priority: Must.

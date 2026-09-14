@@ -82,6 +82,11 @@ type Settings struct {
 	// that moves carries the choice with it; a name that is no longer installed
 	// falls back at startup the same way an unknown one on the command line does.
 	Voice string
+
+	// MachineVoice is the machine voice the reader cast, by id. It is kept apart from Voice
+	// because a recordings folder may carry a machine voice's id as its name; at most one of
+	// the two holds a voice (FR-540).
+	MachineVoice string
 }
 
 // SettingsStore keeps those choices between runs.

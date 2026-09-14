@@ -947,6 +947,9 @@ cannot hold the model's floating-point samples, he chose 16-bit samples within i
 line uses to give a word's speech sounds, with a second spelling for American voices, checked when
 the tests run. Last, he chose to make every line's speech sounds before the build with misaki itself,
 run by a tool with its own venv in the repository, so that neither misaki nor eSpeak NG ships (CON-8).
+Once casting came to be wired, he accepted Claude's recommendations on where the application reads the
+model files, on keeping a cast machine voice apart from a recorded one and on starting when that voice
+cannot be cast (FR-539 to FR-542).
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -1068,15 +1071,17 @@ Verified by: in part, `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` an
 the lines still to make and `TestCastingMakesEveryLineNotYetMadeInTheVoicesAccent` in
 `internal/application/services/making_test.go` for making them on cast over fakes, with
 `TestAShippedLineIsMadeByTheRealModel` in `internal/infrastructure/speechmodel/maker_windows_test.go`
-for the real model making a shipped line; the composition root wiring the model and the store to the
-making service is not built.
+for the real model making a shipped line, with `TestCastingAMachineVoiceSpeaksWithItAndTellsThePage`
+in `machine_test.go` for casting from the facade over fakes. Not verified by a test: `newMaking` in
+`main.go` wiring the model and the store, since it runs only inside the window's start.
 
 **FR-512 Starting with a machine voice cast makes its missing lines**
 Priority: Must.
-When the application starts with a machine voice cast, the application shall make every line of
-the script that voice has no current made line for.
-Verified by: in part, the tests FR-511 names for making the lines on cast, which casting at start
-does too; casting the stored voice at start is not built.
+When the application starts with a machine voice kept (FR-540) and no `-voice` flag, the application
+shall cast that voice, making every line of the script it has no current made line for.
+Verified by: `TestAKeptMachineVoiceIsCastAtStart` and `TestAVoiceGivenForTheRunOutranksAKeptMachineVoice`
+in `machine_test.go`, with the tests FR-511 names for making the lines on cast. Not verified by a test:
+`run` in `main.go` handing the kept voice to the session.
 
 **FR-513 A made line is current only while what it was made from is unchanged**
 Priority: Must.
@@ -1116,7 +1121,8 @@ making them, keeping every made line written so far.
 Note: FR-527 then deletes the made lines of the voice that was cast.
 Verified by: in part, `TestCastingAnotherVoiceStopsMakingKeepingWhatWasWritten` and
 `TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine` in `internal/application/services/making_test.go`
-over fakes; the Cast pane casting through the service is not built.
+over fakes, with `TestCastingARecordedVoiceDeletesEveryMadeLine` in `machine_test.go` for the facade;
+the Cast pane casting through the service is not built.
 
 **FR-517 A made line is written whole or not at all**
 Priority: Must.
@@ -1145,8 +1151,9 @@ Rationale: a damaged install is put right by Repair (FR-804); saying which file 
 Verified by: in part, `TestAVoiceWhoseFilesCannotBeReadIsRefusedChangingNothing` in
 `internal/application/services/making_test.go` over a fake, with
 `TestAMissingOrUnreadableFileIsRefusedNamingItOnce` and `TestAnotherVoicesStyleFileIsNoStandIn` in
-`internal/infrastructure/voicefiles/voicefiles_test.go` for reading the files; refusing a cast from the
-Cast pane is not built.
+`internal/infrastructure/voicefiles/voicefiles_test.go` for reading the files and
+`TestAMachineVoiceThatCannotBeCastChangesNothing` in `machine_test.go` for the facade; refusing a cast
+from the Cast pane is not built.
 
 **FR-520 If a made line cannot be written, then stop and say why**
 Priority: Must.
@@ -1161,7 +1168,10 @@ Priority: Must.
 When a machine voice is cast, the application shall play one current made line of `Cast.Confirmed`
 from that voice, as FR-232 does for a recorded voice. If none is current yet, the output is muted
 or no audio device is open, then the cast shall succeed with nothing played.
-Verified by: not built.
+Verified by: `TestCastingAMachineVoiceIsConfirmedInAMadeLine` and
+`TestAMachineVoiceWithNothingMadeYetIsCastInSilence` in `machine_test.go`, the second proved on
+2026-09-14 by planting an acknowledgement that answers with nothing recorded. Not verified by a test
+for a machine voice: muted and no audio device, which pass through the same `acknowledge` as FR-232.
 
 **FR-522 A machine voice's completeness**
 Priority: Should.
@@ -1174,11 +1184,14 @@ built.
 **FR-523 Made lines live apart from recordings**
 Priority: Must.
 The application shall write made lines under its own per user data directory, never under the
-library root.
-Rationale: CON-7. A made line is the application's to remake; a recording is the user's.
+library root. If that directory cannot be found, then the application shall refuse to cast a machine
+voice with the reason, writing nothing.
+Rationale: CON-7. A made line is the application's to remake; a recording is the user's. A store with
+no directory would write each voice's lines into whatever folder the application was started from.
 Verified by: in part, `TestMadeLinesLiveInTheProductsDataFolder` in
-`internal/infrastructure/madelines/madelines_test.go` for the folder; the composition root handing it
-to the store is not built.
+`internal/infrastructure/madelines/madelines_test.go` for the folder and
+`TestWithNowhereToKeepMadeLinesNoMachineVoiceIsCast` in `machine_test.go` for the refusal. Not verified
+by a test: `newMaking` in `main.go` handing the folder to the store.
 
 **FR-524 Setup installs everything a machine voice is made from**
 Priority: Must.
@@ -1225,8 +1238,10 @@ Acceptance: Given `bf_emma` cast with her lines made, when `am_michael` is cast,
 Verified by: in part, `TestCastingDeletesOtherVoicesLinesSayingWhereItCannot` and
 `TestCastingARecordedVoiceStopsMakingAndDeletesEveryLine` in `internal/application/services/making_test.go`
 over a fake store, with `TestDeletingKeepsOnlyTheVoiceNamed` in
-`internal/infrastructure/madelines/madelines_test.go` for deleting the files; the composition root
-wiring the two is not built.
+`internal/infrastructure/madelines/madelines_test.go` for deleting the files and
+`TestCastingARecordedVoiceDeletesEveryMadeLine` in `machine_test.go` for the facade, proved on
+2026-09-14 by planting a recorded cast that skips the making service. Not verified by a test: `newMaking`
+in `main.go` wiring the store.
 
 **FR-528 A machine voice's name on screen**
 Priority: Must.
@@ -1388,6 +1403,53 @@ with `TestTheToolFillsTheFolderThenChecksIt` and `TestTheCheckFailsOnAFileThatDi
 nothing missing. `modelfilestest.Require` decides for every test that needs the files: on 2026-09-14,
 with `am_santa.bin` set aside, the three tests in `internal/infrastructure/speechmodel` that need them
 skipped; with `bf_emma.bin`'s listed digest altered, they failed.
+
+**FR-539 A machine voice's files are read from beside the application**
+Priority: Must.
+The application shall read the files a machine voice is made from out of the folder `models` beside
+its own executable.
+Rationale: setup writes the application under `%LOCALAPPDATA%\Programs\BridgeTalk` (FR-802) with
+those files beside it (FR-524). The repository's `models/` is found through `go.mod`, which an install
+does not have; one place to read from means no build quietly uses the repository's copy (recommended
+by Claude; accepted by Oliver on 2026-09-14).
+Acceptance: Given the application at `C:\Apps\BridgeTalk\BridgeTalk.exe`, when `bf_emma` is cast, then
+her files are read from `C:\Apps\BridgeTalk\models`; where that folder lacks `bf_emma.bin`, the cast is
+refused naming it (FR-519).
+Verified by: `TestTheFilesAreReadFromTheFolderBesideTheApplication` in
+`internal/infrastructure/voicefiles/beside_test.go` for the folder. Not verified by a test: `newMaking`
+in `main.go` reading the executable's path; setup filling the folder is M9.
+
+**FR-540 The cast machine voice is kept for the next run**
+Priority: Must.
+When a machine voice is cast, the application shall keep its id for the next run apart from a recorded
+voice's name. Casting a voice of one kind shall forget the voice kept of the other kind. A voice given
+by `-voice` outranks a kept machine voice for the run (FR-701).
+Rationale: a recordings folder may be named as a machine voice's id is, so one kept name could not say
+which kind was cast. A build older than this one ignores the kept machine voice and casts a recorded
+voice (recommended by Claude; accepted by Oliver on 2026-09-14).
+Acceptance: Given `Alpha` cast, when `bf_emma` is cast and the application starts again, then
+`bf_emma` is cast; when `Alpha` is cast and the application starts again, then Alpha is.
+Verified by: `TestTheCastMachineVoiceIsKeptApartFromARecordedOne` and
+`TestAVoiceGivenForTheRunOutranksAKeptMachineVoice` in `machine_test.go`; `TestChoicesSurviveASave` in
+`internal/infrastructure/config/settings_test.go` for the file.
+
+**FR-541 If the kept machine voice cannot be cast at start, then cast a recorded voice and say why**
+Priority: Must.
+If the application starts with a kept machine voice that is not offered or whose files cannot be read,
+then it shall print the reason as a warning, then cast the recorded voice FR-701 chooses; with no
+recorded voice found, no voice shall be cast.
+Rationale: FR-701 falls back in the same way when a kept recorded voice is no longer installed, so no
+start is refused over a voice (recommended by Claude; accepted by Oliver on 2026-09-14).
+Verified by: `TestAKeptMachineVoiceThatCannotBeCastFallsBackToARecordedVoice` in `machine_test.go`.
+
+**FR-542 Looking again keeps a cast machine voice**
+Priority: Must.
+When a rescan (FR-214) or a newly chosen library root finds voices while a machine voice is cast, the
+application shall keep that machine voice cast.
+Rationale: looking again reads the recordings. A machine voice is not among them, so casting a
+recorded voice in its place would change a choice nobody changed.
+Verified by: `TestLookingAgainKeepsACastMachineVoice` in `machine_test.go`, over a rescan; a newly
+chosen library root takes the same path.
 
 ### 6.2 Machine voices, non-functional
 
@@ -1927,7 +1989,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-538, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713, FR-714, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-203, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

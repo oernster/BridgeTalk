@@ -19,7 +19,7 @@ import (
 // The list is here so the decision has to be taken twice: once in the code and once
 // against this.
 var boundSurface = []string{
-	"About", "Audition", "AuditionGroups", "Checklist", "ChooseJournalDir", "ChooseLibraryRoot",
+	"About", "Audition", "AuditionGroups", "CastMachineVoice", "Checklist", "ChooseJournalDir", "ChooseLibraryRoot",
 	"CueBreakdown", "Licence", "MakeVoiceFolders", "MinimiseToTray", "Muted", "OpenMomentFolder", "Playing",
 	"Quit", "Reactions", "RequestQuit", "Rescan", "SelectVoice", "SetLaunchOnBoot",
 	"VoiceDirectories",

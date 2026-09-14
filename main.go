@@ -7,6 +7,7 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
@@ -21,8 +22,11 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
+	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
+	"github.com/oernster/bridge-talk/internal/infrastructure/speechmodel"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
+	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 	"github.com/oernster/bridge-talk/internal/product"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -104,7 +108,12 @@ type session struct {
 	tray      *taskbar.Tray
 	reporter  ports.Reporter
 
-	active    library.Voice
+	// making makes a cast machine voice's lines; maker is the model they are made with, released
+	// when the application closes.
+	making *services.MakingService
+	maker  releaser
+
+	active    castVoice
 	catalogue *library.Catalogue
 	scheduler *services.Scheduler
 	reactions *services.ReactionService
@@ -122,22 +131,29 @@ type session struct {
 // that would speak has to be able to do nothing instead of assuming a voice.
 func (s *session) hasVoice() bool { return s.reactions != nil }
 
-// useVoice rebuilds the catalogue and the reaction path for a different voice.
+// useVoice casts a recorded voice: making stops and every made line goes (FR-516, FR-527), then
+// the voice speaks from its recordings.
+func (s *session) useVoice(chosen library.Voice) {
+	s.making.CastRecorded()
+	s.speakWith(chosen, castVoice{Name: chosen.Name, Display: chosen.Display()})
+}
+
+// speakWith rebuilds the catalogue and the reaction path over the audio source of the voice cast.
 //
 // The picker's memory of what each cue last played goes with the old service, which
 // is correct: those clip paths belong to the voice being left behind.
-func (s *session) useVoice(chosen library.Voice) {
+func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 	s.player.Stop()
 
-	s.active = chosen
-	s.catalogue = s.catalogueFor(chosen)
+	s.active = cast
+	s.catalogue = catalogueOver(source, cast.Display, s.table, s.chooser)
 	s.scheduler = services.NewScheduler(s.player, s.reporter, systemClock{})
 	s.reactions = services.NewReactionService(
 		s.table, s.catalogue, s.scheduler, s.chooser, s.reporter, systemClock{},
 	)
 	s.reactions.SetMuted(s.muted)
 	if s.tray != nil {
-		s.tray.SetActiveVoice(chosen.Name)
+		s.tray.SetActiveVoice(cast.Name)
 	}
 }
 
@@ -245,9 +261,14 @@ func run() error {
 		fmt.Fprintf(os.Stderr, "warning: %v (running silent)\n", err)
 	}
 
+	making, maker, err := newMaking(table)
+	if err != nil {
+		return err
+	}
 	current := &session{
 		table: table, available: found,
 		chooser: chooser, player: player,
+		making: making, maker: maker,
 	}
 	if !*noTray {
 		current.tray = startTray(found, chosen.Name)
@@ -265,9 +286,7 @@ func run() error {
 	// built before the first useVoice call so the very first cue is already logged.
 	app := newApp(current, watched, root, settings)
 	current.reporter = reporter{app}
-	if len(found) > 0 {
-		current.useVoice(chosen)
-	}
+	current.castAtStart(keptMachineVoice(*voice, stored.MachineVoice), chosen, os.Stderr)
 
 	// Hidden with no tray would leave nothing on screen and no way to summon it, so
 	// the window is shown rather than starting a program the user cannot reach. The
@@ -315,4 +334,23 @@ func startTray(found []library.Voice, active string) *taskbar.Tray {
 		return nil
 	}
 	return tray
+}
+
+// newMaking builds what a machine voice is made through: the model files beside the application
+// (FR-539), the made lines in the product's local data folder (FR-523) and the model itself.
+//
+// Neither folder going unfound stops the application. Every machine voice is refused with why
+// instead, before anything is written, so a store with no folder never writes into the one the
+// application was started from.
+func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, error) {
+	voiced, err := config.LoadVoicedScript(table)
+	if err != nil {
+		return nil, nil, err
+	}
+	executable, notFound := os.Executable()
+	made, noStore := madelines.Dir()
+	dir := voicefiles.Beside(executable)
+	maker := speechmodel.New(dir)
+	files := filesUnless(voicefiles.New(dir), errors.Join(notFound, noStore))
+	return services.NewMakingService(voiced, files, maker, madelines.New(made)), maker, nil
 }

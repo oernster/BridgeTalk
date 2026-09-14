@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
@@ -81,7 +82,13 @@ func pick(found []library.Voice, want string) (library.Voice, error) {
 // catalogueOf builds the catalogue over a recorded voice: its takes answered through the
 // audio source port (FR-501), under the name the voice is shown by (FR-210).
 func catalogueOf(voice library.Voice, table cue.Table, chooser randomChooser) *library.Catalogue {
-	return library.NewCatalogue(voice, voice.Display(), table, chooser)
+	return catalogueOver(voice, voice.Display(), table, chooser)
+}
+
+// catalogueOver builds the catalogue over any audio source (FR-501), under the name its voice is
+// shown by: a recorded voice's takes or a machine voice's made lines.
+func catalogueOver(source ports.AudioSource, shown string, table cue.Table, chooser randomChooser) *library.Catalogue {
+	return library.NewCatalogue(source, shown, table, chooser)
 }
 
 // unboundReport prints the cues a voice has nothing recorded for, then exits.

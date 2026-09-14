@@ -101,6 +101,10 @@ func (a *App) adopt(found []library.Voice) {
 		return
 	}
 	a.session.available = found
+	// A machine voice is not among the recordings, so looking again leaves it cast (FR-542).
+	if a.session.active.Machine {
+		return
+	}
 	next, err := pick(found, a.session.active.Name)
 	if err != nil {
 		next = found[0]

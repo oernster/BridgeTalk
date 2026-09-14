@@ -83,10 +83,13 @@ exactly like one that holds.
 ## Composition root
 
 `main.go` is the composition root. It constructs the infrastructure adapters, injects them into the
-application services by constructor and hands the assembled facade to Wails. No service is held in a
+application services by constructor and hands the assembled facade to Wails. `newMaking` there builds
+the making service over the model files beside the executable and the made lines' folder; where
+either cannot be found, every machine voice is refused with why rather than the application refusing
+to start. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
-facade is spread over the root files beside them, `settings.go`, `cast.go`, `folders.go`, `checklist.go`, `audition.go`,
+facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`,
 `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`.
 
@@ -690,11 +693,13 @@ directory, so running setup leaves no folder beside the application's.
 | Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile |
 | Recordings | `-library`, else the stored choice; at startup nothing is detected |
 | Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
-| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice, kept as a recorded voice's name or a machine voice's id with the other forgotten. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
 | Model files on the build machine | `models/` at the repository root, found by walking up to `go.mod` and filled by `go run ./tools/models` from the list embedded in `internal/infrastructure/modelfiles`; not committed |
+| Model files when running | `models` beside the executable, the one folder the application reads them from; `voicefiles.Folder` names it for the build machine's folder too |
+| Made lines | `Made lines` in the product's local data folder (`%LOCALAPPDATA%\BridgeTalk` on Windows), one folder for the cast machine voice; never under the recordings directory |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
 | Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |

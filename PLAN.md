@@ -29,11 +29,11 @@ section 10 says: domain, then application, then infrastructure, then user interf
   `script/scripttest` builds a voiced script for every suite that needs one.
 - `library.Catalogue` answers from `ports.AudioSource` under the name it is given (FR-501); a
   scanned `library.Voice` is the one implementation. `catalogueOf` in `voices.go` builds it for a
-  recorded voice; `session.useVoice` in `main.go` rebuilds it with the reaction service on every cast.
+  recorded voice; `session.speakWith` in `main.go` rebuilds it over either kind of voice on every cast.
   FR-215's files figure is `Voice.Files`, since only a voice on disk has files.
 - `ports/making.go` declares what a machine voice is made through: `SpeechMaker`, `VoiceFiles`
-  (answering a `Material` of style and digests) and `MadeLines`. Only test fakes implement them;
-  nothing of machine voices outside the domain and application layers is built.
+  (answering a `Material` of style and digests) and `MadeLines`. `services/makingtest` holds the
+  hand-written fakes every suite makes lines over.
   `speech.Style` holds a voice's style file and chooses the row for a line's symbol count.
 - `internal/infrastructure/voicefiles` reads the model, ONNX Runtime and a voice's style file from
   one folder laid out flat as `model.onnx`, `onnxruntime.dll` and `<id>.bin`. It refuses a file that
@@ -64,7 +64,14 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - `tomlfile.Decode` is the one strict TOML reader; `config` embeds `cues.toml`. The script follows both.
 - Playback already decodes `.flac`. `mewkiz/flac` is an indirect dependency; writing FLAC makes it
   direct.
-- Line counts that decide placement: `app.go` 372, `library/voice.go` 348, `main.go` 318. New code
+- Casting a machine voice is wired behind the facade. `CastMachineVoice` in `machine.go` casts through
+  the making service and confirms in a current made line (FR-511, FR-519, FR-521); casting a recorded
+  voice deletes every made line (FR-527); either kind is kept apart from the other (FR-540). A run
+  opens with the kept machine voice, falling back to a recorded one with a warning (FR-512, FR-541);
+  a rescan keeps it (FR-542); closing stops making, then releases the model. `newMaking` in `main.go`
+  reads the model files from `models` beside the executable (FR-539), refusing every machine voice
+  where that or the made lines' folder cannot be found (FR-523). Nothing on the page calls it yet.
+- Line counts that decide placement: `app.go` 373, `library/voice.go` 348, `main.go` 356. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
@@ -72,13 +79,7 @@ section 10 says: domain, then application, then infrastructure, then user interf
 
 ## M8 Composition root and user interface
 
-- `session.useVoice` builds the catalogue over either kind of audio source. New facade methods go in
-  a new root file, since `app.go` is at 372 lines. Casting a machine voice calls
-  `MakingService.Cast`; casting a recorded one calls `CastRecorded`; closing calls `Stop`. Starting
-  with a machine voice stored casts it the same way (FR-512).
-- The confirmation (FR-521) plays through `Catalogue.Acknowledgement` over the source `Cast`
-  answers. That source holds current made lines alone, so a cast with none current plays nothing.
-- Cast pane: machine voices listed apart (FR-508) by name (FR-528), how far making has got (FR-515),
+- Cast pane, casting through `CastMachineVoice`: machine voices listed apart (FR-508) by name (FR-528), how far making has got (FR-515),
   line and write failures (FR-518, FR-520, FR-530) and completeness (FR-522). Tray Voice menu
   (FR-509).
 - Wire shapes stated in Go and TypeScript, compared by the wire structural test.

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles"
+	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
 
 // From anywhere in the repository the folder is models beside go.mod.
@@ -20,8 +21,8 @@ func TestTheFolderSitsBesideGoMod(t *testing.T) {
 
 	dir, err := modelfiles.Dir(working)
 
-	if err != nil || filepath.Base(dir) != modelfiles.Folder {
-		t.Fatalf("Dir = %q, %v; want a folder named %s", dir, err, modelfiles.Folder)
+	if err != nil || filepath.Base(dir) != voicefiles.Folder {
+		t.Fatalf("Dir = %q, %v; want a folder named %s", dir, err, voicefiles.Folder)
 	}
 	if _, err := os.Stat(filepath.Join(filepath.Dir(dir), "go.mod")); err != nil {
 		t.Errorf("no go.mod beside %s: %v", dir, err)

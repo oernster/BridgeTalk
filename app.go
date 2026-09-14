@@ -208,6 +208,7 @@ func (a *App) shutdown(context.Context) {
 	if a.session.tray != nil {
 		a.session.tray.Stop()
 	}
+	a.session.release()
 }
 
 // run polls both sources and services the tray until shutdown.
@@ -293,7 +294,7 @@ func (a *App) State() StateDTO {
 	stalls, worst := a.session.player.Stalls()
 	return StateDTO{
 		Voice:        a.session.active.Name,
-		VoiceDisplay: a.session.active.Display(),
+		VoiceDisplay: a.session.active.Display,
 		Bound:        bound,
 		Total:        total,
 		Muted:        a.session.muted,

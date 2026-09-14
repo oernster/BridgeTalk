@@ -35,6 +35,8 @@ func TestChoicesSurviveASave(t *testing.T) {
 		LibraryRoot: filepath.Join("D:", "Recordings"),
 		JournalDir:  filepath.Join("E:", "Journals"),
 		Voice:       "Hugo",
+		// FR-540: both kinds of voice survive a save, though casting keeps only one of them.
+		MachineVoice: "bf_emma",
 	}
 
 	if err := store.Save(want); err != nil {

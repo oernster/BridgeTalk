@@ -32,6 +32,13 @@ const (
 	RuntimeFile = "onnxruntime.dll"
 )
 
+// Folder names the folder the files are kept in: beside the application once installed (FR-539) and
+// at the repository root on the machine that builds the setup program (FR-536).
+const Folder = "models"
+
+// Beside answers with the folder the application at executable reads the files from (FR-539).
+func Beside(executable string) string { return filepath.Join(filepath.Dir(executable), Folder) }
+
 // styleExtension follows a voice's id to name its style file, such as bf_emma.bin.
 const styleExtension = ".bin"
 

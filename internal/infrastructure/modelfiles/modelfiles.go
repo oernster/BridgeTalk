@@ -16,15 +16,12 @@ import (
 	"path/filepath"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/reporoot"
+	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
 
-const (
-	// Folder names the folder at the repository root the files are kept in.
-	Folder = "models"
-	// TokenizerFile is the model's tokenizer file. Setup does not install it; the test that holds the
-	// speech sound symbols to the model reads it.
-	TokenizerFile = "tokenizer.json"
-)
+// TokenizerFile is the model's tokenizer file. Setup does not install it; the test that holds the
+// speech sound symbols to the model reads it.
+const TokenizerFile = "tokenizer.json"
 
 // File is one listed file.
 type File struct {
@@ -52,11 +49,13 @@ var (
 	ErrNotInArchive = errors.New("not in the archive")
 )
 
-// Dir answers with the folder at the root of the repository holding from.
+// Dir answers with the folder at the root of the repository holding from. It carries the name the
+// application reads the files under beside itself (FR-539), so what setup packs from here lands where
+// the application looks.
 func Dir(from string) (string, error) {
 	root, err := reporoot.Find(from)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(root, Folder), nil
+	return filepath.Join(root, voicefiles.Folder), nil
 }

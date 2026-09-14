@@ -195,8 +195,16 @@ func (a *App) rememberJournalDir(dir string) error {
 // that follows a new library root is not, because it falls back to whatever voice is
 // there when the stored name is not, so writing the voice from remember would freeze
 // a voice nobody picked and keep honouring it every run afterwards.
+//
+// A recorded voice and a machine voice are kept apart, so casting one forgets the other (FR-540).
 func (a *App) rememberVoice(name string) error {
-	return a.keep(func(held *ports.Settings) { held.Voice = name })
+	return a.keep(func(held *ports.Settings) { held.Voice, held.MachineVoice = name, "" })
+}
+
+// rememberMachineVoice writes the cast machine voice's id down, forgetting any recorded voice, for
+// the reason rememberVoice writes a recorded one (FR-540).
+func (a *App) rememberMachineVoice(id string) error {
+	return a.keep(func(held *ports.Settings) { held.Voice, held.MachineVoice = "", id })
 }
 
 // keep reads what is stored, applies a change to it and writes it back.

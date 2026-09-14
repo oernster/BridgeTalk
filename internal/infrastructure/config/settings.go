@@ -37,6 +37,8 @@ type stored struct {
 	LibraryRoot string `json:"libraryRoot"`
 	JournalDir  string `json:"journalDir"`
 	Voice       string `json:"voice"`
+	// MachineVoice is absent from a file an older build wrote, which reads as no machine voice kept.
+	MachineVoice string `json:"machineVoice"`
 }
 
 // Settings reads and writes the choices that outlive a run.
@@ -79,9 +81,10 @@ func (s *Settings) Load() ports.Settings {
 		return ports.Settings{}
 	}
 	return ports.Settings{
-		LibraryRoot: held.LibraryRoot,
-		JournalDir:  held.JournalDir,
-		Voice:       held.Voice,
+		LibraryRoot:  held.LibraryRoot,
+		JournalDir:   held.JournalDir,
+		Voice:        held.Voice,
+		MachineVoice: held.MachineVoice,
 	}
 }
 
@@ -99,9 +102,10 @@ func (s *Settings) Save(chosen ports.Settings) error {
 	// rather than checked, because a branch nothing can reach is a branch nothing can
 	// test.
 	raw, _ := json.MarshalIndent(stored{
-		LibraryRoot: chosen.LibraryRoot,
-		JournalDir:  chosen.JournalDir,
-		Voice:       chosen.Voice,
+		LibraryRoot:  chosen.LibraryRoot,
+		JournalDir:   chosen.JournalDir,
+		Voice:        chosen.Voice,
+		MachineVoice: chosen.MachineVoice,
 	}, "", "  ")
 
 	dir := filepath.Dir(s.path)

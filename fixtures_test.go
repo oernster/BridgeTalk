@@ -11,8 +11,12 @@ import (
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
+	"github.com/oernster/bridge-talk/internal/application/services"
+	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/script"
+	"github.com/oernster/bridge-talk/internal/domain/script/scripttest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
@@ -91,12 +95,50 @@ func fixtureSession(t *testing.T, player audioPlayer, prepare ...func(root strin
 	if len(report.Empty) != 1 {
 		t.Fatalf("report named %d empty directories, want Bystander alone", len(report.Empty))
 	}
-	return &session{
+	current := &session{
 		table:     table,
 		available: found,
 		chooser:   randomChooser{source: rand.New(rand.NewSource(fixtureSeed))},
 		player:    player,
-	}, root
+	}
+	fixtureMaking(t, current, offeredFiles(nil), makingtest.NewStore())
+	return current, root
+}
+
+// fixtureScript gives the fixture's docking cue and its confirmation three lines each, so a machine
+// voice cast over the fixture has lines to make and a confirmation among them.
+func fixtureScript(t *testing.T) script.Voiced {
+	t.Helper()
+	voiced, err := scripttest.Build(map[string]script.Saved{
+		"Docked": {
+			Lines:   []string{"Line one.", "Line two.", "Line three."},
+			British: []string{"bə", "bɪ", "bi"}, American: []string{"æə", "æɪ", "æi"},
+		},
+		"Cast.Confirmed": {
+			Lines:   []string{"Line four.", "Line five.", "Line six."},
+			British: []string{"du", "dɪ", "di"}, American: []string{"dæ", "dæɪ", "dæi"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("building the fixture script: %v", err)
+	}
+	return voiced
+}
+
+// offeredFiles answers every machine voice with the fakes' material, refusing those refused names.
+func offeredFiles(refused map[string]error) makingtest.Files {
+	return makingtest.Files{Material: makingtest.Material(), Refused: refused}
+}
+
+// fixtureMaking gives a session a making service speaking the fixture script over the files and the
+// store given, with a maker of its own. Making stops when the test ends.
+func fixtureMaking(t *testing.T, current *session, files ports.VoiceFiles, store *makingtest.Store) *makingtest.Maker {
+	t.Helper()
+	maker := makingtest.NewMaker()
+	current.making = services.NewMakingService(fixtureScript(t), files, maker, store)
+	current.maker = maker
+	t.Cleanup(current.making.Stop)
+	return maker
 }
 
 // fixtureWatch is a journal watch over nothing, with names a test can tell apart from the

@@ -1393,11 +1393,11 @@ skipped; with `bf_emma.bin`'s listed digest altered, they failed.
 
 | ID | Requirement | Method |
 |---|---|---|
-| NFR-P-203 | Making all 768 lines of a complete script for one machine voice takes no more than 10 minutes on the development machine | A benchmark test that makes the script for one voice and fails over the limit; it skips where the model files are absent. Basis: 204 to 348 ms a short line, which projects to about 4 minutes |
+| NFR-P-203 | Making all 768 lines of a complete script for one machine voice takes no more than 10 minutes on the development machine | `TestMakingACompleteScriptKeepsWithinTimeAndDisk` in `tests/machinevoice`, which makes the shipped script for `bf_emma` with the real model and fails over the limit. It runs with `./test.ps1 -Benchmarks` and on every build, never in the everyday gate (Oliver, 2026-09-14); it skips while the script lacks lines for any cue. Basis: 204 to 348 ms a short line, which projects to about 4 minutes. Not yet measured: the script is incomplete. The test was proved on 2026-09-14 by planting its skip away over the incomplete script: it made the 3 lines in 1.5 s and passed, then failed naming NFR-P-203 with the limit cut to a nanosecond |
 | NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated |
 | NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
 | NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 339 MB |
-| NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | A test that makes a complete script for one voice and sums its files; it skips where the model files are absent. Measured on 2026-09-14: ten lines at 56.7 percent of their WAV size, projecting 50.4 MB |
+| NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | The same test as NFR-P-203, summing the made lines' files once making ends and failing over the limit. Measured on 2026-09-14: ten lines at 56.7 percent of their WAV size, projecting 50.4 MB. Not yet measured over a complete script. Proved the same way as NFR-P-203: the 3 lines took 0.2 MB and passed, then the test failed naming NFR-C-502 with the limit cut to one byte |
 
 ---
 

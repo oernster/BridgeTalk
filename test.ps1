@@ -10,8 +10,12 @@
 # today, so that is what it is set to. A floor picked from an aspiration only teaches
 # people to lower it; a floor at the measured number fails the moment cover is lost,
 # which is the only moment it is worth being told.
+#   ./test.ps1 -Benchmarks  also measure making a complete script with the real model
+#                           (NFR-P-203, NFR-C-502); minutes, so build.ps1 passes it and
+#                           the everyday gate does not (Oliver, 2026-09-14)
 param(
-    [double]$Floor = 100
+    [double]$Floor = 100,
+    [switch]$Benchmarks
 )
 
 $ErrorActionPreference = 'Stop'
@@ -143,5 +147,16 @@ foreach ($package in $measured.Keys) {
 # in full rather than leaving the absence to be read as an oversight.
 # internal/infrastructure/modelfiles/modelfilestest is test support with no tests of its
 # own: the modelfiles and tools/models tests run every part of it.
+
+if ($Benchmarks) {
+    # The benchmark files carry the benchmarks build tag, which the vet and the suite above leave
+    # out, so they are vetted here as well as run. The timeout sits above NFR-P-203's ten minutes,
+    # so the test itself reports a making that runs over rather than go test cutting it off.
+    Write-Host 'Measuring a complete script...'
+    go vet -tags benchmarks ./tests/machinevoice/
+    if ($LASTEXITCODE -ne 0) { throw "go vet of the benchmarks failed with exit code $LASTEXITCODE" }
+    go test -tags benchmarks -count=1 -timeout 15m -v ./tests/machinevoice/
+    if ($LASTEXITCODE -ne 0) { throw "the benchmarks failed with exit code $LASTEXITCODE" }
+}
 
 Write-Host 'All green.'

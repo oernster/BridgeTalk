@@ -279,6 +279,18 @@ missing or differs, saying to run the tool above. It then checks formatting, run
 holds each other gated package at its floor. Read the exit code rather than the last
 line of output.
 
+Making a complete script with the real model takes minutes, so the gate measures it
+only when asked; `build.ps1` always asks:
+
+```powershell
+./test.ps1 -Benchmarks
+```
+
+It vets and runs `tests/machinevoice`, whose test carries the `benchmarks` build tag.
+The test makes the shipped script for one voice and fails over NFR-P-203's ten
+minutes or NFR-C-502's 60 MB. While the script lacks lines for any cue it skips,
+saying how far the script has got.
+
 The stricter Go analysis, which `test.ps1` does not run:
 
 ```powershell

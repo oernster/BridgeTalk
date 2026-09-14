@@ -771,7 +771,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
   the platform behind them; the last is test support exercised by the `modelfiles` tests.
   TESTING.md names what each shortfall is.
-- `build.ps1` runs `test.ps1` before it builds and offers no switch to skip it. `wails build` runs the
+- `build.ps1` runs `test.ps1 -Benchmarks` before it builds and offers no switch to skip it, so every
+  build also measures making a complete script against NFR-P-203 and NFR-C-502. `wails build` runs the
   front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
   error stops the build too.
 - Neither script runs `staticcheck` or the front-end test runner. Both are run by hand, the tests with

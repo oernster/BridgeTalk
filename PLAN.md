@@ -52,6 +52,10 @@ section 10 says: domain, then application, then infrastructure, then user interf
   model is loaded when the first line is made, then kept until `Close`; a load that fails is tried
   again on the next line. Off Windows every line fails with `ErrUnsupported`. On 2026-09-14 it made the
   shipped `Docked` line for `bf_emma` from the real model files.
+- `tests/machinevoice` makes the shipped script for `bf_emma` with the real model, store and making
+  service, failing over NFR-P-203's ten minutes or NFR-C-502's 60 MB. It carries the `benchmarks`
+  build tag: `./test.ps1 -Benchmarks` and every build run it, the everyday gate does not (Oliver,
+  2026-09-14). It skips until the script holds lines for every cue.
 - `internal/infrastructure/madelines` keeps made lines as mono 16-bit FLAC at 24 kHz, one folder a
   voice, written to a part then renamed (FR-517, FR-526). Its frame headers leave the rate to the
   stream info, so the FLAC library logs nothing when the player decodes a made line. It deletes every voice's lines but one
@@ -65,14 +69,6 @@ section 10 says: domain, then application, then infrastructure, then user interf
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the
   starting point for the infrastructure, rewritten to the house standard rather than copied.
-
-## M7 Infrastructure
-
-Each part behind its port. Windows code sits behind a build tag with stubs beside it, so every
-package still builds and vets on any platform.
-
-- Tests over a complete script with the real model: NFR-P-203 (768 lines within 10 minutes) and
-  NFR-C-502 (60 MB).
 
 ## M8 Composition root and user interface
 

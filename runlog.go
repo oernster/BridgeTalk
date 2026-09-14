@@ -25,3 +25,7 @@ func keepLog() {
 		fmt.Fprintf(os.Stderr, "warning: %v (keeping no log)\n", err)
 	}
 }
+
+// runLog answers what logs the lines a run reports that need no answer (FR-553): the error output
+// keepLog pointed at the log, so it is asked for after keepLog.
+func runLog() runlog.Lines { return runlog.NewLines(os.Stderr) }

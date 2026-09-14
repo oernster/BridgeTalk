@@ -12,23 +12,39 @@ section 10 says: domain, then application, then infrastructure, then user interf
   copied from its tokenizer file by a script; `TestTheSymbolTableIsTheModelsOwn` in `tests/structural`
   holds the table to `models/tokenizer.json`. It turns speech sounds into those numbers, refusing
   more than 510 (FR-506). It reads the spellings a line gives, refusing every broken form (FR-529,
-  FR-531).
+  FR-531). `speech.Words` is the table of words whose sounds are given once for every line (FR-549).
 - `internal/domain/script` holds the script checked against the cue table (FR-503 to FR-505,
-  FR-531). `config` embeds `script.toml`, which holds three lines for each of the 256 cues. A
+  FR-531). `config` embeds `script.toml`, which holds three lines for each of the 256 cues, a
+  `[words]` table giving commander's sounds and a `[joins]` table naming commander. A
   structural test reads it through those rules and fails the build on a cue without lines (FR-507).
+  `script` joins a final commander after a comma to the word before it (FR-550).
 - `tools/sounds` makes every line's speech sounds in each accent with misaki in its own venv and
   saves them to `sounds.toml`, which `config` embeds beside the script. The structural test checks
-  them (FR-506, FR-532 to FR-534). Run `go run ./tools/sounds` from the repository root after
+  them (FR-506, FR-532 to FR-534, FR-549, FR-550). Run `go run ./tools/sounds` from the repository root after
   changing `script.toml`.
-- `internal/domain/making` gives each line's key from its speech sounds, the style file and the
-  model (FR-513). Set against the keys on disk, it lists the lines still to make, a cue's lines still
+- `internal/domain/pause` holds the digest of a line's samples, the book of every voice's pauses,
+  inserting the silence, the doubtful rule and the check that the pauses are not stale (FR-551 to
+  FR-554). `config` embeds `pauses.toml`, which the pauses tool's full run wrote;
+  `TestTheShippedPausesAreNotStale` in `tests/structural` fails the build where it goes stale.
+- `tools/pauses` makes every joined line for each of the 28 voices with the model in `models/`, finds
+  the break before commander with Praat in its own venv and writes `pauses.toml` (FR-551, FR-552).
+  Its venv is made once with Python 3.13.11 as `python -m venv tools/pauses/venv`, then installed
+  from `tools/pauses/requirements.txt`. Run `go run ./tools/pauses` from the repository root after
+  the saved speech sounds or the model files change; all 28 voices take about 35 minutes, since two
+  took 152 s. `-only` with `-out` finds some voices into another file. Both tools find their venv's
+  Python through `tools/internal/pyvenv`.
+- `internal/domain/making` gives each line's key from its speech sounds, the style file, the
+  model and the pause the book gives it (FR-513, FR-553). Set against the keys on disk, it lists the lines still to make, a cue's lines still
   to make and the keys on disk no line holds; it counts how many lines are current and how many cues
   are served (FR-511, FR-512, FR-514, FR-515, FR-522, FR-527).
 - `services.MakingService` makes a cast machine voice's confirmation when it is cast and every other
   line the first time its cue asks through `MakeNext`, over the ports in `ports/making.go`, tested with
   hand-written fakes (FR-511, FR-512, FR-514, FR-516, FR-518 to FR-520, FR-527, FR-530). A cast deletes
   that voice's lines no longer current; casting a recorded voice deletes nothing. A cast loads the model
-  without waiting for it (FR-544). The audio source a
+  without waiting for it (FR-544). A line the book gives a pause is written with 40 ms of silence at
+  its sample where its samples' digest matches the book's; where it differs, the line is written as
+  made and logged through `ports.RunLog`, which `runlog.Lines` implements over the run's error output
+  and `main.go` wires (FR-553). The audio source a
   cast answers with plays current made lines alone. `script/scripttest` builds a voiced script for
   every suite that needs one.
 - `library.Catalogue` answers from `ports.AudioSource` under the name it is given (FR-501); a
@@ -94,7 +110,7 @@ section 10 says: domain, then application, then infrastructure, then user interf
   hands it over on `Tick`, which the poll tick calls through `tickMaking` in `machine.go`. A machine
   cast's confirmation plays once it is written (FR-521). `TestAMachineVoiceIsCastWithinFiveSeconds`
   in `tests/machinevoice` measured 1.348 s for NFR-P-205 on 2026-09-14, with the model loaded at the cast.
-- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 373. New code
+- Line counts that decide placement: `app.go` 376, `library/voice.go` 348, `main.go` 379. New code
   goes in new files.
 - The probes from 2026-09-13 to 14 survive in an old session scratchpad: the ONNX Runtime caller and the
   FLAC writer. They are the starting point for the infrastructure, rewritten to the house standard

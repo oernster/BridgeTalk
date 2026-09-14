@@ -3,6 +3,7 @@
 package machinevoice
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -10,10 +11,12 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles/modelfilestest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
 	"github.com/oernster/bridge-talk/internal/infrastructure/speechmodel"
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
@@ -44,6 +47,16 @@ func shipped(t *testing.T) (cue.Table, script.Voiced) {
 	return table, voiced
 }
 
+// shippedPauses loads the shipped pauses, which the application makes its lines with (FR-553).
+func shippedPauses(t *testing.T) pause.Book {
+	t.Helper()
+	book, err := config.LoadPauses()
+	if err != nil {
+		t.Fatalf("pauses.toml: %v", err)
+	}
+	return book
+}
+
 // TestAMachineVoiceIsCastWithinFiveSeconds casts the measured voice over an empty store with the real
 // model, then holds how soon its confirmation is current, with the hand-over added, to NFR-P-205. It
 // then asks for the last cue in the table, which nothing has made; it holds how soon that cue's first
@@ -64,7 +77,9 @@ func TestAMachineVoiceIsCastWithinFiveSeconds(t *testing.T) {
 
 	maker := speechmodel.New(dir)
 	defer maker.Close()
-	service := services.NewMakingService(voiced, confirmation, voicefiles.New(dir), maker, madelines.New(t.TempDir()))
+	service := services.NewMakingService(
+		voiced, shippedPauses(t), confirmation, voicefiles.New(dir), maker, madelines.New(t.TempDir()), runlog.NewLines(os.Stderr),
+	)
 	defer service.Stop()
 
 	started := time.Now()

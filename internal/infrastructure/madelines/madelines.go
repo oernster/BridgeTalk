@@ -101,7 +101,7 @@ func (s Store) Write(voice machinevoice.Voice, key string, samples []float32) er
 	if err := os.MkdirAll(folder, folderPerm); err != nil {
 		return fmt.Errorf("making %s: %w", folder, refusal.Reason(err))
 	}
-	encoded := encode(sixteenBits(samples))
+	encoded := encode(SixteenBits(samples))
 	return wholefile.Write(s.Path(voice, key), partSuffix, filePerm, func(part io.Writer) error {
 		_, err := part.Write(encoded)
 		return err
@@ -123,9 +123,9 @@ func (s Store) Delete(voice machinevoice.Voice, keys []string) error {
 
 func (s Store) voiceDir(voice machinevoice.Voice) string { return filepath.Join(s.dir, voice.ID()) }
 
-// sixteenBits turns the model's samples into FR-526's: clamped to between -1 and 1, scaled to 16
+// SixteenBits turns the model's samples into FR-526's: clamped to between -1 and 1, scaled to 16
 // bits and rounded.
-func sixteenBits(samples []float32) []int32 {
+func SixteenBits(samples []float32) []int32 {
 	out := make([]int32, len(samples))
 	for index, sample := range samples {
 		out[index] = int32(math.Round(math.Max(-1, math.Min(1, float64(sample))) * math.MaxInt16))

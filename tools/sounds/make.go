@@ -18,7 +18,8 @@ type maker interface {
 }
 
 // makeSounds makes every line's speech sounds in each accent, one call an accent, each line
-// written with that accent's spelling (FR-529, FR-532).
+// written with that accent's spelling and the table of words; a line FR-550 joins is saved with
+// the comma before its final word left out (FR-529, FR-532, FR-549, FR-550).
 func makeSounds(loaded script.Script, sounds maker) (map[string]script.Saved, error) {
 	made := make(map[machinevoice.Accent][]string, len(machinevoice.Accents()))
 	for _, accent := range machinevoice.Accents() {
@@ -26,7 +27,7 @@ func makeSounds(loaded script.Script, sounds maker) (map[string]script.Saved, er
 		for _, id := range loaded.Cues() {
 			lines, _ := loaded.Lines(id)
 			for _, line := range lines {
-				written = append(written, line.ForAccent(accent))
+				written = append(written, loaded.Words().Spell(line, accent))
 			}
 		}
 		answered, err := sounds.Make(accent, written)
@@ -44,9 +45,17 @@ func makeSounds(loaded script.Script, sounds maker) (map[string]script.Saved, er
 		lines, _ := loaded.Lines(id)
 		var entry script.Saved
 		for _, line := range lines {
+			joined := make(map[machinevoice.Accent]string, len(machinevoice.Accents()))
+			for _, accent := range machinevoice.Accents() {
+				each, err := loaded.Join(line, accent, made[accent][next])
+				if err != nil {
+					return nil, fmt.Errorf("%q line %q %s: %w", id, line.Text(), accent, err)
+				}
+				joined[accent] = each
+			}
 			entry.Lines = append(entry.Lines, line.Text())
-			entry.British = append(entry.British, made[machinevoice.British][next])
-			entry.American = append(entry.American, made[machinevoice.American][next])
+			entry.British = append(entry.British, joined[machinevoice.British])
+			entry.American = append(entry.American, joined[machinevoice.American])
 			next++
 		}
 		saved[string(id)] = entry

@@ -20,9 +20,12 @@ var ErrInvalidScript = errors.New("invalid script")
 // does not sound the same each time (FR-505).
 const LinesPerCue = 3
 
-// Script is the lines each cue is spoken with.
+// Script is the lines each cue is spoken with, the table of words spelling them (FR-549) and the
+// words joined after a final comma (FR-550).
 type Script struct {
-	byCue map[cue.ID][]speech.Line
+	byCue          map[cue.ID][]speech.Line
+	words          speech.Words
+	joinAfterComma []string
 }
 
 // New builds a script from cue ids to lines, checked against the table. Every problem is

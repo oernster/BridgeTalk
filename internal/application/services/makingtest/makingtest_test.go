@@ -128,6 +128,56 @@ func TestTheMakerCountsLoadsHoldsThemAndFailsWhenTold(t *testing.T) {
 	}
 }
 
+func TestTheMakerAnswersEachLineWithACopyOfTheSamplesGiven(t *testing.T) {
+	t.Parallel()
+	maker := makingtest.NewMaker()
+	maker.Answer = []float32{1, 2}
+
+	first, err := maker.Make(context.Background(), []int64{1, 2, 3}, nil)
+	if err != nil || !slices.Equal(first, []float32{1, 2}) {
+		t.Fatalf("Make = %v, %v; want the samples given", first, err)
+	}
+	first[0] = 9
+	if again, _ := maker.Make(context.Background(), nil, nil); !slices.Equal(again, []float32{1, 2}) {
+		t.Errorf("a second Make = %v after the first answer was changed; want the samples given", again)
+	}
+}
+
+func TestTheStoreKeepsACopyOfTheSamplesWrittenUnderEachKey(t *testing.T) {
+	t.Parallel()
+	voice := emma(t)
+	store := makingtest.NewStore()
+	store.FailWrite = 2
+	samples := []float32{1, 2}
+
+	if err := store.Write(voice, "a", samples); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	samples[0] = 9
+	_ = store.Write(voice, "b", samples)
+	if got, ok := store.Written("bf_emma", "a"); !ok || !slices.Equal(got, []float32{1, 2}) {
+		t.Errorf("Written(a) = %v, %v; want the samples as they were written", got, ok)
+	}
+	if got, ok := store.Written("bf_emma", "b"); ok {
+		t.Errorf("Written(b) = %v after its write failed, want nothing", got)
+	}
+}
+
+func TestTheLogKeepsItsLinesInOrder(t *testing.T) {
+	t.Parallel()
+	log := &makingtest.Log{}
+	log.Log("first")
+	log.Log("second")
+	lines := log.Lines()
+	if !slices.Equal(lines, []string{"first", "second"}) {
+		t.Fatalf("Lines = %v, want first then second", lines)
+	}
+	lines[0] = "changed"
+	if got := log.Lines(); got[0] != "first" {
+		t.Errorf("Lines = %v after the answer was changed, want the log's own copy kept", got)
+	}
+}
+
 func TestAwaitReturnsOnceTheChannelCloses(t *testing.T) {
 	t.Parallel()
 	closed := make(chan struct{})

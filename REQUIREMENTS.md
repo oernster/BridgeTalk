@@ -51,6 +51,7 @@ project.
 | Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
 | Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
 | Changing a machine voice's speed or pitch | Every line is made at the model's own speed |
+| Processing a made line's audio | The model's samples are written as made, apart from the pause FR-553 inserts at a spot measured before the build (Oliver, 2026-09-14) |
 | Working out pronunciation while the application runs | Every line's speech sounds are made before the build by the sounds tool (FR-532); a misread word is put right in the script (FR-529) |
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
@@ -70,6 +71,7 @@ project.
 | **Script** | `script.toml`: the words each cue is spoken with, shared by every machine voice. |
 | **Line** | One entry in the script for a cue. A cue in the script has three. |
 | **Made line** | An audio file the application made from one line for one machine voice. |
+| **Pause** | 40 ms of silence the application inserts in a made line before a final commander, at the sample the pauses tool found for that voice and line (FR-551, FR-553). |
 | **Library root** | One directory the user chooses, holding one subdirectory per voice. |
 | **Manifest** | `voice.toml` in a voice directory. Optional; it may carry the name a voice is shown by, a credit and takes the convention cannot find (FR-210). |
 | **Take** | One audio file answering one cue. A cue may have several takes. |
@@ -959,7 +961,13 @@ Later the same day he replaced the making of every line after the cast: a cast m
 alone, every other line is made the first time its cue fires and every machine voice keeps its made
 lines (FR-511, FR-527). Later still he asked to hear every machine voice on the Audition pane; he
 accepted Claude's recommendation that a press makes the line it plays where that line is not yet made,
-keeping it (FR-545 to FR-548).
+keeping it (FR-545 to FR-548). Last of all he ruled how commander is spoken after a comma. The comma
+goes and commander is joined to the word before it; British voices use the short vowel he picked by
+ear; 40 ms of silence goes in before commander. He accepted Claude's recommendations that the spot is
+found for every voice before the build rather than while the application runs, that a line whose spot
+is doubtful gets no pause and that a line whose samples differ from those measured is written without
+one and logged (FR-549 to FR-554). Inserting that silence is the one change made to a made line's
+samples; the pitch itself is not processed.
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -977,6 +985,26 @@ Measured before any of this was written, on the development machine, processor o
   making took 0.71 s. spaCy imports click, which nothing else installed, so it is pinned by hand.
 - The files a machine voice is made from sum to about 339 MB: the model 310.5 MB, the 28 voice style
   files 14.6 MB and ONNX Runtime 14.2 MB. misaki's dictionaries and eSpeak NG do not ship.
+
+Measured for the pause before commander on 2026-09-14, on the development machine:
+
+- `model.onnx` declares the inputs `input_ids`, `style` and `speed` with one output, `waveform`: it
+  gives samples with no word timings.
+- After a comma, commander's voice began 1.6 to 3.1 semitones above the end of the word before it
+  over three lines each for `bf_emma` and `am_michael`. Joined to the word before, the same six takes
+  ranged from 1.0 below to 1.5 above. Every other way of writing the pause that was tried kept the
+  jump in most takes.
+- Of 40, 60, 80, 100 and 150 ms of silence before commander, Oliver chose 40 ms by ear, then heard it
+  right on "Breathable atmosphere", "Jumping now" and "I'm your ship's voice now" for both voices.
+- Over 960 joined takes, the 240 lines of FR-550 for `bf_emma`, `bm_george`, `am_michael` and
+  `af_heart`, the break found by FR-551's rule and by a plain autocorrelation check agreed on 953,
+  counting 4 cuts within 5 ms of each other as agreeing. All 7 left were `bm_george`; in the 4 judged
+  by eye, FR-551's rule was right. A rule reading loudness alone, scored against an earlier Praat
+  rule that demanded a break of 60 ms, agreed on 873 of 958.
+- With that rule, 69 of the 960 takes had a final voiced stretch more than a quarter away from their
+  voice's median (FR-552).
+- Eight lines made again in a second process matched the first byte for byte. Whether another machine
+  makes the same samples is not measured; FR-553 is written so that it does not matter.
 
 The script, `script.toml`, sits beside `cues.toml`:
 
@@ -1115,16 +1143,21 @@ in `machine_test.go`, with the tests FR-511 names for making the lines on cast. 
 **FR-513 A made line is current only while what it was made from is unchanged**
 Priority: Must.
 The application shall treat a made line as current only while its line's saved speech sounds, its
-voice's style file and the model file are the ones it was made from.
-Rationale: an edited line, new speech sounds, a new voice file or a new model arriving in an update
-must be heard, rather than an old rendering of it.
+pause (FR-553), its voice's style file and the model file are the ones it was made from.
+Rationale: an edited line, new speech sounds, a changed pause, a new voice file or a new model
+arriving in an update must be heard, rather than an old rendering of it.
 Acceptance: Given current made lines for `bf_emma`, when the line "Docking complete." is changed to
 "Docked." and the application starts, then that line is made again and no other line is.
 Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 `TestANewStyleFileMakesEveryLineAgain` and `TestAKeyChangesWithTheSoundsTheStyleFileOrTheModel` in
 `internal/domain/making/making_test.go` for the key with `TestAVoicesMaterialIsReadFromItsFiles` in
-`internal/infrastructure/voicefiles/voicefiles_test.go` for the digests; the made lines on disk are not
-built.
+`internal/infrastructure/voicefiles/voicefiles_test.go` for the digests;
+`TestALineCarriesItsVoicesPauseAndNoOther`, `TestALineWithNoPauseOrADoubtfulOneKeepsItsKeyFromBeforePauses`
+(against a key computed as it was before pauses), `TestAPausedLinesKeyChangesWithItsSampleOrItsDigest` and
+`TestALineWhosePauseChangedIsTheOnlyOneMadeAgain` in `internal/domain/making/pause_test.go` for the pause
+in the key. Proved on 2026-09-14 by planting the sample left out of a paused key, a doubtful pause added
+to the key, a pause looked up for one voice whatever the voice, a paused line keeping its unpaused key
+and a doubtful line counted as paused; each failed its test. The made lines on disk are not built.
 
 **FR-514 A cue with nothing made is made when it fires**
 Priority: Must.
@@ -1414,11 +1447,12 @@ Rationale: the script is embedded, so every word the application speaks is known
 working out pronunciation while it runs has nothing to do that making the sounds beforehand does not
 do better (Oliver, 2026-09-14). misaki's own output is exact where a Go port reached 99.4 percent;
 the setup program also carries about 30 MB less.
-Acceptance: Given the line "Fuel reserves are running low, commander.", when the sounds tool runs,
-then the last word's British saved sounds read `kəmˈɑːndə` and its American saved sounds `kəmˈændəɹ`.
-Verified by: in part, `TestTheShippedScriptIsVoiced` in `internal/infrastructure/config/sounds_test.go`
-and `TestEveryLineIsMadeInEachAccentFromItsSpelling` in `tools/sounds/make_test.go`; making a line from
-its saved sounds is not built. Measured on 2026-09-14: `sounds.py` gave `kəmˈɑːndə` and `kəmˈændəɹ`
+Acceptance: Given the line "Fuel no longer low, commander.", when the sounds tool runs, then every word
+but the last is saved with misaki's own sounds in each accent; the last is saved as FR-549 and FR-550
+say, ending `lˈQkəmˈɑndə.` for British voices and `lˈOkəmˈændəɹ.` for American ones.
+Verified by: in part, `TestTheShippedScriptIsVoiced` and `TestTheShippedScriptJoinsAFinalCommanderAndNoOther`
+in `internal/infrastructure/config/sounds_test.go`; `TestEveryLineIsMadeInEachAccentFromItsSpelling` in
+`tools/sounds/make_test.go`; making a line from its saved sounds is not built. Measured on 2026-09-14: `sounds.py` gave `kəmˈɑːndə` and `kəmˈændəɹ`
 for commander.
 
 **FR-533 If a line's saved speech sounds are missing or stale, then the build fails**
@@ -1698,6 +1732,223 @@ Verified by: `TestAnAuditionThatCannotBeMadeAnswersWhyKeepingNothing` in
 failed write; `TestAMachineVoiceAuditionThatCannotBeMadeSaysWhy` in `audition_machine_test.go`; "holds the
 buttons while a line is made and says why one cannot be" in `frontend/src/audition.machine.test.tsx`.
 Proved on 2026-09-14 by planting a failure that leaves the buttons held; it failed its test.
+
+**FR-549 A word's speech sounds may be given once for the whole script**
+Priority: Should.
+Where `script.toml` gives a word a British and an American spelling of its speech sounds in its table
+of words, the sounds tool shall save that word with those sounds in every line holding it, as though
+each line gave them (FR-529).
+Note: the table reads `[words]` then `commander = ["kəmˈɑndə", "kəmˈændəɹ"]`.
+Rationale: commander is in 246 of the 768 lines; giving its sounds in each line would write one
+spelling 246 times. Oliver chose the British `kəmˈɑndə` over misaki's `kəmˈɑːndə` by ear on
+2026-09-14.
+Acceptance: Given the table giving commander `kəmˈɑndə` and `kəmˈændəɹ`, when the sounds tool runs,
+then "Sold, commander. Credits are in." is saved with `kəmˈɑndə` for British voices and `kəmˈændəɹ`
+for American ones; so is every other line holding commander.
+Verified by: `TestAWordsTwoSpellingsGiveBritishThenAmerican`, `TestOneSpellingOfAWordServesBothAccents`,
+`TestABrokenWordIsRefusedNamingItAndSayingWhy`, `TestATableWordIsSpelledWhereverItStandsWhole`,
+`TestATableWordIsSpelledOnlyWholeAndInItsExactCase`, `TestAWordTheLineSpellsKeepsTheLinesOwnSpelling` and
+`TestTheLongerOfTwoTableWordsIsSpelledFirst` in `internal/domain/speech/words_test.go`;
+`TestAScriptGivesItsTableOfWords` and `TestABrokenTableOfWordsIsRefusedNamingTheWord` in
+`internal/domain/script/join_test.go`; `TestATableWordIsHandedToTheMakerSpelledForEachAccent` in
+`tools/sounds/make_test.go`; `TestTheShippedScriptGivesCommandersSounds` and
+`TestAScriptsBrokenLinesWordsAndJoinsAreRefusedTogether` in `internal/infrastructure/config/script_test.go`;
+`TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go` for a table the model cannot
+read. Proved on 2026-09-14 by planting a table entry holding a slash accepted, a letter before a word
+ignored, a letter after a word ignored, the shorter of two table words spelled first, a line's own
+spelling overridden by the table, a sounds tool that ignores the table, a loader that drops the table's
+problem and a commander spelling the model does not read in `script.toml`; each failed its test.
+Measured on 2026-09-14 after the tool ran: the British saved sounds of the 246 lines holding commander
+changed, each only in commander's spelling, while no other line changed; "Sold, commander. Credits are
+in." saves `sˈQld, kəmˈɑndə. kɹˈɛdɪts ɑː ˈɪn.` and `sˈOld, kəmˈændəɹ. kɹˈɛdəts ɑɹ ˈɪn.`.
+
+**FR-550 A final commander after a comma is joined to the word before it**
+Priority: Should.
+Where a line ends with a comma followed by commander, the sounds tool shall save its speech sounds in
+each accent with the comma and the space before commander left out, joining commander to the word
+before it.
+Rationale: after a comma the model restarts its pitch on commander, which Oliver heard as the start of
+a new sentence; joined, the jump fell in every take measured (section 6.1). Oliver ruled that the pitch
+itself is not processed (2026-09-14). The four lines where commander follows a comma without ending
+the line were not measured, so they keep their comma.
+Acceptance: Given "Breathable atmosphere, commander.", when the sounds tool runs, then its British
+saved sounds read `bɹˈiːðəbᵊl ˈatməsfɪəkəmˈɑndə.` and its American `bɹˈiðəbᵊl ˈætməsfˌɪɹkəmˈændəɹ.`;
+"Sold, commander. Credits are in." keeps its comma.
+Verified by: `TestAWordJoinedWithoutSoundsInTheTableIsRefusedNamingIt`,
+`TestAFinalWordAfterACommaIsJoinedToTheWordBefore`,
+`TestALineThatDoesNotEndWithACommaAndAJoinedWordKeepsItsSounds`,
+`TestSoundsThatDoNotEndAsTheTableSpellsThemCannotBeJoined`, `TestJoinedListsEveryJoiningLineInCueThenLineOrder`
+and `TestAScriptWithoutATableOfWordsJoinsNothing` in `internal/domain/script/join_test.go`;
+`TestAJoiningLineIsSavedWithItsCommaLeftOut` and
+`TestAnAnswerThatCannotBeJoinedStopsTheRunNamingTheCueTheLineAndTheAccent` in `tools/sounds/make_test.go`;
+`TestTheShippedScriptJoinsAFinalCommanderAndNoOther` in `internal/infrastructure/config/sounds_test.go` for
+the acceptance over the shipped files; `TestTheShippedScriptHoldsNoProblem` in
+`tests/structural/script_test.go` for a joined word the table lacks. Proved on 2026-09-14 by planting a
+join that finds the word anywhere in the line rather than at its end, unjoinable sounds returned in
+silence (failing both the domain test and the tool test), a joined word missing from the table accepted,
+a joined line listed at the wrong place, a sounds tool that saves joining lines unjoined and `pilot`
+joined in `script.toml` without sounds; each failed its test. Measured on 2026-09-14 after the tool ran:
+240 lines join in each accent; the American saved sounds of exactly those 240 changed; misaki's answer
+ended with the comma and the given spelling in every one.
+
+**FR-551 The pauses tool**
+Priority: Should.
+The repository shall hold the pauses tool under `tools/pauses` with its own Python venv, its packages
+pinned to those section 6.1 measured with: Python 3.13.11, praat-parselmouth 0.4.7, numpy 2.5.3 and
+soundfile 0.14.0. In one run the tool shall make every line FR-550 joins for each of the 28 machine
+voices with the model files of FR-535, find the break before commander in each and write
+`pauses.toml` whole beside `sounds.toml`. For each voice and line the file shall give the saved speech
+sounds the line was made from, a digest of the samples the break was found in and the sample the pause
+goes at; where the break is doubtful (FR-552), it shall give no sample. It shall also give the digests of
+the model file and of each voice's style file the lines were made with.
+The break is the last unvoiced stretch before the final voiced stretch of at least 200 ms, reading
+voicing with Praat in 10 ms frames and counting an unvoiced gap of up to 20 ms as voiced. The pause
+goes at the middle of the quietest 10 ms within the break.
+Note: Praat reads voicing between 120 and 350 Hz for a female voice and between 65 and 200 Hz for a
+male one, the ranges of the measurements in section 6.1; they were not tuned for the other 24 voices.
+Making 6,720 lines at the 0.28 s a line measured takes about 31 minutes. The venv is not committed;
+`.gitignore` already ignores `venv/`.
+Rationale: the model gives samples with no word timings, so the break is found in the sound. Finding it
+before the build means every pause is known before it ships, where a check run while the application
+runs could not be verified for the 24 voices never measured (Oliver, 2026-09-14). The rule did best
+of those measured over 960 takes (section 6.1). The tool keeps its own venv as the sounds tool does
+(FR-534).
+Acceptance: Given `models/` filled as the list says, when the tool runs, then `pauses.toml` gives each
+of the 28 voices an entry for each of the 240 lines FR-550 joins and the tool prints how many of each
+voice's lines are doubtful.
+Verified by: in part, `TestADigestIsTheSha256OfEachSamplesLittleEndianBitsCutShort` and
+`TestSamplesWrittenWithOtherBitsHaveAnotherDigest` in `internal/domain/pause/digest_test.go` for the digest;
+`TestABookGivesWhatItWasMadeWith`, `TestABookIsTheCallersOwnCopy`, `TestTheEmptyBookIsValid`,
+`TestALineWithNoSoundsOrNoDigestIsRefusedNamingIt`, `TestANegativeIndexIsRefusedNamingTheCue`,
+`TestAPauseAtTheStartOfALineIsRefused` and `TestTheSameLineTwiceInOneVoiceIsRefused` in
+`internal/domain/pause/book_test.go` for what a book may hold; `TestTheShippedPausesLoad`,
+`TestTheEmptyBookIsWrittenAsItsHeaderAlone`, `TestPausesAreWrittenAsAFileThatReadsBackTheSame`,
+`TestADoubtfulLineIsWrittenWithoutASampleAndAPausedLineWithoutDoubtful`,
+`TestPausesWithAKeyOutsideTheirShapeAreRefused`, `TestPausesThatAreNotTomlAreRefused` and
+`TestPausesTheBooksRulesRefuseAreRefused` in `internal/infrastructure/config/pauses_test.go` for
+`pauses.toml`. Proved on 2026-09-14 by planting a digest read big-endian, negative zero folded into
+zero, empty sounds accepted, an empty digest accepted, a negative index accepted, a pause at sample 0
+accepted, a doubtful line held to a sample, the same line twice accepted, a book keeping the caller's
+entries, a book handing out its own, a doubtful line written with its sample, a zero silence written,
+a false doubtful written, a decode error dropped, a book's refusal dropped and a header naming the
+sounds tool; each failed its test. The pauses tool itself, over a hand-written maker and finder:
+`TestEachVoicesEntriesFollowTheLinesTheScriptJoinsInOrder`,
+`TestTheDigestRecordedIsTheSamplesOwnAndTheFinderReadsThemAtSixteenBits` and
+`TestTheLinesWrittenForTheFinderAreRemovedOnceItAnswers` in `tools/pauses/find_test.go`;
+`TestAFinderAnsweringTheWrongNumberOfLinesIsRefused`, `TestACutOutsideItsLineIsRefused`,
+`TestAMakerThatFailsStopsTheRunNamingTheVoiceAndTheLine`, `TestAFinderThatFailsStopsTheRunNamingTheVoice`,
+`TestAVoiceWhoseFilesCannotBeOpenedStopsTheRun` and `TestAModelFileThatChangesDuringTheRunIsRefused` in
+`refusals_test.go` beside it; `TestTheSilenceIsFortyMillisecondsOfSamples`,
+`TestTheFinderIsAskedWithEverySettingAndTheVoicesPitchRange`,
+`TestALineIsWrittenAsSixteenBitMonoWAVAtTheModelsRate` and `TestALineThatCannotBeWrittenIsRefusedNamingItsPath`
+in `settings_test.go`; `TestWithoutFlagsEveryVoiceIsFoundForTheShippedFile`,
+`TestOnlyTakesVoicesRepeatedOrCommaSeparatedInTheOrderTheyAreOffered`, `TestOnlyRefusesToWriteTheShippedFile`,
+`TestAnUnknownVoiceIsRefused` and `TestAFlagTheToolDoesNotHaveIsRefused` in `options_test.go`. Proved on
+2026-09-14 by planting a digest of other samples, an answer count unchecked, a maker failure naming no
+line, a cut at a line's last sample accepted, a model change unchecked, the lines left behind, every voice
+made in British, cuts matched to lines backwards, a run with `-only` writing the shipped file, the shipped
+file compared unresolved, a silence of 50 ms, a male voice read in the female band, one frame too many
+bridged and a WAV header claiming 24 bits; each failed its test. `pauses.py` was held to the rule over
+the 480 joined takes of `bf_emma` and `bm_george` an earlier probe of the rule had measured: it found the
+same break and the same pause sample in all 480; planting a bridged gap one frame short left 341 breaks
+the same. Measured on 2026-09-14 with `-only bf_emma,bm_george`: the run took 152 s; each of the 412
+samples it gave fell inside the probe's break; a second run over `bf_emma` gave the same digest, sample
+and verdict for all 240 lines. The venv was made with Python 3.13.11 from `tools/pauses/requirements.txt`.
+Measured on 2026-09-14 over all 28 voices: the full run wrote the shipped `pauses.toml` in 32.9 minutes.
+
+**FR-552 If a line's break is doubtful, then it gets no pause**
+Priority: Should.
+If the final voiced stretch after a line's break is more than a quarter longer or shorter than the
+median over that voice's lines, then the pauses tool shall give the line no pause and list it by voice,
+cue and line.
+Rationale: each wrong break judged by eye on 2026-09-14, whichever check had found it, moved the final
+voiced stretch far more than that. A break found inside commander left 0.20 to 0.22 s where
+`bf_emma`'s median is 0.48 s; a break found before the word ahead left 0.80 to 1.16 s where
+`bm_george`'s median is 0.56 s. A line with no pause is
+spoken joined (FR-550), where a pause in the wrong place would split a word or a phrase (recommended by
+Claude, accepted by Oliver on 2026-09-14).
+Acceptance: Given a voice whose lines' final voiced stretches have a median of 480 ms, when one line's
+is 290 ms, then that line is given no pause and is listed; a line at 520 ms is given its pause.
+Verified by: in part, `TestALineFarFromItsVoicesMedianIsDoubtful` for the acceptance,
+`TestTheMedianOfAnEvenCountIsTheMeanOfTheMiddleTwo`, `TestALineExactlyAQuarterFromTheMedianIsNotDoubtful`,
+`TestAFinalThatIsNotPositiveIsDoubtful` and `TestNoLinesAreJudgedAsNone` in
+`internal/domain/pause/doubtful_test.go` for the rule. Proved on 2026-09-14 by planting a share of a
+half, a line exactly a quarter away judged doubtful, the upper middle taken as an even count's median,
+a final of zero judged sure and no guard for no lines; each failed its test. The pauses tool:
+`TestALineWithNoCutNoFinalOrADoubtfulFinalGetsNoPause`, `TestALineWithNoBreakIsLeftOutOfItsVoicesMedian` and
+`TestEachVoiceIsListedWithItsDoubtfulLinesThenTheTotal` in `tools/pauses/find_test.go`, proved on
+2026-09-14 by planting a far final ignored, a line with no cut or no final kept sure, a line with no
+break counted in the median as zero and sure lines listed; each failed its test. A line with no break
+takes no part in its voice's median. Measured on 2026-09-14 with `-only bf_emma,bm_george`: `bf_emma`
+had 68 of 240 lines doubtful around a median final of 0.48 s and `bm_george` none around 0.56 s; the
+rule applied to the earlier probe's takes gave the same verdict on all 480 lines. Over all 28 voices
+the full run gave 999 of 6,720 lines doubtful: none for `am_michael`, `bm_daniel` and `bm_george`; 117
+for `am_santa`.
+
+**FR-553 A made line gets its pause only where its samples are those measured**
+Priority: Should.
+When a line FR-550 joins is made for a machine voice (for a cue or for an audition) where
+`pauses.toml` gives that voice and line a sample, the application shall write the made line with 40 ms
+of silence inserted at that sample where the digest of the samples made equals the one saved. Where
+the digests differ, it shall write the samples as made and log the voice, the cue and the line.
+Rationale: Oliver chose 40 ms by ear on 2026-09-14 (section 6.1). A line whose samples differ from
+those measured keeps no pause rather than one at a spot found in other samples. A log line alone is
+enough, since the player still hears the whole line (recommended by Claude, accepted by Oliver on
+2026-09-14).
+Acceptance: Given `pauses.toml` giving `bf_emma` and "Breathable atmosphere, commander." a pause at
+sample S found in samples with digest D, when that line is made with samples of digest D, then the
+made line holds 960 more samples than the model gave, the 960 at the model's 24 kHz being silence
+starting at S. When it is made with samples of another digest, then the made line holds the model's
+samples unchanged and the log names `bf_emma`, `BreathableAtmosphere.Set` and the line.
+Verified by: in part, `TestSilenceGoesInBeforeTheSampleAskedForLeavingTheSamplesAlone`,
+`TestNoSilenceAnswersTheCallersOwnCopy` and `TestSilenceOutsideTheLineIsRefused` in
+`internal/domain/pause/insert_test.go` for inserting the silence;
+`TestAPauseWithNoSilenceToInsertIsRefusedNamingTheLine` in `internal/domain/pause/book_test.go` with the
+digest tests FR-551 names; `TestARunWritesALineWithItsPauseWhereItsSamplesAreThoseMeasured`,
+`TestARunWritesSamplesOtherThanThoseMeasuredAsMadeLoggingTheLine`,
+`TestADoubtfulLineIsWrittenAsMadeLoggingNothing`, `TestAPauseThatCannotBeInsertedIsALineThatCannotBeMade`,
+`TestAnAuditionWritesTheLineWithItsPauseOrAsMadeLoggingWhereItsSamplesDiffer` and
+`TestAnAuditionWhosePauseCannotBeInsertedAnswersWhyKeepingNothing` in
+`internal/application/services/making_pause_test.go` for a run and an audition over fakes;
+`TestEachLineLoggedIsWrittenOnALineOfItsOwn` in `internal/infrastructure/runlog/lines_test.go` for the
+log. Proved on 2026-09-14 by planting the end of a line refused, a refusal that does not wrap
+`ErrOutOfRange`, no silence answering the samples handed in and zero silence accepted beside a pause;
+then the digests left uncompared, differing samples left unlogged, the line's text left out of the log,
+an insert error dropped, a made line written without its pause, a doubtful line counted as paused and a
+log line left unended; each failed its test. Not verified by a test: `newMaking` in `main.go` loading
+`pauses.toml` and logging to the run's error output (the log file only where the run has no console,
+FR-715); a line made by the real model with its pause and heard.
+
+**FR-554 If `pauses.toml` is stale, then the build fails**
+Priority: Must.
+If `pauses.toml` lacks an entry for a machine voice and a line FR-550 joins, holds one for a line it
+no longer joins, was made from saved speech sounds other than the line's now or gives a digest of the
+model file or a style file other than the list's (FR-535), then a structural test shall fail naming
+what is stale.
+Rationale: as FR-533 for saved sounds. A stale entry would be skipped on every machine by FR-553's
+digest check with nothing said when the application is built.
+Acceptance: Given "Breathable atmosphere, commander." changed to "Air is breathable, commander." with
+the sounds tool run and the pauses tool not, when the structural tests run, then one fails naming
+`BreathableAtmosphere.Set` and that line.
+Verified by: `TestPausesFoundForTheScriptWithTheListedFilesAreNotStale`,
+`TestAVoiceWithNoPausesIsStaleNamingIt`, `TestAJoinedLineWithNoPauseIsStaleNamingTheVoiceTheCueTheLineAndItsText`,
+`TestAPauseForALineThatNoLongerJoinsIsStaleNamingIt`, `TestAPauseFoundInSoundsOtherThanTheLinesNowIsStale`,
+`TestPausesFoundWithAnotherModelAreStale`, `TestAVoiceFoundWithAnotherStyleFileIsStale` and
+`TestStaleProblemsComeInOneOrder` in `internal/domain/pause/check_test.go` for the rules, over a script
+built by `TestAScriptBuiltJoiningJoinsItsFinalWords`'s builder in
+`internal/domain/script/scripttest/scripttest_test.go`. Proved on 2026-09-14 by planting the model
+digest unchecked, a missing voice unnamed, the style digest unchecked, a missing line unnamed, other
+sounds unchecked, a line that no longer joins unnamed, the line's text left out, voices checked last
+first and a joining builder that ignores its words; each failed its test.
+`TestTheShippedPausesAreNotStale` in `tests/structural/pauses_test.go` reads `pauses.toml` through these
+rules against every machine voice, the shipped script and the list's digests, naming every problem;
+`TestPausesFoundForTheShippedScriptWithTheListedFilesPass`, `TestAShippedJoinedLineWithNoPauseIsNamed`,
+`TestAShippedPauseFoundInOtherSoundsIsNamed` for the acceptance and
+`TestShippedPausesFoundWithOtherFilesAreNamed` hold that reading over books built from the shipped
+script. Proved on 2026-09-14 by planting the model digest read from the tokenizer's entry and each style
+digest read under the voice's id, each failing its test; planting only the first problem named cut the
+29 problems named over the empty book shipped before the pauses tool first ran to 1. Measured on
+2026-09-14: over the book the full run wrote (FR-551), `TestTheShippedPausesAreNotStale` passes.
 
 ### 6.2 Machine voices, non-functional
 
@@ -2280,10 +2531,10 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-545 to FR-548, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-545 to FR-548, FR-554, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
-| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
+| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

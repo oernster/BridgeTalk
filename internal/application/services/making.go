@@ -9,6 +9,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
+	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/domain/speech"
 )
@@ -48,10 +49,12 @@ type Progress struct {
 // run under way and waits for it to end before anything else changes.
 type MakingService struct {
 	voiced       script.Voiced
+	pauses       pause.Book
 	confirmation cue.ID
 	files        ports.VoiceFiles
 	maker        ports.SpeechMaker
 	store        ports.MadeLines
+	log          ports.RunLog
 
 	// casting holds one cast at a time, so a cast from the window and one from the tray cannot
 	// interleave.
@@ -83,13 +86,16 @@ type run struct {
 	done chan struct{}
 }
 
-// NewMakingService makes lines from the voiced script through the ports given; confirmation is the id
-// of the cue played on a cast (cue.Table.Confirmation).
+// NewMakingService makes lines from the voiced script with the pauses given (FR-553) through the ports
+// given; confirmation is the id of the cue played on a cast (cue.Table.Confirmation). A line written
+// without its pause is logged to log.
 func NewMakingService(
-	voiced script.Voiced, confirmation cue.ID, files ports.VoiceFiles, maker ports.SpeechMaker, store ports.MadeLines,
+	voiced script.Voiced, pauses pause.Book, confirmation cue.ID,
+	files ports.VoiceFiles, maker ports.SpeechMaker, store ports.MadeLines, log ports.RunLog,
 ) *MakingService {
 	return &MakingService{
-		voiced: voiced, confirmation: confirmation, files: files, maker: maker, store: store, turn: newModelTurn(),
+		voiced: voiced, pauses: pauses, confirmation: confirmation,
+		files: files, maker: maker, store: store, log: log, turn: newModelTurn(),
 	}
 }
 
@@ -110,7 +116,7 @@ func (m *MakingService) Cast(voice machinevoice.Voice) (ports.AudioSource, error
 		return nil, err
 	}
 	m.endRun(true)
-	plan := making.New(m.voiced, voice.Accent(), material.Files, m.store.Keys(voice))
+	plan := making.New(m.voiced, voice, material.Files, m.pauses, m.store.Keys(voice))
 	var notDeleted error
 	if stale := plan.Stale(); len(stale) > 0 {
 		notDeleted = m.store.Delete(voice, stale)
@@ -225,7 +231,7 @@ func (m *MakingService) makeLines(ctx context.Context, running *run, voice machi
 // makeOne makes one line of a run and writes it, recording what happens; it answers whether the run is
 // over. The caller holds the model's turn.
 func (m *MakingService) makeOne(ctx context.Context, voice machinevoice.Voice, style speech.Style, line making.Line) bool {
-	samples, err := m.makeLine(ctx, style, line)
+	samples, err := m.makeLine(ctx, voice, style, line)
 	if ctx.Err() != nil {
 		m.mu.Lock()
 		m.making = false
@@ -250,8 +256,9 @@ func (m *MakingService) makeOne(ctx context.Context, voice machinevoice.Voice, s
 	return false
 }
 
-// makeLine makes one line's samples: its numbers, its style row, then the model.
-func (m *MakingService) makeLine(ctx context.Context, style speech.Style, line making.Line) ([]float32, error) {
+// makeLine makes one line's samples as they are written: its numbers, its style row, the model, then
+// its pause (FR-553).
+func (m *MakingService) makeLine(ctx context.Context, voice machinevoice.Voice, style speech.Style, line making.Line) ([]float32, error) {
 	// The script was voiced, which refused any sounds the model cannot read (FR-506), so the
 	// numbers are always had.
 	tokens, _ := speech.Tokens(line.Sounds)
@@ -259,7 +266,11 @@ func (m *MakingService) makeLine(ctx context.Context, style speech.Style, line m
 	if err != nil {
 		return nil, err
 	}
-	return m.maker.Make(ctx, tokens, row)
+	samples, err := m.maker.Make(ctx, tokens, row)
+	if err != nil {
+		return nil, err
+	}
+	return m.withPause(voice, line, samples)
 }
 
 // next takes the next line to make off the queue. A line whose made line is already current is passed

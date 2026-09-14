@@ -49,3 +49,25 @@ func TestWhatTheRulesRefuseIsRefused(t *testing.T) {
 		t.Errorf("two lines built with %v, want ErrInvalidScript", err)
 	}
 }
+
+// FR-549 and FR-550: a script built joining gives the lines it joins with their sounds in each
+// accent; one whose joined word the table of words lacks is refused.
+func TestAScriptBuiltJoiningJoinsItsFinalWords(t *testing.T) {
+	joining := script.Saved{
+		Lines:   []string{"Docking complete.", "Down safely.", "Docked, commander."},
+		British: []string{"bə", "bɪ", "bikəmˈɑndə."}, American: []string{"æə", "æɪ", "ækəmˈændəɹ."},
+	}
+	commander := map[string][]string{"commander": {"kəmˈɑndə", "kəmˈændəɹ"}}
+	voiced, err := scripttest.BuildJoining(map[string]script.Saved{"Docked": joining}, commander, []string{"commander"})
+	if err != nil {
+		t.Fatalf("BuildJoining: %v", err)
+	}
+	want := []script.JoinedLine{{Cue: "Docked", Index: 2, Sounds: "ækəmˈændəɹ."}}
+	if got := voiced.Joined(machinevoice.American); !slices.Equal(got, want) {
+		t.Errorf("Joined(American) = %+v, want %+v", got, want)
+	}
+	_, err = scripttest.BuildJoining(map[string]script.Saved{"Docked": joining}, nil, []string{"commander"})
+	if !errors.Is(err, script.ErrInvalidScript) {
+		t.Errorf("a joined word the table lacks built with %v, want ErrInvalidScript", err)
+	}
+}

@@ -4,6 +4,7 @@ package machinevoice
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles/modelfilestest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
 	"github.com/oernster/bridge-talk/internal/infrastructure/speechmodel"
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
@@ -55,7 +57,9 @@ func TestMakingACompleteScriptKeepsWithinDisk(t *testing.T) {
 	maker := speechmodel.New(dir)
 	defer maker.Close()
 	confirmation, _ := table.Confirmation()
-	service := services.NewMakingService(voiced, confirmation, voicefiles.New(dir), maker, madelines.New(store))
+	service := services.NewMakingService(
+		voiced, shippedPauses(t), confirmation, voicefiles.New(dir), maker, madelines.New(store), runlog.NewLines(os.Stderr),
+	)
 	defer service.Stop()
 
 	started := time.Now()

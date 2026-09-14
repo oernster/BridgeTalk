@@ -53,14 +53,15 @@ func (f Files) Open(voice machinevoice.Voice) (ports.Material, error) {
 	return f.Material, nil
 }
 
-// Maker answers each line with one sample: the count of numbers it was handed. Counting calls from
-// one, call FailOn fails with ErrModel and call BlockOn closes Started then waits for its context to
+// Maker answers each line with a copy of Answer where one is given; otherwise with one sample: the
+// count of numbers it was handed. Counting calls from one, call FailOn fails with ErrModel and call BlockOn closes Started then waits for its context to
 // end. Call PauseOn closes Started then waits for Resume to be closed, making its line; where its
 // context ends first, it answers why. It counts the times it is closed. Each load is counted: the
 // first closes Loaded; a load waits for HoldLoad to be closed where one is given, answering why where
 // its context ends first; every load answers LoadErr. A load for a context already ended answers why,
 // uncounted.
 type Maker struct {
+	Answer   []float32
 	FailOn   int
 	BlockOn  int
 	PauseOn  int
@@ -101,6 +102,9 @@ func (f *Maker) Make(ctx context.Context, tokens []int64, _ []float32) ([]float3
 		}
 	case f.FailOn:
 		return nil, ErrModel
+	}
+	if f.Answer != nil {
+		return slices.Clone(f.Answer), nil
 	}
 	return []float32{float32(len(tokens))}, nil
 }
@@ -154,9 +158,9 @@ func (f *Maker) Closed() int {
 	return f.closes
 }
 
-// Store keeps made lines in memory by voice id, logging every write and delete in order.
-// Counting writes from one, write FailWrite fails with ErrDisk; every delete fails with DeleteErr,
-// deleting nothing, where one is given.
+// Store keeps made lines in memory by voice id with a copy of the samples each was written with,
+// logging every write and delete in order. Counting writes from one, write FailWrite fails with
+// ErrDisk; every delete fails with DeleteErr, deleting nothing, where one is given.
 type Store struct {
 	FailWrite int
 	DeleteErr error
@@ -165,10 +169,21 @@ type Store struct {
 	keys   map[string][]string
 	log    []string
 	writes int
+	// written holds the samples of each made line, by the path PathOf gives it.
+	written map[string][]float32
 }
 
 // NewStore makes an empty Store.
-func NewStore() *Store { return &Store{keys: map[string][]string{}} }
+func NewStore() *Store { return &Store{keys: map[string][]string{}, written: map[string][]float32{}} }
+
+// Written returns a copy of the samples last written under a key for the voice with this id,
+// reporting whether any were.
+func (f *Store) Written(id, key string) ([]float32, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	samples, ok := f.written[PathOf(id, key)]
+	return slices.Clone(samples), ok
+}
 
 // Hold puts made lines on disk for the voice with this id before anything runs.
 func (f *Store) Hold(id string, keys ...string) {
@@ -180,8 +195,8 @@ func (f *Store) Hold(id string, keys ...string) {
 // Keys lists a voice's made lines.
 func (f *Store) Keys(voice machinevoice.Voice) []string { return f.Held(voice.ID()) }
 
-// Write keeps a made line, logging it.
-func (f *Store) Write(voice machinevoice.Voice, key string, _ []float32) error {
+// Write keeps a made line with a copy of its samples, logging it.
+func (f *Store) Write(voice machinevoice.Voice, key string, samples []float32) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.writes++
@@ -189,6 +204,7 @@ func (f *Store) Write(voice machinevoice.Voice, key string, _ []float32) error {
 		return ErrDisk
 	}
 	f.keys[voice.ID()] = append(f.keys[voice.ID()], key)
+	f.written[PathOf(voice.ID(), key)] = slices.Clone(samples)
 	f.log = append(f.log, "write "+voice.ID())
 	return nil
 }
@@ -223,6 +239,26 @@ func (f *Store) Entries() []string {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return slices.Clone(f.log)
+}
+
+// Log keeps the lines a run logs in memory, in order. Its zero value is ready to use.
+type Log struct {
+	mu    sync.Mutex
+	lines []string
+}
+
+// Log keeps a line.
+func (f *Log) Log(line string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.lines = append(f.lines, line)
+}
+
+// Lines returns a copy of the lines kept so far, in order.
+func (f *Log) Lines() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.lines)
 }
 
 // AwaitLimit is how long a test waits on the fakes. They answer in microseconds, so reaching it means

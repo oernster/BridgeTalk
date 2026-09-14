@@ -14,6 +14,20 @@ import (
 // accent, against a table holding a cue for each key. It refuses whatever cue.New, script.New or
 // script.Voice refuses.
 func Build(saved map[string]script.Saved) (script.Voiced, error) {
+	return build(saved, func(built script.Script) (script.Script, error) { return built, nil })
+}
+
+// BuildJoining makes a voiced script as Build does from a script given a table of words and the
+// words joined after a final comma (FR-549, FR-550). It also refuses whatever WithWords refuses.
+func BuildJoining(saved map[string]script.Saved, spellings map[string][]string, joinAfterComma []string) (script.Voiced, error) {
+	return build(saved, func(built script.Script) (script.Script, error) {
+		return built.WithWords(spellings, joinAfterComma)
+	})
+}
+
+// build makes a voiced script from saved speech sounds, handing the script to words before it is
+// voiced.
+func build(saved map[string]script.Saved, words func(script.Script) (script.Script, error)) (script.Voiced, error) {
 	lines := make(map[string][]string, len(saved))
 	cues := make([]cue.Cue, 0, len(saved))
 	for _, id := range slices.Sorted(maps.Keys(saved)) {
@@ -28,5 +42,9 @@ func Build(saved map[string]script.Saved) (script.Voiced, error) {
 	if err != nil {
 		return script.Voiced{}, err
 	}
-	return script.Voice(built, saved)
+	spoken, err := words(built)
+	if err != nil {
+		return script.Voiced{}, err
+	}
+	return script.Voice(spoken, saved)
 }

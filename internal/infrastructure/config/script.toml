@@ -260,3 +260,11 @@
 "Pips.Engines" = ["Power to engines.", "Engines get the power, commander.", "Speed favoured."]
 "Pips.Weapons" = ["Power to weapons.", "Weapons get the power, commander.", "Firepower favoured."]
 "FireGroup.Changed" = ["Fire group changed.", "New fire group selected, commander.", "Weapons group switched."]
+
+# A word's speech sounds given once for every line holding it whole: British then American.
+[words]
+commander = ["kəmˈɑndə", "kəmˈændəɹ"]
+
+# Words joined to the word before them where a line ends with a comma, the word and its mark.
+[joins]
+after_comma = ["commander"]

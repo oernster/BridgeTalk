@@ -34,6 +34,7 @@ exactly like one that holds.
 | Every region that is a keyboard stop because it scrolls wears a focus ring | `TestEveryScrollingRegionRingsForTheKeyboard` | `rings_test.go` |
 | The shipped script and its saved speech sounds break none of the script's rules; every problem is named with its cue and its line | `TestTheShippedScriptHoldsNoProblem` | `script_test.go` |
 | Every cue in the table has lines in the script | `TestTheScriptHoldsLinesForEveryCue` | `script_test.go` |
+| `pauses.toml` is not stale: every machine voice has a pause for each line the script joins and none for a line it no longer joins, each found in the line's saved speech sounds now with the model and style files the list gives; every problem is named | `TestTheShippedPausesAreNotStale` | `pauses_test.go` |
 | The setup page applies the boxes it shows and handles the failure of every box that saves at once | `TestSetupAppliesTheBoxesItShows` | `setupchoices_test.go` |
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | The setup page, the scripts beside it and `setupScripts` stay in step: the page loads every script and every script has a place in the list | `TestTheSetupPageLoadsEveryScript` | `setupring_test.go` |
@@ -50,7 +51,7 @@ exactly like one that holds.
 
 ## Layers
 
-- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `making`, `script`, `selection`, `speech`): pure Go. Values are validated on
+- **Domain** (`internal/domain`: `cue`, `event`, `machinevoice`, `making`, `pause`, `script`, `selection`, `speech`): pure Go. Values are validated on
   construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
   `CooldownGate.Allow` and `DedupeWindow.Fresh`, while randomness arrives through the injected
   `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
@@ -58,29 +59,37 @@ exactly like one that holds.
   28 machine voices offered, the accent each speaks with and the name each is shown by; the list is the
   one home of the model's voice ids. `speech` holds the speech sound symbols the model reads with their
   numbers, copied from its tokenizer file by a script; it also reads the spellings a script line gives
-  and chooses the row of a voice's style file the model reads beside a line.
+  and chooses the row of a voice's style file the model reads beside a line. `speech.Words` is the
+  script's table of words, whose speech sounds are given once for every line holding them (FR-549).
   `script` checks the script against the cue table, naming the cue and the line behind every problem;
+  it also joins a word the script's `[joins]` table names to the word before it where a line ends with
+  a comma then that word (FR-550), with `Joined` listing those lines.
   `script/scripttest` builds a voiced script for the tests that need one.
-  `making` keys each made line by its speech sounds, style file and model, then works out which lines
-  a voice still has to make.
+  `making` keys each made line by its speech sounds, style file, model and any pause it gets, then
+  works out which lines a voice still has to make.
+  `pause` holds the pause before a final commander: the digest tying a pause to the samples it was
+  found in, the book of every voice's pauses, inserting its silence, the rule that finds a break
+  doubtful and the check that the shipped pauses are not stale (FR-551 to FR-554).
 - **Application** (`internal/application`): the reaction, scheduling and making services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
   through three more: `SpeechMaker` loads the model and turns a line's numbers and style row into samples, `VoiceFiles`
   reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
-  made lines (FR-517, FR-523, FR-527). A cast makes only its confirmation's lines (FR-511); every
+  made lines (FR-517, FR-523, FR-527). A line the pauses give a sample is written with 40 ms of
+  silence inserted at it where the digest of its samples equals the one saved; where the digests
+  differ, it is written as made and logged through `RunLog` (FR-553). A cast makes only its confirmation's lines (FR-511); every
   other line is made the first time its cue fires. The audio source a cast answers with is also a `CueMaker`, through which the
   reaction service has a cue's lines made next when it fires with none; the cue waits for them for up
   to 2 seconds, handed over on the poll tick (FR-514). It never imports Infrastructure or the Wails
   runtime.
 - **Infrastructure** (`internal/infrastructure`): concrete adapters behind those ports. The journal tail
   reader (`journal`), the status-flag watcher (`status`), the voice library scanner, catalogue and
-  folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds and the settings store (`config`),
+  folder maker (`library`), the audio engine (`audio`), the cue table, the script with its saved speech sounds, the pauses and the settings store (`config`),
   the strict reading both TOML files share (`tomlfile`), the files a machine voice is made from
   (`voicefiles`), the made lines kept as 16-bit FLAC (`madelines`), the product's local data folder
   both it and the default recordings directory sit in (`appdata`), the log each run leaves in that
-  folder (`runlog`),
+  folder with the `RunLog` written to the run's error output (`runlog`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
   (`window`) and the per-user install work behind the setup program (`setup`). Never imported by
   Domain or Application.
@@ -90,8 +99,17 @@ exactly like one that holds.
   refusal over a path. Each is a leaf that several layers read, so it belongs to none of them.
 - **The sounds tool** (`tools/sounds`): a command run while developing, never shipped. It reads the
   script through `config` and `speech`, asks misaki in the tool's own Python venv for every line's
-  speech sounds in each accent and writes `sounds.toml`. Python only turns text into speech sounds;
+  speech sounds in each accent with the table of words spelled in (FR-549) and writes `sounds.toml`.
+  A line the `[joins]` table joins is saved with the comma before its final word left out (FR-550).
+  Python only turns text into speech sounds;
   the spelling rules and the file's shape stay in Go, so each keeps one home.
+- **The pauses tool** (`tools/pauses`): a command run while developing, never shipped. For each
+  machine voice it makes every line the script joins with the model in `models/`, digests the samples
+  and has `pauses.py`, run in the tool's own Python venv, find the break before commander with Praat;
+  it then writes `pauses.toml` and prints each voice's doubtful lines (FR-551, FR-552). Python only
+  finds the breaks; every setting, the doubtful rule and the file's shape stay in Go. `-only` names
+  some voices and needs `-out`, since pauses missing voices are never written over the shipped file.
+  Both tools find their venv's Python through `tools/internal/pyvenv`.
 
 ## Composition root
 
@@ -99,7 +117,8 @@ exactly like one that holds.
 application services by constructor and hands the assembled facade to Wails. `newMaking` there builds
 the making service over the model files beside the executable and the made lines' folder; where
 either cannot be found, every machine voice is refused with why rather than the application refusing
-to start. No service is held in a
+to start. It also loads `pauses.toml` and hands the service `runlog.Lines` over the run's error
+output as its `RunLog`. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
@@ -740,6 +759,7 @@ directory, so running setup leaves no folder beside the application's.
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
+| Pauses | `pauses.toml`, embedded in the binary beside the saved speech sounds; written by `go run ./tools/pauses`, never by hand |
 | Model files on the build machine | `models/` at the repository root, found by walking up to `go.mod` and filled by `go run ./tools/models` from the list embedded in `internal/infrastructure/modelfiles`; not committed |
 | Model files when running | `models` beside the executable, the one folder the application reads them from; `voicefiles.Folder` names it for the build machine's folder too |
 | Made lines | `Made lines` in the product's local data folder (`%LOCALAPPDATA%\BridgeTalk` on Windows), one folder for the cast machine voice; never under the recordings directory |
@@ -770,7 +790,8 @@ journal reader tests a read error's text against `"EOF"`.
   found; the scan report.
 - **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
   tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a clip that
-  fails to decode is skipped after being logged as played.
+  fails to decode is skipped after being logged as played; a made line whose samples differ from those
+  its pause was found in is written without the pause and logged (FR-553).
 - **Recorded in the reaction list:** a repeat inside the dedupe window, a cue in cooldown, a cue the voice
   has no takes for and a request dropped by the mute or by the priority policy, beside what was queued and
   what played.
@@ -798,7 +819,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   game's own words in the cue table. They also hold the shape of every cue id, the purpose line's
   contrast, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
   against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
-  uintptr only where the call into it is made. The invariant table above lists every one of them with
+  uintptr only where the call into it is made; another fails where `pauses.toml` is stale against the
+  script, the machine voices or the listed model files. The invariant table above lists every one of them with
   the test that enforces it.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
   `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
@@ -815,8 +837,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
   package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `runlog` 51%, `setup` 61%, `speechmodel` 91%, `taskbar`
-  67%, `tools/sounds` 38%, `tools/models` 48%, `tools/payload` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
-  `status`, `tomlfile`, `voicefiles`, `wholefile` and `internal/refusal` at 100%. `internal/infrastructure/window`,
+  67%, `tools/sounds` 38%, `tools/pauses` 64%, `tools/models` 48%, `tools/payload` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
+  `status`, `tomlfile`, `voicefiles`, `wholefile`, `internal/refusal` and `tools/internal/pyvenv` at 100%. `internal/infrastructure/window`,
   `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
   the platform behind them; the last is test support exercised by the `modelfiles` tests.
   TESTING.md names what each shortfall is.

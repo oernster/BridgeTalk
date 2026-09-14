@@ -45,6 +45,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
+| `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
@@ -53,19 +54,20 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.4% | 67% | `test.ps1` |
-| `internal/infrastructure/runlog` | 51.9% | 51% | `test.ps1` |
+| `internal/infrastructure/runlog` | 55.2% | 51% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
-| `tools/sounds` | 38.5% | 38% | `test.ps1` |
+| `tools/sounds` | 44.9% | 38% | `test.ps1` |
+| `tools/pauses` | 64.6% | 64% | `test.ps1` |
 | `internal/infrastructure/modelfiles/modelfilestest` | test support, run by the `modelfiles`, `tools/models` and `tools/payload` tests | none | not gated |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-621 test functions, which expand to 681 runs once their subtests are counted (measured on
+738 test functions, which expand to 803 runs once their subtests are counted (measured on
 2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
-Twenty-eight of them are the structural tests in `tests/structural`, which scan the source
+Thirty-three of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
@@ -75,7 +77,7 @@ the contrast of the purpose line in both themes, every style part being read, th
 setup program applying the boxes it shows with a header that repeats no title, the
 setup page loading every script it has with its body ringed for the keyboard, game
 vocabulary kept in its home, the shape of every cue id, the speech sound table held
-to the model's tokenizer file and every address handed to a DLL converted only where
+to the model's tokenizer file, `pauses.toml` kept from going stale and every address handed to a DLL converted only where
 the call into it is made.
 
 ### The front end
@@ -163,7 +165,7 @@ release is for.
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
   clock rather than by waiting.
-- **The crashes in `internal/infrastructure/runlog` (51.9%).** A crash ends the process that has it,
+- **The crashes in `internal/infrastructure/runlog` (55.2%).** A crash ends the process that has it,
   so the crash tests start the test binary again as a child that panics or fails fatally, then read
   what the child left in its log. Every line the child runs is in a process coverage does not measure.
   Finding that a run has no error output is not reached at all: a test binary is always given one.
@@ -218,11 +220,22 @@ release is for.
   deleting the install directory through a detached shell that outlives the setup
   program. Enumerating processes is tested: `processIDs` must find the test binary by
   its own name, which is the one process a test can be certain is running.
-- **`tools/sounds` (38.5%).** The sounds tool. `run` rewrites `sounds.toml` in the repository
+- **`tools/sounds` (44.9%).** The sounds tool. `run` rewrites `sounds.toml` in the repository
   and `python.Make` runs `sounds.py` in the tool's own venv, which a test machine need not have.
   Making every line in each accent from its spelling and matching the answers back to their
-  lines is tested in `makeSounds` over a hand-written maker. What the real tool wrote is checked
+  lines is tested in `makeSounds` over a hand-written maker. Finding the venv's Python is
+  `tools/internal/pyvenv`'s, tested there for both layouts. What the real tool wrote is checked
   by the structural test over `sounds.toml`.
+- **`tools/pauses` (64.6%).** The pauses tool. `main` and `start` find the repository, check
+  `models/`, make lines with the real model through ONNX Runtime and rewrite `pauses.toml`;
+  `python.Find` runs `pauses.py`, which needs Praat through parselmouth, in the tool's own venv,
+  which a test machine need not have. Over a hand-written maker and finder, the rest is tested: the
+  digest of each line's samples, the WAV files handed to the finder, which lines are doubtful, the
+  flags and a run refused for a failing maker, finder or voice's files, a wrong answer or a changed
+  model. Inside a run, a voice's temporary folder that cannot be made and a line that cannot be
+  written are not reached; `writeWAV`'s refusal is tested on its own. Nor is the refusal of a line's
+  numbers or style row, which lines from the voiced script do not give; both refusals are tested in
+  `speech`. What the real tool wrote is checked by the structural test over `pauses.toml`.
 - **`tools/models` (48.3%).** The model files tool. `main` and `start` read the real list, find
   `models/` in the repository and hand `run` a client that reaches the internet. `run` itself is tested
   in both modes over a local server, as `internal/infrastructure/modelfiles` is: no test downloads

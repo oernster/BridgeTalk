@@ -56,6 +56,12 @@ type VoiceFiles interface {
 	Open(voice machinevoice.Voice) (Material, error)
 }
 
+// RunLog keeps what a run reports that needs no answer in the log the run leaves (FR-715): a made line
+// written without its pause because its samples differ from those measured (FR-553).
+type RunLog interface {
+	Log(line string)
+}
+
 // MadeLines keeps the lines made for machine voices, under the application's own data directory
 // and never under the library root (FR-523). A made line is found by its voice and its key.
 type MadeLines interface {

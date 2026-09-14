@@ -19,8 +19,9 @@ the start.
 | Wails CLI | v2.12.0, which `go.mod` requires | packages the Go binary and the web assets into one executable |
 | WebView2 runtime | any current | the window the front end is drawn in |
 
-Python 3 with Pillow is optional. It is needed only to regenerate the icons, which are
-committed already; nothing in the ordinary build path uses it.
+Python 3 is optional. It is needed only to regenerate files that are committed already: the
+icons with Pillow, the saved speech sounds and the pauses, each of those two tools in a venv of its
+own. Nothing in the ordinary build path uses it.
 
 ### Go
 
@@ -299,6 +300,48 @@ header mark and its two theme icons. The `.ico` is committed rather than left fo
 Wails to derive at build time: Wails only derives one when the file is absent, so
 relying on that would mean deleting and hoping.
 
+## Regenerating the saved speech sounds and the pauses
+
+Both files are embedded in the application and committed; structural tests fail when either is
+stale. Each tool runs a Python script in a venv under its own folder, made once.
+
+The sounds tool's venv is made with Python 3.11:
+
+```powershell
+py -3.11 -m venv tools/sounds/venv
+```
+
+```powershell
+./tools/sounds/venv/Scripts/python.exe -m pip install -r tools/sounds/requirements.txt
+```
+
+After changing `script.toml`, write `sounds.toml` again:
+
+```powershell
+go run ./tools/sounds
+```
+
+The pauses tool's venv is made with Python 3.13.11 as `python`:
+
+```powershell
+python -m venv tools/pauses/venv
+```
+
+```powershell
+./tools/pauses/venv/Scripts/python.exe -m pip install -r tools/pauses/requirements.txt
+```
+
+After the saved speech sounds or the model files change, write `pauses.toml` again. It makes every
+joined line for all 28 machine voices with the model in `models/`, which takes about 35 minutes, then
+prints how many of each voice's lines are doubtful:
+
+```powershell
+go run ./tools/pauses
+```
+
+For a quicker check over some voices, `-only bf_emma,bm_george -out <file>` writes their pauses to
+another file; `-only` refuses to write the shipped `pauses.toml`.
+
 ## Where things live
 
 | Path | What it holds |
@@ -314,7 +357,7 @@ relying on that would mean deleting and hoping.
 | `frontend/src` | the React front end |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
-| `tools/` | icon generation, run by hand |
+| `tools/` | run by hand: icon generation, the model files, the payload, the saved speech sounds and the pauses |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

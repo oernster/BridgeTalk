@@ -1,0 +1,11 @@
+# The pauses tool's own venv (FR-551), pinned to the versions the break before commander was
+# measured with on 2026-09-14 in Python 3.13.11. From the repository root:
+#   python -m venv tools/pauses/venv
+#   tools/pauses/venv/Scripts/python.exe -m pip install -r tools/pauses/requirements.txt
+# cffi, pycparser and typing_extensions are what the three named packages pulled in.
+cffi==2.1.1
+numpy==2.5.3
+praat-parselmouth==0.4.7
+pycparser==3.0
+soundfile==0.14.0
+typing_extensions==4.16.0

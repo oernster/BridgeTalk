@@ -29,6 +29,41 @@ func TestTheShippedScriptIsVoiced(t *testing.T) {
 	}
 }
 
+// FR-550's acceptance over the shipped files: "Breathable atmosphere, commander." is saved joined
+// in each accent, while "Sold, commander. Credits are in." keeps its comma and is not joined.
+func TestTheShippedScriptJoinsAFinalCommanderAndNoOther(t *testing.T) {
+	t.Parallel()
+	voiced, err := config.LoadVoicedScript(shippedTable(t))
+	if err != nil {
+		t.Fatalf("loading the shipped script with its sounds: %v", err)
+	}
+	for accent, want := range map[machinevoice.Accent]string{
+		machinevoice.British:  "bɹˈiːðəbᵊl ˈatməsfɪəkəmˈɑndə.",
+		machinevoice.American: "bɹˈiðəbᵊl ˈætməsfˌɪɹkəmˈændəɹ.",
+	} {
+		found := false
+		for _, joined := range voiced.Joined(accent) {
+			lines, _ := voiced.Lines(joined.Cue)
+			switch lines[joined.Index].Text() {
+			case "Breathable atmosphere, commander.":
+				found = joined.Cue == "BreathableAtmosphere.Set" && joined.Sounds == want
+			case "Sold, commander. Credits are in.":
+				t.Errorf("%s joined %q", accent, lines[joined.Index].Text())
+			}
+		}
+		if !found {
+			t.Errorf("%s does not join BreathableAtmosphere.Set as %q", accent, want)
+		}
+	}
+	lines, _ := voiced.Lines("ShipyardSell")
+	sounds, _ := voiced.Sounds("ShipyardSell", machinevoice.British)
+	for index, line := range lines {
+		if line.Text() == "Sold, commander. Credits are in." && !strings.Contains(sounds[index], ", kəmˈɑndə.") {
+			t.Errorf("ShipyardSell's British sounds %q lost the comma before commander", sounds[index])
+		}
+	}
+}
+
 // Saved speech sounds are written as a file that reads back the same, an id holding a dot
 // included. The file says it is the sounds tool's to write.
 func TestSavedSoundsAreWrittenAsAFileThatReadsBack(t *testing.T) {

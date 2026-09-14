@@ -11,15 +11,18 @@ import (
 // build; the last group landed on 2026-09-14, so from then on it fails.
 const scriptComplete = true
 
-// TestTheShippedScriptHoldsNoProblem holds FR-504 to FR-506, FR-531 and FR-533 over script.toml
-// and the speech sounds saved beside it.
+// TestTheShippedScriptHoldsNoProblem holds FR-504 to FR-506, FR-531, FR-533, FR-549 and FR-550
+// over script.toml and the speech sounds saved beside it.
 //
 // The rules live in the domain; this reads the shipped files through them, so they are written
-// once. Every problem is named with its cue and its line, not the first alone.
+// once. Every problem is named with its cue and its line (a word's problem with its word), not
+// the first alone.
 //
 // Proved by planting a key that is not a cue, a cue with two lines and a broken spelling in
 // script.toml; then a line edited without running the sounds tool, sounds saved for a cue that is
-// gone and a symbol the model does not read in sounds.toml, reading the exit code each time.
+// gone and a symbol the model does not read in sounds.toml; then a commander spelling the model
+// does not read and a joined word the table of words lacks in script.toml, reading the exit code
+// each time.
 func TestTheShippedScriptHoldsNoProblem(t *testing.T) {
 	table, err := config.LoadCueTable("")
 	if err != nil {

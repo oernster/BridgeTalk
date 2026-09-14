@@ -364,6 +364,10 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	if err != nil {
 		return nil, nil, err
 	}
+	pauses, err := config.LoadPauses()
+	if err != nil {
+		return nil, nil, err
+	}
 	executable, notFound := os.Executable()
 	made, noStore := madelines.Dir()
 	dir := voicefiles.Beside(executable)
@@ -371,5 +375,5 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	files := filesUnless(voicefiles.New(dir), errors.Join(notFound, noStore))
 	// A table without the confirmation's cue makes nothing on a cast; every line is then made on call.
 	confirmation, _ := table.Confirmation()
-	return services.NewMakingService(voiced, confirmation, files, maker, madelines.New(made)), maker, nil
+	return services.NewMakingService(voiced, pauses, confirmation, files, maker, madelines.New(made), runLog()), maker, nil
 }

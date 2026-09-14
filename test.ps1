@@ -122,8 +122,10 @@ $measured = [ordered]@{
     './internal/infrastructure/wholefile' = 100
     './internal/refusal'                  = 100
     './tools/sounds'                      = 38
+    './tools/pauses'                      = 64
     './tools/models'                      = 48
     './tools/payload'                     = 53
+    './tools/internal/pyvenv'             = 100
 }
 
 Write-Host 'Measuring the rest of the tree...'

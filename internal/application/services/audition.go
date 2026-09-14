@@ -31,7 +31,7 @@ func (m *MakingService) Audition(voice machinevoice.Voice, group string, chooser
 	if err != nil {
 		return "", err
 	}
-	plan := making.New(m.voiced, voice.Accent(), material.Files, m.store.Keys(voice))
+	plan := making.New(m.voiced, voice, material.Files, m.pauses, m.store.Keys(voice))
 	lines := plan.Group(group)
 	if len(lines) == 0 {
 		return "", fmt.Errorf("%w: %s", ErrNothingToAudition, group)
@@ -50,7 +50,7 @@ func (m *MakingService) Audition(voice machinevoice.Voice, group string, chooser
 func (m *MakingService) makeForAudition(voice machinevoice.Voice, style speech.Style, line making.Line) error {
 	m.turn.takeAhead()
 	defer m.turn.give()
-	samples, err := m.makeLine(context.Background(), style, line)
+	samples, err := m.makeLine(context.Background(), voice, style, line)
 	if err != nil {
 		return err
 	}

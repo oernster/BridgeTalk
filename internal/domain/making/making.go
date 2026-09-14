@@ -7,10 +7,12 @@ import (
 	"encoding/hex"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 )
 
@@ -26,19 +28,40 @@ type Files struct {
 }
 
 // Line is one line a voice speaks: its cue, its place among that cue's lines, its speech sounds
-// in the voice's accent and the key its made line is stored under.
+// in the voice's accent, the pause the voice's book gives it and the key its made line is stored under.
 type Line struct {
 	Cue    cue.ID
 	Index  int
 	Sounds string
-	Key    string
+	// Pause is the voice's pause for the line (FR-553); it means nothing unless PauseGiven.
+	Pause pause.Entry
+	// PauseGiven reports whether the book gives the voice a pause for the line, doubtful or not.
+	PauseGiven bool
+	Key        string
 }
+
+// Paused reports whether the line's made line gets its pause: the book gives one that is not
+// doubtful (FR-552, FR-553).
+func (l Line) Paused() bool { return l.PauseGiven && !l.Pause.Doubtful }
 
 // Key is the name a made line is stored under. It changes whenever the line's speech sounds, the
 // style file or the model does, so an old rendering is never taken for current (FR-513). Two
 // lines with the same sounds share a key, which is right: they sound the same.
-func Key(sounds string, files Files) string {
-	sum := sha256.Sum256([]byte(strings.Join([]string{sounds, files.Style, files.Model}, keySeparator)))
+func Key(sounds string, files Files) string { return keyOf(sounds, files.Style, files.Model) }
+
+// PausedKey is the key of a line the book gives a pause: Key's parts followed by the pause's sample
+// and the digest it was found in, so a changed pause is made again (FR-513). A doubtful pause adds
+// nothing, answering Key.
+func PausedKey(sounds string, files Files, entry pause.Entry) string {
+	if entry.Doubtful {
+		return Key(sounds, files)
+	}
+	return keyOf(sounds, files.Style, files.Model, strconv.Itoa(entry.Sample), entry.Digest)
+}
+
+// keyOf is the SHA-256 of a key's parts kept apart by keySeparator, written as hexadecimal.
+func keyOf(parts ...string) string {
+	sum := sha256.Sum256([]byte(strings.Join(parts, keySeparator)))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -49,17 +72,22 @@ type Plan struct {
 	onDisk  []string
 }
 
-// New sets every line of the script, in the voice's accent, against the keys already on disk.
-func New(voiced script.Voiced, accent machinevoice.Accent, files Files, onDisk []string) Plan {
+// New sets every line of the script, in the voice's accent with the pauses the book gives the voice,
+// against the keys already on disk.
+func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pause.Book, onDisk []string) Plan {
 	current := make(map[string]bool, len(onDisk))
 	for _, key := range onDisk {
 		current[key] = true
 	}
 	var lines []Line
 	for _, id := range voiced.Cues() {
-		sounds, _ := voiced.Sounds(id, accent)
+		sounds, _ := voiced.Sounds(id, voice.Accent())
 		for index, each := range sounds {
-			lines = append(lines, Line{Cue: id, Index: index, Sounds: each, Key: Key(each, files)})
+			line := Line{Cue: id, Index: index, Sounds: each, Key: Key(each, files)}
+			if entry, given := pauses.Entry(voice.ID(), id, index); given {
+				line.Pause, line.PauseGiven, line.Key = entry, true, PausedKey(each, files, entry)
+			}
+			lines = append(lines, line)
 		}
 	}
 	return Plan{lines: lines, current: current, onDisk: slices.Clone(onDisk)}

@@ -4,7 +4,7 @@
 # misread and no rewording serves, give its speech sounds after it: [record](/ˈɹɛkɔːd/) serves
 # both accents; [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) gives British then American.
 [lines]
-"Cast.Confirmed" = ["I'm your ship's voice now, commander.", "Voice link established. Ready when you are.", "You'll be hearing from me from here on."]
+"Cast.Confirmed" = ["I'm your ship's voice now, commander.", "Voice link established. Ready when you are.", "You'll be hearing from me from here [on](/ˈɒn/ˌɔn/)."]
 "DockingRequested" = ["Docking request sent.", "Requesting permission to dock.", "Request is in. Waiting on the tower."]
 "DockingGranted" = ["Docking granted. We have a pad.", "Permission to dock confirmed.", "We're cleared to land, commander."]
 "DockingDenied" = ["Docking request refused.", "They've turned us away, commander.", "No permission to dock."]

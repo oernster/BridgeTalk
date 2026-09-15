@@ -45,13 +45,16 @@
 
 /* --heading-height is a category heading as drawn; the list leaves that much room above whatever it
    brings into view, so a switch reached by the keyboard is never tucked under the heading that stays
-   in view over it. */
+   in view over it. --scrollbar-gap keeps every switch clear of the list's own scrollbar, which they
+   otherwise sat hard against (Oliver, 2026-09-15). */
 .chatter-list {
   --heading-height: 40px;
+  --scrollbar-gap: 20px;
 
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  padding-right: var(--scrollbar-gap);
   scroll-padding-top: var(--heading-height);
 }
 

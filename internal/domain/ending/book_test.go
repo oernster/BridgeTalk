@@ -12,8 +12,8 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/ending"
 )
 
-// fade is 10 ms at the model's 24 kHz, the fade FR-556 applies.
-const fade = 240
+// fade is 30 ms at the model's 24 kHz, the fade FR-556 applies.
+const fade = 720
 
 // modelDigest is the digest the list gives the model file.
 const modelDigest = "model digest"

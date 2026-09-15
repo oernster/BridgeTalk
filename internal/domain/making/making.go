@@ -63,24 +63,30 @@ func (l Line) Faded() bool { return l.EndingGiven && l.Ending.Fades() }
 // lines with the same sounds share a key, which is right: they sound the same.
 func Key(sounds string, files Files) string { return keyOf(sounds, files.Style, files.Model) }
 
-// PausedKey is the key of a line the book gives a pause: Key's parts followed by the pause's sample
-// and the digest it was found in, so a changed pause is made again (FR-513). A doubtful pause adds
-// nothing, answering Key.
-func PausedKey(sounds string, files Files, entry pause.Entry) string {
-	return lineKey(Line{Sounds: sounds, Pause: entry, PauseGiven: true}, files)
+// PausedKey is the key of a line the book gives a pause: Key's parts followed by the pause's sample,
+// the digest it was found in and how many samples of silence the book inserts, so a changed pause is
+// made again (FR-513). A doubtful pause adds nothing, answering Key.
+func PausedKey(sounds string, files Files, entry pause.Entry, silence int) string {
+	return lineKey(Line{Sounds: sounds, Pause: entry, PauseGiven: true}, files, lengths{silence: silence})
 }
 
-// lineKey is the key of a line with what its books give it: Key's parts, then the pause's sample and
-// digest where it is paused, then fadeMark with the fade's sample and digest where it is faded. A line
-// neither paused nor faded answers Key, so no made line keyed before pauses and endings goes stale
-// (FR-513).
-func lineKey(line Line, files Files) string {
+// lengths are how many samples the books' changes to a line last: the pause's silence and the fade.
+type lengths struct {
+	silence int
+	fade    int
+}
+
+// lineKey is the key of a line with what its books give it: Key's parts, then the pause's sample,
+// digest and silence where it is paused, then fadeMark with the fade's sample, digest and length where
+// it is faded. A line neither paused nor faded answers Key, so no made line keyed before pauses and
+// endings goes stale (FR-513).
+func lineKey(line Line, files Files, given lengths) string {
 	parts := []string{line.Sounds, files.Style, files.Model}
 	if line.Paused() {
-		parts = append(parts, strconv.Itoa(line.Pause.Sample), line.Pause.Digest)
+		parts = append(parts, strconv.Itoa(line.Pause.Sample), line.Pause.Digest, strconv.Itoa(given.silence))
 	}
 	if line.Faded() {
-		parts = append(parts, fadeMark, strconv.Itoa(line.Ending.Sample), line.Ending.Digest)
+		parts = append(parts, fadeMark, strconv.Itoa(line.Ending.Sample), line.Ending.Digest, strconv.Itoa(given.fade))
 	}
 	return keyOf(parts...)
 }
@@ -105,6 +111,7 @@ func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pau
 	for _, key := range onDisk {
 		current[key] = true
 	}
+	given := lengths{silence: pauses.Silence(), fade: endings.Fade()}
 	var lines []Line
 	for _, id := range voiced.Cues() {
 		sounds, _ := voiced.Sounds(id, voice.Accent())
@@ -112,7 +119,7 @@ func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pau
 			line := Line{Cue: id, Index: index, Sounds: each}
 			line.Pause, line.PauseGiven = pauses.Entry(voice.ID(), id, index)
 			line.Ending, line.EndingGiven = endings.Entry(voice.ID(), id, index)
-			line.Key = lineKey(line, files)
+			line.Key = lineKey(line, files, given)
 			lines = append(lines, line)
 		}
 	}

@@ -13,10 +13,13 @@ import (
 // Every setting of the fade after a final nasal has its one home here. endings.py holds none: it reads
 // each from the request (FR-555, FR-556).
 const (
-	// fadeLength is how long a fade lasts, chosen by ear (FR-556).
-	fadeLength = 10 * time.Millisecond
+	// fadeLength is how long a fade lasts, ending where the hiss starts, chosen by ear (FR-556).
+	fadeLength = 30 * time.Millisecond
 	// burstFrame is the length of each frame a burst is read in (FR-555).
 	burstFrame = 10 * time.Millisecond
+	// hissFrame is the length of each frame the start of the hiss is read in, over the burst frame
+	// before a burst (FR-555).
+	hissFrame = 500 * time.Microsecond
 	// burstWithin is the longest a burst's last frame may end before the line's last loud frame ends
 	// (FR-555).
 	burstWithin = 50 * time.Millisecond
@@ -37,6 +40,8 @@ const fadedWord = "faded"
 type endingRequest struct {
 	// Frame is the length of a frame in samples.
 	Frame int `json:"frame"`
+	// HissFrame is the length in samples of each frame the start of the hiss is read in.
+	HissFrame int `json:"hiss_frame"`
 	// HighHz is the frequency above which a burst frame holds its share of energy.
 	HighHz float64 `json:"high_hz"`
 	// LoudDB is the loudness in decibels a frame must exceed to be read.
@@ -49,11 +54,11 @@ type endingRequest struct {
 	Files []string `json:"files"`
 }
 
-// ended is endings.py's answer for one file: the sample the fade starts at, nil where the line ends on
+// ended is endings.py's answer for one file: the sample the hiss starts at, nil where the line ends on
 // no burst.
 type ended struct {
-	// Start is the sample the fade starts at.
-	Start *int `json:"start"`
+	// Hiss is the sample the hiss starts at.
+	Hiss *int `json:"hiss"`
 }
 
 // endingFinder finds where each of a voice's lines written as WAV files ends on a burst, answering in
@@ -65,7 +70,7 @@ type endingFinder interface {
 // endingRequestFor asks where a voice's lines end on a burst.
 func endingRequestFor(files []string) endingRequest {
 	return endingRequest{
-		Frame: samplesIn(burstFrame), HighHz: burstHighHz, LoudDB: burstLoudDB, Share: burstShare,
+		Frame: samplesIn(burstFrame), HissFrame: samplesIn(hissFrame), HighHz: burstHighHz, LoudDB: burstLoudDB, Share: burstShare,
 		Within: samplesIn(burstWithin), Files: files,
 	}
 }
@@ -83,7 +88,8 @@ func (f finding) endings(ctx context.Context, voiced script.Voiced, voices []mac
 }
 
 // endingsOf makes each of a voice's lines ending on a nasal for the ending finder, building the voice's
-// endings from what it answers and printing the voice's faded lines.
+// endings from what it answers and printing the voice's faded lines. Each fade starts its length before
+// the sample the hiss starts at, so it ends where the hiss starts (FR-556).
 func (f finding) endingsOf(ctx context.Context, voice machinevoice.Voice, lines []script.SavedLine) (measuredVoice[ending.Voice], error) {
 	var answers []ended
 	made, err := f.makeFor(ctx, voice, lines, func(files []string) (int, error) {
@@ -98,11 +104,12 @@ func (f finding) endingsOf(ctx context.Context, voice machinevoice.Voice, lines 
 	var listed []string
 	for at, line := range lines {
 		entry := ending.Entry{Cue: line.Cue, Index: line.Index, Sounds: line.Sounds, Digest: made.digests[at]}
-		if start := answers[at].Start; start != nil {
-			if err := within(*start, made.lengths[at], voice, line); err != nil {
+		if hiss := answers[at].Hiss; hiss != nil {
+			start := *hiss - samplesIn(fadeLength)
+			if err := within(start, made.lengths[at], voice, line); err != nil {
 				return measuredVoice[ending.Voice]{}, err
 			}
-			entry.Sample = *start
+			entry.Sample = start
 			listed = append(listed, measured.LineName(voice.ID(), line.Cue, line.Index))
 		}
 		entries = append(entries, entry)

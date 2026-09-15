@@ -15,16 +15,23 @@
 //
 // -only names the voices, repeated or comma separated. -out names the file the pauses are written to
 // and -endings the file the endings are written to; by default the shipped files, which a run with
-// -only refuses, since it would ship books missing voices. The venv is made once, as
+// -only refuses, since it would ship books missing voices. After a change to how the endings are found,
+// they can be found alone, leaving pauses.toml untouched:
+//
+//	go run ./tools/pauses -endings-only
+//
+// -endings-only takes no -out, since it writes no pauses. The venv is made once, as
 // tools/pauses/requirements.txt says.
 package main
 
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 
+	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles"
 	"github.com/oernster/bridge-talk/internal/infrastructure/reporoot"
@@ -95,22 +102,31 @@ func start() error {
 	defer stop()
 	finders := python{root: root}
 	run := finding{files: voicefiles.New(dir), maker: model, finder: finders, ends: finders, work: work, out: os.Stdout}
-	book, err := run.book(ctx, voiced, chosen.voices)
-	if err != nil {
-		return err
-	}
-	if err := writeBook(chosen.out, "pauses", book, config.EncodePauses); err != nil {
-		return err
-	}
-	endings, err := run.endings(ctx, voiced, chosen.voices)
-	if err != nil {
-		return err
-	}
-	return writeBook(chosen.endings, "endings", endings, config.EncodeEndings)
+	return run.measure(ctx, voiced, chosen)
 }
 
-// writeBook encodes a book and writes it to path, saying what it wrote where.
-func writeBook[B any](path, what string, book B, encode func(B) ([]byte, error)) error {
+// measure finds and writes what a run was asked for: the chosen voices' pauses, written before their
+// endings are looked for so a failure finding the endings keeps them, then their endings. With
+// -endings-only the pauses are neither found nor written (FR-555).
+func (f finding) measure(ctx context.Context, voiced script.Voiced, chosen options) error {
+	if !chosen.endingsOnly {
+		book, err := f.book(ctx, voiced, chosen.voices)
+		if err != nil {
+			return err
+		}
+		if err := writeBook(f.out, chosen.out, "pauses", book, config.EncodePauses); err != nil {
+			return err
+		}
+	}
+	endings, err := f.endings(ctx, voiced, chosen.voices)
+	if err != nil {
+		return err
+	}
+	return writeBook(f.out, chosen.endings, "endings", endings, config.EncodeEndings)
+}
+
+// writeBook encodes a book and writes it to path, saying on out what it wrote where.
+func writeBook[B any](out io.Writer, path, what string, book B, encode func(B) ([]byte, error)) error {
 	written, err := encode(book)
 	if err != nil {
 		return err
@@ -118,6 +134,6 @@ func writeBook[B any](path, what string, book B, encode func(B) ([]byte, error))
 	if err := os.WriteFile(path, written, fileMode); err != nil {
 		return err
 	}
-	fmt.Printf("wrote the %s to %s\n", what, path)
+	fmt.Fprintf(out, "wrote the %s to %s\n", what, path)
 	return nil
 }

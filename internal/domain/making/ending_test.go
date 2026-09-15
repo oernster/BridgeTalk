@@ -15,16 +15,23 @@ import (
 var noEndings = ending.Book{}
 
 // bookFade is the fade the books below apply.
-const bookFade = 240
+const bookFade = 720
 
 // fadedAt is an ending for Docked's second line, whose British sounds are "bɪ", fading from sample 7.
 var fadedAt = ending.Entry{Cue: "Docked", Index: 1, Sounds: "bɪ", Digest: foundIn, Sample: 7}
 
-// endingsOf builds a book giving bf_emma the entries given, found with the files the plans are made
-// against.
+// endingsOf builds a book fading over bookFade, giving bf_emma the entries given, found with the files
+// the plans are made against.
 func endingsOf(t *testing.T, entries ...ending.Entry) ending.Book {
 	t.Helper()
-	book, err := ending.NewBook(bookFade, files.Model, map[string]ending.Voice{
+	return endingsFading(t, bookFade, entries...)
+}
+
+// endingsFading builds a book fading over fade samples, giving bf_emma the entries given, found with
+// the files the plans are made against.
+func endingsFading(t *testing.T, fade int, entries ...ending.Entry) ending.Book {
+	t.Helper()
+	book, err := ending.NewBook(fade, files.Model, map[string]ending.Voice{
 		"bf_emma": {Style: files.Style, Entries: entries},
 	})
 	if err != nil {
@@ -72,7 +79,7 @@ func TestALineWithNoEndingOrNoFadeKeepsItsKeyFromBeforeEndings(t *testing.T) {
 		}
 	}
 	paused := pausedAt
-	if got, want := docked(t, bookOf(t, paused), endingsOf(t, still)).Key, making.PausedKey("bɪ", files, paused); got != want {
+	if got, want := docked(t, bookOf(t, paused), endingsOf(t, still)).Key, making.PausedKey("bɪ", files, paused, bookSilence); got != want {
 		t.Errorf("a paused line with no fade is keyed %s, want its paused key %s", got, want)
 	}
 }
@@ -123,5 +130,15 @@ func TestALineWhoseFadeChangedIsTheOnlyOneMadeAgain(t *testing.T) {
 		if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 1 {
 			t.Errorf("with the fade %s, to make again = %+v; want Docked's second line alone", name, again)
 		}
+	}
+}
+
+// FR-513: a changed fade length changes a faded line's key, so the faded line is made again and no
+// other line is.
+func TestAChangedFadeLengthMakesOnlyTheFadedLineAgain(t *testing.T) {
+	made := keysOf(making.New(voiced(t, "bə"), emma, files, noPauses, endingsOf(t, fadedAt), nil).ToMake())
+	again := making.New(voiced(t, "bə"), emma, files, noPauses, endingsFading(t, bookFade+1, fadedAt), made).ToMake()
+	if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 1 {
+		t.Errorf("with the fade length changed, to make again = %+v; want Docked's second line alone", again)
 	}
 }

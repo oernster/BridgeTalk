@@ -25,11 +25,18 @@ const oldSeparator = "\x00"
 // pausedAt is a pause for Docked's second line, whose British sounds are "bɪ".
 var pausedAt = pause.Entry{Cue: "Docked", Index: 1, Sounds: "bɪ", Digest: foundIn, Sample: 7}
 
-// bookOf builds a book giving bf_emma the entries given, found with the files the plans are made
-// against.
+// bookOf builds a book inserting bookSilence, giving bf_emma the entries given, found with the files
+// the plans are made against.
 func bookOf(t *testing.T, entries ...pause.Entry) pause.Book {
 	t.Helper()
-	book, err := pause.NewBook(bookSilence, files.Model, map[string]pause.Voice{
+	return bookSilencing(t, bookSilence, entries...)
+}
+
+// bookSilencing builds a book inserting silence samples, giving bf_emma the entries given, found with
+// the files the plans are made against.
+func bookSilencing(t *testing.T, silence int, entries ...pause.Entry) pause.Book {
+	t.Helper()
+	book, err := pause.NewBook(silence, files.Model, map[string]pause.Voice{
 		"bf_emma": {Style: files.Style, Entries: entries},
 	})
 	if err != nil {
@@ -76,7 +83,7 @@ func TestALineWithNoPauseOrADoubtfulOneKeepsItsKeyFromBeforePauses(t *testing.T)
 			t.Errorf("%s line %d is keyed %s, want %s as before pauses", line.Cue, line.Index, line.Key, want)
 		}
 	}
-	if making.Key("bə", files) != oldKey("bə") || making.PausedKey("bə", files, doubtful) != oldKey("bə") {
+	if making.Key("bə", files) != oldKey("bə") || making.PausedKey("bə", files, doubtful, bookSilence) != oldKey("bə") {
 		t.Error("Key or a doubtful PausedKey differs from the key before pauses")
 	}
 }
@@ -84,7 +91,7 @@ func TestALineWithNoPauseOrADoubtfulOneKeepsItsKeyFromBeforePauses(t *testing.T)
 // FR-513: a paused line's key changes with its pause's sample or the digest it was found in. The parts
 // are kept apart, so a digit moved from the sample to the digest changes it too.
 func TestAPausedLinesKeyChangesWithItsSampleOrItsDigest(t *testing.T) {
-	base := making.PausedKey("bɪ", files, pausedAt)
+	base := making.PausedKey("bɪ", files, pausedAt, bookSilence)
 	if base == oldKey("bɪ") {
 		t.Error("a paused line kept the key it had before pauses")
 	}
@@ -93,7 +100,7 @@ func TestAPausedLinesKeyChangesWithItsSampleOrItsDigest(t *testing.T) {
 	digest.Digest = "fedcba9876543210"
 	boundary.Sample, boundary.Digest = 71, foundIn[1:]
 	for name, other := range map[string]pause.Entry{"sample": moved, "digest": digest, "boundary": boundary} {
-		if making.PausedKey("bɪ", files, other) == base {
+		if making.PausedKey("bɪ", files, other, bookSilence) == base {
 			t.Errorf("a changed %s left the key unchanged", name)
 		}
 	}
@@ -112,5 +119,18 @@ func TestALineWhosePauseChangedIsTheOnlyOneMadeAgain(t *testing.T) {
 		if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 1 {
 			t.Errorf("with the pause %s, to make again = %+v; want Docked's second line alone", name, again)
 		}
+	}
+}
+
+// FR-513: a changed silence changes a paused line's key, so the paused line is made again and no other
+// line is.
+func TestAChangedSilenceMakesOnlyThePausedLineAgain(t *testing.T) {
+	if making.PausedKey("bɪ", files, pausedAt, bookSilence+1) == making.PausedKey("bɪ", files, pausedAt, bookSilence) {
+		t.Error("a changed silence left the paused key unchanged")
+	}
+	made := keysOf(making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), noEndings, nil).ToMake())
+	again := making.New(voiced(t, "bə"), emma, files, bookSilencing(t, bookSilence+1, pausedAt), noEndings, made).ToMake()
+	if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 1 {
+		t.Errorf("with the silence changed, to make again = %+v; want Docked's second line alone", again)
 	}
 }

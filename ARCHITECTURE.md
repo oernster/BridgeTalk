@@ -88,7 +88,7 @@ exactly like one that holds.
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
   through three more: `SpeechMaker` loads the model and turns a line's numbers and style row into samples, `VoiceFiles`
   reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
-  made lines (FR-517, FR-523, FR-527). A line the endings give a sample is faded over 10 ms from it,
+  made lines (FR-517, FR-523, FR-527). A line the endings give a sample is faded over 30 ms from it,
   then a line the pauses give a sample has 40 ms of silence inserted at it, each only where the digest
   of the samples as made equals the one saved; where a digest differs, that change is left out and the
   line is logged through `RunLog` (FR-553, FR-556). A cast makes only its confirmation's lines (FR-511); every
@@ -124,7 +124,8 @@ exactly like one that holds.
   writes `endings.toml`, printing each voice's faded lines (FR-555). Python only reads the sound; every
   setting, the doubtful rule and the files' shapes stay in Go. Making, digesting and writing the lines
   a finder is handed is one step both finders share. `-only` names some voices and needs `-out` and
-  `-endings`, since books missing voices are never written over the shipped files.
+  `-endings`, since books missing voices are never written over the shipped files. `-endings-only` finds
+  and writes the endings alone, leaving `pauses.toml` untouched.
   Both tools find their venv's Python through `tools/internal/pyvenv`.
 
 ## Composition root

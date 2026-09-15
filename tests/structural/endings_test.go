@@ -15,9 +15,9 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 )
 
-// freshFade is the fade the books built below apply: 10 ms at the model's 24 kHz (FR-556). The check
+// freshFade is the fade the books built below apply: 30 ms at the model's 24 kHz (FR-556). The check
 // never reads it.
-const freshFade = 240
+const freshFade = 720
 
 // staleEndings returns every way a book is stale against the voices, the voiced script and the digests
 // the model files list gives (FR-557). The rules live in the domain; this hands them the list's digests.

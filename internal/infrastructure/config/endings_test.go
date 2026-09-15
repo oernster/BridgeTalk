@@ -17,7 +17,7 @@ import (
 // sample 49200, while neither voice's "Back at the helm." fades.
 func twoVoicesEnding(t *testing.T) ending.Book {
 	t.Helper()
-	book, err := ending.NewBook(240, "4f0c9f2a7d", map[string]ending.Voice{
+	book, err := ending.NewBook(720, "4f0c9f2a7d", map[string]ending.Voice{
 		"bf_emma": {Style: "b7e1c3", Entries: []ending.Entry{
 			{Cue: "Cast.Confirmed", Index: 2, Sounds: "jˌuːl biː hˈɪəɹɪŋ fɹɒm mˌiː fɹɒm hˈɪə ˈɒn.", Digest: "0123456789abcdef", Sample: 49200},
 			{Cue: "InMainShip.Set", Index: 2, Sounds: "bˈak at ðə hˈɛlm.", Digest: "fedcba9876543210"},
@@ -111,7 +111,7 @@ func TestEndingsAreWrittenAsAFileThatReadsBackTheSame(t *testing.T) {
 func TestALineWithNoFadeIsWrittenWithoutASample(t *testing.T) {
 	t.Parallel()
 	written := encodedEndings(t, twoVoicesEnding(t))
-	if !strings.Contains(written, "fade = 240") {
+	if !strings.Contains(written, "fade = 720") {
 		t.Errorf("the fade is not written:\n%s", written)
 	}
 	michael, emma := strings.Index(written, "[voices.am_michael]"), strings.Index(written, "[voices.bf_emma]")
@@ -141,7 +141,7 @@ func TestALineWithNoFadeIsWrittenWithoutASample(t *testing.T) {
 // A key the endings' shape does not hold, such as a pause's doubtful, is refused rather than dropped.
 func TestEndingsWithAKeyOutsideTheirShapeAreRefused(t *testing.T) {
 	t.Parallel()
-	raw := []byte("fade = 240\n" + lineOfDocked + "doubtful = true\n")
+	raw := []byte("fade = 720\n" + lineOfDocked + "doubtful = true\n")
 	if _, err := config.ParseEndings(raw); !errors.Is(err, tomlfile.ErrUnknownKey) {
 		t.Errorf("got %v, want ErrUnknownKey", err)
 	}

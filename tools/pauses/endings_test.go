@@ -2,7 +2,7 @@ package main
 
 // FR-555: the pauses tool makes each line ending on a nasal with the model, digests its samples, asks
 // the ending finder once a voice then builds each voice's endings in the order the script lists the
-// lines; a line answered with no start has no fade.
+// lines; a line answered with no hiss has no fade.
 
 import (
 	"bytes"
@@ -34,11 +34,15 @@ func (f *fakeEndingFinder) FindEndings(asked endingRequest) ([]ended, error) {
 	return f.answer(asked)
 }
 
-// startingAt answers every file with a start at its place plus one.
+// hissFor answers where a finder says the hiss starts for a fade to start at sample: a fade's length
+// after it.
+func hissFor(sample int) int { return sample + samplesIn(fadeLength) }
+
+// startingAt answers every file with the hiss starting where a fade from its place plus one ends.
 func startingAt(asked endingRequest) ([]ended, error) {
 	answered := make([]ended, 0, len(asked.Files))
 	for at := range asked.Files {
-		answered = append(answered, ended{Start: ref(at + 1)})
+		answered = append(answered, ended{Hiss: ref(hissFor(at + 1))})
 	}
 	return answered, nil
 }
@@ -76,20 +80,41 @@ func runEndings(t *testing.T, made maker, ends endingFinder, dir string, ids ...
 	return book, out.String(), err
 }
 
-// FR-555: the fade is 10 ms at the model's rate, 240 samples at 24 kHz, as Oliver chose by ear.
-func TestTheFadeIsTenMillisecondsOfSamples(t *testing.T) {
-	if got, want := samplesIn(fadeLength), madelines.SampleRate*10/1000; got != want || want != 240 {
+// FR-556: the fade is 30 ms at the model's rate, 720 samples at 24 kHz, as Oliver chose by ear.
+func TestTheFadeIsThirtyMillisecondsOfSamples(t *testing.T) {
+	if got, want := samplesIn(fadeLength), madelines.SampleRate*30/1000; got != want || want != 720 {
 		t.Errorf("fade = %d samples, want %d", got, want)
 	}
 }
 
-// FR-555: the ending finder is handed every setting with the files: 10 ms frames, 3 kHz, -50 dB, a
-// share of 0.4 and 50 ms before the end of sound, each frame and span in samples.
+// FR-555: the ending finder is handed every setting with the files: 10 ms frames, half-millisecond
+// frames for where the hiss starts, 3 kHz, -50 dB, a share of 0.4 and 50 ms before the end of sound,
+// each frame and span in samples.
 func TestTheEndingFinderIsAskedWithEverySetting(t *testing.T) {
 	files := []string{"a.wav", "b.wav"}
-	want := endingRequest{Frame: 240, HighHz: 3000, LoudDB: -50, Share: 0.4, Within: 1200, Files: files}
+	want := endingRequest{Frame: 240, HissFrame: 12, HighHz: 3000, LoudDB: -50, Share: 0.4, Within: 1200, Files: files}
 	if got := endingRequestFor(files); !reflect.DeepEqual(got, want) {
 		t.Errorf("request = %+v, want %+v", got, want)
+	}
+}
+
+// FR-555 and FR-556: a fade starts 720 samples before the sample the finder answers the hiss starts at,
+// so the fade ends where the hiss starts.
+func TestAFadeEndsWhereTheFinderAnswersTheHissStarts(t *testing.T) {
+	finder := &fakeEndingFinder{answer: endingWith(ended{Hiss: ref(725)}, ended{}, ended{Hiss: ref(727)}, ended{})}
+	book, _, err := runEndings(t, &fakeMaker{}, finder, voiceFolder(t, "bf_emma"), "bf_emma")
+	if err != nil {
+		t.Fatalf("endings: %v", err)
+	}
+	voice, _ := book.Voice("bf_emma")
+	var ends []int
+	for _, entry := range voice.Entries {
+		if entry.Fades() {
+			ends = append(ends, entry.Sample+book.Fade())
+		}
+	}
+	if want := []int{725, 727}; !slices.Equal(ends, want) || voice.Entries[0].Sample != 5 {
+		t.Errorf("fades end at %v over %+v, want %v with the first starting at 5", ends, voice.Entries, want)
 	}
 }
 
@@ -131,9 +156,9 @@ func TestEachVoicesEndingsFollowItsLinesEndingOnANasalInOrder(t *testing.T) {
 	}
 }
 
-// FR-555: a line answered with no start ends on no burst, so it is given no fade.
-func TestALineAnsweredWithNoStartHasNoFade(t *testing.T) {
-	finder := &fakeEndingFinder{answer: endingWith(ended{Start: ref(5)}, ended{}, ended{Start: ref(7)}, ended{})}
+// FR-555: a line answered with no hiss ends on no burst, so it is given no fade.
+func TestALineAnsweredWithNoHissHasNoFade(t *testing.T) {
+	finder := &fakeEndingFinder{answer: endingWith(ended{Hiss: ref(hissFor(5))}, ended{}, ended{Hiss: ref(hissFor(7))}, ended{})}
 	book, _, err := runEndings(t, &fakeMaker{}, finder, voiceFolder(t, "bf_emma"), "bf_emma")
 	if err != nil {
 		t.Fatalf("endings: %v", err)
@@ -148,16 +173,17 @@ func TestALineAnsweredWithNoStartHasNoFade(t *testing.T) {
 	}
 }
 
-// A start at the first sample or at or beyond the end of its line is refused, naming the line; so is a
-// finder answering a different number of lines than it was handed.
+// A fade starting before the second sample or at or beyond the end of its line is refused, naming the
+// line; so is a finder answering a different number of lines than it was handed.
 func TestAnEndingFinderAnswerThatCannotBeMatchedToItsLineIsRefused(t *testing.T) {
 	for name, each := range map[string]struct {
 		answers []ended
 		want    error
 	}{
-		"start at zero":      {answers: []ended{{Start: ref(0)}, {}, {}, {}}, want: errCutOutside},
-		"start past the end": {answers: []ended{{Start: ref(1 << 20)}, {}, {}, {}}, want: errCutOutside},
-		"too few answers":    {answers: []ended{{}, {}}, want: errAnswerCount},
+		"fade at zero":      {answers: []ended{{Hiss: ref(hissFor(0))}, {}, {}, {}}, want: errCutOutside},
+		"fade before zero":  {answers: []ended{{Hiss: ref(hissFor(0) - 1)}, {}, {}, {}}, want: errCutOutside},
+		"fade past the end": {answers: []ended{{Hiss: ref(hissFor(1 << 20))}, {}, {}, {}}, want: errCutOutside},
+		"too few answers":   {answers: []ended{{}, {}}, want: errAnswerCount},
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, _, err := runEndings(t, &fakeMaker{}, &fakeEndingFinder{answer: endingWith(each.answers...)}, voiceFolder(t, "bf_emma"), "bf_emma")
@@ -174,7 +200,7 @@ func TestAnEndingFinderAnswerThatCannotBeMatchedToItsLineIsRefused(t *testing.T)
 // FR-555: each voice is printed with each line given a fade, by voice, cue and line, then how many of
 // its lines were given one; then the total over every voice.
 func TestEachVoiceIsListedWithItsFadedLinesThenTheTotal(t *testing.T) {
-	finder := &fakeEndingFinder{answer: endingWith(ended{Start: ref(5)}, ended{}, ended{Start: ref(7)}, ended{})}
+	finder := &fakeEndingFinder{answer: endingWith(ended{Hiss: ref(hissFor(5))}, ended{}, ended{Hiss: ref(hissFor(7))}, ended{})}
 	_, printed, err := runEndings(t, &fakeMaker{}, finder, voiceFolder(t, "bf_emma", "bm_george"), "bf_emma", "bm_george")
 	if err != nil {
 		t.Fatalf("endings: %v", err)

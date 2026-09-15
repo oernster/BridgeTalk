@@ -231,12 +231,12 @@ release is for.
   lines is tested in `makeSounds` over a hand-written maker. Finding the venv's Python is
   `tools/internal/pyvenv`'s, tested there for both layouts. What the real tool wrote is checked
   by the structural test over `sounds.toml`.
-- **`tools/pauses` (67.9%).** The pauses tool. `main` and `start` find the repository, check
+- **`tools/pauses` (73.6%).** The pauses tool. `main` and `start` find the repository, check
   `models/`, make lines with the real model through ONNX Runtime and rewrite `pauses.toml` and
   `endings.toml`; `python.run` runs `pauses.py` (Praat through parselmouth) and `endings.py` in the
   tool's own venv, which a test machine need not have. Over hand-written makers and finders, the rest is
   tested: the digest of each line's samples, the WAV files handed to the finders, which lines are
-  doubtful, which lines fade, the
+  doubtful, which lines fade, which books a run writes, the
   flags and a run refused for a failing maker, finder or voice's files, a wrong answer or a changed
   model. Inside a run, a voice's temporary folder that cannot be made and a line that cannot be
   written are not reached; `writeWAV`'s refusal is tested on its own. Nor is the refusal of a line's

@@ -96,6 +96,42 @@ func TestOnlyRefusesToWriteTheShippedFile(t *testing.T) {
 	}
 }
 
+// FR-555: -endings-only asks for the endings alone, written to the shipped endings; a run without it
+// asks for both.
+func TestEndingsOnlyAsksForTheEndingsAlone(t *testing.T) {
+	root := testRoot(t)
+	full, fullErr := parseOptions(nil, root, io.Discard)
+	alone, aloneErr := parseOptions([]string{"-endings-only"}, root, io.Discard)
+	if fullErr != nil || aloneErr != nil {
+		t.Fatalf("parseOptions: %v, %v", fullErr, aloneErr)
+	}
+	if full.endingsOnly || !alone.endingsOnly || alone.endings != filepath.Join(root, endingsPath) {
+		t.Errorf("full run endings only %v; -endings-only %v writing %q, want false then true writing the shipped endings", full.endingsOnly, alone.endingsOnly, alone.endings)
+	}
+}
+
+// A run with -endings-only writes no pauses, so a pauses file named beside it is refused rather than
+// ignored.
+func TestEndingsOnlyRefusesAPausesFile(t *testing.T) {
+	_, err := parseOptions([]string{"-endings-only", "-out", filepath.Join(t.TempDir(), "pauses.toml")}, testRoot(t), io.Discard)
+	if !errors.Is(err, errOutWithEndingsOnly) {
+		t.Errorf("got %v, want errOutWithEndingsOnly", err)
+	}
+}
+
+// With -only, -endings-only needs -endings and no -out; the shipped endings are still refused.
+func TestEndingsOnlyWithOnlyNeedsOnlyAnEndingsFile(t *testing.T) {
+	root := testRoot(t)
+	endings := filepath.Join(t.TempDir(), "endings.toml")
+	chosen, err := parseOptions([]string{"-endings-only", "-only", "bf_emma", "-endings", endings}, root, io.Discard)
+	if err != nil || !chosen.endingsOnly || chosen.endings != endings || !slices.Equal(idsOf(chosen.voices), []string{"bf_emma"}) {
+		t.Errorf("parseOptions = %+v, %v; want bf_emma's endings alone written to %q", chosen, err, endings)
+	}
+	if _, err := parseOptions([]string{"-endings-only", "-only", "bf_emma"}, root, io.Discard); !errors.Is(err, errShippedWithOnly) {
+		t.Errorf("got %v, want errShippedWithOnly for the shipped endings", err)
+	}
+}
+
 // A voice that is not offered is refused, naming it.
 func TestAnUnknownVoiceIsRefused(t *testing.T) {
 	_, err := parseOptions([]string{"-only", "xf_nobody", "-out", filepath.Join(t.TempDir(), "p.toml")}, testRoot(t), io.Discard)

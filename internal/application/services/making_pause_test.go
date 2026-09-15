@@ -86,7 +86,7 @@ func TestARunWritesALineWithItsPauseWhereItsSamplesAreThoseMeasured(t *testing.T
 	store, log := makingtest.NewStore(), &makingtest.Log{}
 	castAndWait(t, pausedMaking(t, dockedPause(), store, log))
 
-	wrote(t, store, making.PausedKey("bə", makingtest.MadeFrom, dockedPause()), []float32{1, 2, 0, 0, 0, 3, 4})
+	wrote(t, store, making.PausedKey("bə", makingtest.MadeFrom, dockedPause(), pauseSilence), []float32{1, 2, 0, 0, 0, 3, 4})
 	wrote(t, store, makingtest.Key("bɪ"), modelAnswer)
 	if lines := log.Lines(); len(lines) != 0 {
 		t.Errorf("logged %q, want nothing", lines)
@@ -101,7 +101,7 @@ func TestARunWritesSamplesOtherThanThoseMeasuredAsMadeLoggingTheLine(t *testing.
 	entry.Digest = otherDigest
 	castAndWait(t, pausedMaking(t, entry, store, log))
 
-	wrote(t, store, making.PausedKey("bə", makingtest.MadeFrom, entry), modelAnswer)
+	wrote(t, store, making.PausedKey("bə", makingtest.MadeFrom, entry, pauseSilence), modelAnswer)
 	loggedTheLine(t, log)
 }
 
@@ -152,7 +152,7 @@ func TestAnAuditionWritesTheLineWithItsPauseOrAsMadeLoggingWhereItsSamplesDiffer
 			store, log := makingtest.NewStore(), &makingtest.Log{}
 			entry := dockedPause()
 			entry.Digest = each.digest
-			key := making.PausedKey("bə", makingtest.MadeFrom, entry)
+			key := making.PausedKey("bə", makingtest.MadeFrom, entry, pauseSilence)
 
 			path, err := pausedMaking(t, entry, store, log).Audition(voiceNamed(t, "bf_emma"), "Docked", lineAt(0))
 

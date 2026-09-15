@@ -1,6 +1,6 @@
 # Bridge Talk: Requirements Specification
 
-Section 11 records open questions; it holds none at present.
+Section 11 records open questions; it holds one at present.
 
 ---
 
@@ -32,6 +32,8 @@ project.
 - A checklist of the moments a voice has no recording for, each opening the folder
   its recording belongs in.
 - Auditioning, casting a voice, settings and a tray presence.
+- Chatter: a switch for each moment the game raises, kept between runs and shared by every voice
+  (section 7.2).
 - A setup program that installs, updates, repairs and removes the application for one user.
 - Machine voices: the 28 English voices of the Kokoro model, cast apart from recorded voices,
   speaking one shared script and made on the user's own machine (section 6.1).
@@ -60,14 +62,19 @@ project.
 | Capturing audio | Recorded in a dedicated program; section 4 |
 | Reading a comms message's words aloud | The words are generated afresh for each message, so a line would have to be made as the event fires (Oliver, 2026-09-15) |
 | A message a player typed, on any channel | It carries no key (measured on 203 of 203 `starsystem` messages); it is another person's words |
-| Comms moments beyond the pirate key stems | FR-620 names the set; any other key stem waits for a decision of its own (Oliver, 2026-09-15) |
+| Comms moments beyond the pirate key stems and station traffic | FR-620 and FR-637 name the set; any other key stem waits for a decision of its own (Oliver, 2026-09-15) |
+| Switching a moment for one voice alone | Which moments are spoken for is a question about the game rather than about who speaks (OQ-15, Oliver, 2026-09-15) |
+| A switch for `Cast.Confirmed` | It answers the player's own cast rather than the game (FR-621) |
+| Searching or filtering the list on Chatter | Not asked for; the categories of FR-635 break the 262 moments up |
+| Changing a moment's priority, cooldown or words from Chatter | `cues.toml` and `script.toml` are edited as files |
+| Switching moments on or off by time or by what the game is doing | Not asked for; a switch changes only when it is pressed |
 
 ### 1.4 Definitions
 
 | Term | Meaning, fixed for this document |
 |---|---|
 | **Cue** | One thing the application can play, plus the game condition that triggers it. Identified by a stable id spelled in the game's own words, such as `StartJump.JumpType.Hyperspace`. Defined in `cues.toml`. |
-| **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 262. |
+| **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 263. |
 | **Voice** | A recorded voice or a machine voice, selectable as a whole. |
 | **Recorded voice** | One person's recordings: a directory under the library root that yields at least one take. Sections 3 and 4 say voice for a recorded voice. |
 | **Machine voice** | One of the 28 English voices of the Kokoro model shipped with the application, identified by the model's own id, such as `bf_emma`. Its takes are made lines (section 6.1). |
@@ -83,7 +90,12 @@ project.
 | **Audition** | Playing a take on demand from the user interface, outside game events. |
 | **Message key** | The `Message` value of a `ReceiveText` journal event, exactly as the game writes it. |
 | **Key stem** | A message key with its leading `$`, the digits ending its name, any values from the first `:#` onwards and its closing `;` removed. `$Pirate_ThreatenSpecific01:#units=20:#CommodityName=$aluminium_Name;;` has the key stem `Pirate_ThreatenSpecific`. |
-| **Comms moment** | A cue that names a key stem (section 7.1). |
+| **Comms moment** | A cue that names a key stem (section 7.1) or the beginnings of key stems (FR-638). |
+| **Moment** | The word the window uses for a cue. |
+| **Chatter** | The pane on which the player chooses which moments the application speaks for; also the band button opening it (section 7.2). |
+| **Switched off** | Said of a cue the player has chosen the application will not speak for (FR-622). Every other cue is switched on. |
+| **Category** | One of the named sets of FR-635 that Chatter lists moments under, written beside each cue in `cues.toml`. Not an Audition group (FR-216). |
+| **Station traffic** | A `ReceiveText` message on the `npc` channel whose key stem begins `STATION_`, `DockingChatter_` or `DockingFailed_` (section 7.2). |
 
 ### 1.5 References
 
@@ -153,7 +165,7 @@ schema in section 3 is already portable, so nothing there changes either way.
 
 | ID | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| ASM-1 | The 262 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
+| ASM-1 | The 263 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
 | ASM-2 | Recordings are made with ordinary consumer microphones in untreated rooms, so their quality is not controllable by the application. | Oliver | Before recordings are made in earnest |
 | ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
 | ASM-4 | The development machine, 12 logical processors with no graphics card used, is close enough to a player's machine to set NFR-P-203. | Oliver | Before the first release with machine voices |
@@ -568,7 +580,7 @@ take needs to know when it will be heard, which the id cannot say (Oliver, 2026-
 stay generated; the purpose is the one piece of reader facing text the table writes.
 Acceptance: Given a table whose `Docked` entry has no `purpose`, when it is loaded, then loading
 fails with an error naming `Docked`. Given the shipped table, when it is loaded, then every one
-of its 262 cues has a purpose.
+of its 263 cues has a purpose.
 Verified by: `TestACueWithNoPurposeIsRefusedByName` and `TestEveryShippedCueHasAPurpose` in
 `internal/infrastructure/config/loader_test.go`; `TestAPurposeIsCarriedAsWritten` in
 `internal/domain/cue/cue_test.go`.
@@ -2199,8 +2211,8 @@ script.
 The requirements in sections 7 to 9 were written on 2026-09-13 for behaviour that had shipped
 without any. Each states what the application does today; a "Not verified by a test" clause says
 where nothing holds it. Where reading the source found behaviour that may not be what is wanted, the
-question goes to section 11 rather than being written down here as a rule. Section 7.1 is the
-exception: it was specified on 2026-09-15 before it was built.
+question goes to section 11 rather than being written down here as a rule. Sections 7.1 and 7.2 are
+the exceptions: each was specified on 2026-09-15 before it was built.
 
 **FR-601 Read the journal forward only**
 Priority: Must.
@@ -2365,7 +2377,7 @@ Verified by: `TestAPlaybackFailureIsRecordedAndLeavesNothingSpeaking` in
 **FR-614 The reaction log keeps the newest 200 decisions**
 Priority: Must.
 The application shall record every decision this section names (`duplicate`, `cooldown`, `unbound`,
-`making`, `dropped`, `queued` and `played`) with its time of day, its cue id and the file name of its take
+`making`, `dropped`, `off`, `queued` and `played`) with its time of day, its cue id and the file name of its take
 alone. It shall keep the 200 newest, newest last, adding each to the reaction log on the Status pane
 as it is made.
 Verified by: `TestADecisionIsRecordedAndAnnounced`, `TestTheHistoryKeepsOnlyTheMostRecentDecisions`
@@ -2453,9 +2465,9 @@ Verified by: `TestAMessageWithNoKeyReachesNoCommsMoment` in `internal/domain/cue
 
 **FR-619 A comms moment's id spells its key stem in dots**
 Priority: Should.
-The cue table shall spell a comms moment's id as `ReceiveText.` followed by its key stem with every
+The cue table shall spell the id of a comms moment naming one key stem as `ReceiveText.` followed by its key stem with every
 underscore written as a dot, so `Pirate_OnDeclarePiracyAttack` is
-`ReceiveText.Pirate.OnDeclarePiracyAttack`. If a comms moment's id is spelled any other way, then the
+`ReceiveText.Pirate.OnDeclarePiracyAttack`. If such an id is spelled any other way, then the
 table shall fail to load, naming the cue.
 Rationale: no cue id may hold an underscore (FR-230). Spelled this way the id stays in the game's own
 words; its folder is `ReceiveText_Pirate_OnDeclarePiracyAttack` (FR-229). A key stem ends in no digits,
@@ -2483,6 +2495,8 @@ Rationale: a pirate appears once valuable cargo is aboard and says so before it 
 checking them against what the game says; Oliver accepted them (OQ-9).
 Note: only the pirate key stems become comms moments for now; others, such as the police scans, wait
 for a decision of their own (OQ-8, Oliver, 2026-09-15).
+Note: station traffic became a comms moment on 2026-09-15; it names the beginnings of key stems
+rather than one, so its id is given by FR-637 rather than spelled under FR-619 (OQ-19).
 Note: a pirate moment and the cue the game raises after it, such as `UnderAttack` or `Interdicted`, both
 speak, ordered by FR-612 and their own cooldowns; nothing holds either back (OQ-10, Oliver, 2026-09-15).
 Note: every recorded voice lacks the six new moments until they are recorded, which the Missing takes
@@ -2498,6 +2512,253 @@ With the pirate moments the cue vocabulary holds 262 cues. The sounds tool made 
 their 18 lines. None of those lines ends by joining a commander or on a nasal, so the pauses and the
 endings needed no new entry; `TestTheShippedPausesAreNotStale` and `TestTheShippedEndingsAreNotStale`
 pass over them.
+
+### 7.2 Chatter
+
+Specified on 2026-09-15 before it was built. A player asked on Discord the same day to stop Bridge Talk
+speaking for chosen moments while it still speaks for the rest; they had heard several lines fired in
+quick succession, some of them over station traffic. Oliver proposed a pane listing the moments in
+words a player reads, each with a slider switch; he named it Chatter and supplied its artwork. Seven
+questions were raised the same day, OQ-12 to OQ-18: whether lines heard back to back and over station
+traffic belong to this work, whether station traffic may be switched apart from other messages, a
+switch per moment and per category, one choice for every voice, what starts switched on, switching
+every moment at once and what a switched off moment does elsewhere. Oliver took Claude's
+recommendation on each; the requirements below record the answers. OQ-19 then asked what answers station
+traffic while it is switched on; Oliver took Claude's recommendation of a moment of its own (FR-637).
+Claude added FR-625, FR-626, FR-632 and FR-733 with searching Chatter's list left out of scope
+unasked; Oliver accepted each the same day. OQ-20 remains open in section 11.
+
+**What the journals hold.** Measured on 2026-09-15 over the 101 journal files on Oliver's machine,
+beside the figures in section 7.1:
+
+- Of the 13,205 `npc` messages, 7,298 are station traffic: 5,138 carry a key stem beginning
+  `STATION_`, 2,147 one beginning `DockingChatter_` and 13 one beginning `DockingFailed_`.
+- Their key stems are `STATION_docking_granted` (2,147), `STATION_NoFireZone_entered` (1,577),
+  `STATION_NoFireZone_exited` (1,384), `DockingChatter_Neutral` (1,550), `DockingChatter_Cordial`
+  (416), `DockingChatter_Allied` (174), `DockingChatter_Friendly` (7), `DockingFailed_Distance` (13),
+  `STATION_docking_denied` (13), `STATION_NoFireZone_entered_deployed` (12),
+  `STATION_docking_cancelled` (2) plus `STATION_docking_denied_toolarge`,
+  `STATION_docking_timeexpired` and `STATION_docking_denied_jumpImminet` once each, the last spelled
+  so by the game. The sender most often named beside each is a station, settlement or carrier.
+- Every one of them resolves today to `ReceiveText.Channel.npc`, an `ambient` cue with a 30 second
+  cooldown (FR-606). Switching that cue off would silence station traffic together with every other
+  non player message no comms moment claims.
+
+The terms Chatter, moment, switched off, category and station traffic are defined in section 1.4;
+what this section leaves out is listed in section 1.3.
+
+**FR-621 Every moment the game raises has a switch**
+Priority: Must.
+The application shall hold a switch for every cue whose source is `journal` or `status` and for no
+other cue.
+Rationale: `Cast.Confirmed`, the one cue whose source is the application, answers the player's own
+cast rather than anything in the game (FR-232).
+Acceptance: Given the shipped table of 263 cues, when the switches are listed, then 262 are listed
+and `Cast.Confirmed` is not among them.
+To be verified by: `TestEveryMomentTheGameRaisesHasASwitch`.
+
+**FR-622 A moment switched off is not spoken**
+Priority: Must.
+When an event resolves to a cue that is switched off (FR-606), the application shall play nothing
+and shall record the decision as `off`.
+Rationale: the reaction log keeps saying why nothing was said, as it does for mute (FR-611).
+Acceptance: Given `Docked` switched off, when `Docked` fires, then nothing plays and the reaction log
+gains `off` for `Docked`.
+To be verified by: `TestAMomentSwitchedOffPlaysNothingAndIsRecordedOff`.
+
+**FR-623 A moment switched off holds nothing back**
+Priority: Must.
+If a cue that is switched off fires, then the application shall leave every other decision as though
+it had not fired: the firing opens no duplicate window (FR-608), starts no cooldown (FR-609), does not
+count as the take played last (FR-610) and makes no line (FR-514).
+Acceptance: Given `Docked`, whose cooldown is 30 seconds, switched off, when it fires at 12:00:00, is
+switched on at 12:00:05 and fires again at 12:00:10, then the second firing is played. Given `bf_emma`
+cast with nothing made for `Docked` and `Docked` switched off, when `Docked` fires, then `making` is
+not recorded.
+To be verified by: `TestAFiringSwitchedOffStartsNoCooldown`,
+`TestAFiringSwitchedOffOpensNoDuplicateWindow` and `TestAFiringSwitchedOffMakesNoLine`.
+
+**FR-624 While muted, a moment switched off is recorded as off**
+Priority: Should.
+While playback is muted, when a cue that is switched off fires, the application shall record the
+decision as `off` rather than `dropped` (FR-611).
+Rationale: a switch outlasts the run; a mute does not (FR-705).
+Acceptance: Given playback muted with `Docked` switched off, when `Docked` fires, then `off` is
+recorded.
+To be verified by: `TestAMomentSwitchedOffWhileMutedIsRecordedOff`.
+
+**FR-625 A moment switched off while it waits is let go**
+Priority: Should.
+If a cue is switched off while it waits in the queue (FR-612) or for its line (FR-514), then the
+application shall let it go and shall record the decision as `off`.
+Acceptance: Given a take of `HullDamage` playing with `Docked` queued behind it, when `Docked` is
+switched off, then `Docked` is never played and `off` is recorded for it.
+To be verified by: `TestAMomentSwitchedOffInTheQueueIsLetGo` and
+`TestAMomentSwitchedOffWhileItsLineIsMadeIsLetGo`.
+
+**FR-626 A take already playing is not cut short by its switch**
+Priority: Should.
+When a cue is switched off while one of its takes is playing, the application shall let that take
+play to its end.
+Rationale: a press never cuts a clip short (FR-236); a switch is a press.
+Acceptance: Given a take of `Docked` playing, when `Docked` is switched off, then the take plays to its
+end.
+To be verified by: `TestSwitchingOffAMomentLeavesItsTakePlaying`.
+
+**FR-627 A switch applies at once**
+Priority: Must.
+When a switch is changed, the application shall apply it from the next firing of that cue, with no
+restart.
+Acceptance: Given `Docked` switched on, when it is switched off and then fires, then `off` is
+recorded.
+To be verified by: `TestASwitchAppliesToTheNextFiring`.
+
+**FR-628 Every moment starts switched on**
+Priority: Must.
+The application shall treat a cue as switched on unless the kept switches (FR-629) name it as
+switched off.
+Rationale: nothing changes for a player until they choose (OQ-16). A moment an update adds is named
+nowhere, so it starts switched on.
+Acceptance: Given no kept switches, when the application starts, then all 262 switches are on. Given
+kept switches naming `Docked` alone, when a table adding a cue `NewMoment` is loaded, then `NewMoment`
+is on and `Docked` is off.
+To be verified by: `TestEveryMomentStartsSwitchedOn` and `TestAMomentNoKeptSwitchNamesIsOn`.
+
+**FR-629 The switches are kept for the next run**
+Priority: Must.
+The application shall keep, by cue id, which cues are switched off for the next run.
+Acceptance: Given `Docked` switched off, when the application is closed and started again, then
+`Docked` is still off.
+To be verified by: `TestTheSwitchesOutliveTheRun`.
+
+**FR-630 The switches belong to no voice**
+Priority: Must.
+When a voice is cast, the application shall leave every switch as it stands.
+Rationale: which moments are spoken for is a question about the game being played rather than about
+who speaks (OQ-15).
+Acceptance: Given Grace cast with `Docked` switched off, when `bf_emma` is cast, then `Docked` is still
+off.
+To be verified by: `TestCastingAVoiceLeavesTheSwitchesAlone`.
+
+**FR-631 A kept switch naming no cue is let go**
+Priority: Should.
+If the kept switches name a cue id the table does not hold, then the application shall leave that id
+out of the switches it applies and keeps.
+Acceptance: Given kept switches naming `Gone`, which no cue has, when any switch is next changed, then
+`Gone` is no longer kept.
+To be verified by: `TestAKeptSwitchForNoCueIsLetGo`.
+
+**FR-632 Switches that cannot be read start every moment on**
+Priority: Should.
+If the kept switches cannot be read, then the application shall start with every cue switched on.
+Note: an unreadable store is treated as no store, as it is for every other setting
+(`SettingsStore` in `internal/application/ports/ports.go`), so nothing is said about it.
+Acceptance: Given a kept switches file that is not valid, when the application starts, then all 262
+switches are on.
+To be verified by: `TestUnreadableSwitchesStartEveryMomentOn`.
+
+**FR-633 If a switch cannot be kept, then say why**
+Priority: Must.
+If a changed switch cannot be written, then the Chatter pane shall show why it was not kept.
+Note: the switch still applies until the application closes (FR-627).
+Acceptance: Given a store that refuses every write, when `Docked` is switched off, then the Chatter
+pane shows the reason and `Docked` stays off until the application closes.
+To be verified by: `TestASwitchThatCannotBeKeptSaysWhy`.
+
+**FR-634 Every moment carries a category**
+Priority: Must.
+Every cue in the cue table whose source is `journal` or `status` shall carry one category named in
+FR-635. If a table holds such a cue whose category is missing or not named there, then the
+application shall refuse the table, naming the cue.
+Rationale: 262 switches with nothing between them make a list nobody reads (OQ-14). A category is
+written by hand in the table, as a purpose is (FR-231), since no part of a cue id says which subject it
+belongs to.
+Acceptance: Given a table whose `Docked` entry has no `category`, when it is loaded, then loading
+fails with an error naming `Docked`. Given the shipped table, when it is loaded, then each of its 262
+moments has a category.
+To be verified by: `TestACueWithNoCategoryIsRefusedByName`, `TestACategoryOutsideTheSetIsRefused`
+and `TestEveryShippedMomentHasACategory`.
+
+**FR-635 The categories**
+Priority: Should.
+The cue table shall name each moment's category from the set below, which Chatter lists in this
+order.
+
+| Category | What it holds |
+|---|---|
+| Combat and danger | Attacks, interdiction, damage, heat, shields, targeting, bounties, crimes, death and rebuy |
+| Flight and travel | Jumps, supercruise, routes, approaching and leaving a body, landing gear, touchdown and liftoff |
+| Docking and stations | Docking requests with their answers, docking, undocking and station traffic |
+| Comms | Messages received and sent, the pirate moments among them |
+| Ship systems | The status flags for lights, cargo scoop, silent running, flight assist and night vision; the focused panel, pips and fire groups |
+| Exploration | Scans, the full spectrum scanner, surface mapping, the codex, fuel scooping and selling exploration data |
+| Trade, missions and outfitting | Markets, modules, the shipyard, missions, repairs, refuelling, restocking, fines, vouchers and promotions |
+| Materials and engineering | Materials collected and traded, synthesis and engineering |
+| On foot and vehicles | Embarking, disembarking, the SRV, fighters, drones, taxis, oxygen and health on foot |
+| Fleet carriers | Every fleet carrier event |
+| Wings, squadrons and friends | Wings, squadrons, friends and shared bookmarks |
+| Session | Loading the game, changing game mode and shutting down |
+
+Rationale: Claude proposed the set from reading the 261 cue ids. Which cue sits in which category is
+written in the table beside its purpose, where Oliver reviews it.
+Acceptance: Given the shipped table, when Chatter lists its categories, then all twelve appear in the
+order above and none is empty.
+To be verified by: `TestTheShippedCategoriesAreTheSetInOrder`; the placement of each cue by Oliver's
+inspection of `cues.toml`.
+
+**FR-636 Station traffic can be switched off apart from other messages**
+Priority: Should.
+The application shall let station traffic be switched off while `ReceiveText.Channel.npc` stays
+switched on.
+Rationale: 7,298 of the 13,205 `npc` messages are station traffic (measured above) and every one
+reaches `ReceiveText.Channel.npc` today, so a player wanting quiet while a station speaks would
+otherwise lose every other message too (OQ-13). While it is switched on, station traffic is answered
+by a moment of its own (FR-637).
+Acceptance: Given station traffic switched off and `ReceiveText.Channel.npc` switched on, when
+`ReceiveText` arrives on `npc` with the message key `$STATION_docking_granted;`, then nothing plays
+and `off` is recorded; when one arrives whose key stem begins `Military_`, then
+`ReceiveText.Channel.npc` answers it.
+To be verified by: `TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken`.
+
+**FR-637 The station traffic moment**
+Priority: Should.
+The cue vocabulary shall hold one comms moment for station traffic, `ReceiveText.StationTraffic`,
+carrying the priority `ambient`, a cooldown of 30 seconds, the category Docking and stations and the
+purpose "When the station, settlement or carrier you are approaching speaks to you: docking answers,
+welcomes and its no fire zone."
+Rationale: while it is switched on, station traffic keeps the priority and the cooldown
+`ReceiveText.Channel.npc` answers it with today, so the one change a player hears is its own takes
+(OQ-19, Oliver, 2026-09-15). No single key stem names it, so its id is the application's own words
+rather than the game's; it keeps FR-219 and FR-230, so its folder is `ReceiveText_StationTraffic`
+(FR-229).
+Note: every recorded voice lacks it until it is recorded, which the Missing takes pane lists, as for
+the pirate moments (OQ-11). Like every cue it carries three lines in the script (FR-505, FR-507) with
+their speech sounds made by the sounds tool (FR-532).
+Acceptance: Given the shipped table, when it is loaded, then `ReceiveText.StationTraffic` is one cue
+carrying `ambient`, a cooldown of 30 seconds, the category Docking and stations, the purpose above and
+three lines in the script.
+To be verified by: `TestTheShippedStationTrafficMomentIsAsSpecified`; `TestTheScriptHoldsLinesForEveryCue`
+in `tests/structural/script_test.go` for its lines.
+
+**FR-638 Station traffic resolves to its own moment**
+Priority: Should.
+When a `ReceiveText` event arrives on the `npc` channel whose key stem begins `STATION_`,
+`DockingChatter_` or `DockingFailed_`, the application shall resolve it to
+`ReceiveText.StationTraffic`, whatever the rest of the key stem, the variant number, the values or the
+words the game generated.
+Rationale: 15 key stems were measured in these three families (above); matching their beginnings also
+answers a stem the game adds to them later.
+Note: the station traffic moment is narrower than any cue naming no key stem, so
+`ReceiveText.Channel.npc` never answers station traffic. A comms moment naming a whole key stem is
+narrower than it, so such a moment written later would answer its own stem.
+Acceptance: Given the shipped table, when `ReceiveText` arrives on `npc` with
+`$STATION_docking_granted;`, then with `$DockingChatter_Cordial;`, then with
+`$STATION_NoFireZone_exited;`, then each resolves to `ReceiveText.StationTraffic`; when one arrives
+with `$Pirate_OnDeclarePiracyAttack07;`, then it resolves to `ReceiveText.Pirate.OnDeclarePiracyAttack`.
+To be verified by: `TestStationTrafficResolvesToItsOwnMoment` and
+`TestAWholeKeyStemMomentIsNarrowerThanStationTraffic`.
+
+With the station traffic moment the cue vocabulary holds 263 cues, 262 of them with a switch.
 
 ---
 
@@ -3002,10 +3263,10 @@ carrying no mark.
 **FR-724 The Audio and Settings menus**
 Priority: Should.
 The window shall carry a menu bar above the band holding File, Audio, Settings and Help in that
-order. File shall hold Quit (FR-709). Audio shall hold Cast, Audition, Missing takes and Mute in
-that order. Settings shall hold Open settings, then the theme item of FR-707. Help holds what FR-712
-gives. When Cast, Audition or Missing takes is chosen, the application shall open the pane the
-band's button of that name opens and close the menu. When Open settings is chosen, it shall open the
+order. File shall hold Quit (FR-709). Audio shall hold Cast, Audition, Missing takes, Chatter and
+Mute in that order. Settings shall hold Open settings, then the theme item of FR-707. Help holds what
+FR-712 gives. When Cast, Audition, Missing takes or Chatter is chosen, the application shall open the
+pane the band's button of that name opens and close the menu. When Open settings is chosen, it shall open the
 Settings pane and close the menu. The Missing takes pane shall open on the cast voice. The Mute item
 shall read Unmute while playback is muted and act as FR-705 says. When an open menu's own title is
 pressed, the menu shall close; so shall an open menu when the pointer leaves the bar.
@@ -3018,6 +3279,142 @@ is pressed again" and "carries an open menu along the bar and lets it go at the 
 `frontend/src/App.menus.test.tsx`, the last holding the titles' order and Cast as Audio's first
 item. Not verified by a test: the order of the items after Audio's first; the Audio menu reading
 Unmute while muted; a menu closing when an item is chosen or when the pointer leaves the bar.
+Note: Chatter joined the Audio menu on 2026-09-15 (section 7.2). Its place there and the pane it opens
+are to be verified by "reaches Chatter from Audio" in `frontend/src/App.menus.test.tsx`.
+
+**FR-725 The Chatter button stands between Missing takes and Settings**
+Priority: Must.
+The band shall hold a button named Chatter, showing the Chatter artwork, between Missing takes and
+Settings.
+Note: the artwork's master is `assets/chatter.png`, supplied by Oliver on 2026-09-15; the band's copy
+is made from it by `tools/genicons.py`.
+Acceptance: Given the window open, then the band's buttons before its stretch read Cast, Audition,
+Status, Missing takes, Chatter and Settings in that order.
+To be verified by: "holds Chatter between Missing takes and Settings" in `frontend/src/App.menus.test.tsx`.
+
+**FR-726 The Chatter button opens the Chatter pane**
+Priority: Must.
+When the Chatter button on the band is pressed, the application shall open the Chatter pane.
+Acceptance: Given the Cast pane open, when Chatter is pressed, then the pane headed Chatter is shown.
+To be verified by: "opens the Chatter pane from the band".
+
+**FR-727 The Chatter pane lists every moment under its category**
+Priority: Must.
+The Chatter pane shall list the categories in the order of FR-635, each heading followed by every
+moment in that category, a moment standing under its full title (FR-233) with its purpose (FR-231)
+beneath in the secondary text colour (FR-318) and its switch beside it.
+Acceptance: Given the shipped table, when the pane opens, then `Docked` is listed under Docking and
+stations as "Docked" with the purpose "When the ship finishes docking, as the journal records it." and
+a switch.
+To be verified by: "lists each moment under its category with its purpose and a switch" in
+`frontend/src/chatter.test.tsx`.
+
+**FR-728 A category heading counts what is switched on**
+Priority: Should.
+Each category heading on the Chatter pane shall end in how many of its moments are switched on out of
+how many it holds, in brackets.
+Acceptance: Given the Docking and stations category holding 14 moments with `Docked` alone switched
+off, when the pane opens, then its heading reads "Docking and stations (13 of 14 on)".
+Note: the 14 is illustrative; the count is whatever the shipped table places there.
+To be verified by: "counts the moments switched on under each heading".
+
+**FR-729 Pressing a moment's switch changes it**
+Priority: Must.
+When a moment's switch is pressed, the application shall switch that moment to the other state.
+Acceptance: Given `Docked` switched on, when its switch is pressed, then `Docked` is off; when it is
+pressed again, then `Docked` is on.
+To be verified by: "turns a moment off then on again from its switch" and
+`TestSettingASwitchIsAppliedAndKept` in `chatter_test.go`.
+
+**FR-730 A category's switch reads on while anything in it is on**
+Priority: Should.
+Each category heading shall carry a switch that reads on while at least one moment in that category
+is switched on; otherwise it reads off.
+Acceptance: Given every moment in Session switched off but one, then the Session switch reads on;
+given all of them switched off, then it reads off.
+To be verified by: "reads a category on while any moment in it is on".
+
+**FR-731 Pressing a category's switch changes every moment in it**
+Priority: Should.
+When a category's switch is pressed, the application shall switch every moment in that category off
+where the switch read on, else on.
+Note: where this changes more than one moment, FR-733 asks first.
+Acceptance: Given Session with one moment on, when its switch is pressed and the question accepted,
+then every moment in Session is off.
+To be verified by: "turns every moment in a category off from its heading".
+
+**FR-732 Switch all on and Switch all off**
+Priority: Should.
+The Chatter pane shall hold two buttons above the first category, Switch all on then Switch all off,
+each switching every moment to the state it names once FR-733 has been answered.
+Rationale: a player who wants only a few moments spoken for starts from all off (OQ-17).
+Acceptance: Given `Docked` alone switched off, when Switch all on is pressed and the question
+accepted, then all 262 switches are on.
+To be verified by: "switches every moment on or off from the two buttons".
+
+**FR-733 Changing more than one moment at once asks first**
+Priority: Must.
+When a category's switch, Switch all on or Switch all off is pressed and would change more than one
+moment, the application shall ask for confirmation naming how many moments would change before it
+changes any. If the question is declined, then nothing shall change.
+Rationale: pressing it replaces the choice made for each of those moments, which no single press puts
+back.
+Acceptance: Given 12 moments switched off, when Switch all on is pressed, then the question names 12
+moments; when it is declined, then the 12 are still off.
+To be verified by: "asks before changing many moments and changes nothing when declined".
+
+**FR-734 A button with nothing to change is disabled**
+Priority: Should.
+While every moment is already on, Switch all on shall be disabled; while every moment is already off,
+Switch all off shall be disabled.
+Acceptance: Given all 262 switches on, then Switch all on is disabled and Switch all off is not.
+To be verified by: "disables the button that would change nothing".
+
+**FR-735 A switch is drawn as a slider**
+Priority: Must.
+Every switch on the Chatter pane shall be drawn as a rounded track holding a round thumb, the thumb at
+the track's end with the track in the accent colour while on and the thumb at the track's start with
+the track in a neutral colour while off.
+Rationale: Oliver's design, 2026-09-15. The accent rather than green or purple: green is the focus
+ring and orange already means something speaking (`frontend/src/theme.css`).
+Acceptance: Given `Docked` on and `Docked.Set` off, when the pane opens, then the thumb of the `Docked`
+switch sits at its end on an accent track and the thumb of the `Docked.Set` switch at its start on a
+neutral track.
+To be verified by: "draws a switch on at its end and off at its start"; the colours by
+`TestColoursOnlyInTokens` in `tests/structural/colours_test.go` holding them to the theme's tokens.
+
+**FR-736 A switch's state is told apart by more than colour**
+Priority: Must.
+The thumb of every switch on the Chatter pane and the track of every switch while on shall each
+measure a contrast of at least 3 to 1 against the panel background, in the light theme and the dark
+one.
+Rationale: WCAG 2.2 success criterion 1.4.11, non-text contrast, at level AA. The thumb's position
+tells the states apart without colour (FR-735).
+Acceptance: Given both themes, when the contrast of the thumb and of the accent track is measured
+against the panel, then each is 3 to 1 or more.
+To be verified by: `TestTheChatterSwitchesContrastInBothThemes` in `tests/structural/contrast_test.go`.
+
+**FR-737 Chatter answers the keyboard**
+Priority: Must.
+The Chatter pane shall answer the keyboard as FR-713 says for every pane, a switch holding the ring
+being pressed by Space or Enter.
+Acceptance: Given the ring on `Docked`'s switch while on, when Space is pressed, then `Docked` is off.
+To be verified by: "presses a switch holding the ring from Space and Enter".
+
+**FR-738 A switch is announced by its name and its state**
+Priority: Must.
+Each switch on the Chatter pane shall be announced as a switch named by its moment's full title or its
+category's name, with its state as on or off.
+Acceptance: Given `Docked` off, then its switch has the switch role, the name "Docked" and the checked
+state false.
+To be verified by: "names each switch and says whether it is on".
+
+**FR-739 The guide describes Chatter**
+Priority: Should.
+The guide (FR-712) shall say what the Chatter pane is for, that a category's switch changes every
+moment in it and that the switches belong to no voice.
+Acceptance: Given the guide open, then it holds a section on Chatter saying each of the three.
+To be verified by: "describes the Chatter pane" in `frontend/src/guide.test.tsx`.
 
 ---
 
@@ -3191,7 +3588,9 @@ headless test is how it gets tested.
 
 ## 11. Open questions
 
-There are no open questions.
+| ID | Question | Owner | Confirm by | Recommendation |
+|---|---|---|---|---|
+| OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.Channel.npc` and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---
 
@@ -3199,10 +3598,10 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-809, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739, FR-809, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
-| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
+| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

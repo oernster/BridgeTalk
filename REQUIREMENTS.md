@@ -1835,8 +1835,8 @@ Where `script.toml` gives a word a British and an American spelling of its speec
 of words, the sounds tool shall save that word with those sounds in every line holding it, as though
 each line gave them (FR-529).
 Note: the table reads `[words]` then `commander = ["kəmˈɑndə", "kəmˈændəɹ"]`.
-Rationale: commander is in 246 of the 768 lines; giving its sounds in each line would write one
-spelling 246 times. Oliver chose the British `kəmˈɑndə` over misaki's `kəmˈɑːndə` by ear on
+Rationale: commander was in 246 of the 768 lines the script held on 2026-09-14; giving its sounds in
+each line would write one spelling that many times. Oliver chose the British `kəmˈɑndə` over misaki's `kəmˈɑːndə` by ear on
 2026-09-14.
 Acceptance: Given the table giving commander `kəmˈɑndə` and `kəmˈændəɹ`, when the sounds tool runs,
 then "Sold, commander. Credits are in." is saved with `kəmˈɑndə` for British voices and `kəmˈændəɹ`
@@ -2799,9 +2799,9 @@ made so far, which rises as the game is played (read in `library.Catalogue.Cover
 service's `Lookup` on 2026-09-14). The window already says moment ("Moments spoken for", Missing takes).
 Wording proposed by Claude; approved by Oliver on 2026-09-14.
 Acceptance: Given a window wide enough for six 215 px columns, when the Status pane opens, then its four
-cards fill the pane's width in one row. Given `bf_emma` cast with lines made for 3 moments, then Moments
-covered reads "3 of 256" with the machine voice line beneath its tagline. Given `Oliver/` holding a take
-for `Docked` alone, then it reads "1 of 256" with "The other 255 moments have no recording yet".
+cards fill the pane's width in one row. Given a vocabulary of 256 moments and `bf_emma` cast with lines
+made for 3 of them, then Moments covered reads "3 of 256" with the machine voice line beneath its
+tagline. Given the same vocabulary and `Oliver/` holding a take for `Docked` alone, then it reads "1 of 256" with "The other 255 moments have no recording yet".
 Verified by: "labels the coverage card Moments covered, its figure in the value colour", "says beneath each
 figure what its card means", "names no product beneath a figure until About answers", "says what the figure
 means for" each of the four situations and "reads the acceptance figures with the line for each" in
@@ -2944,7 +2944,8 @@ Rationale: Oliver asked on 2026-09-15 for the cast voice to stand apart at the t
 leaving its group. Pressing it would cast it again, which makes and plays its confirmation a second
 time (`CastMachineVoice` in `machine.go`, read on 2026-09-15), so the card is not a control.
 Recommended by Claude; accepted by Oliver on 2026-09-15.
-Acceptance: Given `bf_emma` cast with 120 of 768 lines made for 40 moments, when the Cast pane opens,
+Acceptance: Given a vocabulary of 256 moments, a script of 768 lines and `bf_emma` cast with 120 of
+those lines made for 40 moments, when the Cast pane opens,
 then the card reads "Emma (British, female) is cast as your ship's voice" above "120 of 768 lines made;
 40 of 256 moments spoken" while British, female holds Alice, Isabella, Lily. Given `bm_george` then
 cast, then the card reads "George (British, male) is cast as your ship's voice", British, female holds

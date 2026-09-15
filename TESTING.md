@@ -49,7 +49,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 95.3% | 95% | `test.ps1` |
+| `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
 | the root package (the Wails facade) | 82.0% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 78.4% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
@@ -168,7 +168,7 @@ release is for.
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
   menu as drawn is not.
-- **`internal/infrastructure/audio` (95.3%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/audio` (95.7%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
   while a stop, an interrupting take and a take after silence each drop what is queued. The
@@ -179,7 +179,7 @@ release is for.
   failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
   rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
   error, an unreadable clip in `playOne` and a cancel landing between clips or during the
-  gap in `run`. The figure moves between runs: 95.0%, 95.3% and 95.5% were all
+  gap in `run`. The figure moves between runs: 95.0%, 95.3%, 95.5% and 95.7% were all
   measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
   into memory is tested directly, by deleting the file before streaming what came back:
   a streamer still holding reading to do fails there, which is exactly the reading that

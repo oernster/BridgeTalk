@@ -27,6 +27,7 @@ exactly like one that holds.
 | Only the composition root wires the application services to infrastructure | `TestCompositionRootIsWhitelisted` | `boundary_test.go` |
 | No source file exceeds the 400-line limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
 | No source file sits in the danger band of 381 to 400 lines | `TestNoFileInDangerBand` | `boundary_test.go` |
+| A file's lines are counted as an editor numbers them, so the newline ending a file adds none | `TestLineCountCountsTheLinesAnEditorShows` | `linecount_test.go` |
 | Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
 | No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
 | The secondary lines, the Missing takes purpose line and the Status cards' taglines, share one rule whose colour reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestTheSecondaryLinesContrastInBothThemes` | `contrast_test.go` |
@@ -34,6 +35,10 @@ exactly like one that holds.
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
 | Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
 | Every region that is a keyboard stop because it scrolls wears a focus ring | `TestEveryScrollingRegionRingsForTheKeyboard` | `rings_test.go` |
+| No list wears a ring in any state | `TestNoListWearsARing` | `noborder_test.go` |
+| No scrolling region wears a ring under the pointer | `TestNoScrollingRegionRingsUnderThePointer` | `noborder_test.go` |
+| No container wears a ring | `TestNoContainerWearsARing` | `noborder_test.go` |
+| Only a control, a list or a scrolling region is a keyboard stop | `TestOnlyControlsListsAndScrollingRegionsAreStops` | `noborder_test.go` |
 | The shipped script and its saved speech sounds break none of the script's rules; every problem is named with its cue and its line | `TestTheShippedScriptHoldsNoProblem` | `script_test.go` |
 | Every cue in the table has lines in the script | `TestTheScriptHoldsLinesForEveryCue` | `script_test.go` |
 | `pauses.toml` is not stale: every machine voice has a pause for each line the script joins and none for a line it no longer joins, each found in the line's saved speech sounds now with the model and style files the list gives; every problem is named | `TestTheShippedPausesAreNotStale` | `pauses_test.go` |
@@ -204,7 +209,7 @@ person's library. The two meet at the cue id and nowhere else.
 
 **The cue table, `internal/infrastructure/config/cues.toml`, embedded in the binary.** Each entry names
 a source, the journal event or status flag it listens for, an optional edge, an optional predicate over
-the payload, a priority and a cooldown in seconds. A missing priority reads as `ambient`; a missing
+the payload or a key stem in its place (below), a priority and a cooldown in seconds. A missing priority reads as `ambient`; a missing
 cooldown leaves the cue limited by the dedupe window alone.
 
 ```toml
@@ -243,6 +248,29 @@ taxonomy in step. A list of cues does not: the Missing takes pane and the Moment
 under its full title alone (FR-233), since a heading read from the first segment would repeat the start
 of every title beneath it.
 
+**Comms moments (FR-617 to FR-620).** A `ReceiveText` message the game sends carries a key beside the
+words it generated, such as `$Pirate_OnDeclarePiracyAttack07;`. One moment arrives under many keys that
+differ only in a variant number, some with values after it, so a comms moment names the key stem they
+share rather than any one key, with no match field beside it:
+
+```toml
+[[cue]]
+id = "ReceiveText.Pirate.OnDeclarePiracyAttack"
+purpose = "When a pirate declares it is attacking you for your cargo."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_OnDeclarePiracyAttack" }
+priority = "alert"
+```
+
+`cue.KeyStem` reads a stem out of a key by dropping the leading `$`, any values from the first `:#`,
+the closing `;` and the variant digits; a message with no leading `$` is text a player typed and
+reaches no comms moment (FR-618). The id is the event's name followed by the stem with each underscore
+written as a dot, so it holds no underscore (FR-230) and stays in the game's own words (FR-619). A comms
+moment is narrower than any cue naming no stem, so `Table` sorts it ahead of `ReceiveText.Channel.npc`
+whatever their match fields. What is heard is the cast voice's take for the moment; the message's own
+words are never spoken. The shipped table holds six, one for each pirate stem FR-620 names.
+
 **The words a reader sees are generated, with one exception.** `cue.ID.Title` reads an id as words:
 each segment breaks where its capitals begin a new word, a run of capitals stays an initialism and
 whatever narrows the moment follows a colon, so `StartJump.JumpType.Hyperspace` reads "Start jump: jump
@@ -257,14 +285,17 @@ the surface and panel grounds in both themes.
 
 **The shipped set.** The journal cues leave out the snapshots the game writes at login or when a screen
 opens (`Cargo`, `Loadout`, `Market` and the like) and two bulk listings (`Music`,
-`FSSSignalDiscovered`). At most one payload field narrows an event. The status cues are every flag the
+`FSSSignalDiscovered`). At most one payload field narrows an event; a comms moment is narrowed by its key
+stem instead. The status cues are every flag the
 status watcher decodes on both edges, every `GuiFocus` value, every pip distribution and the fire group.
 `config_test.go` holds every shipped id to that spelling: its first segment is what the cue listens for.
 
 Every table is built through `cue.New`, which refuses a definition it cannot honour: an empty id, an
 unknown source or edge, a journal or application cue naming no event, a status cue naming no flag, an
 unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below), an id
-ending in a dot or a space (FR-222, below) or an id holding an underscore (FR-230, below).
+ending in a dot or a space (FR-222, below), an id holding an underscore (FR-230, below) and a comms
+moment naming more than one stem, a stem beside match fields, a stem that is no key stem or an id not
+spelled from its stem (FR-619).
 `config.LoadCueTable` also refuses a duplicate id, a key it does not hold and a cue whose purpose is missing or blank (FR-231). It accepts a path to a table on disk, which would
 replace the shipped one whole under exactly the same rules; no flag supplies such a path today, so the
 running application always loads the embedded table and only the tests exercise the other route.
@@ -791,7 +822,7 @@ compiles it and nothing type checks it. The product's name arrives on the state 
 given and the static markup carries none of it. `TestTheProductIsNamedOnce` reads the page's directory to
 hold it to that; the line-limit tests read the same directory for size.
 
-**It is five files.** `index.html` carries the markup, `setup.css` the palette and layout, `setup-ring.js`
+**It is five files beside its three images.** `index.html` carries the markup, `setup.css` the palette and layout, `setup-ring.js`
 the keyboard ring (FR-808), `setup-shell.js` the page plumbing and `setup-routes.js` the screens. No
 bundler is involved: the whole directory is embedded already, so a stylesheet link and three script tags
 resolve as they stand. The scripts are classic, sharing one global scope in load order, which is why the
@@ -933,7 +964,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   band, the composition-root whitelist, the declared bound surface, the wire contract and the rules that
   keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
   game's own words in the cue table. They also hold the shape of every cue id, the secondary lines'
-  contrast, the Status cards' grid, the strip's height, labels and tones, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
+  contrast, the Status cards' grid, the strip's height, labels and tones, the rings a control, a list
+  or a scrolling region may wear, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
   against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
   uintptr only where the call into it is made; another fails where `pauses.toml` or `endings.toml` is stale against the
   script, the machine voices or the listed model files, with four more for each proving that check names
@@ -952,14 +984,12 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 - `test.ps1` first checks `models/` against the model files list, stopping where a file is missing or
   differs (FR-538). It then checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
-  to a combined 100% coverage, then holds each other measured package to a floor of its own: the root
-  package 75%, `audio` 80%, `audiotest` 86%, `madelines` 98%, `modelfiles` 99%, `runlog` 51%, `setup` 61%, `speechmodel` 91%, `taskbar`
-  67%, `tools/sounds` 38%, `tools/pauses` 73%, `tools/models` 48%, `tools/payload` 53%, with `appdata`, `config`, `journal`, `library`, `reporoot`,
-  `status`, `tomlfile`, `voicefiles`, `wholefile`, `internal/refusal` and `tools/internal/pyvenv` at 100%. `internal/infrastructure/window`,
-  `installer` and `modelfilestest` carry no floor: the first two have nothing a test can reach without
-  the platform behind them; the last is test support exercised by the `modelfiles` and `tools/models` tests. `internal/product`
-  has no test file and is not measured.
-  TESTING.md names what each shortfall is.
+  to a combined 100% coverage, then holds each other measured package to a floor of its own, set from
+  what that package measured rather than from a target. `internal/infrastructure/window` and
+  `installer` carry no floor, since neither has anything a test can reach without the platform behind
+  it; `modelfilestest` is test support with no tests of its own; `internal/product` holds constants
+  alone and is not measured. TESTING.md tabulates every figure beside its floor and names what each
+  shortfall is, so the numbers are stated there once.
 - `build.ps1` first stamps the version into the site through `stamp_version.py`, then runs
   `test.ps1 -Benchmarks` before it builds and offers no switch to skip it. `-Benchmarks` vets and runs
   `tests/machinevoice` and `internal/infrastructure/speechmodel` under the `benchmarks` build tag, so

@@ -39,6 +39,10 @@ lines it makes on your own machine; record a voice of your own whenever you like
   for the next run.
 - **Plays one recording per moment.** Where a voice holds several takes for a moment, one is chosen
   at random, never the one that moment played last time.
+- **Answers pirates.** When a pirate makes itself known, scans your cargo, loses interest, finds
+  your hold empty, starts an interdiction or declares its attack, the ship's voice speaks for that
+  moment, whichever version of the message the game sent. It never reads the message's own words
+  aloud.
 - **Knows when to stay quiet.** An alert interrupts anything less urgent; a notice waits its turn;
   an ambient line is dropped when something is already waiting; a flavour line is dropped when
   anything is playing or waiting. Many moments hold a minimum interval between two firings. The

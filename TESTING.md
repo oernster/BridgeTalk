@@ -64,7 +64,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-843 test functions, which expand to 914 runs once their subtests are counted (measured on
+849 test functions, which expand to 920 runs once their subtests are counted (measured on
 2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
 Forty-eight of them are the structural tests in `tests/structural`, which scan the source

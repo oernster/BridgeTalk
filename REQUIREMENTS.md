@@ -1,6 +1,6 @@
 # Bridge Talk: Requirements Specification
 
-Section 11 records open questions; it holds five, all about the comms moments proposed in section 7.1.
+Section 11 records open questions; it holds none at present.
 
 ---
 
@@ -58,13 +58,16 @@ project.
 | Fuzzy, partial or normalising name matching | Section 3.1 rule 4; matching is exact by design |
 | macOS | Not asked for; Windows and Linux are the platforms in scope |
 | Capturing audio | Recorded in a dedicated program; section 4 |
+| Reading a comms message's words aloud | The words are generated afresh for each message, so a line would have to be made as the event fires (Oliver, 2026-09-15) |
+| A message a player typed, on any channel | It carries no key (measured on 203 of 203 `starsystem` messages); it is another person's words |
+| Comms moments beyond the pirate key stems | FR-620 names the set; any other key stem waits for a decision of its own (Oliver, 2026-09-15) |
 
 ### 1.4 Definitions
 
 | Term | Meaning, fixed for this document |
 |---|---|
 | **Cue** | One thing the application can play, plus the game condition that triggers it. Identified by a stable id spelled in the game's own words, such as `StartJump.JumpType.Hyperspace`. Defined in `cues.toml`. |
-| **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 256. |
+| **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 262. |
 | **Voice** | A recorded voice or a machine voice, selectable as a whole. |
 | **Recorded voice** | One person's recordings: a directory under the library root that yields at least one take. Sections 3 and 4 say voice for a recorded voice. |
 | **Machine voice** | One of the 28 English voices of the Kokoro model shipped with the application, identified by the model's own id, such as `bf_emma`. Its takes are made lines (section 6.1). |
@@ -78,6 +81,9 @@ project.
 | **Take** | One audio file answering one cue. A cue may have several takes. |
 | **Cast** | The act of selecting the voice that speaks. |
 | **Audition** | Playing a take on demand from the user interface, outside game events. |
+| **Message key** | The `Message` value of a `ReceiveText` journal event, exactly as the game writes it. |
+| **Key stem** | A message key with its leading `$`, the digits ending its name, any values from the first `:#` onwards and its closing `;` removed. `$Pirate_ThreatenSpecific01:#units=20:#CommodityName=$aluminium_Name;;` has the key stem `Pirate_ThreatenSpecific`. |
+| **Comms moment** | A cue that names a key stem (section 7.1). |
 
 ### 1.5 References
 
@@ -147,7 +153,7 @@ schema in section 3 is already portable, so nothing there changes either way.
 
 | ID | Assumption | Owner | Confirm by |
 |---|---|---|---|
-| ASM-1 | The 256 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
+| ASM-1 | The 262 cue ids in `cues.toml` are the right vocabulary. | Oliver | Before recordings are made in earnest |
 | ASM-2 | Recordings are made with ordinary consumer microphones in untreated rooms, so their quality is not controllable by the application. | Oliver | Before recordings are made in earnest |
 | ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
 | ASM-4 | The development machine, 12 logical processors with no graphics card used, is close enough to a player's machine to set NFR-P-203. | Oliver | Before the first release with machine voices |
@@ -210,7 +216,7 @@ A file in the flat form is named with the cue id unchanged. A cue folder is name
 the cue id with every dot written as an underscore; nothing else is changed (FR-229). No
 cue id holds an underscore (FR-230), so each folder name belongs to exactly one id.
 
-Checked against all 256 cue ids: every id uses only letters, digits, `.` and a
+Checked against all 262 cue ids: every id uses only letters, digits, `.` and a
 space inside a segment, which five ids carry; none begins with a dot, which would
 hide it on Linux and macOS; none ends in a dot or space, which Windows silently
 strips; no space sits beside a dot; none has a first segment that is a Windows
@@ -560,7 +566,7 @@ take needs to know when it will be heard, which the id cannot say (Oliver, 2026-
 stay generated; the purpose is the one piece of reader facing text the table writes.
 Acceptance: Given a table whose `Docked` entry has no `purpose`, when it is loaded, then loading
 fails with an error naming `Docked`. Given the shipped table, when it is loaded, then every one
-of its 256 cues has a purpose.
+of its 262 cues has a purpose.
 Verified by: `TestACueWithNoPurposeIsRefusedByName` and `TestEveryShippedCueHasAPurpose` in
 `internal/infrastructure/config/loader_test.go`; `TestAPurposeIsCarriedAsWritten` in
 `internal/domain/cue/cue_test.go`.
@@ -691,7 +697,7 @@ Priority: Must.
 Wherever the application lists cues, on the Missing takes pane and in the Moments spoken for dialog behind
 a cast row, it shall show each cue under its full title alone, with no group heading above it.
 Rationale: a heading is read from the first segment of the id and a title from the whole id, so a
-heading repeats the start of every title beneath it; for 112 of the 256 cues the two are the same
+heading repeats the start of every title beneath it; for 112 of the 262 cues the two are the same
 words (Oliver, 2026-09-13).
 Acceptance: Given `CarrierDepositFuel` and `StartJump.JumpType.Hyperspace` listed, then "Carrier
 deposit fuel" is shown once and "Start jump: jump type hyperspace" is shown with no "Start jump"
@@ -2192,7 +2198,7 @@ The requirements in sections 7 to 9 were written on 2026-09-13 for behaviour tha
 without any. Each states what the application does today; a "Not verified by a test" clause says
 where nothing holds it. Where reading the source found behaviour that may not be what is wanted, the
 question goes to section 11 rather than being written down here as a rule. Section 7.1 is the
-exception: it proposes behaviour not yet built, with its questions in section 11.
+exception: it was specified on 2026-09-15 before it was built.
 
 **FR-601 Read the journal forward only**
 Priority: Must.
@@ -2263,6 +2269,9 @@ name whose edge and every match field agree with it, the cue with the most match
 agrees, then the event shall play nothing and shall not be recorded.
 Note: between cues with equally many match fields the one written first in the table wins; no test
 holds that.
+Note: a comms moment is narrower than any cue naming no key stem, whatever their match fields
+(FR-617), so `ReceiveText.Channel.npc` never answers a message a comms moment names;
+`TestACommsMomentAnswersEveryVariantOfItsKey` in `internal/domain/cue/stem_test.go` holds that.
 Verified by: `TestResolvePrefersTheMoreSpecificCue`, `TestResolveReportsNoMatch`,
 `TestMatchesHonoursEdge` and `TestMatchesComparesPayloadAcrossTypes` in
 `internal/domain/cue/cue_test.go`; `TestAnEventNoCueClaimsIsIgnoredEntirely` in
@@ -2385,10 +2394,10 @@ starved" in `frontend/src/shell.test.tsx`.
 
 ### 7.1 Comms moments
 
-Proposed on 2026-09-15 and not baselined. Nothing in this section is built. Open questions OQ-7 to
-OQ-11 in section 11 decide what is heard, which messages become moments and how a comms moment sits
-beside the cues the game already raises; each requirement here takes its priority in section 12 once
-they are answered.
+Specified on 2026-09-15 before it was built. Five questions were raised the same day, OQ-7 to OQ-11:
+what is heard, which messages become moments, the priorities and purposes proposed, how a comms moment
+sits beside the cue the game raises after it and whether recorded voices may fall short again. Oliver
+took Claude's recommendation on each; the requirements below record the answers.
 
 **What the journals hold.** Measured on 2026-09-15 over the 101 journal files on Oliver's machine:
 
@@ -2408,24 +2417,11 @@ they are answered.
   `ReceiveText.Channel.npc` and `ReceiveText.Channel.starsystem`, each `ambient` with a 30 second
   cooldown.
 
-**Terms, proposed for section 1.4.**
-
-| Term | Meaning |
-|---|---|
-| **Message key** | The `Message` value of a `ReceiveText` event, exactly as the game writes it. |
-| **Key stem** | A message key with its leading `$`, the digits ending its name, any values from the first `:#` onwards and its closing `;` removed. `$Pirate_ThreatenSpecific01:#units=20:#CommodityName=$aluminium_Name;;` has the key stem `Pirate_ThreatenSpecific`. |
-| **Comms moment** | A cue that names a key stem. |
-
-**Out of scope for this section, proposed.**
-
-| Item | Why |
-|---|---|
-| Reading a message's words aloud | The words are generated afresh for each message, so a line would have to be made as the event fires, which section 1.3 rules out |
-| A message a player typed, on any channel | It carries no key (203 of 203 on `starsystem`) and is another person's words |
-| Keys outside the set FR-620 names | Until OQ-8 widens it |
+The terms message key, key stem and comms moment are defined in section 1.4; what this section leaves
+out is listed in section 1.3.
 
 **FR-617 A comms message is matched by its key stem**
-Priority: set in section 12 once OQ-8 is answered.
+Priority: Should.
 When a `ReceiveText` event arrives whose message key has the key stem a comms moment names, the
 application shall resolve the event to that comms moment, whatever the variant number, the values or
 the words the game generated.
@@ -2438,18 +2434,23 @@ with the message key `$Pirate_OnDeclarePiracyAttack07;` and again with
 moment, when `$Pirate_OnDeclarePiracyAttacker01;` arrives, then it resolves to the channel cue instead.
 Note: this compares a value inside an event. Rule 4 in section 3.1, which matches a name on disk to a
 cue id exactly, is unchanged.
-Verified by: not written yet; a domain test resolving two variants of one key and refusing a longer
-key with the same beginning.
+Note: what is heard is the cast voice's take for the comms moment, chosen and played as for any cue;
+the message's own words are never spoken (OQ-7, Oliver, 2026-09-15).
+Verified by: `TestAKeyStemIsTheKeyWithoutItsVariantItsValuesOrItsMarks` and
+`TestACommsMomentAnswersEveryVariantOfItsKey` in `internal/domain/cue/stem_test.go`, proved by
+planting a stem that kept its variant number, a match that took any longer key and a sort that ranked
+a comms moment beside the channel cue. Not verified by a test: a comms moment answering a message in a
+running session.
 
 **FR-618 A message with no key reaches no comms moment**
-Priority: set in section 12 once OQ-8 is answered.
+Priority: Should.
 If a `ReceiveText` event arrives whose `Message` does not begin with `$`, then the application shall
 resolve it to no comms moment, leaving the channel cues to answer it as FR-606 does today.
 Rationale: a message a player typed has no key (measured above).
-Verified by: not written yet; a domain test handing a typed message to a table holding a comms moment.
+Verified by: `TestAMessageWithNoKeyReachesNoCommsMoment` in `internal/domain/cue/stem_test.go`.
 
 **FR-619 A comms moment's id spells its key stem in dots**
-Priority: set in section 12 once OQ-8 is answered.
+Priority: Should.
 The cue table shall spell a comms moment's id as `ReceiveText.` followed by its key stem with every
 underscore written as a dot, so `Pirate_OnDeclarePiracyAttack` is
 `ReceiveText.Pirate.OnDeclarePiracyAttack`. If a comms moment's id is spelled any other way, then the
@@ -2457,10 +2458,12 @@ table shall fail to load, naming the cue.
 Rationale: no cue id may hold an underscore (FR-230). Spelled this way the id stays in the game's own
 words; its folder is `ReceiveText_Pirate_OnDeclarePiracyAttack` (FR-229). A key stem ends in no digits,
 so no id ends in a segment of digits (FR-219).
-Verified by: not written yet; a loader test refusing a comms moment whose id and key stem disagree.
+Verified by: `TestACommsMomentThatIsWrittenWronglyIsRefused` in `internal/domain/cue/stem_test.go`,
+proved by planting a check that let any id through; `TestACommsMomentWhoseIdDisagreesWithItsStemFailsToLoad`
+in `internal/infrastructure/config/comms_test.go`.
 
 **FR-620 The pirate moments**
-Priority: set in section 12 once OQ-8 and OQ-9 are answered.
+Priority: Should.
 The cue vocabulary shall hold one comms moment for each key stem below, with the priority and purpose
 beside it.
 
@@ -2474,15 +2477,25 @@ beside it.
 | `Pirate_OnDeclarePiracyAttack` | alert | When a pirate declares it is attacking you for your cargo. |
 
 Rationale: a pirate appears once valuable cargo is aboard and says so before it attacks (Oliver,
-2026-09-15). The priorities and purposes are Claude's proposal, read from the key names; they are not
-checked against what the game says.
+2026-09-15). Claude proposed the priorities and purposes, reading them from the key names rather than
+checking them against what the game says; Oliver accepted them (OQ-9).
+Note: only the pirate key stems become comms moments for now; others, such as the police scans, wait
+for a decision of their own (OQ-8, Oliver, 2026-09-15).
+Note: a pirate moment and the cue the game raises after it, such as `UnderAttack` or `Interdicted`, both
+speak, ordered by FR-612 and their own cooldowns; nothing holds either back (OQ-10, Oliver, 2026-09-15).
+Note: every recorded voice lacks the six new moments until they are recorded, which the Missing takes
+pane lists (OQ-11, Oliver, 2026-09-15).
 Acceptance: Given the shipped table, when it is loaded, then each of the six key stems resolves to
 exactly one comms moment carrying the priority above, a purpose (FR-231) and three lines in the script.
-Verified by: not written yet; a loader test over the shipped table.
+Verified by: `TestTheShippedPirateMomentsAnswerTheirMessages` in
+`internal/infrastructure/config/comms_test.go`; `TestTheScriptHoldsLinesForEveryCue` and
+`TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go` for their lines. Not verified
+by a test: what the game's words say for each key, which the purposes were read from.
 
-**What adding FR-620 changes elsewhere.** The cue vocabulary grows from 256 to 262 cues, so the count
-in section 1.4 and ASM-1 changes. Every recorded voice lacks six more moments (ASM-3, OQ-11). The script
-needs 18 new lines; the saved speech sounds, the pauses and the endings are made again by their tools.
+With the pirate moments the cue vocabulary holds 262 cues. The sounds tool made the speech sounds of
+their 18 lines. None of those lines ends by joining a commander or on a nasal, so the pauses and the
+endings needed no new entry; `TestTheShippedPausesAreNotStale` and `TestTheShippedEndingsAreNotStale`
+pass over them.
 
 ---
 
@@ -3175,15 +3188,7 @@ headless test is how it gets tested.
 
 ## 11. Open questions
 
-Every one of them concerns the comms moments proposed in section 7.1, raised on 2026-09-15.
-
-| ID | Question | Claude's recommendation | Owner | Needed by |
-|---|---|---|---|---|
-| OQ-7 | What is heard for a comms moment: the ship's voice speaking its own line about the message or the message's own words read out? | The ship's voice with lines of its own. Reading the words out would mean making a line as the event fires, which section 1.3 rules out; the words also change with every message. | Oliver | Before FR-617 is built |
-| OQ-8 | Which key stems become moments: the six pirate stems of FR-620 alone or others too? Candidates include the police scan stems `Police_ThankYouPassedStopAndSearch` and `Commuter_AuthorityScan`. | The pirate stems first. Some station stems may say what a cue already says, such as `STATION_docking_granted` beside `DockingGranted`; that overlap is a hypothesis, not measured. | Oliver | Before FR-620 is built |
-| OQ-9 | Are the priorities and purposes FR-620 proposes right? Each meaning is read from the key's name, not from what the game says. | As proposed, with Oliver correcting any meaning he knows from play. | Oliver | Before FR-620 is built |
-| OQ-10 | A pirate moment is often followed by the game's own cue: `Interdicted` after `Pirate_StartInterdiction` in 7 of 8, `UnderAttack` after `Pirate_OnDeclarePiracyAttack` in 74 of 180, each within 20 seconds. Should both speak? Or should a pirate moment hold back the cue that follows it? | Both speak, ordered by FR-612 and each cue's cooldown, until a real session shows it is too much. Holding one back needs a new rule and a window measured for it. | Oliver | Before FR-620 is built |
-| OQ-11 | Adding moments leaves every recorded voice incomplete again (ASM-3). Is that acceptable? | Yes: the Missing takes pane already lists what a voice lacks. | Oliver | Before the cue table changes |
+There are no open questions.
 
 ---
 
@@ -3192,7 +3197,7 @@ Every one of them concerns the comms moments proposed in section 7.1, raised on 
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-809, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-809, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

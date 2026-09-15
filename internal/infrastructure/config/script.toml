@@ -260,6 +260,12 @@
 "Pips.Engines" = ["Power to engines.", "Engines get the power, commander.", "Speed favoured."]
 "Pips.Weapons" = ["Power to weapons.", "Weapons get the power, commander.", "Firepower favoured."]
 "FireGroup.Changed" = ["Fire group changed.", "New fire group selected, commander.", "Weapons group switched."]
+"ReceiveText.Pirate.Arrival" = ["A pirate has shown up on our scanner.", "Pirate nearby. Stay sharp.", "Commander, we've got a pirate for company."]
+"ReceiveText.Pirate.OnStartScanCargo" = ["They're scanning our cargo.", "A pirate is scanning the hold.", "Cargo scan detected. Watch that pirate."]
+"ReceiveText.Pirate.NotEnoughCargo" = ["They don't think our cargo is worth it.", "Our hold isn't worth their trouble.", "The pirate has lost interest in us."]
+"ReceiveText.Pirate.OnNoCargoFound" = ["Nothing in the hold for them to take.", "They found an empty hold.", "Empty hold. They've got nothing to steal."]
+"ReceiveText.Pirate.StartInterdiction" = ["Pirate trying to pull us out of supercruise.", "Interdiction incoming. Fight it or submit.", "Brace yourself. A pirate wants us out of cruise."]
+"ReceiveText.Pirate.OnDeclarePiracyAttack" = ["The pirate is attacking. Shields up.", "They're coming for our cargo.", "Hostile pirate, commander. Weapons free."]
 
 # A word's speech sounds given once for every line holding it whole: British then American.
 [words]

@@ -35,6 +35,7 @@ type cueFile struct {
 		Flag     string            `toml:"flag"`
 		Edge     string            `toml:"edge"`
 		Match    map[string]string `toml:"match"`
+		Stem     map[string]string `toml:"stem"`
 		Priority string            `toml:"priority"`
 		Cooldown int               `toml:"cooldown"`
 		Purpose  string            `toml:"purpose"`
@@ -69,6 +70,7 @@ func LoadCueTable(override string) (cue.Table, error) {
 			Flag:     entry.Flag,
 			Edge:     entry.Edge,
 			Match:    entry.Match,
+			Stem:     entry.Stem,
 			Priority: entry.Priority,
 			Cooldown: time.Duration(entry.Cooldown) * time.Second,
 			Purpose:  entry.Purpose,

@@ -73,6 +73,7 @@ type Cue struct {
 	name     string
 	edge     event.Edge
 	match    map[string]string
+	stems    map[string]string
 	priority Priority
 	cooldown time.Duration
 	purpose  string
@@ -80,12 +81,15 @@ type Cue struct {
 
 // Definition is the unvalidated shape a cue arrives in from the cue table.
 type Definition struct {
-	ID       string
-	Source   string
-	Event    string
-	Flag     string
-	Edge     string
-	Match    map[string]string
+	ID     string
+	Source string
+	Event  string
+	Flag   string
+	Edge   string
+	Match  map[string]string
+	// Stem names the field holding a message key and the key stem that key must have, which makes
+	// the cue a comms moment (FR-617).
+	Stem     map[string]string
 	Priority string
 	Cooldown time.Duration
 	Purpose  string
@@ -196,6 +200,10 @@ func New(definition Definition) (Cue, error) {
 	for key, value := range definition.Match {
 		copied[key] = value
 	}
+	stems, err := keyStems(definition)
+	if err != nil {
+		return Cue{}, err
+	}
 
 	return Cue{
 		id:       ID(definition.ID),
@@ -203,6 +211,7 @@ func New(definition Definition) (Cue, error) {
 		name:     name,
 		edge:     edge,
 		match:    copied,
+		stems:    stems,
 		priority: priority,
 		cooldown: definition.Cooldown,
 		purpose:  definition.Purpose,
@@ -231,9 +240,9 @@ func (c Cue) Priority() Priority { return c.priority }
 // Cooldown returns the minimum interval between two firings of this cue.
 func (c Cue) Cooldown() time.Duration { return c.cooldown }
 
-// Specificity reports how many payload fields the cue constrains. A cue matching
-// more fields describes a narrower situation, so it wins over a broader one.
-func (c Cue) Specificity() int { return len(c.match) }
+// Specificity reports how many payload fields the cue constrains, a key stem among them. A cue
+// matching more fields describes a narrower situation, so it wins over a broader one.
+func (c Cue) Specificity() int { return len(c.match) + len(c.stems) }
 
 // Matches reports whether an event belongs to this cue.
 func (c Cue) Matches(candidate event.Event) bool {
@@ -249,7 +258,7 @@ func (c Cue) Matches(candidate event.Event) bool {
 			return false
 		}
 	}
-	return true
+	return c.matchesStems(candidate)
 }
 
 // equalField compares a payload value against the cue table's textual expectation.

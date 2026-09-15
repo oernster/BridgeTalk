@@ -32,7 +32,7 @@ func NewTable(cues []Cue) Table {
 	for index := range byKey {
 		bucket := byKey[index]
 		sort.SliceStable(bucket, func(a, b int) bool {
-			return bucket[a].Specificity() > bucket[b].Specificity()
+			return bucket[a].narrower(bucket[b])
 		})
 		byKey[index] = bucket
 	}

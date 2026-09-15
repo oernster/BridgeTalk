@@ -791,6 +791,57 @@ match = { Channel = "starsystem" }
 priority = "ambient"
 cooldown = 30
 
+# Comms moments (FR-617 to FR-620). Each names the key stem of the messages it answers, whatever
+# their variant number; its id is the event followed by the stem with each underscore as a dot.
+
+[[cue]]
+id = "ReceiveText.Pirate.Arrival"
+purpose = "When a pirate arrives and makes itself known to you."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_Arrival" }
+priority = "notice"
+
+[[cue]]
+id = "ReceiveText.Pirate.OnStartScanCargo"
+purpose = "When a pirate starts scanning your cargo."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_OnStartScanCargo" }
+priority = "notice"
+
+[[cue]]
+id = "ReceiveText.Pirate.NotEnoughCargo"
+purpose = "When a pirate decides your cargo is not worth taking."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_NotEnoughCargo" }
+priority = "notice"
+
+[[cue]]
+id = "ReceiveText.Pirate.OnNoCargoFound"
+purpose = "When a pirate's scan finds no cargo in your hold."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_OnNoCargoFound" }
+priority = "notice"
+
+[[cue]]
+id = "ReceiveText.Pirate.StartInterdiction"
+purpose = "When a pirate announces it is pulling you out of supercruise."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_StartInterdiction" }
+priority = "alert"
+
+[[cue]]
+id = "ReceiveText.Pirate.OnDeclarePiracyAttack"
+purpose = "When a pirate declares it is attacking you for your cargo."
+source = "journal"
+event = "ReceiveText"
+stem = { Message = "Pirate_OnDeclarePiracyAttack" }
+priority = "alert"
+
 [[cue]]
 id = "RedeemVoucher"
 purpose = "When you cash in bounty vouchers, combat bonds or other vouchers."

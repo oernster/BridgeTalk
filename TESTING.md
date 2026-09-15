@@ -122,7 +122,7 @@ only where the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.8%** |
 
-276 tests across 24 files, run under Vitest with jsdom.
+278 tests across 24 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit

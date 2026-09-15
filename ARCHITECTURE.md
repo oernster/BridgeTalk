@@ -646,10 +646,13 @@ nothing until its first take (FR-316). It opens on the voice already chosen, els
 first. For the voice chosen it lists each missing moment by title, its purpose beneath and the folder its
 take belongs in, with Open folder beside it.
 
-**Chatter.** Switch all on and Switch all off, each disabled while it would change nothing, then every
-category in the table's order: a heading counting the moments switched on, the category's switch beside
-it reading on while any moment in it is on, then each moment by its title with its purpose beneath and
-its own switch. A switch is a button with the switch role, named by its moment or its category, drawn
+**Chatter.** A header that does not scroll holds Switch all on and Switch all off, each disabled while
+it would change nothing, then a switch for every category in the table's order, named beside it and
+reading on while any moment in it is on (FR-740). Beneath it the list scrolls on its own: every category
+a group ruled down its side, headed by the category with how many of its moments are on. The heading is
+sticky, so it stays at the top of the list while its moments pass and gives way to the next group's
+(FR-741); the list's scroll padding is the heading's height, so a switch the keyboard reaches is never
+brought into view under it. Each moment shows its title with its purpose beneath and its own switch. A switch is a button with the switch role, named by its moment or its category, drawn
 as a track holding a thumb whose position tells on from off (FR-735, FR-736). A press that would change
 more than one moment asks first, naming how many. The page keeps no copy of the switches: each press is
 answered with the pane as the application then holds it, with the reason beside it where a change

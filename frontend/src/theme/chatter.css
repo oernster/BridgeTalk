@@ -1,29 +1,94 @@
 /* ---------------------------------------------------------------- chatter */
 
-/* Switch all on and Switch all off, above the first category (FR-732). */
+/* The pane is a header that stays put above a list that scrolls (FR-740), so it fills the pane's
+   height the way the guide does and lets the list take whatever the header leaves. */
+.chatter {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chatter-head {
+  flex: 0 0 auto;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chatter-head .lede {
+  margin-bottom: 12px;
+}
+
+/* Switch all on and Switch all off, above the categories' switches (FR-732). */
 .chatter-actions {
   display: flex;
   gap: 10px;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
 }
 
-/* A category heading stands on a row of its own with its switch at the end, so the row keeps
-   the heading's space above it rather than the rule a row draws between moments. */
-.row.category {
-  margin-top: 18px;
-  border-top: none;
+/* A switch for each category, named beside it, in columns that fill the width the window gives. */
+.chatter-categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 6px 18px;
 }
 
-.row.category h3 {
+.chatter-category {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.chatter-head .callout {
+  margin: 12px 0 0;
+}
+
+/* --heading-height is a category heading as drawn; the list leaves that much room above whatever it
+   brings into view, so a switch reached by the keyboard is never tucked under the heading that stays
+   in view over it. */
+.chatter-list {
+  --heading-height: 40px;
+
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-padding-top: var(--heading-height);
+}
+
+/* Each category is a group with a rule down its side, so a moment scrolled far from its heading is
+   still drawn inside its group (FR-741). */
+.chatter-group {
+  margin-top: 14px;
+  padding-left: 14px;
+  border-left: 3px solid var(--border);
+}
+
+/* The heading stays at the top of the list while its own moments pass beneath it, then gives way to
+   the next group's heading (FR-741). It is filled with the ground so the rows scroll under it. */
+.pane .chatter-group h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  height: var(--heading-height);
   margin: 0;
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.chatter-group .row:first-of-type {
+  border-top: none;
 }
 
 /* A switch is a rounded track holding a round thumb (FR-735). --track-width and --track-height are
    the track as drawn, ring included; --ring-width is the ring every stop wears on hover and focus;
    --thumb-gap is the space between the thumb and the track's edge. The thumb's size follows from
-   those, so it cannot outgrow the track. While on, the thumb sits at the end on the accent; while
-   off, at the start on the raised fill with the border round it. Where the thumb sits is what tells
-   the two apart without colour (FR-736). */
+   those, so it cannot outgrow the track. While on, the thumb sits at the end on the switch's own
+   orange, darker than the accent (Oliver, 2026-09-15); while off, at the start on the raised fill
+   with the border round it. Where the thumb sits is what tells the two apart without colour
+   (FR-736). */
 .switch {
   --track-width: 48px;
   --track-height: 28px;
@@ -44,7 +109,7 @@
 }
 
 .switch[aria-checked='true'] {
-  background: var(--accent);
+  background: var(--switched-on);
   box-shadow: none;
 }
 

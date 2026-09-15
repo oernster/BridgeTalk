@@ -1,11 +1,11 @@
 // The Chatter pane: every moment the game raises, under its category, each with a switch saying
-// whether it is spoken for (section 8, FR-725 to FR-738).
+// whether it is spoken for (section 8, FR-725 to FR-741).
 //
 // The switches live in the application rather than here, because the engine needs them before any
 // page loads. So a press never changes the pane itself: it asks, then shows the pane the answer
 // describes, which keeps the window from showing a switch the application does not hold.
 
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, type Chatter, type ChatterCategory, type ChatterMoment } from './api'
 import { Dialog, ReadingBody } from './dialogs'
 
@@ -44,9 +44,10 @@ function Switch({ name, on, onPress }: { name: string; on: boolean; onPress: () 
 }
 
 /**
- * ChatterPane lists every category in order with its moments (FR-727), each heading counting what is
- * on (FR-728) beside a switch for the whole category (FR-730, FR-731), under the two buttons that
- * switch every moment (FR-732). A press changing more than one moment asks first (FR-733).
+ * ChatterPane holds a header that stays put above the list (FR-740): the two buttons that switch every
+ * moment (FR-732), then a switch for each category (FR-730, FR-731). Beneath it the list scrolls, every
+ * category a group of its own whose heading counts what is on (FR-728) and stays in view while its
+ * moments pass (FR-741). A press changing more than one moment asks first (FR-733).
  */
 export function ChatterPane() {
   const [chatter, setChatter] = useState<Chatter | null>(null)
@@ -100,57 +101,66 @@ export function ChatterPane() {
   const state = asking?.on ? 'on' : 'off'
 
   return (
-    <>
-      <h2>Chatter</h2>
-      <p className="lede">
-        Choose which moments are spoken for. A moment switched off stays quiet whichever voice
-        is cast, until it is switched on again.
-      </p>
-
-      <div className="chatter-actions">
-        {/* FR-734: a button with nothing to change is disabled. */}
-        <button className="btn" data-stop type="button" disabled={off === 0} onClick={() => pressAll(true)}>
-          Switch all on
-        </button>
-        <button className="btn" data-stop type="button" disabled={on === 0} onClick={() => pressAll(false)}>
-          Switch all off
-        </button>
-      </div>
-
-      {problem !== '' && (
-        <p className="callout refused" role="alert">
-          {problem}
+    <div className="chatter">
+      <div className="chatter-head">
+        <h2>Chatter</h2>
+        <p className="lede">
+          Choose which moments are spoken for. A moment switched off stays quiet whichever voice
+          is cast, until it is switched on again.
         </p>
-      )}
 
-      {categories.map((category) => (
-        <Fragment key={category.name}>
-          <div className="row category">
-            <h3 className="grow">
-              {`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}
-            </h3>
-            <Switch
-              name={category.name}
-              on={switchedOn(category.moments) > 0}
-              onPress={() => pressCategory(category)}
-            />
-          </div>
-          {category.moments.map((moment) => (
-            <div className="row" key={moment.cue.id}>
-              <span className="grow">
-                {moment.cue.title}
-                <br />
-                <span className="purpose">{moment.cue.purpose}</span>
-              </span>
+        <div className="chatter-actions">
+          {/* FR-734: a button with nothing to change is disabled. */}
+          <button className="btn" data-stop type="button" disabled={off === 0} onClick={() => pressAll(true)}>
+            Switch all on
+          </button>
+          <button className="btn" data-stop type="button" disabled={on === 0} onClick={() => pressAll(false)}>
+            Switch all off
+          </button>
+        </div>
+
+        <div className="chatter-categories">
+          {categories.map((category) => (
+            <div className="chatter-category" key={category.name}>
+              {/* The switch comes first so every switch in a column lines up whatever its name's length. */}
               <Switch
-                name={moment.cue.title}
-                on={moment.on}
-                onPress={() => settle(api.setMoment(moment.cue.id, !moment.on))}
+                name={category.name}
+                on={switchedOn(category.moments) > 0}
+                onPress={() => pressCategory(category)}
               />
+              <span>{category.name}</span>
             </div>
           ))}
-        </Fragment>
-      ))}
+        </div>
+
+        {problem !== '' && (
+          <p className="callout refused" role="alert">
+            {problem}
+          </p>
+        )}
+      </div>
+
+      <div className="chatter-list">
+        {categories.map((category) => (
+          <section className="chatter-group" key={category.name} aria-label={category.name}>
+            <h3>{`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}</h3>
+            {category.moments.map((moment) => (
+              <div className="row" key={moment.cue.id}>
+                <span className="grow">
+                  {moment.cue.title}
+                  <br />
+                  <span className="purpose">{moment.cue.purpose}</span>
+                </span>
+                <Switch
+                  name={moment.cue.title}
+                  on={moment.on}
+                  onPress={() => settle(api.setMoment(moment.cue.id, !moment.on))}
+                />
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
 
       <Dialog
         title={`Switch ${asking?.changes} moments ${state}`}
@@ -183,6 +193,6 @@ export function ChatterPane() {
           </p>
         </ReadingBody>
       </Dialog>
-    </>
+    </div>
   )
 }

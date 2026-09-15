@@ -3340,8 +3340,10 @@ Verified by: "turns a moment off then on again from its switch" and
 
 **FR-730 A category's switch reads on while anything in it is on**
 Priority: Should.
-Each category heading shall carry a switch that reads on while at least one moment in that category
-is switched on; otherwise it reads off.
+The header of FR-740 shall carry a switch for each category, named beside it, that reads on while at
+least one moment in that category is switched on; otherwise it reads off.
+Note: the switch stood beside the category's heading in the list until Oliver moved every category's
+switch into the header on 2026-09-15.
 Acceptance: Given every moment in Session switched off but one, then the Session switch reads on;
 given all of them switched off, then it reads off.
 Verified by: "reads a category on while any moment in it is on".
@@ -3357,7 +3359,7 @@ Verified by: "turns every moment in a category off from its heading".
 
 **FR-732 Switch all on and Switch all off**
 Priority: Should.
-The Chatter pane shall hold two buttons above the first category, Switch all on then Switch all off,
+The header of FR-740 shall hold two buttons above the categories' switches, Switch all on then Switch all off,
 each switching every moment to the state it names once FR-733 has been answered.
 Rationale: a player who wants only a few moments spoken for starts from all off (OQ-17).
 Acceptance: Given `Docked` alone switched off, when Switch all on is pressed and the question
@@ -3386,12 +3388,13 @@ Verified by: "disables the button that would change nothing".
 **FR-735 A switch is drawn as a slider**
 Priority: Must.
 Every switch on the Chatter pane shall be drawn as a rounded track holding a round thumb, the thumb at
-the track's end with the track in the accent colour while on and the thumb at the track's start with
-the track in a neutral colour while off.
-Rationale: Oliver's design, 2026-09-15. The accent rather than green or purple: green is the focus
-ring and orange already means something speaking (`frontend/src/theme.css`).
+the track's end with the track in the switch's own orange while on and the thumb at the track's start
+with the track in a neutral colour while off.
+Rationale: Oliver's design, 2026-09-15. Orange rather than green or purple: green is the focus ring and
+orange already means something speaking (`frontend/src/theme.css`). The switch's orange is darker than
+the accent in the dark theme, where the accent read as garish (Oliver, 2026-09-15).
 Acceptance: Given `Docked` on and `Docked.Set` off, when the pane opens, then the thumb of the `Docked`
-switch sits at its end on an accent track and the thumb of the `Docked.Set` switch at its start on a
+switch sits at its end on an orange track and the thumb of the `Docked.Set` switch at its start on a
 neutral track.
 Verified by: "draws a switch on at its end and off at its start", for the state the style sheet places the
 thumb by; the colours by `TestColoursOnlyInTokens` in `tests/structural/colours_test.go` holding them to
@@ -3433,6 +3436,30 @@ The guide (FR-712) shall say what the Chatter pane is for, that a category's swi
 moment in it and that the switches belong to no voice.
 Acceptance: Given the guide open, then it holds a section on Chatter saying each of the three.
 Verified by: "describes the Chatter pane" in `frontend/src/guide.test.tsx`.
+
+**FR-740 The Chatter pane's header stays in place**
+Priority: Should.
+The Chatter pane shall hold a header above its list that does not scroll with the list, holding Switch
+all on and Switch all off, then a switch for each category named beside it in the order of FR-635. The
+list shall hold no category's switch.
+Rationale: Oliver, 2026-09-15; every category's switch is then in reach wherever the list is scrolled.
+Acceptance: Given the list scrolled to Session, then Switch all on and the Combat and danger switch are
+still shown.
+To be verified by: "holds a switch for each category in the header and none in the list" in
+`frontend/src/chatter.test.tsx`. Not verified by a test: the header staying in view, which the style
+sheet decides and jsdom does not compute.
+
+**FR-741 A moment is shown inside its category while the list scrolls**
+Priority: Should.
+The Chatter pane shall draw each category's moments as one group beneath its heading, ruled down its
+side. While the list is scrolled, the heading of the group in view shall stay at the top of the list
+until the next group's heading reaches it.
+Rationale: Oliver, 2026-09-15; a moment scrolled far from its heading still says which category holds
+it.
+Acceptance: Given the list scrolled halfway through Combat and danger, then the heading "Combat and
+danger (N of 39 on)" is shown at the top of the list.
+To be verified by: "keeps each moment inside its category's group" in `frontend/src/chatter.test.tsx`.
+Not verified by a test: the heading staying in view, which the style sheet decides.
 
 ---
 
@@ -3617,7 +3644,7 @@ headless test is how it gets tested.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739, FR-809, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-809, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

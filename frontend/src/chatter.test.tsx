@@ -102,6 +102,36 @@ describe('the chatter pane', () => {
     expect(screen.getByRole('heading', { name: 'Session (2 of 2 on)' })).toBeTruthy()
   })
 
+  // FR-740: the header holds the two buttons and every category's switch in order; the list holds none.
+  it('holds a switch for each category in the header and none in the list', async () => {
+    await shown()
+
+    const head = within(document.querySelector('.chatter-head') as HTMLElement)
+    expect(head.getByRole('button', { name: 'Switch all on' })).toBeTruthy()
+    expect(head.getByRole('button', { name: 'Switch all off' })).toBeTruthy()
+    expect(head.getAllByRole('switch').map((each) => each.getAttribute('aria-label'))).toEqual([
+      'Docking and stations',
+      'Session',
+    ])
+    const list = within(document.querySelector('.chatter-list') as HTMLElement)
+    for (const category of categories) {
+      expect(list.queryByRole('switch', { name: category.name })).toBeNull()
+    }
+  })
+
+  // FR-741: every moment is drawn inside its own category's group, headed by that category.
+  it("keeps each moment inside its category's group", async () => {
+    await shown()
+
+    for (const category of categories) {
+      const group = within(screen.getByRole('region', { name: category.name }))
+      expect(group.getByRole('heading', { name: new RegExp(`^${category.name} \\(`) })).toBeTruthy()
+      expect(group.getAllByRole('switch').map((each) => each.getAttribute('aria-label'))).toEqual(
+        category.moments.map((cue) => cue.title),
+      )
+    }
+  })
+
   // FR-728.
   it('counts the moments switched on under each heading', async () => {
     off = new Set(['Docked'])

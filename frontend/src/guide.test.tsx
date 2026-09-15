@@ -113,7 +113,7 @@ describe('the guide pane', () => {
 
     const said = screen.getByRole('heading', { name: 'The Chatter pane' }).parentElement?.textContent ?? ''
     expect(said).toContain('which moments are spoken for')
-    expect(said).toContain('The switch beside a category changes every moment in that category')
+    expect(said).toContain("a category's switch changes every moment in that category")
     expect(said).toContain('The switches belong to no voice')
   })
 

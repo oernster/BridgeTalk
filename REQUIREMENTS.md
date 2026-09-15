@@ -1,6 +1,6 @@
 # Bridge Talk: Requirements Specification
 
-Section 11 records open questions; it holds none at present.
+Section 11 records open questions; it holds five, all about the comms moments proposed in section 7.1.
 
 ---
 
@@ -2191,8 +2191,8 @@ script.
 The requirements in sections 7 to 9 were written on 2026-09-13 for behaviour that had shipped
 without any. Each states what the application does today; a "Not verified by a test" clause says
 where nothing holds it. Where reading the source found behaviour that may not be what is wanted, the
-question goes to section 11 rather than being written down here as a rule; section 11 holds none at
-present.
+question goes to section 11 rather than being written down here as a rule. Section 7.1 is the
+exception: it proposes behaviour not yet built, with its questions in section 11.
 
 **FR-601 Read the journal forward only**
 Priority: Must.
@@ -2382,6 +2382,107 @@ Verified by: `TestARefillThatArrivesLateIsCountedAsTheDeviceRunningDry` and
 `TestTheGapBetweenClipsIsNotAStall` in `internal/infrastructure/audio/player_test.go`; "says when
 the audio device ran dry and for how long" and "says nothing at all when the device was never
 starved" in `frontend/src/shell.test.tsx`.
+
+### 7.1 Comms moments
+
+Proposed on 2026-09-15 and not baselined. Nothing in this section is built. Open questions OQ-7 to
+OQ-11 in section 11 decide what is heard, which messages become moments and how a comms moment sits
+beside the cues the game already raises; each requirement here takes its priority in section 12 once
+they are answered.
+
+**What the journals hold.** Measured on 2026-09-15 over the 101 journal files on Oliver's machine:
+
+- `ReceiveText` arrived on two channels: `npc` 13,205 times and `starsystem` 203 times. Every
+  `starsystem` message was text a player typed; none carried a game key.
+- An `npc` message carries a message key such as `$Pirate_OnDeclarePiracyAttack07;` in `Message`,
+  beside the words the game generated for it in `Message_Localised`. With the variant number and any
+  values removed, 69 distinct keys remain.
+- Each pirate key arrives in variants: 16 for `$Pirate_OnDeclarePiracyAttack`, 11 for
+  `$Pirate_OnStartScanCargo`, 11 for `$Pirate_OnNoCargoFound`, 8 for `$Pirate_NotEnoughCargo`. A few
+  carry values after the variant, such as `:#units=` and `:#CommodityName=` on
+  `$Pirate_ThreatenSpecific01`.
+- 27 of the 101 journals hold at least one pirate message. Leaving aside music, targeting, scans and
+  other messages, the next event within 20 seconds of `$Pirate_StartInterdiction` was `Interdicted` in
+  7 of 8; after `$Pirate_OnDeclarePiracyAttack` it was `UnderAttack` in 74 of 180.
+- The cue table already answers every message with the catch-all cues `ReceiveText`,
+  `ReceiveText.Channel.npc` and `ReceiveText.Channel.starsystem`, each `ambient` with a 30 second
+  cooldown.
+
+**Terms, proposed for section 1.4.**
+
+| Term | Meaning |
+|---|---|
+| **Message key** | The `Message` value of a `ReceiveText` event, exactly as the game writes it. |
+| **Key stem** | A message key with its leading `$`, the digits ending its name, any values from the first `:#` onwards and its closing `;` removed. `$Pirate_ThreatenSpecific01:#units=20:#CommodityName=$aluminium_Name;;` has the key stem `Pirate_ThreatenSpecific`. |
+| **Comms moment** | A cue that names a key stem. |
+
+**Out of scope for this section, proposed.**
+
+| Item | Why |
+|---|---|
+| Reading a message's words aloud | The words are generated afresh for each message, so a line would have to be made as the event fires, which section 1.3 rules out |
+| A message a player typed, on any channel | It carries no key (203 of 203 on `starsystem`) and is another person's words |
+| Keys outside the set FR-620 names | Until OQ-8 widens it |
+
+**FR-617 A comms message is matched by its key stem**
+Priority: set in section 12 once OQ-8 is answered.
+When a `ReceiveText` event arrives whose message key has the key stem a comms moment names, the
+application shall resolve the event to that comms moment, whatever the variant number, the values or
+the words the game generated.
+Rationale: one moment reaches the journal in as many as 16 variants (measured above), so a cue for
+each variant would be 16 cues saying one thing. The words differ from message to message, so they
+cannot name a moment.
+Acceptance: Given a comms moment naming `Pirate_OnDeclarePiracyAttack`, when `ReceiveText` arrives
+with the message key `$Pirate_OnDeclarePiracyAttack07;` and again with
+`$Pirate_OnDeclarePiracyAttack12;`, then both resolve to that comms moment. Given the same comms
+moment, when `$Pirate_OnDeclarePiracyAttacker01;` arrives, then it resolves to the channel cue instead.
+Note: this compares a value inside an event. Rule 4 in section 3.1, which matches a name on disk to a
+cue id exactly, is unchanged.
+Verified by: not written yet; a domain test resolving two variants of one key and refusing a longer
+key with the same beginning.
+
+**FR-618 A message with no key reaches no comms moment**
+Priority: set in section 12 once OQ-8 is answered.
+If a `ReceiveText` event arrives whose `Message` does not begin with `$`, then the application shall
+resolve it to no comms moment, leaving the channel cues to answer it as FR-606 does today.
+Rationale: a message a player typed has no key (measured above).
+Verified by: not written yet; a domain test handing a typed message to a table holding a comms moment.
+
+**FR-619 A comms moment's id spells its key stem in dots**
+Priority: set in section 12 once OQ-8 is answered.
+The cue table shall spell a comms moment's id as `ReceiveText.` followed by its key stem with every
+underscore written as a dot, so `Pirate_OnDeclarePiracyAttack` is
+`ReceiveText.Pirate.OnDeclarePiracyAttack`. If a comms moment's id is spelled any other way, then the
+table shall fail to load, naming the cue.
+Rationale: no cue id may hold an underscore (FR-230). Spelled this way the id stays in the game's own
+words; its folder is `ReceiveText_Pirate_OnDeclarePiracyAttack` (FR-229). A key stem ends in no digits,
+so no id ends in a segment of digits (FR-219).
+Verified by: not written yet; a loader test refusing a comms moment whose id and key stem disagree.
+
+**FR-620 The pirate moments**
+Priority: set in section 12 once OQ-8 and OQ-9 are answered.
+The cue vocabulary shall hold one comms moment for each key stem below, with the priority and purpose
+beside it.
+
+| Key stem | Priority | Purpose |
+|---|---|---|
+| `Pirate_Arrival` | notice | When a pirate arrives and makes itself known to you. |
+| `Pirate_OnStartScanCargo` | notice | When a pirate starts scanning your cargo. |
+| `Pirate_NotEnoughCargo` | notice | When a pirate decides your cargo is not worth taking. |
+| `Pirate_OnNoCargoFound` | notice | When a pirate's scan finds no cargo in your hold. |
+| `Pirate_StartInterdiction` | alert | When a pirate announces it is pulling you out of supercruise. |
+| `Pirate_OnDeclarePiracyAttack` | alert | When a pirate declares it is attacking you for your cargo. |
+
+Rationale: a pirate appears once valuable cargo is aboard and says so before it attacks (Oliver,
+2026-09-15). The priorities and purposes are Claude's proposal, read from the key names; they are not
+checked against what the game says.
+Acceptance: Given the shipped table, when it is loaded, then each of the six key stems resolves to
+exactly one comms moment carrying the priority above, a purpose (FR-231) and three lines in the script.
+Verified by: not written yet; a loader test over the shipped table.
+
+**What adding FR-620 changes elsewhere.** The cue vocabulary grows from 256 to 262 cues, so the count
+in section 1.4 and ASM-1 changes. Every recorded voice lacks six more moments (ASM-3, OQ-11). The script
+needs 18 new lines; the saved speech sounds, the pauses and the endings are made again by their tools.
 
 ---
 
@@ -3074,7 +3175,15 @@ headless test is how it gets tested.
 
 ## 11. Open questions
 
-There are no open questions.
+Every one of them concerns the comms moments proposed in section 7.1, raised on 2026-09-15.
+
+| ID | Question | Claude's recommendation | Owner | Needed by |
+|---|---|---|---|---|
+| OQ-7 | What is heard for a comms moment: the ship's voice speaking its own line about the message or the message's own words read out? | The ship's voice with lines of its own. Reading the words out would mean making a line as the event fires, which section 1.3 rules out; the words also change with every message. | Oliver | Before FR-617 is built |
+| OQ-8 | Which key stems become moments: the six pirate stems of FR-620 alone or others too? Candidates include the police scan stems `Police_ThankYouPassedStopAndSearch` and `Commuter_AuthorityScan`. | The pirate stems first. Some station stems may say what a cue already says, such as `STATION_docking_granted` beside `DockingGranted`; that overlap is a hypothesis, not measured. | Oliver | Before FR-620 is built |
+| OQ-9 | Are the priorities and purposes FR-620 proposes right? Each meaning is read from the key's name, not from what the game says. | As proposed, with Oliver correcting any meaning he knows from play. | Oliver | Before FR-620 is built |
+| OQ-10 | A pirate moment is often followed by the game's own cue: `Interdicted` after `Pirate_StartInterdiction` in 7 of 8, `UnderAttack` after `Pirate_OnDeclarePiracyAttack` in 74 of 180, each within 20 seconds. Should both speak? Or should a pirate moment hold back the cue that follows it? | Both speak, ordered by FR-612 and each cue's cooldown, until a real session shows it is too much. Holding one back needs a new rule and a window measured for it. | Oliver | Before FR-620 is built |
+| OQ-11 | Adding moments leaves every recorded voice incomplete again (ASM-3). Is that acceptable? | Yes: the Missing takes pane already lists what a voice lacks. | Oliver | Before the cue table changes |
 
 ---
 

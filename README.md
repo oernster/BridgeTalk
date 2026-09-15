@@ -1,14 +1,17 @@
 # Bridge Talk
 
-A ship's voice for Elite Dangerous, speaking with recordings you supply.
+A ship's voice for Elite Dangerous, speaking with a machine voice of its own or with recordings you
+supply.
 
 Bridge Talk watches the game's journal and status file while you play. When something worth
-saying happens, it plays one of your own recordings for that moment. It ships no audio of its own.
+saying happens, the cast voice speaks for that moment. Start with one of its 28 machine voices, whose
+lines it makes on your own machine; record a voice of your own whenever you like. It ships no recordings.
 
 ## Who it is for
 
-- Commanders playing Elite Dangerous on Windows who hold recordings they may use and want them
-  spoken in answer to the game.
+- Commanders playing Elite Dangerous on Windows who want their ship to talk straight away: cast a
+  machine voice and it speaks, with nothing to record first.
+- Commanders who hold recordings they may use and want them spoken in answer to the game.
 - Anyone recording a voice for a ship who wants to see exactly which moments a set of recordings
   covers, then hear it before choosing it.
 
@@ -16,14 +19,20 @@ saying happens, it plays one of your own recordings for that moment. It ships no
 
 - Anyone wanting voice commands. It talks and never listens: there is no microphone, no speech
   recognition and no command and control.
-- Anyone wanting sound straight away. Nothing plays until it is pointed at recordings.
+- Anyone wanting a machine voice in another language. The 28 machine voices speak British and
+  American English only.
 - Anyone not on Windows. The only build and the only setup program are for Windows.
 - Anyone wanting a separate output device for it. There is no device choice: it speaks through
   whichever device Windows is set to use.
 
 ## What it does
 
-- **Casts a voice.** Every folder in your recordings directory that holds at least one recording
+- **Speaks with a machine voice, with nothing to record.** 28 voices speak British and American
+  English, female and male. On the Cast pane they sit in a panel for each accent and sex; cast one
+  and it becomes the ship's voice, standing apart above the panels with how far its lines are made.
+  Each line is made on your own machine the first time its moment happens, then kept, so nothing is
+  downloaded and nothing is sent anywhere. The Audition pane plays any of them before you cast it.
+- **Casts a recorded voice.** Every folder in your recordings directory that holds at least one recording
   for a moment, named for it or in its folder, is a voice. Cast one from the Cast pane or from the Voice menu on the
   notification-area icon and it becomes the ship's voice. Where it holds a recording for
   `Cast.Confirmed` and mute is off, it plays that as it takes the part. The choice is remembered
@@ -35,7 +44,7 @@ saying happens, it plays one of your own recordings for that moment. It ships no
   anything is playing or waiting. Many moments hold a minimum interval between two firings. The
   same moment raised twice within 900 milliseconds is heard once. Mute silences every answer to the game.
 - **Explains every decision.** For every moment the game raises that has a cue, the Status pane
-  logs what became of it (played, queued, dropped, cooldown, duplicate or unbound), including the
+  logs what became of it (played, queued, making, dropped, cooldown, duplicate or unbound), including the
   ones that produced no sound. It keeps the latest 200. The same pane names the journal directory
   and status file being watched and says when no audio device was found or the device ran dry.
 - **Shows what a voice covers.** For any voice, cast or not, the mark beside it on the Cast pane
@@ -113,12 +122,14 @@ aside and the voice is found by its names alone.
 | Desktop shell | Wails v2 over WebView2 |
 | Front end | React and TypeScript, built with Vite |
 | Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
+| Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with cgo disabled |
 | Cue table | TOML, embedded in the executable |
 
 ## Running it
 
 Build the setup program as `DEVELOPMENT_README.md` describes, then run it. Once the window opens,
-choose your recordings directory on the Missing takes pane and cast a voice from the Cast pane.
+cast a machine voice from the Cast pane. To use recordings of your own, choose your recordings
+directory on the Missing takes pane, then cast that voice from the Cast pane.
 
 The journal directory is `Saved Games\Frontier Developments\Elite Dangerous` under your own profile
 until you choose another on the Settings pane. When the journal directory in use cannot be read,

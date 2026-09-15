@@ -21,9 +21,6 @@ Nothing yet.
 
 ## Not debt (do not "fix" these)
 
-**The absence of a GitHub Pages site.** This repository is private and the product may be sold, so
-there is deliberately no public site and no Pages deployment. A documentation pass must not create one.
-
 **The setup program's drawn header mark, now that the artwork exists.** The setup page still carries an
 inline SVG mark behind the real icon; it swaps to the image only once that has actually loaded. That is
 not a leftover. The page has no bundler, so it loads its icon as a plain file; if that file were ever

@@ -8,7 +8,7 @@ Every command here is PowerShell, one command per block, meant to be pasted as i
 
 ## What the machine needs
 
-Four things. Each check below prints a version if the tool is on the path, so run them
+Five things. Each check below prints a version if the tool is on the path, so run them
 all before starting: a missing one fails the build several minutes in rather than at
 the start.
 
@@ -18,10 +18,11 @@ the start.
 | Node.js | 24.11.1 on the machine this was written on | the React front end and its build |
 | Wails CLI | v2.12.0, which `go.mod` requires | packages the Go binary and the web assets into one executable |
 | WebView2 runtime | any current | the window the front end is drawn in |
+| Python | 3, as `python` on the path | `build.ps1` stamps the version into the site with `stamp_version.py` |
 
-Python 3 is optional. It is needed only to regenerate files that are committed already: the
-icons with Pillow, the saved speech sounds and the pauses, each of those two tools in a venv of its
-own. Nothing in the ordinary build path uses it.
+The build needs nothing from Python beyond `stamp_version.py` itself. Python 3 also regenerates
+files that are committed already: the icons with Pillow, the saved speech sounds and the pauses,
+each of those two tools in a venv of its own.
 
 ### Go
 
@@ -121,18 +122,20 @@ One command builds everything:
 ./build.ps1
 ```
 
-It does five things in order and stops at the first failure:
+It does six things in order and stops at the first failure:
 
-1. Reads the version from `VERSION`, then pins `CGO_ENABLED=0` for everything that
-   follows, so no machine's default decides how the binary is linked.
-2. Runs `test.ps1`. There is no switch to skip it: a gate that can be skipped is a
+1. Reads the version from `VERSION`, then stamps it into the site's version tokens with
+   `python stamp_version.py`.
+2. Pins `CGO_ENABLED=0` for everything that follows, so no machine's default decides how
+   the binary is linked.
+3. Runs `test.ps1 -Benchmarks`. There is no switch to skip it: a gate that can be skipped is a
    gate that is skipped on the day it would have caught something.
-3. Refuses to go on without `assets/application-icon.png` and its `.ico`, then copies
+4. Refuses to go on without `assets/application-icon.png` and its `.ico`, then copies
    both into the application's and the setup program's build trees.
-4. Runs `wails build` for the application. That runs the front end's `npm run build`,
+5. Runs `wails build` for the application. That runs the front end's `npm run build`,
    which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type error
    stops the build here.
-5. Packs the result with every model file the application reads as the setup program's
+6. Packs the result with every model file the application reads as the setup program's
    payload through `go run ./tools/payload`, which checks `models/` against the list
    first and downloads nothing. It then builds the setup program with the version
    passed in through `-ldflags` and collects it.
@@ -337,7 +340,8 @@ python -m venv tools/pauses/venv
 ```
 
 After the saved speech sounds or the model files change, write `pauses.toml` again. It makes every
-joined line for all 28 machine voices with the model in `models/`, which takes about 35 minutes, then
+joined line for all 28 machine voices with the model in `models/`, which took 32.9 minutes when measured
+on 2026-09-14, then
 prints how many of each voice's lines are doubtful:
 
 ```powershell
@@ -352,11 +356,11 @@ another file; `-only` refuses to write the shipped `pauses.toml`.
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `cast.go`, `checklist.go`, `folders.go`, `settings.go`, `voices.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `cast.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
-| `internal/domain` | the cue model, events and selection; no I/O at all |
-| `internal/application` | the reaction and scheduling services, over ports |
-| `internal/infrastructure` | journal, status, library, audio, config, setup, taskbar, window |
+| `internal/domain` | the cue model, events, selection, the machine voices, the script, speech sounds, making and pauses; no I/O at all |
+| `internal/application` | the reaction, scheduling and making services, over ports |
+| `internal/infrastructure` | appdata, audio, config, journal, library, madelines, modelfiles, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
 | `internal/refusal` | the wording of a file-system refusal, so each one names its path once |
 | `frontend/src` | the React front end |

@@ -42,7 +42,7 @@ $env:CGO_ENABLED = '0'
 # Verify before building, with no way past it. A gate that can be skipped is a gate
 # that is skipped on the day it would have caught something, so there is no switch to
 # turn this off: run test.ps1 directly while working; let the build insist. The build also
-# measures making a complete script (NFR-P-203, NFR-C-502), which the everyday gate leaves to
+# times a machine voice's cast and measures making a complete script (NFR-P-205, NFR-C-502), which the everyday gate leaves to
 # -Benchmarks because it takes minutes (Oliver, 2026-09-14).
 & (Join-Path $root 'test.ps1') -Benchmarks
 if ($LASTEXITCODE -ne 0) { throw "test.ps1 failed with exit code $LASTEXITCODE" }

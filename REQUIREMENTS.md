@@ -1,6 +1,6 @@
 # Bridge Talk: Requirements Specification
 
-Open questions in section 11 are blocking for the areas they name.
+Section 11 records open questions; it holds none at present.
 
 ---
 
@@ -34,9 +34,9 @@ project.
 - Auditioning, casting a voice, settings and a tray presence.
 - A setup program that installs, updates, repairs and removes the application for one user.
 - Machine voices: the 28 English voices of the Kokoro model, cast apart from recorded voices,
-  speaking one shared script and made on the user's own machine (section 6.1; not built today).
-- An extension point through which an additional audio source may be supplied
-  (section 6; not built today).
+  speaking one shared script and made on the user's own machine (section 6.1).
+- An audio source port through which another kind of voice is supplied (section 6); recorded voices
+  and machine voices both reach the catalogue through it.
 - Windows and Linux, decided by Oliver on 2026-09-13. Linux work comes after
   everything else.
 
@@ -46,7 +46,7 @@ project.
 |---|---|
 | Controlling the game in any way | The application has no input path to the game and will not acquire one |
 | Speech recognition or spoken commands | Not what this is for |
-| Speaking a line as its event fires | Making a line takes 204 to 348 ms, over the 150 ms of NFR-P-202; every line is made ahead of play (FR-511) |
+| Speaking a line as its event fires | Making a line takes 204 to 348 ms, over the 150 ms of NFR-P-202; each line is made once, at a cast or the first time its cue fires, then kept (FR-511, FR-514, FR-527) |
 | Shipping recordings with the application | The application ships the files machine voices are made from, never recordings |
 | Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
 | Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
@@ -100,8 +100,8 @@ graph LR
   CAT --> PLAY[Audio player]
   REC["Recording program<br/>outside the application"] -->|saves takes| ROOT
   DROP["Drop in a folder<br/>of audio files"] --> ROOT
-  PORT["Audio source port<br/>section 6, not built"] -.optional.-> CAT
-  MV["Machine voices<br/>section 6.1, not built"] -.-> PORT
+  PORT["Audio source port<br/>section 6"] --> CAT
+  MV["Machine voices<br/>section 6.1"] --> PORT
   SCRIPT["script.toml"] -.-> MV
 ```
 
@@ -436,10 +436,9 @@ the voice list is shown, then both figures read `n of n`.
 Note: a recording present is any file with a recognised extension anywhere under the voice's
 directory, whether it plays or not; a recording used is a distinct file that answers a cue. The Cast
 pane words the pair as moments recorded and recordings used.
-Verified by: `TestPresentCountsEveryRecognisedRecordingUnderTheVoice` in
-`internal/infrastructure/library/present_test.go`;
+Verified by: `TestPresentCountsEveryRecognisedRecordingUnderTheVoice` and
 `TestFilesCountDistinctFilesUsedAgainstRecordingsPresent` in
-`internal/infrastructure/library/catalogue_test.go`; `TestTheCastPaneListsEveryVoiceTheScanFound` in
+`internal/infrastructure/library/present_test.go`; `TestTheCastPaneListsEveryVoiceTheScanFound` in
 `cast_test.go`; "reads both completeness figures for each voice" in `frontend/src/cast.test.tsx`.
 
 **FR-216 Audition a take**
@@ -667,7 +666,7 @@ in `cast_test.go`; `TestTheAcknowledgementIsFoundByItsSource` and
 
 **FR-233 Each listed cue is named once**
 Priority: Must.
-Wherever the application lists cues, on the Missing takes pane and in the breakdown dialog behind
+Wherever the application lists cues, on the Missing takes pane and in the Moments spoken for dialog behind
 a cast row, it shall show each cue under its full title alone, with no group heading above it.
 Rationale: a heading is read from the first segment of the id and a title from the whole id, so a
 heading repeats the start of every title beneath it; for 112 of the 256 cues the two are the same
@@ -901,9 +900,9 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-2 | No source file exceeds 400 lines; none sits between 381 and 400 | `TestNoFileExceedsLineLimit` and `TestNoFileInDangerBand` in `tests/structural/boundary_test.go`, over the Go source and both front ends; build scripts are not counted |
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt` and `go vet`; `build.ps1` runs `test.ps1` ahead of any build. Not enforced today for `staticcheck`: no script runs it; it is run by hand |
-| NFR-S-1 | The application makes no network request; there is no update check | Inspection: no Go source outside the structural tests names a network package and the front end makes no request. No test asserts the outbound surface today; `TestDomainIsPure` forbids `net` and `net/http` in the domain alone |
+| NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. No test asserts the outbound surface today; `TestDomainIsPure` forbids `net` and `net/http` in the domain alone |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection the application writes the settings file under the user configuration directory, the default recordings directory under `%LOCALAPPDATA%`, the log of FR-715 beside it, the folders of FR-223 and FR-314 plus the sign-in entry |
-| NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue and every cue folder differing from another only in case, each with a reason. Not built today for undecodable files (FR-204) | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go` |
+| NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
 **Non claims, stated deliberately:**
 
@@ -935,8 +934,8 @@ Verified by: `TestTheCatalogueAnswersFromAnyAudioSource` in
 Priority: Must.
 An implementation of the port shall supply takes for cue ids and nothing else. It
 shall not add cues, alter the cue table or change playback behaviour.
-Verified by: in part, `ports.AudioSource` declares one method, which answers takes for a cue id;
-no implementation but a recorded voice is built.
+Verified by: in part, `ports.AudioSource` declares one method, `Lookup`, which answers takes for a cue id.
+A scanned `library.Voice` and the made voice `MakingService.Cast` answers with both implement it.
 
 ### 6.1 Machine voices
 
@@ -983,7 +982,7 @@ Measured before any of this was written, on the development machine, processor o
 - In the sounds tool's own venv, holding only the packages pinned in `tools/sounds/requirements.txt`
   (71 packages, 292.9 MB, no torch), misaki reproduced all 512 lines again: loading took 1.6 s and
   making took 0.71 s. spaCy imports click, which nothing else installed, so it is pinned by hand.
-- The files a machine voice is made from sum to about 339 MB: the model 310.5 MB, the 28 voice style
+- The files a machine voice is made from sum to about 354 MB: the model 325.5 MB, the 28 voice style
   files 14.6 MB and ONNX Runtime 14.2 MB. misaki's dictionaries and eSpeak NG do not ship.
 
 Measured for the pause before commander on 2026-09-14, on the development machine:
@@ -1016,15 +1015,18 @@ The script, `script.toml`, sits beside `cues.toml`:
 
 **FR-503 The script**
 Priority: Must.
-The application shall make every machine voice's lines from `script.toml`: one `[lines]` table
-whose keys are cue ids, each holding a list of lines.
+The application shall make every machine voice's lines from `script.toml`: a `[lines]` table
+whose keys are cue ids, each holding a list of lines; a `[words]` table giving a word's speech sounds
+once (FR-549); a `[joins]` table naming each word joined to the word before it after a final comma
+(FR-550).
 Rationale: one set of words for every machine voice, edited as a file (Oliver, 2026-09-14). TOML for
 the reasons section 3.3 gives.
 Acceptance: Given `script.toml` holding three lines for `Docked`, when a machine voice is cast, then
 that voice's takes for `Docked` are made from exactly those three lines.
 Verified by: in part, `TestAScriptHoldsTheLinesItIsGiven` in `internal/domain/script/script_test.go`
 and `TestTheShippedScriptLoadsAgainstTheShippedTable` in `internal/infrastructure/config/script_test.go`
-for reading the script; making a voice's takes from it is not built.
+for reading the script; `TestCastingMakesOnlyTheConfirmationsUnmadeLines` in
+`internal/application/services/making_test.go` for making a voice's takes from it.
 
 **FR-504 If the script names something that is not a cue, then the build fails**
 Priority: Must.
@@ -1098,8 +1100,9 @@ Acceptance: Given the line "Fuel reserves are running low, commander.", when it 
 `bf_emma`, then its last word reads `kəmˈɑːndə`; when made for `am_michael`, `kəmˈændəɹ`. Both
 were measured on 2026-09-14.
 Verified by: in part, `TestAVoiceSpeaksWithTheAccentItsIdNames` in
-`internal/domain/machinevoice/voice_test.go` for the accent read from the id; making lines with that
-accent's pronunciation is not built.
+`internal/domain/machinevoice/voice_test.go` for the accent read from the id;
+`TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` in `internal/domain/making/making_test.go` for
+making each line from that accent's saved speech sounds.
 
 **FR-511 Casting a machine voice makes its confirmation**
 Priority: Must.
@@ -1157,7 +1160,8 @@ Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 `TestALineWhosePauseChangedIsTheOnlyOneMadeAgain` in `internal/domain/making/pause_test.go` for the pause
 in the key. Proved on 2026-09-14 by planting the sample left out of a paused key, a doubtful pause added
 to the key, a pause looked up for one voice whatever the voice, a paused line keeping its unpaused key
-and a doubtful line counted as paused; each failed its test. The made lines on disk are not built.
+and a doubtful line counted as paused; each failed its test. The made lines on disk are kept by
+`internal/infrastructure/madelines`, whose keys `TestKeysListAVoicesMadeLinesAlone` holds.
 
 **FR-514 A cue with nothing made is made when it fires**
 Priority: Must.
@@ -1198,7 +1202,8 @@ asked all the same, no cue maker handed over on a machine cast, a tick that hand
 poll loop that never ticks. With the real model, `TestAMachineVoiceIsCastWithinFiveSeconds` measured a
 line asked for on call written 590 ms later. Before Option B, in part, `TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade` in
 `internal/application/services/making_test.go` over fakes, with `TestACuesTakesAreTheDistinctKeysOfItsCurrentLines`
-in `internal/domain/making/making_test.go`; playing them through the catalogue is not built.
+in `internal/domain/making/making_test.go`; playing them through the catalogue is held by
+`session.speakWith` in `main.go`, which builds the catalogue over a made voice.
 
 **FR-515 Show how many lines are made**
 Priority: Must.
@@ -1221,7 +1226,8 @@ Note: every machine voice keeps its made lines (FR-527).
 Verified by: in part, `TestCastingAnotherVoiceStopsMakingKeepingWhatWasWritten` and
 `TestCastingARecordedVoiceStopsMakingKeepingEveryLine` in `internal/application/services/making_test.go`
 over fakes, with `TestCastingARecordedVoiceKeepsEveryMadeLine` in `machine_test.go` for the facade;
-the Cast pane casting through the service is not built.
+"casts a machine voice by its id" in `frontend/src/machineVoices.test.tsx` for the Cast pane casting
+through it.
 
 **FR-517 A made line is written whole or not at all**
 Priority: Must.
@@ -1388,7 +1394,8 @@ and a delete that fails on a line never made; each failed its test. Not verified
 **FR-528 A machine voice's name on screen**
 Priority: Must.
 The application shall name a machine voice by the name in its id, capitalised, followed by its accent
-and sex in brackets, such as "Emma (British, female)" for `bf_emma`.
+and sex in brackets, such as "Emma (British, female)" for `bf_emma`. In a panel headed by its accent
+and sex, the voice's pill shall show the name alone (FR-720).
 Rationale: recommended by Claude; accepted by Oliver on 2026-09-14.
 Verified by: in part, `TestAVoiceIsNamedByItsNameThenItsAccentAndSex` in
 `internal/domain/machinevoice/voice_test.go` for the name, with the Cast pane tests FR-508 names.
@@ -1407,8 +1414,9 @@ Acceptance: Given the line "Flight [record](/ˈɹɛkɔːd/ˈɹɛkɚd/) saved.", 
 then the word record is made from `ˈɹɛkɔːd`; when made for `am_michael`, from `ˈɹɛkɚd`.
 Verified by: in part, `TestOneSpellingServesBothAccents` and `TestTwoSpellingsGiveBritishThenAmerican`
 in `internal/domain/speech/speech_test.go` for reading the spellings and `TestEveryLineIsMadeInEachAccentFromItsSpelling` in
-`tools/sounds/make_test.go` for handing each accent its spelling; making the word from its saved sounds
-is not built.
+`tools/sounds/make_test.go` for handing each accent its spelling;
+`TestCastingMakesOnlyTheConfirmationsUnmadeLines` in `internal/application/services/making_test.go` for
+making a line from its saved sounds.
 
 **FR-530 If a made line no longer current cannot be deleted, then say so**
 Priority: Must.
@@ -1452,7 +1460,8 @@ but the last is saved with misaki's own sounds in each accent; the last is saved
 say, ending `lˈQkəmˈɑndə.` for British voices and `lˈOkəmˈændəɹ.` for American ones.
 Verified by: in part, `TestTheShippedScriptIsVoiced` and `TestTheShippedScriptJoinsAFinalCommanderAndNoOther`
 in `internal/infrastructure/config/sounds_test.go`; `TestEveryLineIsMadeInEachAccentFromItsSpelling` in
-`tools/sounds/make_test.go`; making a line from its saved sounds is not built. Measured on 2026-09-14: `sounds.py` gave `kəmˈɑːndə` and `kəmˈændəɹ`
+`tools/sounds/make_test.go`; `TestCastingMakesOnlyTheConfirmationsUnmadeLines` in
+`internal/application/services/making_test.go` for making a line from its saved sounds. Measured on 2026-09-14: `sounds.py` gave `kəmˈɑːndə` and `kəmˈændəɹ`
 for commander.
 
 **FR-533 If a line's saved speech sounds are missing or stale, then the build fails**
@@ -1560,7 +1569,8 @@ her files are read from `C:\Apps\BridgeTalk\models`; where that folder lacks `bf
 refused naming it (FR-519).
 Verified by: `TestTheFilesAreReadFromTheFolderBesideTheApplication` in
 `internal/infrastructure/voicefiles/beside_test.go` for the folder. Not verified by a test: `newMaking`
-in `main.go` reading the executable's path; setup filling the folder is M9.
+in `main.go` reading the executable's path; setup filling the folder is held by
+`TestPackedModelFilesAreExtractedIntoTheFolderBesideTheApplication` (FR-524).
 
 **FR-540 The cast machine voice is kept for the next run**
 Priority: Must.
@@ -1764,9 +1774,9 @@ in." saves `sˈQld, kəmˈɑndə. kɹˈɛdɪts ɑː ˈɪn.` and `sˈOld, kəmˈ�
 
 **FR-550 A final commander after a comma is joined to the word before it**
 Priority: Should.
-Where a line ends with a comma followed by commander, the sounds tool shall save its speech sounds in
-each accent with the comma and the space before commander left out, joining commander to the word
-before it.
+Where a line ends with a comma followed by a word the `[joins]` table names (today commander alone),
+the sounds tool shall save its speech sounds in each accent with the comma and the space before that
+word left out, joining it to the word before it.
 Rationale: after a comma the model restarts its pitch on commander, which Oliver heard as the start of
 a new sentence; joined, the jump fell in every take measured (section 6.1). Oliver ruled that the pitch
 itself is not processed (2026-09-14). The four lines where commander follows a comma without ending
@@ -1955,10 +1965,10 @@ digest read under the voice's id, each failing its test; planting only the first
 | ID | Requirement | Method |
 |---|---|---|
 | NFR-P-203 | Withdrawn on 2026-09-14. It held making all 768 lines of a complete script for one machine voice to 10 minutes; the application no longer makes a complete script in one go (FR-511). NFR-P-203 is retired and is not reused. | None |
-| NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated. Option B makes lines while the game is played, so this matters more than it did |
+| NFR-P-204 | While lines are being made, the breaks in speech FR-616 counts do not rise | Checked by hand during a game launch while lines are being made; not automated. Lines are made while the game is played, the first time each cue fires (FR-514), so this matters more than it did |
 | NFR-P-205 | From casting a machine voice with none of its lines made, its confirmation reaches the player within 5 seconds on the development machine | `TestAMachineVoiceIsCastWithinFiveSeconds` in `tests/machinevoice/cast_test.go` casts `bf_emma` over an empty store with the real model and measures until the confirmation's first line is current, adding the 250 ms poll (FR-615) through which the facade hands it over; it fails over the limit. It also measures a cue made when it fires, failing over FR-514's 2 seconds. It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14 with the model loaded at the cast (FR-544): `bf_emma`'s confirmation reached the player 1.348 s after the cast, the 250 ms counted in full; a line asked for on call was written 595 ms later. The projection before measuring was about 0.9 s: 539 ms to load plus a line at 204 to 348 ms (Oliver, 2026-09-14) |
 | NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
-| NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 339 MB |
+| NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 354 MB |
 | NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | `TestMakingACompleteScriptKeepsWithinDisk` in `tests/machinevoice/script_test.go` casts `bf_emma` over an empty store with the real model and asks for every cue's lines, then sums the made lines' files once making ends and fails over the limit; it has no time limit (Oliver, 2026-09-14). It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14 over the complete script: 768 of 768 lines made in 3 m 17 s, taking 51.7 MB. Proved before M11: 3 lines took 0.2 MB and passed, then the test failed naming NFR-C-502 with the limit cut to one byte |
 
 ---
@@ -1968,7 +1978,8 @@ digest read under the voice's id, each failing its test; planting only the first
 The requirements in sections 7 to 9 were written on 2026-09-13 for behaviour that had shipped
 without any. Each states what the application does today; a "Not verified by a test" clause says
 where nothing holds it. Where reading the source found behaviour that may not be what is wanted, the
-question is in section 11 rather than written down here as a rule.
+question goes to section 11 rather than being written down here as a rule; section 11 holds none at
+present.
 
 **FR-601 Read the journal forward only**
 Priority: Must.
@@ -2536,6 +2547,70 @@ said in place of the title, an indicator that is not announced, the notice tone 
 reaction titled with its id; each failed its test. Not verified by a test: the message's colour and place
 as drawn in the window; a screen reader announcing it.
 
+**FR-720 The machine voices are offered in four groups**
+Priority: Should.
+The Cast pane shall offer the machine voices not cast in four panels side by side, one for each accent
+and sex in the order FR-508 gives: British female, British male, American female, American male. Each
+panel shall be headed by its accent and sex, such as "British, female"; it shall hold its voices as
+pills sorted by name ignoring case, wrapping onto a further line as the panel fills. A pill shall show
+the name in the voice's id alone, capitalised; its accessible name shall be "Cast" followed by the name
+FR-528 gives. Pressing a pill shall cast that voice. The line "Its lines are made as they are needed."
+shall no longer be shown beneath each voice, since the lede beneath the heading already says so.
+Rationale: 28 rows of one voice each made a long list. Oliver asked on 2026-09-15 for the voices as
+pills in panels, as the site shows them. Grouping by accent and sex lets a pill carry its name alone.
+The keyboard walks the pills panel by panel in reading order as ordinary stops (FR-713); the tray's
+Voice menu is unchanged (FR-509). Recommended by Claude; accepted by Oliver on 2026-09-15.
+Acceptance: Given no machine voice cast, when the Cast pane opens, then British, female holds Alice,
+Emma, Isabella, Lily; British, male holds Daniel, Fable, George, Lewis; American, female holds Alloy,
+Aoede, Bella, Heart, Jessica, Kore, Nicole, Nova, River, Sarah, Sky; American, male holds Adam, Echo,
+Eric, Fenrir, Liam, Michael, Onyx, Puck, Santa. Given the voices of a group offered out of order, then
+its panel still holds them sorted by name.
+Verified by: "offers a panel for each accent and sex, its voices sorted by name" and "casts a machine
+voice by its id" in `frontend/src/machineVoices.test.tsx`; `TestAVoiceGivesItsNameAloneAndTheGroupItIsOfferedIn`
+in `internal/domain/machinevoice/voice_test.go`; `TestTheCastPaneOffersEveryMachineVoiceByItsName` in
+`machinepane_test.go`, with `TestTheWireContractMatchesOnBothSides` holding `given` and `group` on both
+sides of the wire. Proved by planting the voices left unsorted within a panel; its test failed. Measured
+on 2026-09-15 in the Vite dev server over a stand-in bridge at a viewport 1,029 px wide: four panels of
+235 px each, no pill past its panel's edge and no sideways scroll. Not verified by a test: the panels as
+drawn in the window.
+
+**FR-721 The cast machine voice stands above the groups**
+Priority: Should.
+While a machine voice is cast, the Cast pane shall show it above the four panels on a card of its own,
+on the ground a recorded voice's cast row takes (`--secondary-soft`). The card shall read the name
+FR-528 gives followed by "is cast as your ship's voice", with how far making has got beneath it
+(FR-515, FR-522). Its pill shall not be shown in its panel. The card shall cast nothing when pressed and
+shall take no place in the keyboard ring.
+Rationale: Oliver asked on 2026-09-15 for the cast voice to stand apart at the top with a tagline,
+leaving its group. Pressing it would cast it again, which makes and plays its confirmation a second
+time (`CastMachineVoice` in `machine.go`, read on 2026-09-15), so the card is not a control.
+Recommended by Claude; accepted by Oliver on 2026-09-15.
+Acceptance: Given `bf_emma` cast with 120 of 768 lines made for 40 moments, when the Cast pane opens,
+then the card reads "Emma (British, female) is cast as your ship's voice" above "120 of 768 lines made;
+40 of 256 moments spoken" while British, female holds Alice, Isabella, Lily. Given `bm_george` then
+cast, then the card reads "George (British, male) is cast as your ship's voice", British, female holds
+Alice, Emma, Isabella, Lily while British, male holds Daniel, Fable, Lewis.
+Verified by: "puts the cast machine voice on a card above the panels, out of its own" and "reads how far
+making has got for the cast voice and follows it" in `frontend/src/machineVoices.test.tsx`. Proved by
+planting the cast voice kept in its panel; its test failed. Not verified by a test: the card's ground as
+drawn in the window.
+
+**FR-722 A recorded voice cast leaves the groups whole**
+Priority: Should.
+While a recorded voice is cast or no voice is, the Cast pane shall show no card above the panels, with
+every machine voice in its panel. The recorded voices shall keep their order, the cast one marked where
+it stands.
+Rationale: a recordings folder may carry a machine voice's id, so the card follows whether the cast
+voice is a machine voice (FR-540). Oliver asked on 2026-09-15 that a recorded voice cast be covered.
+Claude recommended leaving the recorded voices as they are, since their rows carry figures with the
+Moments spoken for mark; accepted by Oliver on 2026-09-15.
+Acceptance: Given `bf_emma` cast, when `Alpha/` is cast, then no card is shown, British, female holds
+Alice, Emma, Isabella, Lily and Alpha's row is marked cast among the recorded voices. Given a recorded
+voice named `bf_emma` cast, then no card is shown while Emma's pill stays in British, female.
+Verified by: "shows no card while a recorded voice is cast, however it is named" in
+`frontend/src/machineVoices.test.tsx`. Proved by planting a card for any voice cast; its test failed.
+Not verified by a new test: the recorded voices' order and mark, which this change leaves as they were.
+
 ---
 
 ## 9. The setup program
@@ -2669,8 +2744,8 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-542, FR-545 to FR-548, FR-554, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-719, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-722, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
@@ -2678,6 +2753,7 @@ There are no open questions.
 
 ## 13. Traceability
 
-Every requirement above names its acceptance criterion. On implementation, each
-gains a `Verified by:` line naming the test; no requirement is considered met
-until that test exists and has been seen to fail without the implementation.
+A requirement that names an acceptance criterion is tested against it; the rest are
+tested against their own statement. Each built requirement carries a `Verified by:` line
+naming its tests or saying what no test holds; FR-217 does not yet. No requirement is
+considered met until its test exists and has been seen to fail without the implementation.

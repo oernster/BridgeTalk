@@ -5,8 +5,10 @@ worth speaking about has happened, then plays a matching recording from a librar
 is one-directional. There is no microphone, no speech recognition and no command and control; the
 application talks to the commander and never listens.
 
-It ships no audio of its own. Nothing in its own source reaches the network: no Go package here imports
-one and the front end makes no request.
+It ships no recordings. The application makes no request of its own: the one package here that names a
+network package, `internal/infrastructure/modelfiles`, downloads the model files for the development
+tools and the application does not import it. `net/http` reaches the application through Wails alone
+(`go list -deps .`, 2026-09-15); the front end makes no request.
 
 ## Invariant
 
@@ -127,7 +129,7 @@ output as its `RunLog`. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
-`voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
+`donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`.
 
 ## Dependency direction
@@ -194,7 +196,7 @@ field and a value where one payload field narrows it. A status cue's id is the f
 except the fire group, whose one cue is `FireGroup.Changed`. The one cue with no name from the game is
 the application's own `Cast.Confirmed`. The first segment is therefore the moment the cue listens for.
 It is the only grouping the vocabulary needs: the audition pane reads it rather than keeping a second
-taxonomy in step. A list of cues does not: the Missing takes pane and the breakdown dialog show each cue
+taxonomy in step. A list of cues does not: the Missing takes pane and the Moments spoken for dialog show each cue
 under its full title alone (FR-233), since a heading read from the first segment would repeat the start
 of every title beneath it.
 
@@ -316,7 +318,7 @@ written in the cue table and nowhere else. A voice that recorded no acknowledgem
 rather than broken. It goes straight to the player rather than through the scheduler, so it cannot queue
 behind the ship; unlike an audition it respects the mute.
 
-**Coverage.** The breakdown dialog behind each cast row lists the cues a voice serves and the cues it does
+**Coverage.** The Moments spoken for dialog behind each recorded voice's cast row lists the cues a voice serves and the cues it does
 not, as exact complements over the table: a cue is in one list or the other, never both and never
 neither.
 
@@ -511,9 +513,13 @@ on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Au
 Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.
 
-**Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` lists them under their own heading
-after the recorded voices, one cast control a row, in the row a recorded voice uses. The cast one reads
-how far making has got: it asks `Making` once, then follows the `making` event, which the poll loop
+**Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` offers them under their own heading
+after the recorded voices, as pills in a panel for each accent and sex, the panels sharing the row
+(FR-720). The panels keep the group order the facade offers, which is FR-508's; each sorts its pills
+by name. `machinevoice.Voice` gives each voice's name alone and its group beside the full name, so the
+id's format keeps one home. The cast machine voice leaves its panel for a card above them, which is not a
+control, since pressing it would cast it again (FR-721); a recorded voice cast leaves no card, even one
+whose folder carries a machine voice's id (FR-722). The card reads how far making has got: it asks `Making` once, then follows the `making` event, which the poll loop
 sends only when the answer has moved, so an idle tick says nothing. Failed lines, a stopped making,
 undeleted lines and a refused cast each get a callout beneath the list. `StateDTO.MachineVoice` says
 which kind of voice is cast, since a recordings folder may carry a machine voice's id. The words both
@@ -522,7 +528,7 @@ where making stands before anything is made lives in `frontend/src/making.ts`, a
 because a test replaces that module whole.
 
 Four surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
-licence, the close choice and the breakdown of what one voice speaks for. Each opens focused on its first
+licence, the close choice and the Moments spoken for dialog. Each opens focused on its first
 control; the close choice lists Minimise first, since Enter straight after pressing the cross must not
 mean stop. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
 and the terms the source carries cannot differ; About names the licence in a sentence.
@@ -541,7 +547,7 @@ how a cue that never speaks gets diagnosed.
 "Cast Iris"; "Grace is cast as your ship's voice" for the one already in the role. Beneath the name
 the row gives the number of recordings the voice holds that answer a cue. Every voice listed can be cast,
 because a directory that resolved no recording never becomes a voice. A button at the end of the row
-opens the breakdown dialog. Beneath the rows, Make a voice holds a name box with Make folders and Refresh.
+opens the Moments spoken for dialog. Beneath the rows, Make a voice holds a name box with Make folders and Refresh.
 
 **Missing takes.** The recordings directory row with its Browse, then a chooser offering every voice
 folder still missing a recording, empty folders included, since a voice made with Make folders holds
@@ -887,7 +893,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   the platform behind them; the last is test support exercised by the `modelfiles` tests.
   TESTING.md names what each shortfall is.
 - `build.ps1` runs `test.ps1 -Benchmarks` before it builds and offers no switch to skip it, so every
-  build also measures making a complete script against NFR-P-203 and NFR-C-502. `wails build` runs the
+  build also times a machine voice's cast against NFR-P-205 and measures making a complete script
+  against NFR-C-502. `wails build` runs the
   front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
   error stops the build too.
 - Neither script runs `staticcheck` or the front-end test runner. Both are run by hand, the tests with

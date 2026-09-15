@@ -14,8 +14,8 @@ Two rules govern everything below.
 **A floor is a measurement, never an aspiration.** A gate set to a number the code
 does not reach teaches people to lower it. Every floor in `test.ps1` sits at or a
 little below what that package measured, so it fails once cover is lost, which is
-the only moment it is worth being told. The widest margin is
-`internal/infrastructure/setup`'s: its registry reads branch on what the registry of
+the only moment it is worth being told. `internal/infrastructure/setup`'s floor leaves
+room on purpose: its registry reads branch on what the registry of
 the machine running the tests holds, so part of its figure moves from one machine to
 the next and its floor leaves room for that.
 
@@ -49,8 +49,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 98% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 94.1% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 81.5% | 75% | `test.ps1` |
+| `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
+| the root package (the Wails facade) | 82.5% | 75% | `test.ps1` |
 | `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.4% | 67% | `test.ps1` |
@@ -64,10 +64,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-738 test functions, which expand to 803 runs once their subtests are counted (measured on
-2026-09-14: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
+752 test functions, which expand to 816 runs once their subtests are counted (measured on
+2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
-Thirty-three of them are the structural tests in `tests/structural`, which scan the source
+Thirty-eight of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
@@ -92,23 +92,28 @@ the call into it is made.
 | `chooser.tsx` | 100% | 100% |
 | `guideContent.ts` | 100% | 100% |
 | `icons.tsx` | 100% | 100% |
+| `indicator.ts` | 100% | 100% |
 | `machineVoices.tsx` | 100% | 100% |
 | `making.ts` | 100% | 100% |
 | `missingTakes.tsx` | 100% | 100% |
 | `moments.tsx` | 100% | 100% |
 | `preferences.ts` | 100% | 100% |
+| `productName.ts` | 100% | 100% |
+| `statusWords.ts` | 100% | 100% |
+| `strip.tsx` | 100% | 100% |
+| `testAudition.ts` | 100% | 100% |
 | `testLayout.ts` | 100% | 100% |
 | `testState.ts` | 100% | 100% |
-| `App.tsx` | 100% | 97.5% |
+| `App.tsx` | 100% | 96.3% |
 | `hooks.ts` | 100% | 96.3% |
-| `panes.tsx` | 100% | 95.5% |
+| `panes.tsx` | 100% | 95.8% |
 | `chrome.tsx` | 100% | 94.3% |
-| `guide.tsx` | 100% | 89.5% |
+| `guide.tsx` | 100% | 86.7% |
 | `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
-| **all files** | **99.3%** | **96.3%** |
+| **all files** | **99.4%** | **96.7%** |
 
-200 tests across 17 files, run under Vitest with jsdom.
+234 tests across 21 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -150,7 +155,7 @@ release is for.
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not.
-- **`internal/infrastructure/taskbar` (67.1%).** The tray icon runs its own Win32
+- **`internal/infrastructure/taskbar` (67.4%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   hidden window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is
@@ -181,7 +186,7 @@ release is for.
   application. Each is reached through a field on the facade, so the behaviour AROUND
   the call is fully tested and only the call itself is not: the tests substitute the
   field and assert what the facade decided.
-- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.0%).** Only a walk from outside
+- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.1%).** Only a walk from outside
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.
@@ -193,7 +198,7 @@ release is for.
   test can reach is tested: a missing runtime, a library that is not ONNX Runtime, a missing or
   damaged model, a path no file can have and a shipped line made by the real model. The tests that need
   the model files skip where `models/` lacks one; `test.ps1` checks the files before anything else and
-  stops where one is missing, so the floor holds the 91.5% measured with them.
+  stops where one is missing, so the floor holds the 92.1% measured with them.
 - **`main`, `run`, `launch` and `startTray` in `main.go`.** The composition root. It
   opens a device, scans the disk, builds a tray and hands the assembled application
   to Wails. Running it in a test would be running the application.

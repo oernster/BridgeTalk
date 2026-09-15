@@ -78,6 +78,25 @@ func TestAVoiceIsNamedByItsNameThenItsAccentAndSex(t *testing.T) {
 	}
 }
 
+// FR-720: a pill shows the name alone beneath a panel headed by the accent and sex. One voice from
+// each of the four groups.
+func TestAVoiceGivesItsNameAloneAndTheGroupItIsOfferedIn(t *testing.T) {
+	for id, want := range map[string][2]string{
+		"bf_emma":    {"Emma", "British, female"},
+		"bm_george":  {"George", "British, male"},
+		"af_heart":   {"Heart", "American, female"},
+		"am_michael": {"Michael", "American, male"},
+	} {
+		voice, err := machinevoice.Parse(id)
+		if err != nil {
+			t.Fatalf("Parse(%q): %v", id, err)
+		}
+		if got := [2]string{voice.Given(), voice.Group()}; got != want {
+			t.Errorf("%s gives %q in %q, want %q in %q", id, got[0], got[1], want[0], want[1])
+		}
+	}
+}
+
 // Every voice offered is found again by its own id.
 func TestEveryOfferedVoiceIsFoundByItsId(t *testing.T) {
 	for _, voice := range machinevoice.All() {

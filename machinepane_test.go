@@ -30,8 +30,8 @@ func madeOut(t *testing.T, app *App) MakingDTO {
 	}
 }
 
-// FR-508 and FR-528: every machine voice offered, in the order offered, by its id and the name the
-// screen shows.
+// FR-508, FR-528 and FR-720: every machine voice offered, in the order offered, by its id, the name
+// the screen shows, the name alone a pill shows and the group whose panel it is offered in.
 func TestTheCastPaneOffersEveryMachineVoiceByItsName(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 
@@ -42,12 +42,14 @@ func TestTheCastPaneOffersEveryMachineVoiceByItsName(t *testing.T) {
 		t.Fatalf("got %d machine voices, want the %d offered", len(rows), len(offered))
 	}
 	for index, voice := range offered {
-		if want := (MachineVoiceDTO{ID: voice.ID(), Name: voice.Name()}); rows[index] != want {
+		want := MachineVoiceDTO{ID: voice.ID(), Name: voice.Name(), Given: voice.Given(), Group: voice.Group()}
+		if rows[index] != want {
 			t.Errorf("row %d = %+v, want %+v", index, rows[index], want)
 		}
 	}
-	if rows[1] != (MachineVoiceDTO{ID: "bf_emma", Name: "Emma (British, female)"}) {
-		t.Errorf("row 1 = %+v, want bf_emma shown as Emma (British, female)", rows[1])
+	emma := MachineVoiceDTO{ID: "bf_emma", Name: "Emma (British, female)", Given: "Emma", Group: "British, female"}
+	if rows[1] != emma {
+		t.Errorf("row 1 = %+v, want %+v", rows[1], emma)
 	}
 }
 

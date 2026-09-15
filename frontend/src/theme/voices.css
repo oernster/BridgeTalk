@@ -45,16 +45,77 @@
   background: var(--secondary-soft);
 }
 
-.voice .name {
+.voice .name,
+.castcard .name {
   font-weight: 600;
 }
 
 /* The line under the name is the only number the row still states; it also says what it
    is counting, so it takes the accent that the bare fraction beside it used to hold.
    Pale grey put the one figure worth reading in the quietest colour on the row. */
-.voice .meta {
+.voice .meta,
+.castcard .meta {
   font-size: 15px;
   color: var(--accent);
+}
+
+/* ------------------------------------------------------------- machine voices */
+
+/* The cast machine voice on a card of its own above the panels (FR-721), on the ground a
+   recorded voice's cast row takes. It is not a control, so it takes no ring. */
+.castcard {
+  margin-bottom: 12px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--secondary-soft);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* One column for each group the voices arrive in (FR-720), rather than a count written
+   here, so the panels share the row whatever number of groups the facade offers. */
+.machinegroups {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.machinegroup {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.machinegroup h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* A pill is the casting control. Its edge at rest is drawn inside it, so the border stays
+   free to be the ring alone, as it is on every other control. */
+.pill {
+  padding: 3px 12px;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--secondary-soft);
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.pill:enabled:hover,
+.pill:enabled:focus {
+  border-color: var(--ring);
 }
 
 /* The right-hand column of a voice row. It holds the control that shows the working.

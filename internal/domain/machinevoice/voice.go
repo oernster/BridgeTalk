@@ -108,6 +108,18 @@ func (v Voice) Sex() Sex { return sexOfLetter[v.id[sexLetter]] }
 // Name returns the voice as the screen shows it: the name in its id capitalised, then its
 // accent and sex in brackets, such as "Emma (British, female)" (FR-528).
 func (v Voice) Name() string {
+	return fmt.Sprintf("%s (%s)", v.Given(), v.Group())
+}
+
+// Given returns the name in the voice's id alone, capitalised, such as "Emma": what its pill shows
+// beneath its group's heading (FR-720).
+func (v Voice) Given() string {
 	name := v.id[nameStart:]
-	return fmt.Sprintf("%s%s (%s, %s)", strings.ToUpper(name[:1]), name[1:], v.Accent(), v.Sex())
+	return strings.ToUpper(name[:1]) + name[1:]
+}
+
+// Group returns the accent and sex the voice is offered under, such as "British, female": the
+// heading of the panel it sits in (FR-720).
+func (v Voice) Group() string {
+	return fmt.Sprintf("%s, %s", v.Accent(), v.Sex())
 }

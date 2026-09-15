@@ -85,7 +85,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The cast pane',
     intro:
-      'Every directory of recordings found is a voice with a row of its own. Pressing a row casts that voice, which then says something as it takes the part; it stays quiet while the window is muted or where the voice has no line for it.',
+      'Every directory of recordings found is a voice with a row of its own. Pressing a row casts that voice, which then says something as it takes the part; it stays quiet while the window is muted or where the voice has no line for it. The machine voices sit beneath, in a panel for each accent and sex. Pressing a name casts that voice, which then stands apart above the panels with how far its lines are made.',
     entries: [
       {
         icons: [artwork.moments],

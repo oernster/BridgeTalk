@@ -38,8 +38,8 @@ export const mockedApi = {
 
 export const grace: Voice = { name: 'Grace', display: 'Grace', credit: '', cues: 90, inUse: 100, present: 100 }
 export const kate: Voice = { name: 'Kate', display: 'Kate', credit: '', cues: 10, inUse: 12, present: 12 }
-export const emma: MachineVoice = { id: 'bf_emma', name: 'Emma (British, female)' }
-export const michael: MachineVoice = { id: 'am_michael', name: 'Michael (American, male)' }
+export const emma: MachineVoice = { id: 'bf_emma', name: 'Emma (British, female)', given: 'Emma', group: 'British, female' }
+export const michael: MachineVoice = { id: 'am_michael', name: 'Michael (American, male)', given: 'Michael', group: 'American, male' }
 
 const shields: Group = { key: 'shields', label: 'Shields', clips: 4 }
 const combat: Group = { key: 'combat', label: 'Combat', clips: 1 }

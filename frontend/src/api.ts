@@ -44,6 +44,10 @@ export interface MachineVoice {
   id: string
   /** The name the screen shows, such as "Emma (British, female)" (FR-528). */
   name: string
+  /** The name alone, such as "Emma", which its pill shows (FR-720). */
+  given: string
+  /** The accent and sex it is offered under, such as "British, female": its panel's heading (FR-720). */
+  group: string
 }
 
 /** LineFailure is one line that could not be made (FR-518). */

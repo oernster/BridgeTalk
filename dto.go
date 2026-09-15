@@ -80,11 +80,14 @@ type StateDTO struct {
 	MachineVoice bool `json:"machineVoice"`
 }
 
-// MachineVoiceDTO is one machine voice the Cast pane offers: its id, which a cast sends back,
-// and the name the screen shows (FR-508, FR-528).
+// MachineVoiceDTO is one machine voice the Cast pane offers: its id, which a cast sends back, the
+// name the screen shows, the name alone its pill shows and the group whose panel it sits in (FR-508,
+// FR-528, FR-720).
 type MachineVoiceDTO struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Given string `json:"given"`
+	Group string `json:"group"`
 }
 
 // MakingDTO is how far making the cast machine voice's lines has got, as the Cast pane shows it.

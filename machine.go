@@ -31,12 +31,13 @@ type releaser interface{ Close() }
 const makingEvent = "making"
 
 // MachineVoices lists every machine voice offered, in the order FR-508 gives, by the name the screen
-// shows (FR-528). Every one can be cast; one whose files cannot be read is refused when it is.
+// shows (FR-528) with the name alone and the group its pill is offered in (FR-720). Every one can be
+// cast; one whose files cannot be read is refused when it is.
 func (a *App) MachineVoices() []MachineVoiceDTO {
 	offered := machinevoice.All()
 	out := make([]MachineVoiceDTO, 0, len(offered))
 	for _, voice := range offered {
-		out = append(out, MachineVoiceDTO{ID: voice.ID(), Name: voice.Name()})
+		out = append(out, MachineVoiceDTO{ID: voice.ID(), Name: voice.Name(), Given: voice.Given(), Group: voice.Group()})
 	}
 	return out
 }

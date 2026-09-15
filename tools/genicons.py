@@ -21,9 +21,9 @@ carrying a copy of its own.
 
 The donate artwork: assets/donate.png is a wide picture rather than an icon, so it
 never goes through the square path. It is trimmed to its content and scaled by
-height alone, keeping its proportions, then the one render is written for the
-window's foot strip and for the site alike (FR-718). The height is read from the
-strip's own style part rather than written here.
+height alone, keeping its proportions, then written for the window's foot strip
+(FR-718). The height is read from the strip's own style part rather than written
+here. The site is left alone: it shows the donate mark every project site shares.
 
 Run it when a master changes:
 
@@ -72,8 +72,7 @@ DONATE_MASTER = "donate.png"
 NOT_BAND_ICONS = (APP_MASTER, SLASH_MASTER, DONATE_MASTER)
 
 # DONATE_DENSITY is how many times the height the strip draws the donate artwork at
-# it is written at, so it stays crisp on a high-density display. The site draws it
-# smaller than the strip does, so the same file serves both.
+# it is written at, so it stays crisp on a high-density display.
 DONATE_DENSITY = 4
 
 # ICO_SIZES are the sizes Windows chooses between: the small tray and menu sizes,
@@ -106,12 +105,10 @@ THEME = REPO / "frontend" / "src" / "theme"
 STRIP_STYLES = (THEME / "navband.css", THEME / "footer.css")
 STRIP_ART = "strip-art"
 
-# DONATE_TARGETS are where the one donate render goes: beside the artwork the window
-# imports and where the site's page loads it.
-DONATE_TARGETS = (
-    REPO / "frontend" / "src" / "assets" / DONATE_MASTER,
-    REPO / "docs" / "images" / DONATE_MASTER,
-)
+# DONATE_TARGET is where the donate render goes: beside the artwork the window
+# imports. The site's copy is the donate mark every project site shares, so it is
+# never written here (Oliver, 2026-09-15).
+DONATE_TARGET = REPO / "frontend" / "src" / "assets" / DONATE_MASTER
 
 # CSS_COMMENT, CSS_TOKEN and CSS_VAR take a style part apart: comments out, then each
 # custom property with its value, then each var() a value names. ARITHMETIC is all a
@@ -248,7 +245,7 @@ def donate_art(master: pathlib.Path, height: int) -> Image.Image:
 
 
 def write_donate() -> None:
-    """Write the one donate render to every place that shows it (FR-718)."""
+    """Write the donate render the window's foot strip shows (FR-718)."""
     master = MASTERS / DONATE_MASTER
     if not master.exists():
         sys.exit(f"\nno donate artwork at {master}")
@@ -256,12 +253,11 @@ def write_donate() -> None:
     art = donate_art(master, round(drawn * DONATE_DENSITY))
     source = master.stat().st_size
     print(f"\n{master.name:<22} {source:>9,} bytes, drawn {drawn:g} px high")
-    for target in DONATE_TARGETS:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        art.save(target, "PNG", optimize=True)
-        written = target.stat().st_size
-        where = target.relative_to(REPO).as_posix()
-        print(f"{'':<22} {art.width}x{art.height} -> {written:>7,} bytes  ({where})")
+    DONATE_TARGET.parent.mkdir(parents=True, exist_ok=True)
+    art.save(DONATE_TARGET, "PNG", optimize=True)
+    written = DONATE_TARGET.stat().st_size
+    where = DONATE_TARGET.relative_to(REPO).as_posix()
+    print(f"{'':<22} {art.width}x{art.height} -> {written:>7,} bytes  ({where})")
 
 
 def main() -> int:

@@ -302,9 +302,9 @@ speaker from the sounding one and a slash, turns `assets/application-icon.png` i
 header mark and its two theme icons. Last it derives the donate artwork from
 `assets/donate.png`, which is not a band icon and is never squared into one: trimmed to
 its content, scaled by height alone to four times the height the window's foot strip
-draws it at (read from the strip's tokens in `frontend/src/theme/footer.css`), then the
-one render is written to `frontend/src/assets/donate.png` and to the site's
-`docs/images/donate.png`. The `.ico` is committed rather than left for
+draws it at (read from the strip's tokens in `frontend/src/theme/footer.css`), then it is
+written to `frontend/src/assets/donate.png`. The site's `docs/images/donate.png` is the
+donate mark every project site shares, which the script leaves alone. The `.ico` is committed rather than left for
 Wails to derive at build time: Wails only derives one when the file is absent, so
 relying on that would mean deleting and hoping.
 

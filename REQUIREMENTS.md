@@ -2479,7 +2479,8 @@ pane and its tooltip inside the window as drawn in the window.
 **FR-718 The donate button**
 Priority: Should.
 The donate button shall show the donate artwork, which the icon tool derives from `assets/donate.png`
-for the window and for the site alike; it shall carry the tooltip "Donate to support" followed by the
+for the window; the site shall show the donate mark every project site shares, 133 by 116 pixels, which
+the icon tool leaves alone (Oliver, 2026-09-15). The button shall carry the tooltip "Donate to support" followed by the
 product's name and "(opens your browser)". When it is pressed, the application shall hand
 `https://www.paypal.com/ncp/payment/DVP73MPL9JPSU` to the desktop to open in the browser, fetching
 nothing itself. The facade shall refuse an address that does not begin `https://`. Where handing the

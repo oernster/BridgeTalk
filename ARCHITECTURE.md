@@ -589,8 +589,9 @@ output is committed, so a clone needs neither Python nor Pillow to build the app
 
 `assets/donate.png` is not a band icon and the script stops rather than square it into one. It trims the
 artwork to its content and scales it by height alone to four times the height the strip draws it at, then
-writes that one render to `frontend/src/assets/donate.png` for the window and to `docs/images/donate.png`
-for the site, so the two cannot differ (FR-718).
+writes that render to `frontend/src/assets/donate.png` for the window (FR-718). The site's
+`docs/images/donate.png` is the donate mark every project site shares, 133 by 116 pixels, which the
+script never writes (Oliver, 2026-09-15).
 
 `assets/application-icon.png` is the whole identity. The same script turns it into a multi-size `.ico`
 beside it, a copy for the About crest and the setup page's header mark, alongside the setup page's two

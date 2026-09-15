@@ -114,7 +114,7 @@ function routeUninstall(state) {
     setFooter([
         {label: 'Cancel', onClick: () => state.mode === 'manage' ? route(state) : backend().Quit()},
         {
-            label: 'Uninstall', kind: 'danger',
+            label: 'Uninstall', kind: 'danger', lead: true,
             onClick: () => withAppClosed(() => run(
                 () => backend().Uninstall(read('state')),
                 `Removing ${appName}`, `${appName} is removed`,

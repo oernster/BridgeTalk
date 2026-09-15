@@ -152,9 +152,11 @@ export function MachineVoices({
       {making.stopped !== '' && (
         <p className="callout refused">{`Making stopped: ${making.stopped}`}</p>
       )}
+      {/* A cast deletes the lines no longer current of the voice it casts (FR-527), so what could
+          not be deleted is the cast voice's own; a recorded voice cast clears it. */}
       {making.notDeleted !== '' && (
         <p className="callout refused">
-          {`The voice cast before still has made lines that could not be deleted: ${making.notDeleted}`}
+          {`The cast voice still has made lines no longer current that could not be deleted: ${making.notDeleted}`}
         </p>
       )}
     </>

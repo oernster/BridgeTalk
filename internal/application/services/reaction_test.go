@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"slices"
 	"testing"
 	"time"
 
@@ -256,6 +257,40 @@ func TestAFiringNeverHeardHoldsNothingBack(t *testing.T) {
 	}
 	if contains(log.outcomes, ports.OutcomeCooldown) || contains(log.outcomes, ports.OutcomeDuplicate) {
 		t.Errorf("outcomes = %v, want nothing held back by a firing never heard", log.outcomes)
+	}
+}
+
+// FR-610 with FR-612: a take is the one a cue played last only once the scheduler takes it. A
+// take picked for a firing that is then let go was never heard; the take heard before it is
+// still the one not to repeat.
+func TestATakeLetGoIsNotTheOneTheCuePlayedLast(t *testing.T) {
+	player, log := newFakePlayer(), &collector{}
+	moving := &movingClock{now: moment}
+	catalogue := newFakeCatalogue()
+	chatter := cueFor(t, cue.Definition{ID: "Chatter", Source: "journal", Event: "Chatter", Priority: "ambient"})
+	notice := cueFor(t, cue.Definition{ID: "Docked", Source: "journal", Event: "Docked", Priority: "notice"})
+	service := services.NewReactionService(
+		cue.NewTable([]cue.Cue{chatter, notice}), catalogue, services.NewScheduler(player, log, moving),
+		firstChooser{}, log, moving,
+	)
+	catalogue.hold("Chatter", "a.mp3", "b.mp3")
+	catalogue.hold("Docked", "docked.mp3")
+
+	service.HandleAll([]event.Event{journalEvent("Chatter", moving.now)})
+	player.finish()
+	moving.now = moment.Add(time.Hour)
+	service.Handle(journalEvent("Docked", moving.now))
+	service.Handle(journalEvent("Chatter", moving.now))
+	if !contains(log.outcomes, ports.OutcomeDropped) {
+		t.Fatalf("outcomes = %v, want the chatter behind the waiting notice let go", log.outcomes)
+	}
+	service.HandleAll(nil)
+	player.finish()
+	moving.now = moment.Add(2 * time.Hour)
+	service.HandleAll([]event.Event{journalEvent("Chatter", moving.now)})
+
+	if want := [][]string{{"a.mp3"}, {"docked.mp3"}, {"b.mp3"}}; !slices.EqualFunc(player.played, want, slices.Equal) {
+		t.Errorf("played %v, want %v: the take let go was taken for the one heard", player.played, want)
 	}
 }
 

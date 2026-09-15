@@ -286,14 +286,22 @@ func TestNoFileInDangerBand(t *testing.T) {
 	}
 }
 
-// lineCount counts the lines in a file.
+// lineCount counts the lines in a file as an editor numbers them. A newline ends a line
+// rather than starting one, so only text after the last newline is a line of its own.
+// Counting every newline plus one read a file ending in a newline, which is nearly all
+// of them, as a line longer than it is.
 func lineCount(t *testing.T, path string) int {
 	t.Helper()
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("reading %s: %v", path, err)
 	}
-	return strings.Count(string(raw), "\n") + 1
+	text := string(raw)
+	lines := strings.Count(text, "\n")
+	if text != "" && !strings.HasSuffix(text, "\n") {
+		lines++
+	}
+	return lines
 }
 
 // TestEveryExportedTypeIsDocumented keeps the package surface self-describing, which

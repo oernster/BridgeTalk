@@ -24,7 +24,7 @@ func (t *Tray) Commands() <-chan Command { return t.commands }
 func (t *Tray) SetMuted(bool) {}
 
 // SetActiveVoice records nothing.
-func (t *Tray) SetActiveVoice(string, bool) {}
+func (t *Tray) SetActiveVoice(string, string, bool) {}
 
 // Start succeeds without showing anything.
 func (t *Tray) Start() error { return nil }

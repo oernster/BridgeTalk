@@ -42,12 +42,12 @@ func TestPickerNeverRepeatsTheImmediatelyPreviousClip(t *testing.T) {
 	// A chooser that always asks for index 0 would repeat forever without the guard.
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
 
-	first, ok := picker.Pick("x", clips)
+	first, ok := play(picker, "x", clips)
 	if !ok {
 		t.Fatal("expected a pick")
 	}
 	for range 5 {
-		next, ok := picker.Pick("x", clips)
+		next, ok := play(picker, "x", clips)
 		if !ok {
 			t.Fatal("expected a pick")
 		}
@@ -61,12 +61,12 @@ func TestPickerNeverRepeatsTheImmediatelyPreviousClip(t *testing.T) {
 func TestPickerHandlesSmallFolders(t *testing.T) {
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
 
-	if _, ok := picker.Pick("empty", nil); ok {
+	if _, ok := play(picker, "empty", nil); ok {
 		t.Fatal("an empty folder should yield no pick")
 	}
 	// A single-clip cue must keep speaking, so the no-repeat rule yields to it.
 	for range 3 {
-		clip, ok := picker.Pick("one", []string{"only.mp3"})
+		clip, ok := play(picker, "one", []string{"only.mp3"})
 		if !ok || clip != "only.mp3" {
 			t.Fatalf("single-clip pick = %q, %v", clip, ok)
 		}
@@ -78,7 +78,7 @@ func TestPickerDrawsAcrossTheWholeFolder(t *testing.T) {
 	picker := selection.NewPicker(&fixedChooser{values: []int{0, 1, 2, 0, 1, 2}})
 	seen := make(map[string]bool)
 	for range 12 {
-		clip, _ := picker.Pick("x", clips)
+		clip, _ := play(picker, "x", clips)
 		seen[clip] = true
 	}
 	if len(seen) < 3 {
@@ -145,35 +145,14 @@ func TestDedupeCollapsesRapidRepeats(t *testing.T) {
 func TestPickerRepeatsWhenEveryClipIsTheOneItJustPlayed(t *testing.T) {
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
 
-	first, ok := picker.Pick("Bounty", []string{"a.mp3", "a.mp3"})
+	first, ok := play(picker, "Bounty", []string{"a.mp3", "a.mp3"})
 	if !ok || first != "a.mp3" {
 		t.Fatalf("first pick = %q, %v", first, ok)
 	}
 
-	second, ok := picker.Pick("Bounty", []string{"a.mp3", "a.mp3"})
+	second, ok := play(picker, "Bounty", []string{"a.mp3", "a.mp3"})
 	if !ok || second != "a.mp3" {
 		t.Fatalf("second pick = %q, %v, want the repeat rather than silence", second, ok)
-	}
-}
-
-// The picker's memory holds clip paths from the voice it was chosen in. Those paths do
-// not exist in the next voice, so a voice change drops the memory rather than avoiding
-// a clip that has gone.
-func TestForgetDropsWhatEachCueLastPlayed(t *testing.T) {
-	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
-	clips := []string{"a.mp3", "b.mp3"}
-
-	if got, _ := picker.Pick("Bounty", clips); got != "a.mp3" {
-		t.Fatalf("first pick = %q, want a.mp3", got)
-	}
-	if got, _ := picker.Pick("Bounty", clips); got != "b.mp3" {
-		t.Fatalf("second pick = %q, want the other clip", got)
-	}
-
-	picker.Forget()
-
-	if got, _ := picker.Pick("Bounty", clips); got != "a.mp3" {
-		t.Errorf("after Forget the pick was %q, want a.mp3 as though it were the first", got)
 	}
 }
 

@@ -4,6 +4,10 @@ package audio
 // 100 firings. Output is counted from the call that plays the take to its first samples being
 // taken, plus the audio queued ahead of them in the player then, plus the Windows buffer at its
 // full size, since how full that buffer is cannot be read. A machine with no device skips it.
+//
+// Each firing starts from a stopped player, as a take that cuts in does once the scheduler has
+// stopped the one before it. A take fired straight after another waits for the end of it instead
+// (NFR-P-202's note): that wait is the take before playing out, not latency.
 
 import (
 	"path/filepath"
@@ -60,6 +64,7 @@ func TestPlaybackBeginsWithinTheLatencyBudget(t *testing.T) {
 
 	latencies := make([]time.Duration, 0, latencyFirings)
 	for range latencyFirings {
+		player.Stop()
 		player.mu.Lock()
 		player.firstPull = time.Time{}
 		player.mu.Unlock()

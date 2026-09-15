@@ -79,12 +79,22 @@ type audioPlayer interface {
 	Close() error
 }
 
+// trayIcon is everything the session and the facade ask of the notification area icon. It is
+// declared here, where it is consumed, for the reason audioPlayer is: a test can then read what
+// the icon was told, which the icon itself keeps to its own thread.
+type trayIcon interface {
+	Commands() <-chan taskbar.Command
+	SetMuted(muted bool)
+	SetActiveVoice(name, label string, machine bool)
+	Stop()
+}
+
 type session struct {
 	table     cue.Table
 	available []library.Voice
 	chooser   randomChooser
 	player    audioPlayer
-	tray      *taskbar.Tray
+	tray      trayIcon
 	reporter  ports.Reporter
 
 	// making makes a cast machine voice's lines; maker is the model they are made with, released
@@ -117,7 +127,7 @@ type session struct {
 // that would speak has to be able to do nothing instead of assuming a voice.
 func (s *session) hasVoice() bool { return s.reactions != nil }
 
-// useVoice casts a recorded voice: making stops and every made line goes (FR-516, FR-527), then
+// useVoice casts a recorded voice: making stops, keeping every made line (FR-516, FR-527); then
 // the voice speaks from its recordings.
 func (s *session) useVoice(chosen library.Voice) {
 	s.making.CastRecorded()
@@ -145,7 +155,7 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 		s.reactions.SetCueMaker(maker)
 	}
 	if s.tray != nil {
-		s.tray.SetActiveVoice(cast.Name, cast.Machine)
+		s.tray.SetActiveVoice(cast.Name, cast.Display, cast.Machine)
 	}
 }
 
@@ -189,6 +199,10 @@ func run() error {
 		"start in the notification area with no window, as the login entry does",
 	)
 	flag.Parse()
+	// The reports are read in the terminal that asked for them (FR-703).
+	if *listVoices || *showUnbound {
+		reportToTerminal()
+	}
 
 	table, err := config.LoadCueTable("")
 	if err != nil {
@@ -289,8 +303,9 @@ func run() error {
 // startTray builds and shows the tray, returning nil when it cannot appear.
 //
 // A tray that fails to start is not fatal. The application still watches the journal
-// and still speaks, which is the whole point of it.
-func startTray(found []library.Voice, active string) *taskbar.Tray {
+// and still speaks, which is the whole point of it. The nil it answers then is the
+// interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
+func startTray(found []library.Voice, active string) trayIcon {
 	tray := taskbar.New(taskbar.Options{
 		Title: appTitle, Voices: trayChoices(found), ActiveVoice: active,
 	})

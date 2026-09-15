@@ -9,7 +9,7 @@ import (
 )
 
 // valuesBody builds a status file carrying the non-bit values, with both flag words
-// held at zero so nothing but the value under test can produce an event.
+// held still so nothing but the value under test can produce an event.
 // The flag words carry atHelm and nothing else, so the bit path stays quiet across
 // every reading here while the values move. They cannot both be zero: that is the
 // game saying nobody is playing; a reading of it ends the session rather than

@@ -6,6 +6,9 @@
 // the file (runtime.throw, read in Go 1.26.3 on 2026-09-14). Pointing the error output itself at the
 // log carries every line. That is done wherever the run has no error output to lose, which is how a
 // windowed program started from a shortcut runs; a run with one keeps it and adds the crash file.
+//
+// It also finds the terminal a windowed run was started from, for the reports the command line asks
+// for (FR-703): both decide where what a run writes goes.
 package runlog
 
 import (
@@ -78,3 +81,8 @@ func Keep(log *os.File) error {
 	}
 	return nil
 }
+
+// ReportToTerminal sends what the run prints to the terminal it was started from, where it was given
+// no standard output of its own: a windowed program started from a terminal is given none (FR-703). A
+// run given one keeps it.
+func ReportToTerminal() error { return toTerminal() }

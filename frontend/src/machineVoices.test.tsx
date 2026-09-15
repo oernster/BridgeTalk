@@ -138,7 +138,8 @@ describe('the machine voices', () => {
     expect(await screen.findByText('768 of 768 lines made; 256 of 256 moments spoken')).toBeTruthy()
   })
 
-  // FR-518, FR-520 and FR-530: each problem said, with its reason.
+  // FR-518, FR-520 and FR-530: each problem said, with its reason. A cast deletes the lines no longer
+  // current of the voice it casts (FR-527), so what could not be deleted belongs to the cast voice.
   it('says which lines could not be made, why making stopped and what could not be deleted', async () => {
     making.mockResolvedValue({
       ...idle,
@@ -154,7 +155,7 @@ describe('the machine voices', () => {
 
     expect(await screen.findByText('Docked, line 2: the model failed')).toBeTruthy()
     expect(screen.getByText('Making stopped: the disk is full')).toBeTruthy()
-    expect(screen.getByText('The voice cast before still has made lines that could not be deleted: a made line is in use')).toBeTruthy()
+    expect(screen.getByText('The cast voice still has made lines no longer current that could not be deleted: a made line is in use')).toBeTruthy()
   })
 
   // FR-519: a refused cast says why.

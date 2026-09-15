@@ -31,6 +31,33 @@ func seen(window *selection.DedupeWindow, id cue.ID, now time.Time) bool {
 	return true
 }
 
+// play picks a take and records it as played, for the same reason again.
+func play(picker *selection.Picker, id cue.ID, clips []string) (string, bool) {
+	clip, ok := picker.Pick(id, clips)
+	if ok {
+		picker.Played(id, clip)
+	}
+	return clip, ok
+}
+
+// Picking is not playing either: a take picked for a firing that is then let go was never
+// heard, so it is not the take to avoid next time (FR-610).
+func TestPickingRecordsNothing(t *testing.T) {
+	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
+	clips := []string{"a.mp3", "b.mp3"}
+
+	for range 2 {
+		if got, _ := picker.Pick("Bounty", clips); got != "a.mp3" {
+			t.Fatalf("pick = %q, want a.mp3: a take only picked was remembered as played", got)
+		}
+	}
+
+	picker.Played("Bounty", "a.mp3")
+	if got, _ := picker.Pick("Bounty", clips); got != "b.mp3" {
+		t.Fatalf("pick = %q, want b.mp3: a take played did not hold back the next pick", got)
+	}
+}
+
 func TestAskingRecordsNothing(t *testing.T) {
 	item, err := cue.New(cue.Definition{ID: "Bounty", Source: "journal", Event: "Bounty", Cooldown: time.Minute})
 	if err != nil {

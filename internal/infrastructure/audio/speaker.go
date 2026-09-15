@@ -66,11 +66,20 @@ func outputContext() (*oto.Context, error) {
 	return device.context, device.err
 }
 
+// outputQueue is the part of oto's player the speaker drives once it is started: the queue it
+// fills, drops and measures. A hand-written fake stands in for it where a test has no device.
+type outputQueue interface {
+	Play()
+	Reset()
+	BufferedSize() int
+	Close() error
+}
+
 // speaker mixes what is playing and hands it to the device.
 type speaker struct {
 	mu     sync.Mutex
 	mixer  beep.Mixer
-	player *oto.Player
+	player outputQueue
 	clock  func() time.Time
 	// lastSound is when the mixer last held something to play; zero once the queue is known to
 	// hold nothing but silence.
@@ -84,9 +93,10 @@ func openSpeaker() (*speaker, error) {
 		return nil, err
 	}
 	out := &speaker{clock: time.Now}
-	out.player = context.NewPlayer(out)
-	out.player.SetBufferSize(deviceSampleRate.N(playerBuffer) * bytesPerFrame)
-	out.player.Play()
+	player := context.NewPlayer(out)
+	player.SetBufferSize(deviceSampleRate.N(playerBuffer) * bytesPerFrame)
+	player.Play()
+	out.player = player
 	return out, nil
 }
 
@@ -147,9 +157,10 @@ func (s *speaker) stop() {
 // oto marks Reset deprecated in favour of Pause or Seek; neither will do here. Pause keeps the
 // queue, which is the whole problem. Seek resets the queue and then calls back into this speaker
 // while holding oto's own lock; Read reaches that same lock through the first-pull record
-// (NFR-P-202), so the two would deadlock.
+// (NFR-P-202), so the two would deadlock. Reset is reached through outputQueue, so the linter no
+// longer sees the deprecation; this comment is where it is recorded.
 func (s *speaker) dropQueued() {
-	s.player.Reset() //lint:ignore SA1019 Pause keeps the queue and Seek deadlocks against Read; see above
+	s.player.Reset()
 }
 
 // queued reports how much audio the player holds that the device has not yet taken.

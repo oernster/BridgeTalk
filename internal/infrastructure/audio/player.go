@@ -154,6 +154,12 @@ func (p *Player) Playing() bool {
 //
 // The old sequence is replaced and the new one claimed under the one lock, so there is
 // no moment reading idle between them for PlayIfIdle to start something in.
+//
+// Only a sequence still playing is cut, with the audio queued behind it (NFR-P-202). A
+// sequence reads as ended once its last samples are queued, which is before the device
+// has played them; dropping the queue then would cut off the end of a take that has
+// already finished. With nothing to replace, the speaker decides: queued silence goes,
+// the end of a take just sounded is waited for.
 func (p *Player) Play(clips []string, gap time.Duration) error {
 	if len(clips) == 0 {
 		return ErrNoClips
@@ -165,9 +171,9 @@ func (p *Player) Play(clips []string, gap time.Duration) error {
 
 	if replaced != nil {
 		close(replaced)
-	}
-	if !p.silent {
-		p.out.stop()
+		if !p.silent {
+			p.out.stop()
+		}
 	}
 	p.launch(clips, gap, cancel)
 	return nil

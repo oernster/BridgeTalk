@@ -135,7 +135,7 @@ schema in section 3 is already portable, so nothing there changes either way.
 | ID | Constraint |
 |---|---|
 | CON-1 | The layering invariant `UI to Application to Domain from Infrastructure` holds and is enforced by `tests/structural`. |
-| CON-2 | Every Go source file, every front end source file and every file of the setup program's page stays at or below 400 lines; one landing between 381 and 400 lines is reduced to 350 or fewer. Build and packaging scripts are not counted. |
+| CON-2 | Every Go source file, every TypeScript and CSS file under `frontend/src` and every HTML, CSS and script file of the setup program's page stays at or below 400 lines; one landing between 381 and 400 lines is reduced to 350 or fewer. A line is counted as an editor numbers it, so the newline ending a file adds none. Build and packaging scripts are not counted. |
 | CON-3 | The coverage floor over `internal/domain` and `internal/application` stays at 100 percent. |
 | CON-4 | `VERSION` is the single source of truth for the version. No version literal elsewhere. |
 | CON-5 | No recording ships inside the application or its setup program. The files a machine voice is made from do (FR-524); amended on 2026-09-14. |
@@ -151,7 +151,7 @@ schema in section 3 is already portable, so nothing there changes either way.
 | ASM-2 | Recordings are made with ordinary consumer microphones in untreated rooms, so their quality is not controllable by the application. | Oliver | Before recordings are made in earnest |
 | ASM-3 | A voice is expected to be complete: every cue recorded, every file present used. See FR-215. | Oliver | Confirmed 2026-09-09 |
 | ASM-4 | The development machine, 12 logical processors with no graphics card used, is close enough to a player's machine to set NFR-P-203. | Oliver | Before the first release with machine voices |
-| ASM-5 | The Apache-2.0 licence the Kokoro-82M model repository declares covers its voice style files, which it does not license separately. | Oliver | Before the first release with machine voices |
+| ASM-5 | The Apache-2.0 licence the Kokoro-82M model repository declares covers its voice style files, which it does not license separately. Confirmed by Oliver: the model cards of hexgrad/Kokoro-82M and of onnx-community/Kokoro-82M-v1.0-ONNX, the pinned source, each declare apache-2.0 and give the voice files no separate terms; their LICENSE files and VOICES.md were not read. | Oliver | Confirmed 2026-09-15 |
 
 ---
 
@@ -260,12 +260,19 @@ format alone.
 
 **FR-201 Choose a library root**
 Priority: Must.
-When the user selects a library root, the application shall persist that path in
-settings and shall scan it. It shall persist nothing else with it.
-Acceptance: Given no root is set, when the user chooses one and the application is
+When the user selects a library root, the application shall scan it. If it holds a voice, then the
+application shall take it at once in place of the last one and persist that path in settings,
+persisting nothing else with it. If it holds no voice or cannot be read, then the application shall
+refuse with the reason naming it and change nothing. A cancelled Browse shall change nothing. If the
+choice cannot be kept, then the application shall say so.
+Acceptance: Given no root is set, when the user chooses one holding a voice and the application is
 restarted, then the same root is in use.
-Verified by: `TestChoosingOneDirectoryKeepsThatDirectoryAlone` in `remember_test.go` at the
-repository root, for persisting nothing else.
+Verified by: `TestChoosingOneDirectoryKeepsThatDirectoryAlone` and
+`TestAChoiceThatCannotBeRememberedIsReported` in `remember_test.go` at the repository root;
+`TestChoosingALibraryRootTakesItAtOnce`, `TestCancellingTheChooserChangesNothing`,
+`TestADirectoryHoldingNoVoicesIsRefusedInWordsTheReaderCanActOn` and
+`TestADirectoryThatCannotBeReadIsReported` in `settings_test.go`. Not verified by a test: the restart;
+nothing being persisted on a refusal.
 
 **FR-202 If the library root is missing or unreadable, then say so**
 Priority: Must.
@@ -374,6 +381,7 @@ Verified by: `TestAManifestNamesAndCreditsItsVoice`, `TestAManifestAddsTheTakesI
 `TestAManifestEntryThatCannotBeUsedIsPassedOverAlone` and `TestVoicesAreListedByTheNameTheyAreShownBy`
 in `internal/infrastructure/library/manifest_test.go`;
 `TestAManifestNameIsShownWhileTheDirectoryStaysTheIdentity` in `cast_test.go`;
+`TestTheTrayShowsAVoiceFoundLaterByItsManifestName` in `session_test.go`;
 `TestTheMenuShowsEachVoiceByTheNameItIsShownBy` in
 `internal/infrastructure/taskbar/tray_windows_test.go`; "shows the name and credit a manifest gives"
 in `frontend/src/cast.test.tsx`; "offers each voice under the name it is shown by" in
@@ -460,6 +468,18 @@ The application shall never write to, move, rename or delete a file under the
 library root, except FR-223 making a voice's directory with its empty folders plus
 FR-314 making a missing moment's folder. Both are confined to the voice directory being
 targeted. FR-212 would add a third, writing a `voice.toml`; it is not built today.
+Verified by: in part, `TestMakingFoldersAgainAddsOnlyWhatIsMissing` in
+`internal/infrastructure/library/folders_test.go` for FR-223 leaving a recording and a file already in
+the voice directory unchanged; `TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot` in
+`internal/infrastructure/library/checklist_test.go` for FR-314 leaving a take already there unchanged;
+`TestMakingAVoicesFoldersMakesOneForEveryCue` in the same `folders_test.go` and
+`TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot` for each landing inside the voice directory named;
+`TestANameThatCannotBeAFolderIsRefused` in `folders_test.go` for a refused name making nothing under
+the root; `TestMadeLinesLiveInTheProductsDataFolder` in
+`internal/infrastructure/madelines/madelines_test.go` for made lines going to the product's own data
+folder. Not verified by a test: that a scan, a rescan, an audition or playback writes nothing under the
+library root. By inspection on 2026-09-15 the only write calls in `internal/infrastructure/library`
+are the folder making of FR-223 and FR-314 plus the default recordings directory of FR-227.
 
 **FR-218 If two directories differ only in case, then merge their takes**
 Priority: Must.
@@ -614,14 +634,15 @@ Verified by: `TestWithNoRecordingsDirectoryTheFoldersGoInTheDefaultOne`;
 Priority: Must.
 While no library root is chosen, when the application asks where the recordings are, the
 application shall open that question in the default recordings directory, creating the
-directory where it is missing.
+directory where it is missing. If the default recordings directory cannot be worked out or made,
+then the application shall still ask, leaving the folder it opens in to the system.
 The default recordings directory is `%LOCALAPPDATA%\BridgeTalk\Recordings` on
 Windows. Elsewhere it is `BridgeTalk/Recordings` under `$XDG_DATA_HOME`, which falls
 back to `~/.local/share` where it is unset.
 Rationale: given no folder, the system dialog chose for itself and opened in the
 game's folder, where a user's recordings do not belong. Of the folders the product
-owns this is the one setup never removes: uninstall deletes the install directory;
-forgetting settings deletes the window state and the settings file. It is local
+owns this is the one setup never removes: uninstall deletes the install directory, the made lines
+(FR-525) and `Log.txt` (FR-715); forgetting settings deletes the window state and the settings file. It is local
 rather than roaming, because hours of audio do not belong in a roaming profile.
 Acceptance: Given no library root on Windows, when the user presses Browse for the
 recordings, then the folder question opens in `%LOCALAPPDATA%\BridgeTalk\Recordings`,
@@ -629,9 +650,9 @@ which exists. Given a library root, when the user presses Browse for the recordi
 the question opens in that root.
 Verified by: `TestTheDefaultRecordingsDirectoryIsMadeWhereMissing` in
 `internal/infrastructure/library/root_test.go`;
-`TestTheRecordingsQuestionOpensInTheProductsOwnFolder` and
-`TestTheRecordingsQuestionOpensWhereTheRecordingsAre` in `folders_test.go` at the repository
-root.
+`TestTheRecordingsQuestionOpensInTheProductsOwnFolder`,
+`TestTheRecordingsQuestionOpensWhereTheRecordingsAre` and `TestADefaultThatCannotBeMadeStillAsks` in
+`folders_test.go` at the repository root.
 
 **FR-220 If a voice has no take for a cue, then the cue is silent and the gap is reported**
 Priority: Must.
@@ -771,7 +792,9 @@ Not measured today: no benchmark exists in the scanner package and section 2.3 n
 reference machine.
 When scanning a library root holding up to 10 voices and up to 5,000 audio files
 in total, the application shall complete the scan within 3 seconds on the
-reference machine in section 2.3, measured by a benchmark in the scanner package.
+reference machine in section 2.3, measured by a benchmark in `internal/infrastructure/library`.
+Verified by: nothing yet. Not verified by a test: the scan time, since no benchmark exists anywhere in
+the repository and section 2.3 names no reference machine to run one on.
 
 **NFR-P-202 Playback latency**
 Priority: Must.
@@ -786,10 +809,15 @@ once. A take that starts after silence drops the queued silence. A take that fol
 waits for the end of the one before it rather than cutting it off. A cue whose line is made when it
 fires (FR-514) is counted from when that line is handed over, not from the firing.
 Verified by: `TestPlaybackBeginsWithinTheLatencyBudget` in
-`internal/infrastructure/audio/latency_test.go`, which read 100.5 milliseconds at the 95th
-percentile on 2026-09-13, almost all of it the Windows buffer counted at its full 100 milliseconds;
-it skips on a machine with no audio device. Not verified by a test: a game launch with the Windows
-buffer at 100 milliseconds, read off the stall count on the Status pane (FR-616).
+`internal/infrastructure/audio/latency_test.go`, which fires each take from a stopped player and
+read 100 milliseconds at the 95th percentile on 2026-09-15, almost all of it the Windows buffer
+counted at its full 100 milliseconds; it skips on a machine with no audio device. The note is held
+by `TestStopDropsWhatIsQueued`, `TestATakeThatInterruptsAnotherDropsWhatIsQueued`,
+`TestATakeThatStartsAfterSilenceDropsTheQueuedSilence` and
+`TestATakeThatFollowsAnotherCloselyWaitsForItsEnd` in
+`internal/infrastructure/audio/speaker_test.go`, over a fake of the device's queue. Not verified by
+a test: a game launch with the Windows buffer at 100 milliseconds, read off the stall count on the
+Status pane (FR-616).
 
 ---
 
@@ -898,11 +926,11 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | ID | Requirement | Method |
 |---|---|---|
 | NFR-M-1 | Coverage over `internal/domain` and `internal/application` stays at 100 percent | `test.ps1` fails below the floor and names every function short of it |
-| NFR-M-2 | No source file exceeds 400 lines; none sits between 381 and 400 | `TestNoFileExceedsLineLimit` and `TestNoFileInDangerBand` in `tests/structural/boundary_test.go`, over the Go source and both front ends; build scripts are not counted |
+| NFR-M-2 | No source file exceeds 400 lines; none sits between 381 and 400, each counted as an editor numbers its lines | `TestNoFileExceedsLineLimit` and `TestNoFileInDangerBand` in `tests/structural/boundary_test.go`, over the Go source and both front ends, with the count itself held by `TestLineCountCountsTheLinesAnEditorShows` in `tests/structural/linecount_test.go`; each guard was seen to fail on a planted file on 2026-09-15; build scripts are not counted |
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt` and `go vet`; `build.ps1` runs `test.ps1` ahead of any build. Not enforced today for `staticcheck`: no script runs it; it is run by hand |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. No test asserts the outbound surface today; `TestDomainIsPure` forbids `net` and `net/http` in the domain alone |
-| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection the application writes the settings file under the user configuration directory, the default recordings directory under `%LOCALAPPDATA%`, the log of FR-715 beside it, the folders of FR-223 and FR-314 plus the sign-in entry |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
 **Non claims, stated deliberately:**
@@ -1123,8 +1151,8 @@ Acceptance: Given a library root holding `Alice/`, when the Cast pane opens, the
 among the recorded voices and the 28 machine voices are listed apart from her.
 Verified by: in part, `TestTheVoicesOfferedAreTheTwentyEightOfFR508` in
 `internal/domain/machinevoice/voice_test.go` for the voices offered;
-`TestTheCastPaneOffersEveryMachineVoiceByItsName` in `machinepane_test.go`; "lists every machine voice
-apart, by the name each is shown by" in `frontend/src/machineVoices.test.tsx`.
+`TestTheCastPaneOffersEveryMachineVoiceByItsName` in `machinepane_test.go`; "offers a panel for each
+accent and sex, its voices sorted by name" in `frontend/src/machineVoices.test.tsx`.
 
 **FR-509 The tray offers the machine voices**
 Priority: Should.
@@ -2200,12 +2228,13 @@ in `internal/infrastructure/journal/source_test.go`; `TestAnEventIsDatedByTheFil
 Priority: Must.
 When a status reading sets or clears a watched flag, the application shall raise one event for that
 flag, rising when set and falling when cleared. When the focused panel, the fire group or the
-capacitor holding the most pips changes, it shall raise one event naming the new value; pips with no
-single leader read as `Balanced`. A reading equal to the one before raises nothing; neither does a
+capacitor holding the most pips changes, it shall raise one event naming the new value; a focus value
+this application does not know is named `NoFocus`. Pips with no single leader read as `Balanced`. A reading equal to the one before raises nothing; neither does a
 flag bit outside the watched set.
 Verified by: `TestASetFlagRisesAndAClearedFlagFalls`, `TestTheOdysseyFlagWordIsWatchedToo`,
 `TestARewriteThatChangesNothingIsNotNews` and `TestAnUnknownFlagBitIsIgnored` in
 `internal/infrastructure/status/watcher_test.go`; `TestChangingTheFocusedPanelIsReportedByName`,
+`TestAFocusValueThisApplicationDoesNotKnowReadsAsNoFocus`,
 `TestChangingTheFireGroupIsReportedAsItsNumber`, `TestPipsAreReportedAsTheLeadingCapacitor`,
 `TestTwoCapacitorsTiedAtTheTopReadAsBalanced` and `TestMovingPipsWithoutChangingTheLeaderIsNotNews`
 in `internal/infrastructure/status/flags_test.go`.
@@ -2253,8 +2282,9 @@ was muted, had no take or was let go (FR-612) opens no window.
 Rationale: the journal sometimes states one situation twice in quick succession.
 Verified by: `TestDedupeCollapsesRapidRepeats` in `internal/domain/selection/selection_test.go`;
 `TestARepeatInsideTheDedupeWindowIsCollapsed` and `TestAFiringNeverHeardHoldsNothingBack` in
-`internal/application/services/reaction_test.go`. Not verified by a test: that the application's window is 900 milliseconds, since both tests set a
-width of their own.
+`internal/application/services/reaction_test.go`. Not verified by a test: that the application's
+window is 900 milliseconds, since the domain test sets a width of its own while the service tests
+repeat a firing at the same instant; that a firing let go opens no window.
 
 **FR-609 A cue inside its cooldown is held**
 Priority: Must.
@@ -2270,12 +2300,15 @@ Verified by: `TestCooldownBlocksASecondFiringInsideTheWindow`, `TestCooldownOfZe
 
 **FR-610 A cue never plays the same take twice running**
 Priority: Must.
-When a cue with more than one take fires, the application shall play a take chosen at random from
-those other than the one it played last for that cue. A cue with one take plays that take every
-time.
+When a cue with more than one take fires, the application shall hand over to be spoken a take chosen
+at random from those other than the one it last handed over to be spoken for that cue; a take picked
+for a firing that is then let go (FR-612) does not count. If every take is that one, then it plays
+that take. A cue with one take plays that take every time.
 Verified by: `TestPickerNeverRepeatsTheImmediatelyPreviousClip`, `TestPickerHandlesSmallFolders` and
 `TestPickerRepeatsWhenEveryClipIsTheOneItJustPlayed` in
-`internal/domain/selection/selection_test.go`.
+`internal/domain/selection/selection_test.go`; `TestPickingRecordsNothing` in
+`internal/domain/selection/record_test.go`; `TestATakeLetGoIsNotTheOneTheCuePlayedLast` in
+`internal/application/services/reaction_test.go`.
 
 **FR-611 A muted decision is still recorded**
 Priority: Must.
@@ -2376,9 +2409,14 @@ When started with `-list`, the application shall print each voice found with its
 it has recorded, then end without opening a window. When started with `-unbound`, it shall print the
 cues the chosen voice has no take for, then end. If no voice is found, then it shall print the
 reason and end with a failing exit status; so shall `-unbound` naming a voice that is not there.
-Given both flags, `-list` is answered.
+Given both flags, `-list` is answered. Started from a terminal, a windowed build shall print both
+reports in that terminal.
 Verified by: `TestTheCommandLineReportsRunOverEveryPack` in `session_test.go`, which runs both
-reports. Not verified by a test: the printed text; the exit status.
+reports; `TestARunGivenAnOutputKeepsIt` and `TestReachingForTheTerminalKeepsTheOutputThisRunWasGiven`
+in `internal/infrastructure/runlog/runlog_test.go`, for a report sent where it was given. Not verified
+by a test: the printed text; the exit status; a windowed build printing in the terminal it was started
+from, which was seen on 2026-09-15 with a windowed build of the runlog test binary rather than of the
+application.
 
 **FR-704 A run can start with no icon or with no window**
 Priority: Must.
@@ -2386,9 +2424,10 @@ When started with `-no-tray`, the application shall run without a notification a
 started with `-hidden`, it shall start with its window put away in the notification area, as the
 sign-in entry of FR-708 does. While there is no icon, `-hidden` shall be ignored and the window
 shown, since nothing would bring it back. Once the page of a run started hidden has loaded, the
-window shall stay put away.
-Verified by: `TestAWindowStartedHiddenIsNotRaisedWhenThePageLoads` in `app_test.go`, for not raising
-it. Not verified by a test: `-no-tray`; the window staying put away at a real sign-in.
+window shall stay put away until the tray brings it back (FR-710).
+Verified by: `TestAWindowStartedHiddenIsNotRaisedWhenThePageLoads` and
+`TestAPageAskingForTheKeyboardDoesNotRaiseAWindowStartedHidden` in `app_test.go`, for not raising it.
+Not verified by a test: `-no-tray`; the window staying put away at a real sign-in.
 
 **FR-705 Mute**
 Priority: Must.
@@ -2463,18 +2502,21 @@ Priority: Must.
 When the tray icon is clicked or Open is chosen from its menu, the application shall bring the
 window back, centred, on the Cast pane. The menu shall hold, in order: Voice, listing the voices
 found at startup by the name each is shown by (FR-210), then the machine voices under a separator (FR-509), with the cast one marked by its name and its kind (FR-540); Open; Mute, marked
-while muted; Quit. The icon's hover text shall name the product, the cast voice and whether playback
+while muted; Quit. The icon's hover text shall name the product, the cast voice where one is cast
+and whether playback
 is muted. When playback is muted or unmuted or a voice is cast, whether from the window or from the
 tray menu, the application shall send the hover text again with the new state. If the icon cannot be
 made, then the application shall print a warning and run without it.
 Verified by: `TestAClickAsksForTheWindowBack`, `TestTheMenuOffersTheWindowToo`,
 `TestDispatchMapsMenuIdentifiers`, `TestDispatchIgnoresNothingAndOutOfRange`,
 `TestDispatchDoesNotBlockWhenNobodyIsReading`, `TestTooltipReflectsVoiceAndMuteState`,
+`TestTheHoverTextSaysMutedWithNoVoiceCast`,
 `TestTheHoverTextFollowsTheStateOnTheTrayThread`,
 `TestTheMenuShowsEachVoiceByTheNameItIsShownBy` and `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` in
 `internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayIconBringsTheWindowBack` and
 `TestASummonedWindowIsToldToOpenOnTheCast` in `window_life_test.go`;
-`TestOnlyDirectoriesHoldingTakesAreOfferedToTheTray` in `cast_test.go`. Not verified by a test: the
+`TestOnlyDirectoriesHoldingTakesAreOfferedToTheTray` in `cast_test.go`;
+`TestTheTrayShowsAVoiceFoundLaterByItsManifestName` in `session_test.go`. Not verified by a test: the
 menu as drawn; running on after the icon fails.
 
 **FR-711 Choosing the journal directory**
@@ -2501,8 +2543,9 @@ the author, the statements of authorship and attribution, the licence in one sen
 every dependency shipped and the copyright.
 Verified by: "titles itself with the name the application gives" and "draws every section of the
 guide" in `frontend/src/guide.test.tsx`; "reaches the guide, the licence and the About dialog from
-Help" in `frontend/src/App.menus.test.tsx`; `TestTheLicenceDialogShowsTheLicenceFileItself` and
-`TestAboutNamesTheLicence` in `licence_test.go`; `TestAboutCarriesAuthorshipAndAttribution` in
+Help" in `frontend/src/App.menus.test.tsx`; `TestTheLicenceDialogShowsTheLicenceFileItself`,
+`TestAboutNamesTheLicence` and
+`TestEveryModuleTheReleasedBinaryLinksIsCredited` in `licence_test.go`; `TestAboutCarriesAuthorshipAndAttribution` in
 `app_test.go`; `TestTheProductIsNamedOnce` in `tests/structural/identity_test.go`. Not verified by a
 test: the About dialog as drawn.
 
@@ -2706,7 +2749,8 @@ state it describes changes and taken from the first row that holds:
 | No voice is cast | No voice cast | `--muted` |
 | Otherwise | Listening with the cast voice as it is shown | `--ambient` |
 
-Each change shall be announced politely to a screen reader.
+Until the window has read the application's state, only the first row can hold; while that row does
+not, the indicator shall be empty. Each change shall be announced politely to a screen reader.
 Rationale: Oliver asked for a live feedback indicator in the strip (2026-09-14). Every row reads state
 the window is already sent (the `state`, `making` and `reaction` events, read on 2026-09-14), save the
 moment's full title: the `reaction` event carried the moment's id alone, so it now carries the title Go
@@ -2716,10 +2760,12 @@ every moment has one (FR-233).
 Acceptance: Given a machine voice with 13 of 768 lines made while lines are being made, then the
 indicator reads "Making lines: 13 of 768 ready" in the notice colour; with playback muted as well, it
 still reads that. Given the journal directory refused, then it reads "Not hearing the game: choose a
-journal folder in Settings" whatever else holds.
+journal folder in Settings" whatever else holds, save a donation page that failed to open within the
+last 4 seconds.
 Verified by: `frontend/src/indicator.test.ts` over the pure selector in `frontend/src/indicator.ts`, whose
 "takes the first row that holds, in the order the table gives" walks the table down from a reading in which
-every row holds, with the acceptance readings and the four seconds on either side of each flash; "says which
+every row holds, with the acceptance readings, the four seconds on either side of each flash and
+"says nothing before the first state arrives, a donation failure aside"; "says which
 moment was just played for four seconds, then goes back to listening", "gives the last moment played its own
 four seconds", "says nothing of a reaction that played nothing", "reads where making stands when it opens,
 then follows it as it is announced", "says what the application is doing, politely to a screen reader" and
@@ -2796,6 +2842,52 @@ Verified by: "shows no card while a recorded voice is cast, however it is named"
 `frontend/src/machineVoices.test.tsx`. Proved by planting a card for any voice cast; its test failed.
 Not verified by a new test: the recorded voices' order and mark, which this change leaves as they were.
 
+**FR-723 The Moments spoken for dialog**
+Priority: Should.
+Each recorded voice's row on the Cast pane shall end in a mark showing the moments picture, with the
+tooltip "Moments spoken for" and the accessible name "Moments" followed by the name the voice is
+shown by (FR-210) and "speaks for". A machine voice's pill shall carry no mark. When the mark is
+pressed, the application shall open a dialog titled "What" followed by that name and "speaks for",
+whether or not that voice is cast. The dialog shall hold two halves in this order: "Moments spoken
+for", saying "Moments" followed by the name and "has a recording for." and listing every moment the
+voice has a recording for; then "Moments with no lines", saying "Never recorded for" followed by the
+name and ", so each one stays quiet." and listing every moment it has none for. Each half's heading
+shall end in the number of moments it lists, in brackets; a half listing none shall say "Nothing
+here.". Each moment shall stand under its full title alone (FR-233). If no voice has the name asked
+for, then both halves shall be empty rather than an error shown. The dialog reads itself (FR-714)
+and answers the keyboard as every dialog does (FR-713).
+Acceptance: Given Grace with a recording for `StartJump.JumpType.Hyperspace` and none for
+`Disembark`, when her mark is pressed, then "Start jump: jump type hyperspace" is listed under
+"Moments spoken for (1)" and "Disembark" under "Moments with no lines (1)"; pressing Close takes the
+dialog away.
+Verified by: "offers every voice it lists, refusing none", "shows the name and credit a manifest
+gives", "opens for the voice whose mark was pressed, then closes again" and "says plainly when one
+half of the breakdown is empty" in `frontend/src/cast.test.tsx`;
+`TestTheBreakdownAnswersForAVoiceThatIsNotCast` and
+`TestTheBreakdownOfAVoiceThatIsNotThereIsEmptyRatherThanAnError` in `cast_test.go`. Not verified by
+a test: the dialog's title; the second half's lede; the mark's tooltip; a machine voice's pill
+carrying no mark.
+
+**FR-724 The Audio and Settings menus**
+Priority: Should.
+The window shall carry a menu bar above the band holding File, Audio, Settings and Help in that
+order. File shall hold Quit (FR-709). Audio shall hold Cast, Audition, Missing takes and Mute in
+that order. Settings shall hold Open settings, then the theme item of FR-707. Help holds what FR-712
+gives. When Cast, Audition or Missing takes is chosen, the application shall open the pane the
+band's button of that name opens and close the menu. When Open settings is chosen, it shall open the
+Settings pane and close the menu. The Missing takes pane shall open on the cast voice. The Mute item
+shall read Unmute while playback is muted and act as FR-705 says. When an open menu's own title is
+pressed, the menu shall close; so shall an open menu when the pointer leaves the bar.
+Acceptance: Given Grace cast with 1 of 2 moments recorded, when Audio then Missing takes is chosen,
+then the Missing takes pane opens saying "Grace has recordings for 1 of 2 moments."
+Verified by: "ends the application from File", "reaches the cast and the audition from Audio",
+"reaches missing takes from Audio, on the cast voice", "offers the mute as the act rather than as
+the state", "opens the settings pane from Settings", "closes a menu that is open when its own title
+is pressed again" and "carries an open menu along the bar and lets it go at the end" in
+`frontend/src/App.menus.test.tsx`, the last holding the titles' order and Cast as Audio's first
+item. Not verified by a test: the order of the items after Audio's first; the Audio menu reading
+Unmute while muted; a menu closing when an item is chosen or when the pointer leaves the bar.
+
 ---
 
 ## 9. The setup program
@@ -2861,8 +2953,15 @@ it; a step that fails is not reported.
 Verified by: `TestUntickingAShortcutRemovesIt` in `internal/infrastructure/setup/windows_test.go`;
 `TestTheSavedStateIsRemovedWhenTheUninstallIsAskedTo` in
 `internal/infrastructure/setup/install_test.go`; `TestForgettingRemovesTheChoicesAndTheirDirectory`
-and `TestForgettingLeavesWhatIsNotTheStoresOwn` in `internal/infrastructure/config/forget_test.go`.
-Not verified by a test: removing the registry entries; deleting the install directory; Cancel.
+and `TestForgettingLeavesWhatIsNotTheStoresOwn` in `internal/infrastructure/config/forget_test.go`;
+`TestTheInstallDirectoryOutlivesTheRunningSetup`, `TestTheInstallDirectoryGoesOnceSetupHasClosed` and
+`TestTheInstallDirectoryGoesWhenSetupWasStartedInsideIt` in
+`internal/infrastructure/setup/deletion_windows_test.go`, against a temporary directory;
+`TestTheDeletionWaitsForSetupBeforeItDeletes` in `internal/infrastructure/setup/deletion_test.go`;
+"leaves forgetting the settings unticked", "returns to the screen setup opened on when Cancel is
+pressed" and "closes setup on Cancel when opened with -uninstall" in `frontend/src/setupScreens.test.ts`.
+Not verified by a test: removing the registry entries; the real install directory going once the
+real setup window has closed.
 
 **FR-806 A running copy is closed before setup writes**
 Priority: Must.
@@ -2877,7 +2976,7 @@ verified by a test: the offer; closing the program; the 5 seconds.
 Priority: Must.
 If a step setup checks fails, then setup shall show "Something went wrong" with the reason and a
 Close button.
-Not verified by a test.
+Verified by: nothing. Not verified by a test: the message, its reason or the Close button.
 
 **FR-808 Setup answers the keyboard**
 Priority: Must.
@@ -2900,8 +2999,9 @@ Verified by: "steps forward on Tab and on Right, wrapping at the end", "steps ba
 on Left, wrapping at the start", "passes over a control that is disabled or hidden", "ticks a box on
 Enter as Space does" and "offers the body only while it holds more than fits" in
 `frontend/src/setupRing.test.ts`; `TestTheSetupPageLoadsEveryScript` and
-`TestTheSetupBodyRingsForTheKeyboard` in `tests/structural/setupring_test.go`. Not verified by a
-test: real focus in the setup window; each screen opening on the action it leads with.
+`TestTheSetupBodyRingsForTheKeyboard` in `tests/structural/setupring_test.go`; the "each setup
+screen opens on the action it leads with" tests in `frontend/src/setupScreens.test.ts`. Not verified
+by a test: real focus in the setup window.
 
 ---
 
@@ -2930,7 +3030,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-722, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-724, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
@@ -2940,5 +3040,5 @@ There are no open questions.
 
 A requirement that names an acceptance criterion is tested against it; the rest are
 tested against their own statement. Each built requirement carries a `Verified by:` line
-naming its tests or saying what no test holds; FR-217 does not yet. No requirement is
+naming its tests or saying what no test holds. No requirement is
 considered met until its test exists and has been seen to fail without the implementation.

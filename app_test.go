@@ -2,151 +2,14 @@ package main
 
 import (
 	"context"
+	"slices"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
-
-// fakePlayer stands in for the output device. Every method records what it was
-// asked to do, so a test can assert on the facade's behaviour without a sound card.
-type fakePlayer struct {
-	mu       sync.Mutex
-	played   [][]string
-	stops    int
-	playing  bool
-	silent   bool
-	volume   float64
-	failWith error
-	finished chan struct{}
-
-	stalls     int
-	worstStall time.Duration
-}
-
-func newFakePlayer() *fakePlayer {
-	return &fakePlayer{volume: 1, finished: make(chan struct{}, 1)}
-}
-
-func (f *fakePlayer) Play(clips []string, _ time.Duration) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if f.failWith != nil {
-		return f.failWith
-	}
-	f.played = append(f.played, clips)
-	f.playing = true
-	return nil
-}
-
-// PlayIfIdle starts only when the fake is not already playing, as the real player does.
-func (f *fakePlayer) PlayIfIdle(clips []string, _ time.Duration) (bool, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if f.failWith != nil {
-		return false, f.failWith
-	}
-	if f.playing {
-		return false, nil
-	}
-	f.played = append(f.played, clips)
-	f.playing = true
-	return true, nil
-}
-
-func (f *fakePlayer) Stop() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.stops++
-	f.playing = false
-}
-
-func (f *fakePlayer) Playing() bool {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.playing
-}
-
-func (f *fakePlayer) Done() <-chan struct{} { return f.finished }
-
-func (f *fakePlayer) Silent() bool { return f.silent }
-
-func (f *fakePlayer) Stalls() (int, time.Duration) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.stalls, f.worstStall
-}
-
-func (f *fakePlayer) Volume() float64 {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.volume
-}
-
-func (f *fakePlayer) SetVolume(level float64) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.volume = level
-}
-
-func (f *fakePlayer) Close() error { return nil }
-
-// finish signals one completed sequence, as the real player does from its own
-// goroutine when a clip runs out.
-func (f *fakePlayer) finish() { f.finished <- struct{}{} }
-
-// recorder collects what the facade announced to the front end.
-type recorder struct {
-	mu     sync.Mutex
-	events []recorded
-	waits  map[string]chan any
-}
-
-type recorded struct {
-	name    string
-	payload any
-}
-
-func newRecorder() *recorder {
-	return &recorder{waits: make(map[string]chan any)}
-}
-
-func (r *recorder) emit(name string, payload any) {
-	r.mu.Lock()
-	r.events = append(r.events, recorded{name: name, payload: payload})
-	waiter := r.waits[name]
-	r.mu.Unlock()
-	if waiter != nil {
-		select {
-		case waiter <- payload:
-		default:
-		}
-	}
-}
-
-// await returns the next payload emitted under a name, failing the test rather than
-// hanging when the facade stays silent.
-func (r *recorder) await(t *testing.T, name string) any {
-	t.Helper()
-	r.mu.Lock()
-	waiter, ok := r.waits[name]
-	if !ok {
-		waiter = make(chan any, 1)
-		r.waits[name] = waiter
-	}
-	r.mu.Unlock()
-
-	select {
-	case payload := <-waiter:
-		return payload
-	case <-time.After(2 * time.Second):
-		t.Fatalf("no %q event was emitted", name)
-		return nil
-	}
-}
 
 // newTestApp assembles the smallest facade that can run its loop: a fake device and
 // a scheduler over it. Nothing here touches the disk or Wails.
@@ -249,6 +112,27 @@ func TestAWindowStartedHiddenIsNotRaisedWhenThePageLoads(t *testing.T) {
 	}
 }
 
+// FR-704: the page of a run started hidden finds it has no keyboard and asks for it. The window
+// stays put away until the tray brings it back; only then does the page's request raise it.
+func TestAPageAskingForTheKeyboardDoesNotRaiseAWindowStartedHidden(t *testing.T) {
+	player := newFakePlayer()
+	app, _ := newTestApp(t, player)
+	app.startedHidden = true
+	raised := 0
+	app.show = func() { raised++ }
+	app.restore = func() {}
+
+	app.TakeKeyboard()
+	if raised != 0 {
+		t.Fatalf("the window was raised %d times while put away, want none", raised)
+	}
+	app.handleTray(taskbar.Command{Kind: taskbar.CommandShow})
+	app.TakeKeyboard()
+	if raised != 1 {
+		t.Errorf("the window was raised %d times once brought back, want once", raised)
+	}
+}
+
 // The page asks for the keyboard when it finds every press going somewhere else.
 func TestThePageCanAskForTheKeyboard(t *testing.T) {
 	player := newFakePlayer()
@@ -310,11 +194,17 @@ func TestAboutCarriesAuthorshipAndAttribution(t *testing.T) {
 	if !strings.Contains(about.Authorship, "Oliver Ernster") {
 		t.Errorf("authorship = %q, want it to name the author", about.Authorship)
 	}
-	if !strings.Contains(about.Attribution, "ships no audio") {
-		t.Errorf("attribution = %q, want it to state that no audio ships", about.Attribution)
+	if !strings.Contains(about.Attribution, "ships no recordings") || !strings.Contains(about.Attribution, "Kokoro-82M") {
+		t.Errorf("attribution = %q, want it to state that no recordings ship and name the model the machine voices speak with", about.Attribution)
 	}
-	if len(about.Credits) == 0 {
-		t.Error("about carried no open source credits")
+	// The machine voices ship the model and the runtime that runs it, so both are credited
+	// with their licences (FR-712).
+	for _, shipped := range [][2]string{{"ONNX Runtime", "MIT"}, {"Kokoro-82M", "Apache-2.0"}} {
+		if !slices.ContainsFunc(about.Credits, func(credit string) bool {
+			return strings.Contains(credit, shipped[0]) && strings.Contains(credit, shipped[1])
+		}) {
+			t.Errorf("credits = %q, want one naming %s under %s", about.Credits, shipped[0], shipped[1])
+		}
 	}
 }
 

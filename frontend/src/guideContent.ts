@@ -46,7 +46,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The buttons along the top',
     intro:
-      'The five panes read left to right. The volume slider, Mute, the theme and this guide are held at the far end. Hover any button to see its name.',
+      'The buttons at the left each open a pane, read left to right. The volume slider, Mute, the theme and this guide are held at the far end. Hover any button to see its name.',
     entries: [
       {
         icons: [artwork.cast],
@@ -57,7 +57,7 @@ export const guideSections: GuideSection[] = [
       {
         icons: [artwork.status],
         name: 'Status',
-        text: 'what is cast, where it is watching and every decision it has made, including the ones that produced no sound.',
+        text: 'what is cast, where it is watching and its most recent decisions, including the ones that produced no sound.',
       },
       {
         icons: [artwork.missingTakes],
@@ -85,7 +85,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The cast pane',
     intro:
-      'Every directory of recordings found is a voice with a row of its own. Pressing a row casts that voice, which then says something as it takes the part; it stays quiet while the window is muted or where the voice has no line for it. The machine voices sit beneath, in a panel for each accent and sex. Pressing a name casts that voice, which then stands apart above the panels with how far its lines are made.',
+      'Every directory holding a playable recording is a voice with a row of its own. Pressing a row casts that voice, which then says something as it takes the part; it stays quiet while the window is muted or where the voice has no line for it. The machine voices sit beneath, in a panel for each accent and sex. Pressing a name casts that voice, which then stands apart above the panels with how far its lines are made. It makes each line on this machine and keeps it, then says something as it takes the part once that line is made.',
     entries: [
       {
         icons: [artwork.moments],
@@ -97,12 +97,12 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The audition pane',
     intro:
-      'Choose any voice to hear, recorded or machine, whether it is cast or not. The square beside it stops a recording part way through.',
+      'Choose any voice to hear, recorded or machine, whether it is cast or not. The square beside it stops whatever is playing.',
     entries: [
       {
         icons: [artwork.play],
         name: 'Play',
-        text: "one button for each part of the game. A press plays one of that voice's recordings or lines for it at random, so pressing again can give a different take. A machine voice makes a line it has not made yet first, which takes a moment. An audition ignores the mute, which silences answers to the game rather than the window.",
+        text: "one button for each part of the game. A press plays one of that voice's recordings or lines for it at random, so pressing again can give a different take. A machine voice makes a line it has not made yet first, which takes a moment. The buttons wait while anything is already playing, the ship's own lines included. An audition ignores the mute, which silences answers to the game rather than the window.",
       },
     ],
   },
@@ -131,7 +131,7 @@ export const guideSections: GuideSection[] = [
     rules: [
       {
         title: 'It talks and never listens.',
-        text: "It watches the game's journal and status file, decides that something worth saying has happened, then plays a matching recording. There is no microphone, no speech recognition and no command and control.",
+        text: "It watches the game's journal and status file, decides that something worth saying has happened, then plays a matching recording or machine voice line. There is no microphone, no speech recognition and no command and control.",
       },
       {
         title: 'The cue table is game truth.',
@@ -139,11 +139,11 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'A recording is found by its name.',
-        text: "Every directory directly inside the recordings directory is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Refresh. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name, each dot written as an underscore, holding any number of takes. A cue's name is the game's own name for the moment, as the journal and status file spell it. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played. A voice may also hold a voice.toml giving the name it is shown by, a credit line and recordings its names do not reach; one that cannot be read is set aside.",
+        text: "Every directory directly inside the recordings directory that holds a playable recording is one voice. The quickest way to make one is on the Cast pane: type a name and press Make folders, which makes a folder for every moment already named for it; put each recording in the folder for its moment, then press Refresh. To name them by hand instead: inside a voice, name a file after the cue it answers, such as DockingGranted.wav, adding .2, .3 and so on for further takes; or make a folder with that name, each dot written as an underscore, holding any number of takes. Most cue names are built from the game's own names, as the journal and status file spell them. A name has to match the id exactly apart from case. WAV, MP3, FLAC and Ogg files are played. A voice may also hold a voice.toml giving the name it is shown by, a credit line and recordings its names do not reach; one that cannot be used is ignored and the voice is found by its names alone.",
       },
       {
         title: 'Record in a program built for it.',
-        text: 'Audacity is a free audio recorder that saves WAV, available from https://www.audacityteam.org/. The Missing takes pane lists every voice still missing a recording. For the one chosen it shows each missing moment with a line saying when it is heard, then the folder its audio file belongs in; Open folder beside one opens that folder, ready for the take to be saved there under any name.',
+        text: 'The Missing takes pane lists every voice still missing a recording. For the one chosen it shows each missing moment with a line saying when it is heard, then the folder its audio file belongs in; Open folder beside one opens that folder, making it where it is missing, ready for the take to be saved there under any name.',
       },
       {
         title: 'Each moment plays one recording.',
@@ -151,11 +151,11 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Quiet is often the right answer.',
-        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings. The game restating itself within 900 milliseconds collapses into one line; a cue the voice has no recording for stays silent rather than borrowing another. While muted, nothing plays in answer to the game. The Status pane logs each of these decisions with its reason.',
+        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings. The game restating itself within 900 milliseconds collapses into one line; a cue the voice has no recording for stays silent rather than borrowing another. A machine voice makes a missing line when its cue fires; the cue is dropped where that line is not ready in time. While muted, nothing plays in answer to the game. The Status pane logs each of these decisions with its reason.',
       },
       {
         title: 'Your recordings are never changed.',
-        text: 'It ships no audio. It never changes or removes anything in the directory you choose; the one thing it writes there is the empty folders you ask it to make. It makes no network requests of its own.',
+        text: 'It ships no audio. It never changes or removes anything in the directory you choose; the one thing it writes there is empty folders, made by Make folders or by Open folder. Lines made for machine voices are kept in the Made lines folder inside your own local application data folder. It makes no network requests of its own.',
       },
     ],
   },
@@ -163,15 +163,15 @@ export const guideSections: GuideSection[] = [
     heading: 'Also worth knowing',
     paragraphs: [
       'The cast voice and both directories are kept in a settings file under your own application data folder; the theme and the volume are kept by the window itself. All of them are picked up again at the next start.',
-      'The journal directory is found under your own profile until you choose one. Choosing either directory in Settings takes effect at once.',
+      'The journal directory is found under your own profile until you choose one. Choosing the journal directory in Settings or the recordings directory on the Missing takes pane takes effect at once. A recordings directory holding no voice yet is refused; until one is chosen, Make folders puts a new voice in a Recordings folder inside your local application data folder and keeps that as the recordings directory.',
       'With Start it when I sign in ticked, signing in to Windows starts it hidden in the notification area.',
-      'Started from a command line it takes -library, -journal and -voice for that run only, over what Settings holds. -list prints the voices found with their coverage and -unbound the cues the chosen voice cannot serve, each then exiting; -no-tray runs it without the notification-area icon.',
+      'Started from a command line it takes -library, -journal and -voice for that run only, over what Settings holds. -list prints the voices found with their coverage and -unbound the cues the chosen voice cannot serve, each then exiting; -no-tray runs it without the notification-area icon, when the cross on the window quits at once.',
     ],
   },
   {
     heading: 'Keyboard',
     paragraphs: [
-      'Everything is reachable from the keyboard. Tab and Right move forward, Shift+Tab and Left move back; the ring wraps at both ends. Up and Down walk the rows of a list. A menu title opens on Down, Enter or Space. Enter or Space activates what is focused and Escape closes a dialog.',
+      'Everything is reachable from the keyboard. Tab and Right move forward, Shift+Tab and Left move back; the ring wraps at both ends. Up and Down walk an open menu and the Status log; on the volume slider they change the level. A menu title opens on Down, Enter or Space. Enter or Space activates what is focused. Escape closes a dialog or an open menu.',
       'The window starts with nothing focused; the first Tab or Right enters the ring.',
     ],
   },

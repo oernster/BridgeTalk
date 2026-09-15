@@ -12,8 +12,8 @@ is a shortfall rather than an omission.
 Two rules govern everything below.
 
 **A floor is a measurement, never an aspiration.** A gate set to a number the code
-does not reach teaches people to lower it. Every floor in `test.ps1` sits at or a
-little below what that package measured, so it fails once cover is lost, which is
+does not reach teaches people to lower it. Every floor in `test.ps1` sits at or below
+what that package measured, so it fails once cover is lost, which is
 the only moment it is worth being told. `internal/infrastructure/setup`'s floor leaves
 room on purpose: its registry reads branch on what the registry of
 the machine running the tests holds, so part of its figure moves from one machine to
@@ -47,38 +47,42 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
-| `internal/infrastructure/madelines` | 100% | 98% | `test.ps1` |
+| `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 93.6% | 80% | `test.ps1` |
-| the root package (the Wails facade) | 82.5% | 75% | `test.ps1` |
-| `internal/infrastructure/setup` | 74.2% | 61% | `test.ps1` |
+| `internal/infrastructure/audio` | 95.5% | 95% | `test.ps1` |
+| the root package (the Wails facade) | 82.0% | 82% | `test.ps1` |
+| `internal/infrastructure/setup` | 76.3% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 67.4% | 67% | `test.ps1` |
-| `internal/infrastructure/runlog` | 55.2% | 51% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 68.1% | 68% | `test.ps1` |
+| `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
-| `tools/sounds` | 44.9% | 38% | `test.ps1` |
-| `tools/pauses` | 67.9% | 67% | `test.ps1` |
-| `internal/infrastructure/modelfiles/modelfilestest` | test support, run by the `modelfiles`, `tools/models` and `tools/payload` tests | none | not gated |
+| `tools/sounds` | 44.9% | 44% | `test.ps1` |
+| `tools/pauses` | 73.6% | 73% | `test.ps1` |
+| `internal/infrastructure/modelfiles/modelfilestest` | test support with no tests of its own, used by the `modelfiles`, `speechmodel`, `tools/models`, `tools/payload`, `tests/structural` and `tests/machinevoice` tests | none | not gated |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-805 test functions, which expand to 874 runs once their subtests are counted (measured on
+830 test functions, which expand to 901 runs once their subtests are counted (measured on
 2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
-Forty-three of them are the structural tests in `tests/structural`, which scan the source
+Forty-four of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
 under an identity that is also a valid file name. They also hold the surface the
-facade binds, the wire contract on both sides of it, colours confined to the tokens,
-the contrast of the purpose line in both themes, every style part being read, the
-setup program applying the boxes it shows with a header that repeats no title, the
-setup page loading every script it has with its body ringed for the keyboard, game
-vocabulary kept in its home, the shape of every cue id, the speech sound table held
-to the model's tokenizer file, `pauses.toml` and `endings.toml` kept from going stale and every address handed to a DLL converted only where
-the call into it is made.
+facade binds, the wire contract on both sides of it, colours confined to the tokens
+with a token for every indicator tone, the contrast of the secondary lines (the
+purpose line and the Status cards' taglines) in both themes, every style part being
+read, the strip and the Status cards keeping their layout rules, every disabled control
+wearing the danger ring, every scrolling region ringed for the keyboard, the setup
+program applying the boxes it shows with a header that repeats no title, the setup page
+loading every script it has with its body ringed for the keyboard, game vocabulary kept
+in its home, the shape of every cue id, the shipped script holding no problem with lines
+for every cue, the speech sound table held to the model's tokenizer file, `pauses.toml`
+and `endings.toml` kept from going stale and every address handed to a DLL converted
+only where the call into it is made.
 
 ### The front end
 
@@ -113,7 +117,7 @@ the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.7%** |
 
-234 tests across 21 files, run under Vitest with jsdom.
+249 tests across 22 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -155,34 +159,44 @@ release is for.
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not.
-- **`internal/infrastructure/taskbar` (67.4%).** The tray icon runs its own Win32
+- **`internal/infrastructure/taskbar` (68.1%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   hidden window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
   menu as drawn is not.
-- **`internal/infrastructure/audio` (93.6%).** `run` and `playOne` hand a loaded clip
-  to the speaker; the speaker itself is the part no harness reaches. Everything around
+- **`internal/infrastructure/audio` (95.5%).** `run` and `playOne` hand a loaded clip
+  to the speaker. What the speaker decides about its queue is tested over a fake of the
+  device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
+  while a stop, an interrupting take and a take after silence each drop what is queued. The
+  device itself is the part no harness reaches. Everything around
   them is covered through a SILENT player, which is the same object with the same state
-  machine minus the calls into the device, so the sequencing, the cancelling, the volume
-  curve and every decoder path are all tested without a sound card. Reading a clip whole
+  machine minus the calls into the device, so the sequencing, the cancelling and the
+  volume curve are tested without a sound card. What stays unreached is the device
+  failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
+  rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
+  error, an unreadable clip in `playOne` and a cancel landing between clips or during the
+  gap in `run`. The figure moves between runs: 95.0% and 95.5% were both
+  measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
   into memory is tested directly, by deleting the file before streaming what came back:
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
   clock rather than by waiting.
-- **The crashes in `internal/infrastructure/runlog` (55.2%).** A crash ends the process that has it,
+- **`internal/infrastructure/audio/audiotest` (86.1%).** Test support. What is not run is
+  its own failure branches: a WAV that cannot be built, a format it cannot make and a
+  folder or file that cannot be written. Each fails the test that called it, which no
+  passing run does.
+- **The crashes in `internal/infrastructure/runlog` (48.8%).** A crash ends the process that has it,
   so the crash tests start the test binary again as a child that panics or fails fatally, then read
   what the child left in its log. Every line the child runs is in a process coverage does not measure.
   Finding that a run has no error output is not reached at all: a test binary is always given one.
   A windowed probe measured it on 2026-09-14 (FR-715). Writing the start line failing after the file
-  opened fails only inside the system.
-- **A made lines folder that exists but cannot be listed, in `internal/infrastructure/madelines`.**
-  Deleting then says why rather than deleting nothing in silence (FR-530). Only a permission the
-  system withholds reaches it: a folder a test makes can always be listed. Windows answers a plain
-  file standing where the folder should be as not there at all, measured on 2026-09-14, which is
-  nothing to delete.
+  opened fails only inside the system. Reaching for the terminal a windowed run was started from
+  (FR-703) goes past its first check only where the run was given no standard output, which a test
+  binary never is; a windowed build of the test binary was seen printing in the terminal it was
+  started from on 2026-09-15.
 - **The Wails calls in the root package.** `runtime.EventsEmit`, `WindowShow`,
-  `WindowHide`, `WindowCenter`, `Quit` and the directory dialog need a running Wails
+  `WindowHide`, `WindowCenter`, `Quit`, `BrowserOpenURL` and the directory dialog need a running Wails
   application. Each is reached through a field on the facade, so the behaviour AROUND
   the call is fully tested and only the call itself is not: the tests substitute the
   field and assert what the facade decided.
@@ -199,9 +213,13 @@ release is for.
   damaged model, a path no file can have and a shipped line made by the real model. The tests that need
   the model files skip where `models/` lacks one; `test.ps1` checks the files before anything else and
   stops where one is missing, so the floor holds the 92.1% measured with them.
-- **`main`, `run`, `launch` and `startTray` in `main.go`.** The composition root. It
-  opens a device, scans the disk, builds a tray and hands the assembled application
-  to Wails. Running it in a test would be running the application.
+- **`main`, `run`, `startTray` and `newMaking` in `main.go`, `launch` in `window.go`
+  and `keepLog`, `runLog` and `reportToTerminal` in `runlog.go`.** The composition root. It keeps the run's
+  log, opens a device, scans the disk, builds a tray and the speech model and hands the
+  assembled application to Wails. Running it in a test would be running the application.
+- **The rest of the root package's shortfall.** The facade's event loop receiving a tray
+  command or finding the tray's channel closed is not reached; the commands themselves
+  are tested through `handleTray`. Nor is `os.Executable` failing in `SetLaunchOnBoot`.
 
 ### It would change the machine
 
@@ -212,7 +230,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (74.2% overall).**
+- **The registry writes in `internal/infrastructure/setup` (76.3% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -221,9 +239,14 @@ release is for.
   The registry READS beside them are exercised, because a read cannot damage
   anything. `SetLaunchOnBoot` is covered on the facade side only in its refusal path:
   a copy running from the temporary directory, which is what a test binary is.
-- **Process control in `process_windows.go`.** Closing and launching the application;
-  deleting the install directory through a detached shell that outlives the setup
-  program. Enumerating processes is tested: `processIDs` must find the test binary by
+  The same package's shortcuts go through the Windows shell's COM object; COM refusing
+  to start, the object refusing to be made and a property or save being refused are not
+  reached, nor is packing a payload failing on a read or a write inside the archive.
+- **Process control in `process_windows.go`.** Closing and launching the application.
+  Deleting the install directory is tested against a temporary directory: a PowerShell
+  process started beside it waits for a stand-in for setup to exit, then deletes it, including
+  where setup was started inside the directory. The real install directory going once the
+  real setup window has closed is not. Enumerating processes is tested: `processIDs` must find the test binary by
   its own name, which is the one process a test can be certain is running.
 - **`tools/sounds` (44.9%).** The sounds tool. `run` rewrites `sounds.toml` in the repository
   and `python.Make` runs `sounds.py` in the tool's own venv, which a test machine need not have.
@@ -241,17 +264,18 @@ release is for.
   model. Inside a run, a voice's temporary folder that cannot be made and a line that cannot be
   written are not reached; `writeWAV`'s refusal is tested on its own. Nor is the refusal of a line's
   numbers or style row, which lines from the voiced script do not give; both refusals are tested in
-  `speech`. What the real tool wrote is checked by the structural tests over `pauses.toml` and
-  `endings.toml`.
+  `speech`. `measure` is tested writing both books; its passing on a refusal from finding or
+  writing a book is not reached, nor are `writeBook`'s own refusals. What the real tool wrote
+  is checked by the structural tests over `pauses.toml` and `endings.toml`.
 - **`tools/models` (48.3%).** The model files tool. `main` and `start` read the real list, find
   `models/` in the repository and hand `run` a client that reaches the internet. `run` itself is tested
   in both modes over a local server, as `internal/infrastructure/modelfiles` is: no test downloads
-  anything or writes outside a temporary folder. The figure was 53.1% until checking the folder moved
-  into `modelfiles.Verify`, which the payload tool shares; the check is tested there, so the fall is
-  statements leaving `run` rather than cover lost.
+  anything or writes outside a temporary folder. Checking the folder lives in `modelfiles.Verify`
+  (shared with the payload tool) and is tested there.
 - **`tools/payload` (53.3%).** The payload tool. `main` and `start` read the real list and find
   `models/` in the repository. `run` is tested over temporary folders: a packing, a models folder that
-  does not match, an application folder without the application and a missing flag.
+  does not match, an application folder without the application and a missing flag. A flag that
+  does not parse is not reached.
 
 ### It could not happen, so it is gone
 
@@ -263,7 +287,7 @@ rather than excused. Four of them, in code that still exists:
 |---|---|
 | the error return from `readAll` | it could only ever have been nil, so `readAll` now returns bytes alone |
 | the empty check in `splitLines` | `bytes.Split` always yields at least one element |
-| the encode failure in `Save` | a struct of three strings always marshals |
+| the encode failure in `Save` | a struct of four strings always marshals |
 | the encode failures in `madelines.encode` | the FLAC encoder fails only on a write (which memory never refuses) or on a frame shape other than the two the store builds, both round-tripped by its tests |
 
 ### The front end
@@ -290,8 +314,8 @@ be a test asserting against the stub.
 
 The same applies to the focus ring. Every element in jsdom reports a null
 `offsetParent`, which the ring correctly reads as "not on screen", so without help it
-finds no stops at all. `hooks.test.tsx` states the shape of the page by making
-attached elements report a parent, then asserts what the ring does with it. What is
+finds no stops at all. `hooks.test.tsx` states the shape of the page through
+`testLayout.ts`, which makes attached elements report a parent, then asserts what the ring does with it. What is
 supplied is the page; what is asserted is the behaviour. `setupRing.test.ts` does the
 same for the setup page, whose ring is a script of its own loaded as the page ships it.
 
@@ -332,8 +356,8 @@ and `internal/infrastructure/speechmodel`. One casts a voice and fails over NFR-
 5 seconds or FR-514's 2 seconds. One makes the shipped script for one voice and fails
 over NFR-C-502's 60 MB, skipping while the script lacks lines for any cue. One makes
 150 lines while collections shrink goroutine stacks and fails on any line that panics,
-fails or comes back empty: on 2026-09-14 it broke 6 of 150 lines before every address
-handed to ONNX Runtime was converted where the call is made; none broke after.
+fails or comes back empty. Its source records 13 lines in 300 breaking before every
+address handed to ONNX Runtime was converted where the call is made.
 
 The stricter Go analysis, which `test.ps1` does not run:
 

@@ -160,8 +160,10 @@ func (r *ReactionService) speak(matched cue.Cue, candidate event.Event, clips []
 
 	// A firing counts against the repeat window and the cooldown only once the scheduler
 	// takes it. One that was muted, had no take or was let go was never heard, so it holds
-	// back nothing that follows it (Oliver, 2026-09-13).
+	// back nothing that follows it (Oliver, 2026-09-13). Its take is the one not to repeat
+	// only then too, so a take let go never stands in for the one heard before it (FR-610).
 	if r.scheduler.Submit(Request{Cue: matched, Clips: []string{chosen}}) {
+		r.picker.Played(matched.ID(), chosen)
 		r.dedupe.Mark(matched.ID(), now)
 		r.cooldown.Record(matched.ID(), now)
 	}

@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
@@ -36,6 +39,27 @@ func TestTheTrayIsKeptInStepWithTheSession(t *testing.T) {
 	app.SetMuted(false)
 	if app.Muted() {
 		t.Fatal("the unmute did not stick with a tray attached")
+	}
+}
+
+// FR-210 and FR-710: a voice found by looking again is shown on the tray by the name its manifest
+// gives, although the tray's menu was built before the voice was found.
+func TestTheTrayShowsAVoiceFoundLaterByItsManifestName(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	tray := &fakeTray{}
+	app.session.tray = tray
+	carol := filepath.Join(app.libraryRoot, "Carol")
+	audiotest.WriteTake(t, filepath.Join(carol, "Docked", "take.wav"))
+	audiotest.WriteFile(t, filepath.Join(carol, library.ManifestFile), []byte("name = \"Carol Hart\"\n"))
+
+	if _, err := app.Rescan(); err != nil {
+		t.Fatalf("looking again: %v", err)
+	}
+	if err := app.SelectVoice("Carol"); err != nil {
+		t.Fatalf("casting Carol: %v", err)
+	}
+	if tray.voice != "Carol" || tray.shown != "Carol Hart" {
+		t.Errorf("the tray was told %q shown as %q, want Carol shown as Carol Hart", tray.voice, tray.shown)
 	}
 }
 

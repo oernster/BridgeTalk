@@ -165,8 +165,6 @@ header.hero::before {
 }
 .shot figcaption, .caption { margin-top: 14px; font-size: 14px; color: var(--muted); }
 .hero-shot { max-width: 940px; margin: 56px auto 0; }
-/* The Moments spoken for dialog beneath the recording steps: a dialog, so narrower than a pane. */
-.record-shot { max-width: 520px; margin: 40px auto 0; }
 
 /* Sections */
 section { padding: 56px 0; }

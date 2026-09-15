@@ -134,7 +134,29 @@ async function bandPictures(muted: boolean, theme: 'dark' | 'light'): Promise<st
   return pictures
 }
 
+/** countWords are the numbers a count of panes is written in, each at its own value. */
+const countWords = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
 describe('the guide against the band', () => {
+  // A count in the guide falls behind the band as soon as a pane is added or moved. Every band
+  // button that opens a pane can be marked as the page open; the switches never are. So a count of
+  // panes the guide gives must be the number of those buttons.
+  it('gives no count of panes the band does not hold', async () => {
+    window.localStorage.setItem('bridge-talk.theme', 'dark')
+    const { container, unmount } = render(<App />)
+    const band = container.querySelector('.navband') as HTMLElement
+    await within(band).findByRole('button', { name: 'Mute' })
+    const panes = band.querySelectorAll('.navbtn:not([data-toggle])').length
+    unmount()
+
+    const intros = guideSections.map((section) => section.intro ?? '').join(' ')
+    for (const [, word] of intros.toLowerCase().matchAll(/\b(\w+) panes\b/g)) {
+      if (countWords.includes(word)) {
+        expect(countWords.indexOf(word), `the guide says ${word} panes; the band opens ${panes}`).toBe(panes)
+      }
+    }
+  })
+
   it('shows every picture the band draws, in both of its states', async () => {
     const shown = new Set(
       guideSections.flatMap((section) => section.entries ?? []).flatMap((entry) => entry.icons),

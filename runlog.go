@@ -26,6 +26,16 @@ func keepLog() {
 	}
 }
 
+// reportToTerminal sends what a command line report prints to the terminal that asked for it
+// (FR-703). A windowed build started from a terminal is given no output there, so what it printed
+// was lost. A terminal that cannot be found stops nothing: the warning goes wherever error output
+// already goes.
+func reportToTerminal() {
+	if err := runlog.ReportToTerminal(); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: %v (reporting to no terminal)\n", err)
+	}
+}
+
 // runLog answers what logs the lines a run reports that need no answer (FR-553): the error output
 // keepLog pointed at the log, so it is asked for after keepLog.
 func runLog() runlog.Lines { return runlog.NewLines(os.Stderr) }

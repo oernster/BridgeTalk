@@ -104,12 +104,13 @@ func (a *App) CueBreakdown(name string) CueBreakdownDTO {
 func cueLines(cues []cue.Cue) []CueDTO {
 	out := make([]CueDTO, 0, len(cues))
 	for _, item := range cues {
-		out = append(out, CueDTO{
-			ID:      string(item.ID()),
-			Title:   item.Title(),
-			Folder:  item.ID().Folder(),
-			Purpose: item.Purpose(),
-		})
+		out = append(out, cueLine(item.ID(), item.Purpose()))
 	}
 	return out
+}
+
+// cueLine is one cue in the shape the front end reads. Its title and its folder are worked out
+// from its id.
+func cueLine(id cue.ID, purpose string) CueDTO {
+	return CueDTO{ID: string(id), Title: id.Title(), Folder: id.Folder(), Purpose: purpose}
 }

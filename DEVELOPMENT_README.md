@@ -16,13 +16,16 @@ the start.
 |---|---|---|
 | Go | 1.26.3, which `go.mod` requires | the backend and both Wails applications |
 | Node.js | 24.11.1 on the machine this was written on | the React front end and its build |
-| Wails CLI | v2.12.0, which `go.mod` requires | packages the Go binary and the web assets into one executable |
+| Wails CLI | v2.12.0, the version of the Wails module `go.mod` requires | packages the Go binary and the web assets into one executable |
 | WebView2 runtime | any current | the window the front end is drawn in |
 | Python | 3, as `python` on the path | `build.ps1` stamps the version into the site with `stamp_version.py` |
 
 The build needs nothing from Python beyond `stamp_version.py` itself. Python 3 also regenerates
-files that are committed already: the icons with Pillow, the saved speech sounds and the pauses,
-each of those two tools in a venv of its own.
+files that are committed already: the icons with Pillow; the saved speech sounds, the pauses and
+the endings, through two tools each with a venv of its own.
+
+Beyond the tools, the build needs the model files in `models/`, which are downloaded once after
+cloning; see [The model files](#the-model-files).
 
 ### Go
 
@@ -89,8 +92,7 @@ wails doctor
 
 ## Getting the source
 
-The repository is private. Clone it into your own working directory, not into a
-worktree or a second copy:
+Clone it into your own working directory, not into a worktree or a second copy:
 
 ```powershell
 git clone https://github.com/oernster/BridgeTalk.git
@@ -114,6 +116,28 @@ npm --prefix frontend install
 `wails.json`, so the second command is only needed before running the front-end
 tools directly.
 
+### The model files
+
+A machine voice is made from files too large to commit: the Kokoro model, ONNX Runtime's
+`onnxruntime.dll`, the model's tokenizer and one file for each of the 28 voices, about 354 MB
+in all. `internal/infrastructure/modelfiles/models.toml` lists every one with a pinned address,
+its size and its SHA-256. Fill `models/` at the repository root from that list:
+
+```powershell
+go run ./tools/models
+```
+
+Each download is checked against its size and digest before it takes its place; a file that
+already matches is left alone, so a second run downloads nothing new. `models/` is gitignored.
+To check the folder against the list without downloading anything:
+
+```powershell
+go run ./tools/models -check
+```
+
+`test.ps1` runs that check before anything else and stops when it fails, so neither the gate
+nor the build gets past a folder that does not match.
+
 ## Building
 
 One command builds everything:
@@ -128,8 +152,9 @@ It does six things in order and stops at the first failure:
    `python stamp_version.py`.
 2. Pins `CGO_ENABLED=0` for everything that follows, so no machine's default decides how
    the binary is linked.
-3. Runs `test.ps1 -Benchmarks`. There is no switch to skip it: a gate that can be skipped is a
-   gate that is skipped on the day it would have caught something.
+3. Runs `test.ps1 -Benchmarks`, the gate described under [Verifying](#verifying) plus the
+   tests that need the real model for minutes. There is no switch to skip it: a gate that can
+   be skipped is a gate that is skipped on the day it would have caught something.
 4. Refuses to go on without `assets/application-icon.png` and its `.ico`, then copies
    both into the application's and the setup program's build trees.
 5. Runs `wails build` for the application. That runs the front end's `npm run build`,
@@ -186,7 +211,7 @@ wails dev
 
 That serves the React front end from Vite and rebuilds the Go side on change.
 
-The reporting flags can be run from a plain Go build. `main.go` embeds
+The reporting flags can be run from a plain Go build. `window.go` embeds
 `frontend/dist`, which is build output and is not committed, so build the front end
 first:
 
@@ -215,7 +240,8 @@ run only.
 | `-no-tray` | runs without a notification-area icon, so closing the window quits |
 | `-hidden` | starts in the notification area with no window, as the login entry does; ignored with `-no-tray` |
 
-`-list` and `-unbound` open no window and refuse when no voice is found. With
+`-list` and `-unbound` open no window and refuse when no voice is found. A windowed
+build started from a terminal prints them in that terminal. With
 `-unbound`, a `-voice` that is not installed is refused rather than replaced.
 
 ## Verifying
@@ -224,6 +250,25 @@ The backend gate, which `build.ps1` runs for you:
 
 ```powershell
 ./test.ps1
+```
+
+It stops at the first failure. In order it checks `models/` with `go run ./tools/models -check`,
+checks formatting with `gofmt`, runs `go vet` and the whole `go test` suite, holds
+`internal/domain` and `internal/application` to a coverage floor of 100% then holds each other
+listed package to the floor written beside it in the script.
+
+To run it against a different floor for those two layers, for a deliberate check:
+
+```powershell
+./test.ps1 -Floor 95
+```
+
+To add the tests that need the real model, as `build.ps1` does: they carry the `benchmarks`
+build tag, live in `tests/machinevoice` and `internal/infrastructure/speechmodel` and run
+with a 15 minute timeout.
+
+```powershell
+./test.ps1 -Benchmarks
 ```
 
 The stricter Go analysis, which neither script runs:
@@ -302,16 +347,18 @@ speaker from the sounding one and a slash, turns `assets/application-icon.png` i
 header mark and its two theme icons. Last it derives the donate artwork from
 `assets/donate.png`, which is not a band icon and is never squared into one: trimmed to
 its content, scaled by height alone to four times the height the window's foot strip
-draws it at (read from the strip's tokens in `frontend/src/theme/footer.css`), then it is
+draws it at (read from the `--strip-art` token in `frontend/src/theme/footer.css`, which
+derives from the band's sizes in `navband.css`), then it is
 written to `frontend/src/assets/donate.png`. The site's `docs/images/donate.png` is the
 donate mark every project site shares, which the script leaves alone. The `.ico` is committed rather than left for
 Wails to derive at build time: Wails only derives one when the file is absent, so
 relying on that would mean deleting and hoping.
 
-## Regenerating the saved speech sounds and the pauses
+## Regenerating the saved speech sounds, the pauses and the endings
 
-Both files are embedded in the application and committed; structural tests fail when either is
-stale. Each tool runs a Python script in a venv under its own folder, made once.
+`sounds.toml`, `pauses.toml` and `endings.toml` in `internal/infrastructure/config` are embedded
+in the application and committed; structural tests fail when any of them is stale. Each of the
+two tools runs Python in a venv under its own folder, made once.
 
 The sounds tool's venv is made with Python 3.11:
 
@@ -339,26 +386,41 @@ python -m venv tools/pauses/venv
 ./tools/pauses/venv/Scripts/python.exe -m pip install -r tools/pauses/requirements.txt
 ```
 
-After the saved speech sounds or the model files change, write `pauses.toml` again. It makes every
-joined line for all 28 machine voices with the model in `models/`, which took 32.9 minutes when measured
-on 2026-09-14, then
-prints how many of each voice's lines are doubtful:
+After the saved speech sounds or the model files change, write `pauses.toml` and `endings.toml`
+again. The tool refuses to start when `models/` does not match the list. For all 28 machine voices
+it makes every joined line with the model, finds the pause before a final commander with
+`pauses.py` and writes `pauses.toml`; it then makes every line ending on a nasal, finds where it
+fades with `endings.py` and writes `endings.toml`. For each voice it prints how many lines were
+doubtful or faded, naming them, then a total. When measured on 2026-09-14, a full run wrote
+`pauses.toml` in 32.9 minutes.
 
 ```powershell
 go run ./tools/pauses
 ```
 
-For a quicker check over some voices, `-only bf_emma,bm_george -out <file>` writes their pauses to
-another file; `-only` refuses to write the shipped `pauses.toml`.
+For a quicker check over some voices, `-only` names them (repeated or comma separated); `-out`
+and `-endings` name the files their pauses and endings go to. A run with `-only` refuses to write
+either shipped file, so both flags are needed with it:
+
+```powershell
+go run ./tools/pauses -only bf_emma,bm_george -out <file> -endings <file>
+```
+
+After a change to how the endings are found, find them alone, leaving `pauses.toml` untouched.
+`-endings-only` refuses `-out`:
+
+```powershell
+go run ./tools/pauses -endings-only
+```
 
 ## Where things live
 
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `audition_machine.go`, `cast.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `cast.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
-| `internal/domain` | the cue model, events, selection, the machine voices, the script, speech sounds, making and pauses; no I/O at all |
+| `internal/domain` | the cue model, events, selection, the machine voices, the script, speech sounds, making, pauses and endings; no I/O at all |
 | `internal/application` | the reaction, scheduling and making services, over ports |
 | `internal/infrastructure` | appdata, audio, config, journal, library, madelines, modelfiles, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
@@ -366,7 +428,8 @@ another file; `-only` refuses to write the shipped `pauses.toml`.
 | `frontend/src` | the React front end |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
-| `tools/` | run by hand: icon generation, the model files, the payload, the saved speech sounds and the pauses |
+| `tests/machinevoice` | the tests that time a cast and a complete script with the real model, run only with `-Benchmarks` |
+| `tools/` | icon generation, the model files, the payload, the saved speech sounds with the pauses and endings; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload` and the rest are run by hand |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

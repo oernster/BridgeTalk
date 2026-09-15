@@ -95,6 +95,10 @@ type App struct {
 
 	// startedHidden records that the run began put away in the notification area.
 	startedHidden bool
+
+	// broughtBack records that the tray has brought the window back. The tray's goroutine sets it;
+	// the page's request for the keyboard reads it from the window's.
+	broughtBack atomic.Bool
 }
 
 // newApp builds the facade over an assembled session.
@@ -140,7 +144,14 @@ func (a *App) startup(ctx context.Context) {
 // The page is the only thing that can tell: from Go the window looks focused either
 // way. document.hasFocus() being false there means every key is going somewhere else,
 // which reads as a keyboard that does nothing at all.
+//
+// A run started hidden is not raised by it until the tray has brought the window back (FR-704).
+// Its page loads while the window is put away, where finding no keyboard is to be expected; asking
+// then would raise the window the sign-in entry put away.
 func (a *App) TakeKeyboard() {
+	if a.startedHidden && !a.broughtBack.Load() {
+		return
+	}
 	a.show()
 }
 
@@ -236,6 +247,7 @@ func (a *App) handleTray(command taskbar.Command) {
 		// the close dialog does not appear over a quit chosen from the tray.
 		a.Quit()
 	case taskbar.CommandShow:
+		a.broughtBack.Store(true)
 		a.restore()
 		a.emit(windowShownEvent, nil)
 	case taskbar.CommandToggleMute:

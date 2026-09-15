@@ -68,15 +68,18 @@ func said(reason error) string {
 	return reason.Error()
 }
 
-// cueEntry names a cue for a reader by its id. The script is checked against the cue table, so
-// every cue a line belongs to is found there; an id that is not still reads as its own title.
+// cueEntry names a cue for a reader by its id, with the purpose the cue table gives it. Every id it
+// is asked about is in the table: a line's cue because the script is checked against it (FR-504); a
+// reaction's cue because the reaction was matched from it.
 func (s *session) cueEntry(id cue.ID) CueDTO {
+	var purpose string
 	for _, item := range s.table.All() {
 		if item.ID() == id {
-			return cueLines([]cue.Cue{item})[0]
+			purpose = item.Purpose()
+			break
 		}
 	}
-	return CueDTO{ID: string(id), Title: id.Title(), Folder: id.Folder()}
+	return cueLine(id, purpose)
 }
 
 // makingKey is what the page is told about making, reduced to what can be compared: a change in

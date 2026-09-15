@@ -52,7 +52,8 @@ lines it makes on your own machine; record a voice of your own whenever you like
 - **Lists the takes still missing.** The Missing takes pane offers every voice folder still missing
   a recording. For the one chosen it lists each missing moment with a line saying when it is heard,
   then the folder its take belongs in.
-- **Auditions a voice** before it is cast. Each button plays one take at random for a moment. The
+- **Auditions a voice** before it is cast. Each button plays one take drawn at random from a part of
+  the game, such as docking or combat. The
   buttons are held while anything is playing, the ship's own reactions included, so a press never
   cuts a clip short; Stop ends what is playing. An audition ignores the mute.
 - **Stays out of the way.** Closing the window asks whether to put it away or quit. Put away, it
@@ -138,7 +139,7 @@ can be.
 
 ## Testing
 
-The tests make lines with the real voice model, so fill `models/` first. This downloads about 340 MB
+The tests make lines with the real voice model, so fill `models/` first. This downloads about 354 MB
 once and afterwards only what is missing or different:
 
 ```powershell

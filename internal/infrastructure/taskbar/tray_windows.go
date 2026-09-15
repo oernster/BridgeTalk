@@ -36,6 +36,9 @@ type Tray struct {
 	muted         atomic.Bool
 	activeVoice   atomic.Value
 	activeMachine atomic.Bool
+	// activeLabel is what the hover text shows the active voice by (FR-210). It is handed over with
+	// the voice rather than looked up in the menu, which holds only the voices found at startup.
+	activeLabel atomic.Value
 
 	// window belongs to the tray thread. posted holds the same handle for every other
 	// goroutine, which may only post to it: zero before the window exists and again once
@@ -73,6 +76,7 @@ func New(options Options) *Tray {
 	tray.muted.Store(options.Muted)
 	tray.activeVoice.Store(options.ActiveVoice)
 	tray.activeMachine.Store(options.ActiveMachine)
+	tray.activeLabel.Store(tray.label(options.ActiveVoice, options.ActiveMachine))
 	return tray
 }
 
@@ -93,10 +97,15 @@ func (t *Tray) SetMuted(muted bool) {
 	t.post(wmRefreshTip)
 }
 
-// SetActiveVoice updates which voice the menu and the hover text show, by the name that
-// identifies it and whether it is a machine voice. Safe from any goroutine.
-func (t *Tray) SetActiveVoice(name string, machine bool) {
+// SetActiveVoice updates which voice the menu and the hover text show: the name that identifies
+// it, the label it is shown by and whether it is a machine voice. A blank label shows the voice by
+// its name. Safe from any goroutine.
+func (t *Tray) SetActiveVoice(name, label string, machine bool) {
+	if label == "" {
+		label = name
+	}
 	t.activeVoice.Store(name)
+	t.activeLabel.Store(label)
 	t.activeMachine.Store(machine)
 	t.post(wmRefreshTip)
 }
@@ -199,18 +208,22 @@ func (t *Tray) iconData() notifyIconData {
 	return data
 }
 
-// tooltip renders the hover text, which names the active voice so the state is
-// readable without opening the menu.
+// mutedMark ends the hover text while playback is muted.
+const mutedMark = " (muted)"
+
+// tooltip renders the hover text: the product, the cast voice where one is cast and whether
+// playback is muted, so the state is readable without opening the menu (FR-710). The mute is
+// said with no voice cast too, since the mute answers with nothing cast.
 func (t *Tray) tooltip() string {
-	voice, _ := t.activeVoice.Load().(string)
-	if voice == "" {
-		return t.options.Title
+	tip := t.options.Title
+	if voice, _ := t.activeVoice.Load().(string); voice != "" {
+		shown, _ := t.activeLabel.Load().(string)
+		tip = fmt.Sprintf("%s: %s", tip, shown)
 	}
-	voice = t.label(voice, t.activeMachine.Load())
 	if t.muted.Load() {
-		return fmt.Sprintf("%s: %s (muted)", t.options.Title, voice)
+		return tip + mutedMark
 	}
-	return fmt.Sprintf("%s: %s", t.options.Title, voice)
+	return tip
 }
 
 // refreshTooltip re-sends the icon data so the hover text follows the state. It runs on
@@ -280,8 +293,9 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 	return ret
 }
 
-// label answers with what a voice is shown by, given the name that identifies it and its kind. A
-// voice the menu does not hold is shown by its name as it is.
+// label answers with what a voice the menu holds is shown by, given the name that identifies it and
+// its kind; it answers the start's active voice before any is handed over. A voice the menu does
+// not hold is shown by its name as it is.
 func (t *Tray) label(name string, machine bool) string {
 	for _, choice := range t.options.Voices {
 		if choice.Name == name && choice.Machine == machine {

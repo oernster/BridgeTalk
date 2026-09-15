@@ -49,7 +49,7 @@ func TestTheHoverTextFollowsTheStateOnTheTrayThread(t *testing.T) {
 	}
 	tray.SetMuted(true)
 	awaitTip("Test: Grace (muted)")
-	tray.SetActiveVoice("Jack", false)
+	tray.SetActiveVoice("Jack", "Jack", false)
 	awaitTip("Test: Jack (muted)")
 
 	tray.dispatch(idMute)
@@ -88,9 +88,13 @@ func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Leo Marsh"; got != want {
 		t.Errorf("tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("nobody listed", false)
+	tray.SetActiveVoice("carol", "Carol Hart", false)
+	if got, want := tray.tooltip(), "Test: Carol Hart"; got != want {
+		t.Errorf("tooltip = %q, want a voice the menu does not hold shown by the label handed over", got)
+	}
+	tray.SetActiveVoice("nobody listed", "", false)
 	if got, want := tray.tooltip(), "Test: nobody listed"; got != want {
-		t.Errorf("tooltip = %q, want an unlisted name shown as it is", got)
+		t.Errorf("tooltip = %q, want a blank label shown by the name as it is", got)
 	}
 
 	tray.dispatch(idVoiceBase)
@@ -119,7 +123,7 @@ func TestTheMenuListsMachineVoicesAfterTheRecordedVoices(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Emma (British, female)"; got != want {
 		t.Errorf("tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("bf_emma", false)
+	tray.SetActiveVoice("bf_emma", "bf_emma", false)
 	if got, want := tray.tooltip(), "Test: bf_emma"; got != want {
 		t.Errorf("tooltip = %q, want the recorded voice's own label", got)
 	}
@@ -198,7 +202,7 @@ func TestTooltipReflectsVoiceAndMuteState(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Grace (muted)"; got != want {
 		t.Fatalf("muted tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("Jack", false)
+	tray.SetActiveVoice("Jack", "Jack", false)
 	if got, want := tray.tooltip(), "Test: Jack (muted)"; got != want {
 		t.Fatalf("after switching voice tooltip = %q, want %q", got, want)
 	}
@@ -207,6 +211,16 @@ func TestTooltipReflectsVoiceAndMuteState(t *testing.T) {
 func TestTooltipFallsBackToTheTitle(t *testing.T) {
 	tray := New(Options{Title: "Test"})
 	if got, want := tray.tooltip(), "Test"; got != want {
+		t.Fatalf("tooltip = %q, want %q", got, want)
+	}
+}
+
+// FR-710: the hover text says whether playback is muted with no voice cast too, since the mute
+// answers with nothing cast.
+func TestTheHoverTextSaysMutedWithNoVoiceCast(t *testing.T) {
+	tray := New(Options{Title: "Test"})
+	tray.SetMuted(true)
+	if got, want := tray.tooltip(), "Test (muted)"; got != want {
 		t.Fatalf("tooltip = %q, want %q", got, want)
 	}
 }

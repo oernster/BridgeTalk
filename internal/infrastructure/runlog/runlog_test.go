@@ -29,6 +29,10 @@ const (
 	panicAct = "panic"
 	fatalAct = "fatal"
 
+	// terminalAct reaches for the terminal the child was started from, then prints reportedLine.
+	terminalAct  = "terminal"
+	reportedLine = "a planted report line"
+
 	plantedPanic   = "a planted panic on another goroutine"
 	plantedWarning = "warning: a planted warning"
 	// fatalHeadline is the line the Go runtime starts a fatal error's report with; SetCrashOutput
@@ -48,11 +52,59 @@ const (
 var started = time.Date(2026, time.September, 14, 11, 18, 31, 0, time.Local)
 
 func TestMain(m *testing.M) {
-	if act := os.Getenv(childEnv); act != "" {
+	switch act := os.Getenv(childEnv); act {
+	case "":
+		os.Exit(m.Run())
+	case terminalAct:
+		report()
+	default:
 		crash(act, os.Getenv(logEnv))
-		return
 	}
-	os.Exit(m.Run())
+}
+
+// report is the child a command line report runs as: it reaches for the terminal it was started
+// from, then prints a line.
+func report() {
+	if err := ReportToTerminal(); err != nil {
+		fmt.Fprintf(os.Stderr, "reaching the terminal: %v\n", err)
+		os.Exit(childFailedExitCode)
+	}
+	fmt.Println(reportedLine)
+}
+
+// childCommand builds the child that acts as act, started from this test binary.
+func childCommand(t *testing.T, act string) *exec.Cmd {
+	t.Helper()
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatalf("finding the test binary: %v", err)
+	}
+	child := exec.Command(executable, "-test.run=^$")
+	child.Env = append(os.Environ(), childEnv+"="+act)
+	return child
+}
+
+// FR-703: a run given a standard output keeps it, so a report piped or redirected lands where it
+// was sent. A run given none cannot be started from a test; it is measured from a terminal by hand.
+func TestARunGivenAnOutputKeepsIt(t *testing.T) {
+	t.Parallel()
+	said, err := childCommand(t, terminalAct).Output()
+	if err != nil || string(said) != reportedLine+"\n" {
+		t.Errorf("the child printed %q, %v; want %q on the output it was given", said, err, reportedLine)
+	}
+}
+
+// FR-703, inside this process: the test runner gives it a standard output, so reaching for the
+// terminal leaves standard output and error output where they are and reports nothing wrong.
+func TestReachingForTheTerminalKeepsTheOutputThisRunWasGiven(t *testing.T) {
+	output, errorOutput := os.Stdout, os.Stderr
+
+	if err := ReportToTerminal(); err != nil {
+		t.Fatalf("a run given an output was refused the terminal: %v", err)
+	}
+	if os.Stdout != output || os.Stderr != errorOutput {
+		t.Error("a run given an output had it replaced by the terminal")
+	}
 }
 
 // crash is the child: it keeps the log as the application does, then fails as act asks.
@@ -85,13 +137,9 @@ func crash(act, path string) {
 // wrote to that output.
 func runChild(t *testing.T, act string) (logged, errorOutput string) {
 	t.Helper()
-	executable, err := os.Executable()
-	if err != nil {
-		t.Fatalf("finding the test binary: %v", err)
-	}
 	path := filepath.Join(t.TempDir(), FileName)
-	child := exec.Command(executable, "-test.run=^$")
-	child.Env = append(os.Environ(), childEnv+"="+act, logEnv+"="+path)
+	child := childCommand(t, act)
+	child.Env = append(child.Env, logEnv+"="+path)
 	var said bytes.Buffer
 	child.Stderr = &said
 

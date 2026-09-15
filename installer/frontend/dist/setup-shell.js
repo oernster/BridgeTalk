@@ -46,6 +46,7 @@ function setFooter(buttons) {
         el.className = 'btn' + (spec.kind ? ' ' + spec.kind : '')
         el.textContent = spec.label
         el.onclick = spec.onClick
+        if (spec.lead || spec.kind === 'primary') el.dataset.lead = 'true'
         footer.appendChild(el)
     })
     focusFooter()
@@ -56,10 +57,13 @@ function setFooter(buttons) {
 const keyboardSettleMs = 400
 
 // focusFooter puts focus on the button a screen leads with, so Enter does the
-// obvious thing and the ring says where it would land.
+// obvious thing and the ring says where it would land (FR-808). That is the
+// primary button unless a screen marks another as its lead, which it does where
+// the action wears another colour: Uninstall is drawn as a danger yet is what
+// its screen is for.
 function focusFooter() {
     const footer = $('footer')
-    const first = footer.querySelector('.btn.primary') || footer.querySelector('.btn')
+    const first = footer.querySelector('.btn[data-lead]') || footer.querySelector('.btn')
     if (first) first.focus()
 }
 

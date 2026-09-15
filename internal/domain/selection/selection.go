@@ -16,7 +16,7 @@ type Chooser interface {
 	Intn(n int) int
 }
 
-// Picker chooses a take, avoiding the clip it chose for the same cue last time.
+// Picker chooses a take, avoiding the clip last played for the same cue (FR-610).
 //
 // Avoiding only the immediately previous clip is deliberate. Remembering more would
 // make a two-clip cue silent on alternate firings; a long memory makes a large
@@ -31,21 +31,20 @@ func NewPicker(chooser Chooser) *Picker {
 	return &Picker{chooser: chooser, last: make(map[cue.ID]string)}
 }
 
-// Pick returns one clip for a cue; false when there is nothing to play.
+// Pick returns one clip for a cue; false when there is nothing to play. It records nothing;
+// Played does, for the reason Open records nothing: a take picked for a firing that is then
+// let go was never heard, so it is not the take to avoid next time.
 func (p *Picker) Pick(id cue.ID, clips []string) (string, bool) {
 	switch len(clips) {
 	case 0:
 		return "", false
 	case 1:
-		p.last[id] = clips[0]
 		return clips[0], true
 	}
 
 	previous, seen := p.last[id]
 	if !seen {
-		chosen := clips[p.chooser.Intn(len(clips))]
-		p.last[id] = chosen
-		return chosen, true
+		return clips[p.chooser.Intn(len(clips))], true
 	}
 
 	// Choose from the clips that are not the previous one by picking an index into
@@ -58,18 +57,15 @@ func (p *Picker) Pick(id cue.ID, clips []string) (string, bool) {
 		}
 	}
 	if len(candidates) == 0 {
-		p.last[id] = clips[0]
 		return clips[0], true
 	}
-	chosen := candidates[p.chooser.Intn(len(candidates))]
-	p.last[id] = chosen
-	return chosen, true
+	return candidates[p.chooser.Intn(len(candidates))], true
 }
 
-// Forget drops the memory of what a cue last played, used when the active voice
-// changes and the previous clip no longer exists.
-func (p *Picker) Forget() {
-	p.last = make(map[cue.ID]string)
+// Played notes that a clip was handed over to be spoken for a cue, making it the clip the
+// next Pick for that cue avoids.
+func (p *Picker) Played(id cue.ID, clip string) {
+	p.last[id] = clip
 }
 
 // CooldownGate rate-limits a cue to at most one firing per its cooldown.

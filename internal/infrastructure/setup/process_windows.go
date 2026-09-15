@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/sys/windows"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -113,13 +114,27 @@ func LaunchApp() error {
 	return cmd.Process.Release()
 }
 
-// ScheduleDirDeletion spawns a detached shell that waits briefly, so this process can
-// exit and release its own copy of the executable, then removes the install
-// directory. Setup lives inside the directory it is deleting, which is why the
-// removal has to outlive it.
-func ScheduleDirDeletion(dir string) {
-	line := fmt.Sprintf(`ping 127.0.0.1 -n 3 >nul & rmdir /s /q "%s"`, dir)
-	cmd := exec.Command("cmd", "/C", line)
+// ScheduleDirDeletion starts a hidden process that waits for this one to exit, so setup
+// has released its own copy of the executable, then removes the install directory
+// (FR-805). Setup lives inside the directory it is deleting, which is why the removal
+// has to outlive it.
+//
+// It once paused two seconds and ran rmdir through cmd with the path in quotes. Go
+// escapes those quotes on the command line in a form cmd does not read, so rmdir refused
+// the path as bad syntax and nothing was ever deleted; measured on 2026-09-15. The pause
+// was never tied to setup closing either.
+func ScheduleDirDeletion(dir string) { scheduleDirDeletionAfter(os.Getpid(), dir) }
+
+// scheduleDirDeletionAfter starts the delete waiting on the process pid, so a test can
+// play setup with a process it is able to close.
+func scheduleDirDeletionAfter(pid int, dir string) {
+	args, env := dirDeletion(pid, dir)
+	cmd := exec.Command(deletionShell, args...)
+	cmd.Dir = deletionWorkDir(dir)
+	cmd.Env = append(os.Environ(), env)
 	cmd.SysProcAttr = hidden()
-	_ = cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return
+	}
+	_ = cmd.Process.Release()
 }

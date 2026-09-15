@@ -115,49 +115,25 @@ credit = "Recorded by Alice, 2026"
 The voice's folder name is still what Settings remembers. A `voice.toml` that cannot be read is set
 aside and the voice is found by its names alone.
 
-## Built with
+## Getting it
 
-| Part | Choice |
-|---|---|
-| Backend | Go |
-| Desktop shell | Wails v2 over WebView2 |
-| Front end | React and TypeScript, built with Vite |
-| Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
-| Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with cgo disabled |
-| Cue table | TOML, embedded in the executable |
-
-## Running it
-
-Build the setup program as `DEVELOPMENT_README.md` describes, then run it. Once the window opens,
-cast a machine voice from the Cast pane. To use recordings of your own, choose your recordings
-directory on the Missing takes pane, then cast that voice from the Cast pane.
+Download the setup program from [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/) and run
+it. Everything it writes is for your own Windows account, so it never asks for administrator rights.
+Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
+choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.
 
 The journal directory is `Saved Games\Frontier Developments\Elite Dangerous` under your own profile
 until you choose another on the Settings pane. When the journal directory in use cannot be read,
 the window opens anyway: the Status pane and the Settings pane say why until you choose one that
 can be.
 
-## Testing
+## Building and testing
 
-The tests make lines with the real voice model, so fill `models/` first. This downloads about 354 MB
-once and afterwards only what is missing or different:
-
-```powershell
-go run ./tools/models
-```
-
-```powershell
-./test.ps1
-```
-
-## Building
-
-```powershell
-./build.ps1
-```
-
-`./build.ps1 -SkipInstaller` builds the application alone. The tests run first and the build does
-not start unless they pass.
+- [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine, builds the application with its setup
+  program and lists the command-line options.
+- [TESTING.md](TESTING.md) covers running the tests, what each coverage figure means and what is
+  deliberately left untested.
+- [ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
 
 ## Supporting the project
 

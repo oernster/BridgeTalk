@@ -347,6 +347,12 @@ missing or differs, saying to run the tool above. It then checks formatting, run
 holds each other gated package at its floor. Read the exit code rather than the last
 line of output.
 
+To hold the domain and the application layers to a different floor, for a deliberate check:
+
+```powershell
+./test.ps1 -Floor 95
+```
+
 The tests that need the real model take minutes, so the gate runs them only when
 asked; `build.ps1` always asks:
 
@@ -355,7 +361,7 @@ asked; `build.ps1` always asks:
 ```
 
 It vets and runs the files carrying the `benchmarks` build tag in `tests/machinevoice`
-and `internal/infrastructure/speechmodel`. One casts a voice and fails over NFR-P-205's
+and `internal/infrastructure/speechmodel`, with a 15 minute timeout. One casts a voice and fails over NFR-P-205's
 5 seconds or FR-514's 2 seconds. One makes the shipped script for one voice and fails
 over NFR-C-502's 60 MB, skipping while the script lacks lines for any cue. One makes
 150 lines while collections shrink goroutine stacks and fails on any line that panics,
@@ -375,13 +381,23 @@ release of it failing an analyser would break a build over something unowned.
 `test.ps1` narrows the same way for `go vet` and `go test`; the formatting check
 filters by path instead, because gofmt walks directories rather than packages.
 
-The front end, from the `frontend` directory:
+The front end, from the `frontend` directory. The application's build runs the first two;
+nothing runs the third for you:
 
 ```powershell
-npx eslint . ; npx tsc --noEmit ; npx vitest run
+npx eslint .
 ```
 
-The front-end coverage figures in this document:
+```powershell
+npx tsc --noEmit
+```
+
+```powershell
+npx vitest run
+```
+
+The front-end coverage figures in this document. The report carries no threshold, so it
+fails nothing:
 
 ```powershell
 npx vitest run --coverage
@@ -411,7 +427,7 @@ verdict. The exit code is the only answer.
 
 ## See also
 
-- [DEVELOPMENT_README.md](DEVELOPMENT_README.md) for building and running on Windows.
+- [DEVELOPMENT.md](DEVELOPMENT.md) for building and running on Windows.
 - [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants the structural tests enforce.
 - [TECH_DEBT.md](TECH_DEBT.md) for what is open, what is deliberately left and what
   only looks like debt.

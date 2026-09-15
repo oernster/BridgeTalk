@@ -5,6 +5,18 @@ installed to a setup program.
 
 Every command here is PowerShell, one command per block, meant to be pasted as it is.
 `README.md` is for somebody using the application; this is for somebody building it.
+Testing has a document of its own, [TESTING.md](TESTING.md).
+
+## Built with
+
+| Part | Choice |
+|---|---|
+| Backend | Go |
+| Desktop shell | Wails v2 over WebView2 |
+| Front end | React and TypeScript, built with Vite |
+| Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
+| Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with cgo disabled |
+| Cue table | TOML, embedded in the executable |
 
 ## What the machine needs
 
@@ -152,9 +164,9 @@ It does six things in order and stops at the first failure:
    `python stamp_version.py`.
 2. Pins `CGO_ENABLED=0` for everything that follows, so no machine's default decides how
    the binary is linked.
-3. Runs `test.ps1 -Benchmarks`, the gate described under [Verifying](#verifying) plus the
-   tests that need the real model for minutes. There is no switch to skip it: a gate that can
-   be skipped is a gate that is skipped on the day it would have caught something.
+3. Runs `test.ps1 -Benchmarks`, the gate [TESTING.md](TESTING.md#running-it) describes plus
+   the tests that need the real model for minutes. There is no switch to skip it: a gate that
+   can be skipped is a gate that is skipped on the day it would have caught something.
 4. Refuses to go on without `assets/application-icon.png` and its `.ico`, then copies
    both into the application's and the setup program's build trees.
 5. Runs `wails build` for the application. That runs the front end's `npm run build`,
@@ -244,72 +256,11 @@ run only.
 build started from a terminal prints them in that terminal. With
 `-unbound`, a `-voice` that is not installed is refused rather than replaced.
 
-## Verifying
+## Testing
 
-The backend gate, which `build.ps1` runs for you:
-
-```powershell
-./test.ps1
-```
-
-It stops at the first failure. In order it checks `models/` with `go run ./tools/models -check`,
-checks formatting with `gofmt`, runs `go vet` and the whole `go test` suite, holds
-`internal/domain` and `internal/application` to a coverage floor of 100% then holds each other
-listed package to the floor written beside it in the script.
-
-To run it against a different floor for those two layers, for a deliberate check:
-
-```powershell
-./test.ps1 -Floor 95
-```
-
-To add the tests that need the real model, as `build.ps1` does: they carry the `benchmarks`
-build tag, live in `tests/machinevoice` and `internal/infrastructure/speechmodel` and run
-with a 15 minute timeout.
-
-```powershell
-./test.ps1 -Benchmarks
-```
-
-The stricter Go analysis, which neither script runs:
-
-```powershell
-go run honnef.co/go/tools/cmd/staticcheck@latest (go list ./... | Where-Object { $_ -notmatch '/node_modules/' })
-```
-
-The package list is narrowed rather than written as `./...`, which reaches into
-`frontend/node_modules`, where an npm dependency ships a Go package of its own. It is
-nobody here's code and nothing this repository produces contains it, so a future
-version of it failing an analyser would break a build over something unowned.
-`test.ps1` narrows the same way for `go vet` and `go test`; the formatting check
-filters by path instead, because gofmt walks directories rather than packages.
-
-The front end, from the `frontend` directory. The build runs the first two; nothing
-runs the third for you:
-
-```powershell
-npx eslint .
-```
-
-```powershell
-npx tsc --noEmit
-```
-
-```powershell
-npx vitest run
-```
-
-Front-end coverage, when a figure needs checking. The report carries no threshold, so
-it fails nothing:
-
-```powershell
-npx vitest run --coverage
-```
-
-Read the exit code of each rather than the last line of its output.
-
-**[TESTING.md](TESTING.md) is the full account**: what every figure is, what is
-deliberately not tested and why.
+`build.ps1` runs the backend gate before it builds, together with the tests that need the real
+model. [TESTING.md](TESTING.md) holds every test command, from that gate to the front end's
+suites, with what each figure is and what is deliberately not tested.
 
 ## Installing what you built
 

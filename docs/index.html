@@ -46,6 +46,7 @@
         "Hear any voice before you choose it",
         "Shows which moments a voice has not recorded yet",
         "Explains every line it said and every time it stayed quiet",
+        "Switch any moment off, one at a time, a category at a time or all at once",
         "Talks and never listens: no microphone and no voice commands",
         "Works entirely on your own computer"
       ],
@@ -62,6 +63,7 @@
         {"@type": "Question", "name": "Can I use my own voice?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Type a name on the Cast pane and press Make folders: you get a folder for every moment, already named. Record each line in any program you like, drop it in its folder and press Refresh."}},
         {"@type": "Question", "name": "Does it listen to me?", "acceptedAnswer": {"@type": "Answer", "text": "Never. There is no microphone and there are no voice commands. Bridge Talk only speaks."}},
         {"@type": "Question", "name": "Will it talk over itself?", "acceptedAnswer": {"@type": "Answer", "text": "Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like."}},
+        {"@type": "Question", "name": "Can I stop it saying some things?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken."}},
         {"@type": "Question", "name": "What happens to my recordings if I uninstall?", "acceptedAnswer": {"@type": "Answer", "text": "Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not."}},
         {"@type": "Question", "name": "Which computers does it run on?", "acceptedAnswer": {"@type": "Answer", "text": "Windows. It installs just for your own account, so it never asks for administrator permission."}},
         {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation."}}
@@ -183,6 +185,11 @@
           <p>The Status pane shows what was said and why anything was not, so a quiet ship is never a mystery.</p>
         </div>
         <div class="card">
+          <div class="icon">&#127898;&#65039;</div>
+          <h3>Say only what you want</h3>
+          <p>The Chatter pane gives every moment a switch, under twelve categories. Switch one off, a whole category or all of them; station traffic has a switch of its own.</p>
+        </div>
+        <div class="card">
           <div class="icon">&#127769;</div>
           <h3>Out of the way</h3>
           <p>Put the window away and it keeps talking from the notification area. It can start when you sign in.</p>
@@ -282,7 +289,7 @@
     <section id="inside">
       <div class="eyebrow">A look inside</div>
       <h2 class="section-title">A pane for each job</h2>
-      <p class="section-sub">Cast, Audition, Status, Missing takes and Settings sit along the top of the
+      <p class="section-sub">Cast, Audition, Status, Missing takes, Chatter and Settings sit along the top of the
         window, with the guide at its far end.</p>
       <div class="gallery">
         <figure class="shot">
@@ -301,6 +308,10 @@
           <img src="images/missing-takes.png" loading="lazy" decoding="async" alt="The Missing takes pane, where the recordings folder is chosen and a new voice's missing moments are listed">
           <figcaption>Find the lines still to record.</figcaption>
         </figure>
+        <figure class="shot">
+          <img src="images/chatter.png" loading="lazy" decoding="async" alt="The Chatter pane, with Switch all on, Switch all off and a switch for each category above a list of moments, each with a switch of its own">
+          <figcaption>Choose which moments it speaks for.</figcaption>
+        </figure>
       </div>
     </section>
 
@@ -312,6 +323,7 @@
         <div class="card"><h3>Can I use my own voice?</h3><p>Yes. Type a name on the Cast pane and press Make folders: you get a folder for every moment, already named. Record each line in any program you like, drop it in its folder and press Refresh.</p></div>
         <div class="card"><h3>Does it listen to me?</h3><p>Never. There is no microphone and there are no voice commands. Bridge Talk only speaks.</p></div>
         <div class="card"><h3>Will it talk over itself?</h3><p>Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like.</p></div>
+        <div class="card"><h3>Can I stop it saying some things?</h3><p>Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken.</p></div>
         <div class="card"><h3>What happens to my recordings if I uninstall?</h3><p>Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not.</p></div>
         <div class="card"><h3>Which computers does it run on?</h3><p>Windows. It installs just for your own account, so it never asks for administrator permission.</p></div>
         <div class="card"><h3>Is it free?</h3><p>Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation.</p></div>

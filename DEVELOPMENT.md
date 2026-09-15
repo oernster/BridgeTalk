@@ -33,8 +33,8 @@ the start.
 | Python | 3, as `python` on the path | `build.ps1` stamps the version into the site with `stamp_version.py` |
 
 The build needs nothing from Python beyond `stamp_version.py` itself. Python 3 also regenerates
-files that are committed already: the icons with Pillow; the saved speech sounds, the pauses and
-the endings, through two tools each with a venv of its own.
+files that are committed already: the icons and the site's social card with Pillow; the saved
+speech sounds, the pauses and the endings, through two tools each with a venv of its own.
 
 Beyond the tools, the build needs the model files in `models/`, which are downloaded once after
 cloning; see [The model files](#the-model-files).
@@ -306,6 +306,22 @@ donate mark every project site shares, which the script leaves alone. The `.ico`
 Wails to derive at build time: Wails only derives one when the file is absent, so
 relying on that would mean deleting and hoping.
 
+## Regenerating the site's social card
+
+Only needed after changing the application icon, the site's wording or the site's dark palette;
+`docs/social-card.png` is committed and is not part of the build:
+
+```powershell
+python tools/gensocialcard.py
+```
+
+It reads the words from the `og:title`, `og:description` and `og:url` tags in `docs/index.html`,
+the colours from the dark block of `docs/styles.css` and the picture from
+`assets/application-icon.png`, so the card cannot say anything the site does not. It stops when the
+page's `og:image` does not name `social-card.png` or declares a size other than the 1200 by 630 the
+script draws. It needs Pillow and draws its words in Consolas and Segoe UI from the Windows fonts
+folder.
+
 ## Regenerating the saved speech sounds, the pauses and the endings
 
 `sounds.toml`, `pauses.toml` and `endings.toml` in `internal/infrastructure/config` are embedded
@@ -343,8 +359,7 @@ again. The tool refuses to start when `models/` does not match the list. For all
 it makes every joined line with the model, finds the pause before a final commander with
 `pauses.py` and writes `pauses.toml`; it then makes every line ending on a nasal, finds where it
 fades with `endings.py` and writes `endings.toml`. For each voice it prints how many lines were
-doubtful or faded, naming them, then a total. When measured on 2026-09-14, a full run wrote
-`pauses.toml` in 32.9 minutes.
+doubtful or faded, naming them, then a total.
 
 ```powershell
 go run ./tools/pauses
@@ -370,10 +385,10 @@ go run ./tools/pauses -endings-only
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `audition_machine.go`, `cast.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
-| `internal/domain` | the cue model, events, selection, the machine voices, the script, speech sounds, making, pauses and endings; no I/O at all |
-| `internal/application` | the reaction, scheduling and making services, over ports |
+| `internal/domain` | the cue model, events, selection with the Chatter switches, the machine voices, the script, speech sounds, making, pauses, endings and the measured books they share; no I/O at all |
+| `internal/application` | the reaction, scheduling, making, audition and Chatter services, over ports |
 | `internal/infrastructure` | appdata, audio, config, journal, library, madelines, modelfiles, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
 | `internal/refusal` | the wording of a file-system refusal, so each one names its path once |
@@ -381,7 +396,7 @@ go run ./tools/pauses -endings-only
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
 | `tests/machinevoice` | the tests that time a cast and a complete script with the real model, run only with `-Benchmarks` |
-| `tools/` | icon generation, the model files, the payload, the saved speech sounds with the pauses and endings; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload` and the rest are run by hand |
+| `tools/` | icon and social card generation, the model files, the payload, the saved speech sounds with the pauses and endings; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload` and the rest are run by hand |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

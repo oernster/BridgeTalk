@@ -97,9 +97,10 @@ exactly like one that holds.
   commander: the digest tying a pause to the samples it was found in, inserting its silence and the
   rule that finds a break doubtful (FR-551 to FR-554). `ending` holds the hiss the model adds after a
   final nasal: where each line fades and the fade itself (FR-555 to FR-557).
-- **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling and making services plus the ports they
+- **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling, making and Chatter services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
-  `Reporter`). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
+  `Reporter`, `Switchboard`). `Switchboard` answers whether a moment is switched off, which the
+  reaction service and the scheduler ask at each decision rather than holding a copy (FR-622, FR-627). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
   through three more: `SpeechMaker` loads the model and turns a line's numbers and style row into samples, `VoiceFiles`
   reads the files a voice is made from, refusing one that is missing (FR-519); `MadeLines` keeps the
@@ -158,6 +159,9 @@ exactly like one that holds.
   then packs the built application with every model file setup installs into `installer/payload.zip`
   (see The setup program).
 - **The scripts beside them**: `tools/genicons.py` writes the icons (see Icons under UI);
+  `tools/gensocialcard.py` writes the site's link card, `docs/social-card.png`, reading its words from
+  the page, its colours from the site's stylesheet and its picture from the icon's master; it is not
+  part of the build and its output is committed;
   `stamp_version.py`, which `build.ps1` runs first, stamps the version from `VERSION` into the site's
   delimited tokens.
 
@@ -173,7 +177,7 @@ failing to load stops the run, then hands the service `runlog.Lines` over the ru
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
-`donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
+`chatter.go`, `donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`. `window.go` holds the window `run` launches: its assets,
 its geometry and `launch`.
 
@@ -210,8 +214,10 @@ person's library. The two meet at the cue id and nowhere else.
 
 **The cue table, `internal/infrastructure/config/cues.toml`, embedded in the binary.** Each entry names
 a source, the journal event or status flag it listens for, an optional edge, an optional predicate over
-the payload or a key stem in its place (below), a priority and a cooldown in seconds. A missing priority reads as `ambient`; a missing
-cooldown leaves the cue limited by the dedupe window alone.
+the payload or a key stem or key beginnings in its place (below), a priority and a cooldown in seconds.
+A cue the game raises also names the category Chatter lists it under. A missing priority reads as
+`ambient`; a missing cooldown leaves the cue limited by the dedupe window alone. The table lists its
+twelve categories first, as `[[category]]` entries in the order Chatter shows them.
 
 ```toml
 [[cue]]
@@ -269,10 +275,27 @@ priority = "alert"
 `cue.KeyStem` reads a stem out of a key by dropping the leading `$`, any values from the first `:#`,
 the closing `;` and the variant digits; a message with no leading `$` is text a player typed and
 reaches no comms moment (FR-618). The id is the event's name followed by the stem with each underscore
-written as a dot, so it holds no underscore (FR-230) and stays in the game's own words (FR-619). A comms
-moment is narrower than any cue naming no stem, so `Table` sorts it ahead of `ReceiveText.Channel.npc`
-whatever their match fields. What is heard is the cast voice's take for the moment; the message's own
-words are never spoken. The shipped table holds six, one for each pirate stem FR-620 names.
+written as a dot, so it holds no underscore (FR-230) and stays in the game's own words (FR-619). What
+is heard is the cast voice's take for the moment; the message's own words are never spoken.
+
+**Station traffic (FR-637, FR-638).** A station, settlement or carrier speaks under many stems sharing
+a few beginnings, so its one moment names those beginnings rather than a stem:
+
+```toml
+[[cue]]
+id = "ReceiveText.StationTraffic"
+source = "journal"
+event = "ReceiveText"
+begins = { Message = ["STATION_", "DockingChatter_", "DockingFailed_"] }
+priority = "ambient"
+cooldown = 30
+```
+
+No one stem names the family, so its id is not spelled from its beginnings. A key names three widths
+of moment and `Table` sorts the narrowest first: a whole stem ahead of beginnings, beginnings ahead of
+any cue naming no key, such as `ReceiveText.Channel.npc`, whatever their match fields
+(`cue.narrower`). The shipped table holds seven comms moments: six naming a stem, one for each pirate
+stem FR-620 names; one naming the station traffic beginnings.
 
 **The words a reader sees are generated, with one exception.** `cue.ID.Title` reads an id as words:
 each segment breaks where its capitals begin a new word, a run of capitals stays an initialism and
@@ -289,7 +312,7 @@ the surface and panel grounds in both themes.
 **The shipped set.** The journal cues leave out the snapshots the game writes at login or when a screen
 opens (`Cargo`, `Loadout`, `Market` and the like) and two bulk listings (`Music`,
 `FSSSignalDiscovered`). At most one payload field narrows an event; a comms moment is narrowed by its key
-stem instead. The status cues are every flag the
+stem or its key beginnings instead. The status cues are every flag the
 status watcher decodes on both edges, every `GuiFocus` value, every pip distribution and the fire group.
 `config_test.go` holds every shipped id to that spelling: its first segment is what the cue listens for.
 
@@ -298,8 +321,12 @@ unknown source or edge, a journal or application cue naming no event, a status c
 unknown priority, a negative cooldown, an id ending in a segment of digits (FR-219, below), an id
 ending in a dot or a space (FR-222, below), an id holding an underscore (FR-230, below) and a comms
 moment naming more than one stem, a stem beside match fields, a stem that is no key stem or an id not
-spelled from its stem (FR-619).
-`config.LoadCueTable` also refuses a duplicate id, a key it does not hold and a cue whose purpose is missing or blank (FR-231). It accepts a path to a table on disk, which would
+spelled from its stem (FR-619); a station traffic moment naming beginnings for more than one field,
+beginnings beside a stem or match fields, no beginning or a beginning no key stem can start with (FR-638).
+`config.LoadCueTable` also refuses a duplicate id, a key it does not hold and a cue whose purpose is missing or blank (FR-231).
+It builds the table through `cue.NewCategorisedTable`, which refuses a category left blank or listed
+twice, a cue the game raises whose category is missing or not listed, an application cue naming one and
+a listed category no cue sits in (FR-634, FR-635). It accepts a path to a table on disk, which would
 replace the shipped one whole under exactly the same rules; no flag supplies such a path today, so the
 running application always loads the embedded table and only the tests exercise the other route.
 
@@ -646,7 +673,9 @@ nothing until its first take (FR-316). It opens on the voice already chosen, els
 first. For the voice chosen it lists each missing moment by title, its purpose beneath and the folder its
 take belongs in, with Open folder beside it.
 
-**Chatter.** A header that does not scroll holds Switch all on and Switch all off, each disabled while
+**Chatter.** The pane lists every cue the game raises; the application's own `Cast.Confirmed` answers
+the player's act rather than the game, so it has no switch (`cue.Cue.Switchable`, FR-621). A header
+that does not scroll holds Switch all on and Switch all off, each disabled while
 it would change nothing, then a switch for every category in the table's order, named beside it and
 reading on while any moment in it is on (FR-740). Beneath it the list scrolls on its own: every category
 a group ruled down its side, headed by the category with how many of its moments are on. The heading is
@@ -965,9 +994,9 @@ journal reader tests a read error's text against `"EOF"`.
   fails to decode is skipped after being logged as played; a made line whose samples differ from those
   its pause or its ending was found in is written without that pause or fade and logged (FR-553,
   FR-556).
-- **Recorded in the reaction list:** a repeat inside the dedupe window, a cue in cooldown, a cue the voice
-  has no takes for and a request dropped by the mute or by the priority policy, beside what was queued and
-  what played.
+- **Recorded in the reaction list:** a cue switched off on Chatter, a repeat inside the dedupe window, a
+  cue in cooldown, a cue the voice has no takes for and a request dropped by the mute or by the priority
+  policy, beside what was queued, what is being made and what played.
 - **Refused with the reason, beneath the control that was pressed:** on the Cast pane, a voice name Make
   folders will not use, a folder it cannot make and a Refresh with no readable recordings directory; on
   the Missing takes pane, a recordings directory that cannot be read or holds no voice and a moment's

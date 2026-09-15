@@ -15,9 +15,8 @@ Two rules govern everything below.
 does not reach teaches people to lower it. Every floor in `test.ps1` sits at or below
 what that package measured, so it fails once cover is lost, which is
 the only moment it is worth being told. `internal/infrastructure/setup`'s floor leaves
-room on purpose: its registry reads branch on what the registry of
-the machine running the tests holds, so part of its figure moves from one machine to
-the next and its floor leaves room for that.
+room on purpose: its registry reads branch on what the registry of the machine running
+the tests holds, so part of its figure moves from one machine to the next.
 
 **A gap is named or it is closed.** Where something cannot be tested, this document
 says what it is and what stops it. An unexplained shortfall is indistinguishable
@@ -35,57 +34,56 @@ gone](#it-could-not-happen-so-it-is-gone).
 |---|---|---|---|
 | `internal/domain/...` | 100% | 100% | `test.ps1` |
 | `internal/application/...` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/status` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/config` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/status` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/voicefiles` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
-| `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
+| `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
+| `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | the root package (the Wails facade) | 82.8% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 78.4% | 61% | `test.ps1` |
-| `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
+| `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 68.1% | 68% | `test.ps1` |
+| `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
-| `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `tools/sounds` | 44.9% | 44% | `test.ps1` |
-| `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/modelfiles/modelfilestest` | test support with no tests of its own, used by the `modelfiles`, `speechmodel`, `tools/models`, `tools/payload`, `tests/structural` and `tests/machinevoice` tests | none | not gated |
 | `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
 898 test functions, which expand to 943 runs once their subtests are counted (measured on
-2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of an uncached
-`go test -json` over the whole suite, which the `=== RUN` lines of the same run matched; the
-build-tagged benchmarks are counted as functions but do not run).
+2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of an
+uncached `go test -count=1 -json ./...`; the build-tagged benchmarks are counted as functions
+but do not run).
 Forty-nine of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
-composition-root whitelist, the 400-line cap with its danger band, a doc comment on
-every exported type and the rule that the product is named in exactly one place
-under an identity that is also a valid file name. They also hold the surface the
-facade binds, the wire contract on both sides of it, colours confined to the tokens
-with a token for every indicator tone, the contrast of the secondary lines (the
-purpose line and the Status cards' taglines) and of Chatter's switches in both themes, every style part being
-read, the strip and the Status cards keeping their layout rules, every disabled control
-wearing the danger ring, every scrolling region ringed for the keyboard but never under
-the pointer, no list or container wearing a ring, nothing on the ring that cannot be acted
-on or scrolled, the setup
-program applying the boxes it shows with a header that repeats no title, the setup page
-loading every script it has with its body ringed for the keyboard, game vocabulary kept
-in its home, the shape of every cue id, the shipped script holding no problem with lines
-for every cue, the speech sound table held to the model's tokenizer file, `pauses.toml`
-and `endings.toml` kept from going stale and every address handed to a DLL converted
-only where the call into it is made.
+composition-root whitelist, the 400-line cap with its danger band (counting lines as an
+editor shows them), a doc comment on every exported type and the rule that the product is
+named in exactly one place under an identity that is also a valid file name. They also hold
+the surface the facade binds, the wire contract on both sides of it, colours confined to the
+tokens with a token for every indicator tone, the contrast of the secondary lines (the
+purpose line and the Status cards' taglines) and of Chatter's switches in both themes, every
+style part being read, the strip and the Status cards keeping their layout rules, every
+disabled control wearing the danger ring, every scrolling region ringed for the keyboard but
+never under the pointer, no list or container wearing a ring, nothing on the ring that cannot
+be acted on or scrolled, the setup program applying the boxes it shows with a header that
+repeats no title, the setup page loading every script it has with its body ringed for the
+keyboard, game vocabulary kept in its home, the shape of every cue id, the shipped script
+holding no problem with lines for every cue, the speech sound table held to the model's
+tokenizer file, `pauses.toml` and `endings.toml` kept from going stale and every address
+handed to a DLL converted only where the call into it is made.
 
 ### The front end
 
@@ -134,7 +132,7 @@ code; see [Keeping this honest](#keeping-this-honest).
 |---|---|---|
 | `internal/domain` | pure unit | nothing |
 | `internal/application` | unit, over hand-written fakes | nothing |
-| `internal/infrastructure` | integration, over a temporary directory | the filesystem, plus the registry read-only |
+| `internal/infrastructure` | integration, over a temporary directory | the filesystem, the registry read-only, child processes and a tray window with no icon |
 | the root package | the facade over a fake device and a fake source | nothing |
 | `tests/structural` | source and AST scans | reads files |
 | the front end | component and hook tests under jsdom | nothing |
@@ -166,7 +164,7 @@ release is for.
   through a field, so what it opens is tested while Explorer appearing is not.
 - **`internal/infrastructure/taskbar` (68.1%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
-  hidden window, replacing only the call that hands the icon to the shell, so the
+  window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
   menu as drawn is not.
@@ -181,8 +179,8 @@ release is for.
   failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
   rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
   error, an unreadable clip in `playOne` and a cancel landing between clips or during the
-  gap in `run`. The figure moves between runs: 95.0%, 95.3%, 95.5% and 95.7% were all
-  measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
+  gap in `run`. The figure moves between runs: 95.3% and 95.7% were both measured on
+  2026-09-15, so the floor sits at 95%. Reading a clip whole
   into memory is tested directly, by deleting the file before streaming what came back:
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
@@ -195,11 +193,11 @@ release is for.
   so the crash tests start the test binary again as a child that panics or fails fatally, then read
   what the child left in its log. Every line the child runs is in a process coverage does not measure.
   Finding that a run has no error output is not reached at all: a test binary is always given one.
-  A windowed probe measured it on 2026-09-14 (FR-715). Writing the start line failing after the file
-  opened fails only inside the system. Reaching for the terminal a windowed run was started from
-  (FR-703) goes past its first check only where the run was given no standard output, which a test
-  binary never is; a windowed build of the test binary was seen printing in the terminal it was
-  started from on 2026-09-15.
+  A windowed program reading no error output was measured on 2026-09-14 (FR-715). Writing the start
+  line failing after the file opened fails only inside the system. Reaching for the terminal a
+  windowed run was started from (FR-703) goes past its first check only where the run was given no
+  standard output, which a test binary never is; a windowed program started from PowerShell was seen
+  printing in that terminal once attached to it on 2026-09-15.
 - **The Wails calls in the root package.** `runtime.EventsEmit`, `WindowShow`,
   `WindowHide`, `WindowCenter`, `Quit`, `BrowserOpenURL` and the directory dialog need a running Wails
   application. Each is reached through a field on the facade, so the behaviour AROUND
@@ -259,8 +257,9 @@ release is for.
   Deleting the install directory is tested against a temporary directory: a PowerShell
   process started beside it waits for a stand-in for setup to exit, then deletes it, including
   where setup was started inside the directory. The real install directory going once the
-  real setup window has closed is not. Enumerating processes is tested: `processIDs` must find the test binary by
-  its own name, which is the one process a test can be certain is running.
+  real setup window has closed is not, nor is PowerShell failing to start. Enumerating processes
+  is tested: `processIDs` must find the test binary by its own name, which is the one process a
+  test can be certain is running. Taking or walking the process snapshot failing is not reached.
 - **`tools/sounds` (44.9%).** The sounds tool. `run` rewrites `sounds.toml` in the repository
   and `python.Make` runs `sounds.py` in the tool's own venv, which a test machine need not have.
   Making every line in each accent from its spelling and matching the answers back to their
@@ -300,7 +299,7 @@ rather than excused. Four of them, in code that still exists:
 |---|---|
 | the error return from `readAll` | it could only ever have been nil, so `readAll` now returns bytes alone |
 | the empty check in `splitLines` | `bytes.Split` always yields at least one element |
-| the encode failure in `Save` | a struct of four strings always marshals |
+| the encode failure in `Save` | a struct holding only strings and a list of strings always marshals |
 | the encode failures in `madelines.encode` | the FLAC encoder fails only on a write (which memory never refuses) or on a frame shape other than the two the store builds, both round-tripped by its tests |
 
 ### The front end
@@ -314,6 +313,10 @@ rather than excused. Four of them, in code that still exists:
   layout: whether a region overflows, where a ref points before the node arrives. jsdom
   performs no layout, so what geometry the tests do assert is stated explicitly rather
   than inferred; the remainder is left rather than faked.
+- **The residual branch in `chatter.tsx`** is neither. Pressing a category's switch while
+  every moment in it is off, which counts all of its moments as the changes to ask about, is
+  never run: every test that presses a category does so while something in it is on. Nothing
+  stops a test reaching it, so it is a gap to close rather than a limit of the harness.
 
 ## Working with jsdom
 

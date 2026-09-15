@@ -300,9 +300,16 @@ h2.section-title {
 
 /* A look inside: the panes two by two. */
 .gallery {
+  --gallery-gap: 28px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 40px 28px;
+  gap: 40px var(--gallery-gap);
+}
+/* A shot left alone on the last row is centred at a column's width rather than hanging at the left. */
+.gallery .shot:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc((100% - var(--gallery-gap)) / 2);
 }
 
 /* Common questions */
@@ -370,6 +377,7 @@ footer .mono { font-family: var(--mono); color: var(--accent); }
 
 @media (max-width: 720px) {
   .gallery { grid-template-columns: 1fr; }
+  .gallery .shot:last-child:nth-child(odd) { width: auto; justify-self: stretch; }
   header.hero { padding-top: 72px; }
 }
 

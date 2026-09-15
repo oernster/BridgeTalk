@@ -47,10 +47,13 @@ lines it makes on your own machine; record a voice of your own whenever you like
   an ambient line is dropped when something is already waiting; a flavour line is dropped when
   anything is playing or waiting. Many moments hold a minimum interval between two firings. The
   same moment raised twice within 900 milliseconds is heard once. Mute silences every answer to the game.
-- **Speaks only for the moments you choose.** The Chatter pane lists every moment the game raises
-  under its subject, each with a switch; a moment switched off stays quiet whichever voice is cast.
-  A category's switch, Switch all on and Switch all off change many at once, asking first. Station
-  traffic has a switch of its own, apart from every other message.
+- **Speaks only for the moments you choose.** The Chatter pane lists the 262 moments the game raises
+  under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is
+  cast: it starts no cooldown and makes no line. One switched off while it waits its turn is let go;
+  a take already playing is not cut short. Switch all on, Switch all off and a switch for each
+  category sit above the list and change many moments at once, asking first. Station traffic
+  (docking answers, welcomes and the no fire zone) has a switch of its own, apart from the other
+  messages non-player characters send. The switches are kept between runs.
 - **Explains every decision.** For every moment the game raises that has a cue, the Status pane
   logs what became of it (played, queued, making, dropped, cooldown, duplicate, off or unbound), including the
   ones that produced no sound. It keeps the latest 200. The same pane names the journal directory
@@ -74,6 +77,30 @@ lines it makes on your own machine; record a voice of your own whenever you like
   directory. The only things it writes there are empty folders: a voice's folders when you press
   Make folders and a moment's folder when you press Open folder beside it. Uninstalling does not
   touch it. It makes no network requests of its own.
+
+## Built with
+
+| Part | Choice |
+|---|---|
+| Backend | Go |
+| Desktop shell | Wails v2 over WebView2 |
+| Front end | React and TypeScript, built with Vite |
+| Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
+| Machine voices | the Kokoro-82M model, run through ONNX Runtime |
+| Cue table | TOML, embedded in the executable |
+
+## Getting it
+
+Download the setup program from [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/) and run
+it. Everything it writes is for your own Windows account, so it never asks for administrator rights.
+It installs under your own application data unless you choose another folder on its first screen.
+Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
+choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.
+
+The journal directory is `Saved Games\Frontier Developments\Elite Dangerous` under your own profile
+until you choose another on the Settings pane. When the journal directory in use cannot be read,
+the window opens anyway: the Status pane and the Settings pane say why until you choose one that
+can be.
 
 ## Naming recordings
 
@@ -123,28 +150,36 @@ credit = "Recorded by Alice, 2026"
 The voice's folder name is still what Settings remembers. A `voice.toml` that cannot be read is set
 aside and the voice is found by its names alone.
 
-## Getting it
+## Testing
 
-Download the setup program from [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/) and run
-it. Everything it writes is for your own Windows account, so it never asks for administrator rights.
-It installs under your own application data unless you choose another folder on its first screen.
-Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
-choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.
+The gate checks the model files, formatting and vet, runs the Go suite then holds each package to
+its coverage floor:
 
-The journal directory is `Saved Games\Frontier Developments\Elite Dangerous` under your own profile
-until you choose another on the Settings pane. When the journal directory in use cannot be read,
-the window opens anyway: the Status pane and the Settings pane say why until you choose one that
-can be.
+```powershell
+./test.ps1
+```
 
-## Building and testing
+The front end's suites run with:
 
-- [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine, builds the application with its setup
-  program and lists the command-line options.
-- [TESTING.md](TESTING.md) covers running the tests, what each coverage figure means and what is
-  deliberately left untested.
-- [ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
+```powershell
+npm --prefix frontend test
+```
 
-## Supporting the project
+[TESTING.md](TESTING.md) covers what each coverage figure means and what is deliberately left
+untested.
+
+## Building
+
+```powershell
+./build.ps1
+```
+
+It runs the gate, then writes the application to `build/bin/BridgeTalk.exe` and the setup program
+to `dist-installer/BridgeTalkSetup.exe`. [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine from
+nothing, fetches the model files the build needs and lists the command-line options.
+[ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
+
+## Supporting
 
 Bridge Talk is free and stays free. There is no paid tier, no licence key and no feature held back
 behind a donation. If it has been useful, a donation supports its maintenance and continued

@@ -94,8 +94,8 @@ project.
 | **Moment** | The word the window uses for a cue. |
 | **Chatter** | The pane on which the player chooses which moments the application speaks for; also the band button opening it (section 7.2). |
 | **Switched off** | Said of a cue the player has chosen the application will not speak for (FR-622). Every other cue is switched on. |
-| **Category** | One of the named sets of FR-635 that Chatter lists moments under, written beside each cue in `cues.toml`. Not an Audition group (FR-216). |
-| **Station traffic** | A `ReceiveText` message on the `npc` channel whose key stem begins `STATION_`, `DockingChatter_` or `DockingFailed_` (section 7.2). |
+| **Category** | One of the named sets of FR-635 that Chatter lists moments under, written beside every cue in `cues.toml` but `Cast.Confirmed`. Not an Audition group (FR-216). |
+| **Station traffic** | A `ReceiveText` message whose key stem begins `STATION_`, `DockingChatter_` or `DockingFailed_`, on whatever channel it arrives (FR-638). |
 
 ### 1.5 References
 
@@ -228,7 +228,7 @@ A file in the flat form is named with the cue id unchanged. A cue folder is name
 the cue id with every dot written as an underscore; nothing else is changed (FR-229). No
 cue id holds an underscore (FR-230), so each folder name belongs to exactly one id.
 
-Checked against all 262 cue ids: every id uses only letters, digits, `.` and a
+Checked against all 263 cue ids: every id uses only letters, digits, `.` and a
 space inside a segment, which five ids carry; none begins with a dot, which would
 hide it on Linux and macOS; none ends in a dot or space, which Windows silently
 strips; no space sits beside a dot; none has a first segment that is a Windows
@@ -711,7 +711,7 @@ Priority: Must.
 Wherever the application lists cues, on the Missing takes pane and in the Moments spoken for dialog behind
 a cast row, it shall show each cue under its full title alone, with no group heading above it.
 Rationale: a heading is read from the first segment of the id and a title from the whole id, so a
-heading repeats the start of every title beneath it; for 112 of the 262 cues the two are the same
+heading repeats the start of every title beneath it; for 112 of the 263 cues the two are the same
 words (Oliver, 2026-09-13).
 Acceptance: Given `CarrierDepositFuel` and `StartJump.JumpType.Hyperspace` listed, then "Carrier
 deposit fuel" is shown once and "Start jump: jump type hyperspace" is shown with no "Start jump"
@@ -1038,7 +1038,7 @@ Measured before any of this was written, on the development machine, processor o
 - misaki 0.9.4 itself, called the way Kokoro calls it, reproduced all 512 reference lines exactly:
   loading took 2.9 s and making all 512 took 0.76 s, in Python 3.11.9.
 - In the sounds tool's own venv, holding only the packages pinned in `tools/sounds/requirements.txt`
-  (71 packages, 292.9 MB, no torch), misaki reproduced all 512 lines again: loading took 1.6 s and
+  (69 packages pinned, re-counted on 2026-09-15; 292.9 MB, no torch), misaki reproduced all 512 lines again: loading took 1.6 s and
   making took 0.71 s. spaCy imports click, which nothing else installed, so it is pinned by hand.
 - The files a machine voice is made from sum to about 354 MB: the model 325.5 MB, the 28 voice style
   files 14.6 MB and ONNX Runtime 14.2 MB. misaki's dictionaries and eSpeak NG do not ship.
@@ -1081,7 +1081,8 @@ as the application writes it:
   takes it was scored on.
 - Final stressed or short syllables burst ("here on", "Move along.", "Back at the helm."); unstressed
   endings such as -ing and "spectrum" did not. `bm_daniel` never burst.
-- 91 of the 768 lines end on a nasal in each accent (n 65, ŋ 22, m 4); none is a line FR-550 joins.
+- 92 of the 789 lines end on a nasal in each accent (n 66, ŋ 22, m 4), re-measured on 2026-09-15; none is a
+  line FR-550 joins.
 - Of fades over 5, 10 and 20 ms from the start of the burst, Oliver chose 10 ms by ear over "You'll be
   hearing from me from here on." for the four British female voices, `bf_alice`'s "Back at the helm."
   and `bf_emma`'s "Move along.".
@@ -1654,7 +1655,8 @@ with `TestTheToolFillsTheFolderThenChecksIt` and `TestTheCheckFailsOnAFileThatDi
 `tools/models/main_test.go`, proved by planting a different digest matching and the check reporting
 nothing missing. `modelfilestest.Require` decides for every test that needs the files: on 2026-09-14,
 with `am_santa.bin` set aside, the three tests in `internal/infrastructure/speechmodel` that need them
-skipped; with `bf_emma.bin`'s listed digest altered, they failed.
+skipped; with `bf_emma.bin`'s listed digest altered, they failed. Re-counted on 2026-09-15, the tests in
+`internal/infrastructure/speechmodel` call `modelfilestest.Require` four times across three files.
 
 **FR-539 A machine voice's files are read from beside the application**
 Priority: Must.
@@ -2078,7 +2080,7 @@ above 3 kHz; at the run's first sample where there is no such frame. The fade st
 hiss starts.
 Note: the share was chosen over the 40 takes of five British voices it was scored on (section 6.1).
 No American voice was measured, so the tool's first full run is the first measurement of them.
-Finding the endings adds 2,548 lines to a full run: about 13 minutes at the 0.29 s a line the full run
+Finding the endings adds 2,576 lines to a full run: about 13 minutes at the 0.29 s a line the full run
 of FR-551 took.
 Rationale: the model gives samples with no word timings, so the hiss is found in the sound. Finding it
 before the build means every change to a made line is known before it ships, as for the pause
@@ -2086,7 +2088,7 @@ before the build means every change to a made line is known before it ships, as 
 and writes both files, so nothing the pauses tool already does is done twice. `-endings-only` spares the
 pauses' share of a full run where only how the endings are found has changed (Oliver, 2026-09-15).
 Acceptance: Given `models/` filled as the list says, when the tool runs, then `endings.toml` gives
-each of the 28 voices an entry for each of the 91 lines ending on a nasal in its accent. Its entry for
+each of the 28 voices an entry for each of the 92 lines ending on a nasal in its accent. Its entry for
 `bf_alice` and "You'll be hearing from me from here on." gives a sample; its entry for `bm_daniel` and
 the same line gives none.
 Verified by: in part, `TestALineEndsOnANasalWhereItsLastSpeechSoundIsNMOrEng`,
@@ -2167,7 +2169,8 @@ starts, `go run ./tools/pauses -endings-only` rewrote `endings.toml` in 11.5 min
 unchanged byte for byte. The same 281 lines fade, each found in samples of the same digest as before, each fade
 starting 720 to 960 samples earlier; "You'll be hearing from me from here on." fades from 48,444 for `bf_alice`,
 43,920 for `bf_emma` and 43,464 for `bf_isabella`, where the approved listening files' 30 ms fades start. Not yet
-heard in the application built with them.
+heard in the application built with them. Re-measured on 2026-09-15 over the shipped `endings.toml`: it
+fades 282 of 2,576 lines.
 
 **FR-557 If `endings.toml` is stale, then the build fails**
 Priority: Must.
@@ -2540,8 +2543,8 @@ beside the figures in section 7.1:
   `STATION_docking_cancelled` (2) plus `STATION_docking_denied_toolarge`,
   `STATION_docking_timeexpired` and `STATION_docking_denied_jumpImminet` once each, the last spelled
   so by the game. The sender most often named beside each is a station, settlement or carrier.
-- Every one of them resolves today to `ReceiveText.Channel.npc`, an `ambient` cue with a 30 second
-  cooldown (FR-606). Switching that cue off would silence station traffic together with every other
+- Before FR-637 every one of them resolved to `ReceiveText.Channel.npc`, an `ambient` cue with a 30
+  second cooldown (FR-606). Switching that cue off would have silenced station traffic together with every other
   non player message no comms moment claims.
 
 The terms Chatter, moment, switched off, category and station traffic are defined in section 1.4;
@@ -2556,7 +2559,7 @@ cast rather than anything in the game (FR-232).
 Acceptance: Given the shipped table of 263 cues, when the switches are listed, then 262 are listed
 and `Cast.Confirmed` is not among them.
 Verified by: `TestOnlyACueFromTheApplicationHasNoSwitch` in `internal/domain/cue/category_test.go` and
-`TestEveryShippedMomentHasACategory`, which holds a switch on every shipped moment but `Cast.Confirmed`.
+`TestEveryShippedMomentHasACategory` in `internal/infrastructure/config/chatter_test.go`, which holds a switch on every shipped moment but `Cast.Confirmed`.
 Not verified by a test: the count of 262.
 
 **FR-622 A moment switched off is not spoken**
@@ -2566,7 +2569,8 @@ and shall record the decision as `off`.
 Rationale: the reaction log keeps saying why nothing was said, as it does for mute (FR-611).
 Acceptance: Given `Docked` switched off, when `Docked` fires, then nothing plays and the reaction log
 gains `off` for `Docked`.
-Verified by: `TestAMomentSwitchedOffPlaysNothingAndIsRecordedOff`.
+Verified by: `TestAMomentSwitchedOffPlaysNothingAndIsRecordedOff` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-623 A moment switched off holds nothing back**
 Priority: Must.
@@ -2578,7 +2582,8 @@ switched on at 12:00:05 and fires again at 12:00:10, then the second firing is p
 cast with nothing made for `Docked` and `Docked` switched off, when `Docked` fires, then `making` is
 not recorded.
 Verified by: `TestAFiringSwitchedOffStartsNoCooldown`,
-`TestAFiringSwitchedOffOpensNoDuplicateWindow` and `TestAFiringSwitchedOffMakesNoLine`.
+`TestAFiringSwitchedOffOpensNoDuplicateWindow` and `TestAFiringSwitchedOffMakesNoLine` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-624 While muted, a moment switched off is recorded as off**
 Priority: Should.
@@ -2587,7 +2592,8 @@ decision as `off` rather than `dropped` (FR-611).
 Rationale: a switch outlasts the run; a mute does not (FR-705).
 Acceptance: Given playback muted with `Docked` switched off, when `Docked` fires, then `off` is
 recorded.
-Verified by: `TestAMomentSwitchedOffWhileMutedIsRecordedOff`.
+Verified by: `TestAMomentSwitchedOffWhileMutedIsRecordedOff` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-625 A moment switched off while it waits is let go**
 Priority: Should.
@@ -2596,7 +2602,7 @@ application shall let it go and shall record the decision as `off`.
 Acceptance: Given a take of `HullDamage` playing with `Docked` queued behind it, when `Docked` is
 switched off, then `Docked` is never played and `off` is recorded for it.
 Verified by: `TestAMomentSwitchedOffInTheQueueIsLetGo` and
-`TestAMomentSwitchedOffWhileItsLineIsMadeIsLetGo`.
+`TestAMomentSwitchedOffWhileItsLineIsMadeIsLetGo` in `internal/application/services/reaction_switch_test.go`.
 
 **FR-626 A take already playing is not cut short by its switch**
 Priority: Should.
@@ -2605,7 +2611,8 @@ play to its end.
 Rationale: a press never cuts a clip short (FR-236); a switch is a press.
 Acceptance: Given a take of `Docked` playing, when `Docked` is switched off, then the take plays to its
 end.
-Verified by: `TestSwitchingOffAMomentLeavesItsTakePlaying`.
+Verified by: `TestSwitchingOffAMomentLeavesItsTakePlaying` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-627 A switch applies at once**
 Priority: Must.
@@ -2613,7 +2620,8 @@ When a switch is changed, the application shall apply it from the next firing of
 restart.
 Acceptance: Given `Docked` switched on, when it is switched off and then fires, then `off` is
 recorded.
-Verified by: `TestASwitchAppliesToTheNextFiring`.
+Verified by: `TestASwitchAppliesToTheNextFiring` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-628 Every moment starts switched on**
 Priority: Must.
@@ -2625,7 +2633,8 @@ Acceptance: Given no kept switches, when the application starts, then all 262 sw
 kept switches naming `Docked` alone, when a table adding a cue `NewMoment` is loaded, then `NewMoment`
 is on and `Docked` is off.
 Verified by: `TestEveryMomentStartsSwitchedOn`, `TestAnIdNamedIsSwitchedOffAndNoOther` in
-`internal/domain/selection/switches_test.go` and `TestTheSwitchesOutliveTheRun`, which has `Undocked`, named
+`internal/domain/selection/switches_test.go` and `TestTheSwitchesOutliveTheRun` in
+`internal/application/services/chatter_test.go`, which has `Undocked`, named
 by no kept switch, on. Not verified by a test: a table adding a cue while the kept switches name another.
 
 **FR-629 The switches are kept for the next run**
@@ -2633,7 +2642,8 @@ Priority: Must.
 The application shall keep, by cue id, which cues are switched off for the next run.
 Acceptance: Given `Docked` switched off, when the application is closed and started again, then
 `Docked` is still off.
-Verified by: `TestTheSwitchesOutliveTheRun` and `TestTheSwitchesOutliveTheRunInTheSettingsFile` in
+Verified by: `TestTheSwitchesOutliveTheRun` in `internal/application/services/chatter_test.go` and
+`TestTheSwitchesOutliveTheRunInTheSettingsFile` in
 `internal/infrastructure/config/switches_store_test.go`.
 
 **FR-630 The switches belong to no voice**
@@ -2651,7 +2661,8 @@ If the kept switches name a cue id the table does not hold, then the application
 out of the switches it applies and keeps.
 Acceptance: Given kept switches naming `Gone`, which no cue has, when any switch is next changed, then
 `Gone` is no longer kept.
-Verified by: `TestAKeptSwitchForNoCueIsLetGo` and `TestKeptHoldsOnlyTheTablesSwitchableCuesInIdOrder`.
+Verified by: `TestAKeptSwitchForNoCueIsLetGo` in `internal/application/services/chatter_test.go` and
+`TestKeptHoldsOnlyTheTablesSwitchableCuesInIdOrder` in `internal/domain/selection/switches_test.go`.
 
 **FR-632 Switches that cannot be read start every moment on**
 Priority: Should.
@@ -2661,7 +2672,7 @@ Note: an unreadable store is treated as no store, as it is for every other setti
 Acceptance: Given a kept switches file that is not valid, when the application starts, then all 262
 switches are on.
 Verified by: `TestAFileThatDoesNotParseLoadsAsNothing` in `internal/infrastructure/config/settings_test.go`
-with `TestEveryMomentStartsSwitchedOnWithNothingKept`: a file that cannot be read loads as nothing kept,
+with `TestEveryMomentStartsSwitchedOnWithNothingKept` in `internal/application/services/chatter_test.go`: a file that cannot be read loads as nothing kept,
 then nothing kept starts every moment on.
 
 **FR-633 If a switch cannot be kept, then say why**
@@ -2670,8 +2681,8 @@ If a changed switch cannot be written, then the Chatter pane shall show why it w
 Note: the switch still applies until the application closes (FR-627).
 Acceptance: Given a store that refuses every write, when `Docked` is switched off, then the Chatter
 pane shows the reason and `Docked` stays off until the application closes.
-Verified by: `TestASwitchThatCannotBeKeptSaysWhy`, `TestASwitchThatCannotBeKeptIsShownOnThePane` in
-`chatter_test.go` and "says why a switch could not be kept" in `frontend/src/chatter.test.tsx`.
+Verified by: `TestASwitchThatCannotBeKeptSaysWhy` in `internal/application/services/chatter_test.go`,
+`TestASwitchThatCannotBeKeptIsShownOnThePane` in `chatter_test.go` and "says why a switch could not be kept" in `frontend/src/chatter.test.tsx`.
 
 **FR-634 Every moment carries a category**
 Priority: Must.
@@ -2685,7 +2696,7 @@ Acceptance: Given a table whose `Docked` entry has no `category`, when it is loa
 fails with an error naming `Docked`. Given the shipped table, when it is loaded, then each of its 262
 moments has a category.
 Verified by: `TestACueWithNoCategoryIsRefusedByName`, `TestACategoryOutsideTheSetIsRefused`
-and `TestEveryShippedMomentHasACategory`.
+and `TestEveryShippedMomentHasACategory` in `internal/infrastructure/config/chatter_test.go`.
 
 **FR-635 The categories**
 Priority: Should.
@@ -2711,22 +2722,23 @@ Rationale: Claude proposed the set from reading the 261 cue ids. Which cue sits 
 written in the table beside its purpose, where Oliver reviews it.
 Acceptance: Given the shipped table, when Chatter lists its categories, then all twelve appear in the
 order above and none is empty.
-Verified by: `TestTheShippedCategoriesAreTheSetInOrder`. To be verified by Oliver's inspection of
+Verified by: `TestTheShippedCategoriesAreTheSetInOrder` in `internal/infrastructure/config/chatter_test.go`. To be verified by Oliver's inspection of
 `cues.toml`: the placement of each cue.
 
 **FR-636 Station traffic can be switched off apart from other messages**
 Priority: Should.
 The application shall let station traffic be switched off while `ReceiveText.Channel.npc` stays
 switched on.
-Rationale: 7,298 of the 13,205 `npc` messages are station traffic (measured above) and every one
-reaches `ReceiveText.Channel.npc` today, so a player wanting quiet while a station speaks would
-otherwise lose every other message too (OQ-13). While it is switched on, station traffic is answered
+Rationale: 7,298 of the 13,205 `npc` messages are station traffic (measured above) and before FR-637
+every one reached `ReceiveText.Channel.npc`, so a player wanting quiet while a station speaks would
+have lost every other message too (OQ-13). While it is switched on, station traffic is answered
 by a moment of its own (FR-637).
 Acceptance: Given station traffic switched off and `ReceiveText.Channel.npc` switched on, when
 `ReceiveText` arrives on `npc` with the message key `$STATION_docking_granted;`, then nothing plays
 and `off` is recorded; when one arrives whose key stem begins `Military_`, then
 `ReceiveText.Channel.npc` answers it.
-Verified by: `TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken`.
+Verified by: `TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken` in
+`internal/application/services/reaction_switch_test.go`.
 
 **FR-637 The station traffic moment**
 Priority: Should.
@@ -2745,7 +2757,8 @@ their speech sounds made by the sounds tool (FR-532).
 Acceptance: Given the shipped table, when it is loaded, then `ReceiveText.StationTraffic` is one cue
 carrying `ambient`, a cooldown of 30 seconds, the category Docking and stations, the purpose above and
 three lines in the script.
-Verified by: `TestTheShippedStationTrafficMomentIsAsSpecified`; `TestTheScriptHoldsLinesForEveryCue`
+Verified by: `TestTheShippedStationTrafficMomentIsAsSpecified` in
+`internal/infrastructure/config/chatter_test.go`; `TestTheScriptHoldsLinesForEveryCue`
 in `tests/structural/script_test.go` for its lines. Not verified by a test: the purpose's wording, which
 the test holds only to being present.
 
@@ -2767,7 +2780,7 @@ Acceptance: Given the shipped table, when `ReceiveText` arrives on `npc` with
 `$STATION_NoFireZone_exited;`, then each resolves to `ReceiveText.StationTraffic`; when one arrives
 with `$Pirate_OnDeclarePiracyAttack07;`, then it resolves to `ReceiveText.Pirate.OnDeclarePiracyAttack`.
 Verified by: `TestStationTrafficResolvesToItsOwnMoment` and
-`TestAWholeKeyStemMomentIsNarrowerThanStationTraffic`.
+`TestAWholeKeyStemMomentIsNarrowerThanStationTraffic` in `internal/domain/cue/family_test.go`.
 
 With the station traffic moment the cue vocabulary holds 263 cues, 262 of them with a switch.
 
@@ -3174,7 +3187,7 @@ then follows it as it is announced", "says what the application is doing, polite
 "takes its timers with it when it goes" in `frontend/src/strip.test.tsx`; `TestEveryIndicatorToneHasItsColourToken`
 in `tests/structural/strip_test.go`; `TestAReactionCarriesItsMomentsFullTitleForARecordedVoice` and
 `TestAReactionCarriesItsMomentsFullTitleForAMachineVoice` in `reaction_title_test.go` for the title, with
-`TestTheWireContractMatchesOnBothSides` holding `title` on both sides of the wire. Proved by planting the
+`TestTheWireContractMatchesOnBothSides` in `tests/structural/wire_test.go` holding `title` on both sides of the wire. Proved by planting the
 muted row above making, each flash held one tick too long, timers left behind when the strip goes, the id
 said in place of the title, an indicator that is not announced, the notice tone drawn in the accent and a
 reaction titled with its id; each failed its test. Not verified by a test: the message's colour and place
@@ -3201,7 +3214,7 @@ its panel still holds them sorted by name.
 Verified by: "offers a panel for each accent and sex, its voices sorted by name" and "casts a machine
 voice by its id" in `frontend/src/machineVoices.test.tsx`; `TestAVoiceGivesItsNameAloneAndTheGroupItIsOfferedIn`
 in `internal/domain/machinevoice/voice_test.go`; `TestTheCastPaneOffersEveryMachineVoiceByItsName` in
-`machinepane_test.go`, with `TestTheWireContractMatchesOnBothSides` holding `given` and `group` on both
+`machinepane_test.go`, with `TestTheWireContractMatchesOnBothSides` in `tests/structural/wire_test.go` holding `given` and `group` on both
 sides of the wire. Proved by planting the voices left unsorted within a panel; its test failed. Measured
 on 2026-09-15 in the Vite dev server over a stand-in bridge at a viewport 1,029 px wide: four panels of
 235 px each, no pill past its panel's edge and no sideways scroll. Not verified by a test: the panels as
@@ -3325,10 +3338,11 @@ Verified by: "lists each moment under its category with its purpose and a switch
 Priority: Should.
 Each category heading on the Chatter pane shall end in how many of its moments are switched on out of
 how many it holds, in brackets.
-Acceptance: Given the Docking and stations category holding 14 moments with `Docked` alone switched
-off, when the pane opens, then its heading reads "Docking and stations (13 of 14 on)".
-Note: the 14 is illustrative; the count is whatever the shipped table places there.
-Verified by: "counts the moments switched on under each heading".
+Acceptance: Given the Docking and stations category holding 15 moments with `Docked` alone switched
+off, when the pane opens, then its heading reads "Docking and stations (14 of 15 on)".
+Note: 15 is what the shipped table places there today; the count is whatever it places there.
+Verified by: "counts the moments switched on under each heading" in `frontend/src/chatter.test.tsx`,
+over a table of its own. Not verified by a test: the shipped table's count.
 
 **FR-729 Pressing a moment's switch changes it**
 Priority: Must.
@@ -3346,7 +3360,7 @@ Note: the switch stood beside the category's heading in the list until Oliver mo
 switch into the header on 2026-09-15.
 Acceptance: Given every moment in Session switched off but one, then the Session switch reads on;
 given all of them switched off, then it reads off.
-Verified by: "reads a category on while any moment in it is on".
+Verified by: "reads a category on while any moment in it is on" in `frontend/src/chatter.test.tsx`.
 
 **FR-731 Pressing a category's switch changes every moment in it**
 Priority: Should.
@@ -3355,7 +3369,7 @@ where the switch read on, else on.
 Note: where this changes more than one moment, FR-733 asks first.
 Acceptance: Given Session with one moment on, when its switch is pressed and the question accepted,
 then every moment in Session is off.
-Verified by: "turns every moment in a category off from its heading".
+Verified by: "turns every moment in a category off from its heading" in `frontend/src/chatter.test.tsx`.
 
 **FR-732 Switch all on and Switch all off**
 Priority: Should.
@@ -3364,7 +3378,7 @@ each switching every moment to the state it names once FR-733 has been answered.
 Rationale: a player who wants only a few moments spoken for starts from all off (OQ-17).
 Acceptance: Given `Docked` alone switched off, when Switch all on is pressed and the question
 accepted, then all 262 switches are on.
-Verified by: "switches every moment on or off from the two buttons".
+Verified by: "switches every moment on or off from the two buttons" in `frontend/src/chatter.test.tsx`.
 
 **FR-733 Changing more than one moment at once asks first**
 Priority: Must.
@@ -3376,14 +3390,14 @@ back.
 Acceptance: Given 12 moments switched off, when Switch all on is pressed, then the question names 12
 moments; when it is declined, then the 12 are still off.
 Verified by: "asks before changing many moments and changes nothing when declined", "names the category a
-question about it changes" and "changes a category with one moment on without asking".
+question about it changes" and "changes a category with one moment on without asking" in `frontend/src/chatter.test.tsx`.
 
 **FR-734 A button with nothing to change is disabled**
 Priority: Should.
 While every moment is already on, Switch all on shall be disabled; while every moment is already off,
 Switch all off shall be disabled.
 Acceptance: Given all 262 switches on, then Switch all on is disabled and Switch all off is not.
-Verified by: "disables the button that would change nothing".
+Verified by: "disables the button that would change nothing" in `frontend/src/chatter.test.tsx`.
 
 **FR-735 A switch is drawn as a slider**
 Priority: Must.
@@ -3428,7 +3442,7 @@ Each switch on the Chatter pane shall be announced as a switch named by its mome
 category's name, with its state as on or off.
 Acceptance: Given `Docked` off, then its switch has the switch role, the name "Docked" and the checked
 state false.
-Verified by: "names each switch and says whether it is on".
+Verified by: "names each switch and says whether it is on" in `frontend/src/chatter.test.tsx`.
 
 **FR-739 The guide describes Chatter**
 Priority: Should.
@@ -3445,7 +3459,7 @@ list shall hold no category's switch.
 Rationale: Oliver, 2026-09-15; every category's switch is then in reach wherever the list is scrolled.
 Acceptance: Given the list scrolled to Session, then Switch all on and the Combat and danger switch are
 still shown.
-To be verified by: "holds a switch for each category in the header and none in the list" in
+Verified by: "holds a switch for each category in the header and none in the list" in
 `frontend/src/chatter.test.tsx`. Not verified by a test: the header staying in view, which the style
 sheet decides and jsdom does not compute.
 
@@ -3458,8 +3472,9 @@ Rationale: Oliver, 2026-09-15; a moment scrolled far from its heading still says
 it.
 Acceptance: Given the list scrolled halfway through Combat and danger, then the heading "Combat and
 danger (N of 39 on)" is shown at the top of the list.
-To be verified by: "keeps each moment inside its category's group" in `frontend/src/chatter.test.tsx`.
-Not verified by a test: the heading staying in view, which the style sheet decides.
+Verified by: "keeps each moment inside its category's group" in `frontend/src/chatter.test.tsx`.
+Not verified by a test: the rule down each group's side and the heading staying in view, which the
+style sheet decides and jsdom does not compute.
 
 ---
 
@@ -3635,7 +3650,7 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
-| OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.Channel.npc` and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
+| OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---
 

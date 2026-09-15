@@ -7,14 +7,9 @@
   background: var(--panel);
 }
 
-/* focus-visible, not focus. This region is a ring stop because it scrolls, so a
-   keyboard reader must see where they have landed. A pointer landing here is a
-   different thing entirely: clicking or right-clicking to read put a ring around the
-   whole panel, which reads as a selection nobody asked for. The browser already knows
-   the difference between the two, so the ring is asked for on the keyboard case only. */
-.log:focus-visible {
-  border-color: var(--ring);
-}
+/* The log is a list, so it wears no ring in any state (FR-713): a ring round the whole of it
+   outlines the panel while pointing at nothing in it. Its current row shows where focus is
+   instead, below. */
 
 .logrows {
   max-height: 320px;
@@ -35,7 +30,9 @@
   border-top: none;
 }
 
-.logrow[aria-selected='true'] {
+/* The current row is where focus is, so it shows while the keyboard is on the log and not
+   otherwise; a pointer landing here selects nothing, so it shows nothing. */
+.log:focus-visible .logrow[aria-selected='true'] {
   background: var(--secondary-soft);
 }
 

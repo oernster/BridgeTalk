@@ -61,7 +61,7 @@ func TestTheSetupBodyRingsForTheKeyboard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading %s: %v", setupSheet, err)
 	}
-	if !ringsOnFocus(parseRules(setupSheet, raw), ".body") {
+	if !ringsOnFocus(parseRules(setupSheet, raw), setupScrollingRegion) {
 		t.Errorf("%s gives .body no keyboard ring, so focus landing on it shows nothing", setupSheet)
 	}
 }

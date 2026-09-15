@@ -76,6 +76,11 @@ export function HomePane({ state }: { state: State | null }) {
   // whole has nowhere to go, so it is skipped rather than costing a dead press.
   const reachable = useOverflowStop(rowsRef)
 
+  // showRow brings one row into view. The log keeps its newest entries in sight, so a row
+  // elsewhere in it can be out of sight when a key reaches it or focus lands on it.
+  const showRow = (index: number) =>
+    rowsRef.current?.children[index]?.scrollIntoView?.({ block: 'nearest' })
+
   const onKey = (event: React.KeyboardEvent) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     event.preventDefault()
@@ -85,8 +90,12 @@ export function HomePane({ state }: { state: State | null }) {
     setRow(next)
     // The arrows are swallowed above, so the log would not scroll to the row they reach
     // on its own; a row walked past the edge would be selected out of sight.
-    rowsRef.current?.children[next]?.scrollIntoView?.({ block: 'nearest' })
+    showRow(next)
   }
+
+  // The log is a list, so it shows where focus is by its current row and never by a ring round
+  // the whole of it (FR-713). That row has to be in sight when focus lands; otherwise nothing shows.
+  const onFocus = () => showRow(row)
 
   return (
     <>
@@ -156,6 +165,7 @@ export function HomePane({ state }: { state: State | null }) {
         role="listbox"
         aria-label="Reaction log"
         onKeyDown={onKey}
+        onFocus={onFocus}
       >
         <div className="logrows" ref={rowsRef}>
           {log.length === 0 ? (

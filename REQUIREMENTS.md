@@ -805,7 +805,7 @@ queued ahead of them in the player at that moment, plus the Windows audio buffer
 since how full that buffer is cannot be read. The journal poll before a cue fires (FR-615) is not
 counted (Oliver, 2026-09-13).
 Note: Stop and a take that interrupts another both drop the audio still queued, so the cut is heard at
-once. A take that starts after silence drops the queued silence. A take that follows another closely
+once; a take stopped or replaced while its clip is still being read never reaches the speaker. A take that starts after silence drops the queued silence. A take that follows another closely
 waits for the end of the one before it rather than cutting it off. A cue whose line is made when it
 fires (FR-514) is counted from when that line is handed over, not from the firing.
 Verified by: `TestPlaybackBeginsWithinTheLatencyBudget` in
@@ -815,7 +815,11 @@ counted at its full 100 milliseconds; it skips on a machine with no audio device
 by `TestStopDropsWhatIsQueued`, `TestATakeThatInterruptsAnotherDropsWhatIsQueued`,
 `TestATakeThatStartsAfterSilenceDropsTheQueuedSilence` and
 `TestATakeThatFollowsAnotherCloselyWaitsForItsEnd` in
-`internal/infrastructure/audio/speaker_test.go`, over a fake of the device's queue. Not verified by
+`internal/infrastructure/audio/speaker_test.go`, over a fake of the device's queue, with
+`TestATakeStoppedWhileItsClipIsReadNeverReachesTheSpeaker` and
+`TestATakeReplacedWhileItsClipIsReadNeverReachesTheSpeaker` in
+`internal/infrastructure/audio/loading_test.go` for a take cancelled while its clip is read. Not
+verified by
 a test: a game launch with the Windows buffer at 100 milliseconds, read off the stall count on the
 Status pane (FR-616).
 
@@ -2554,26 +2558,33 @@ Priority: Must.
 The main window shall open with nothing focused. Tab and the Right arrow shall move focus forward;
 Shift+Tab and the Left arrow shall move it back. Both directions shall wrap at the ends, passing
 over any control that is disabled or hidden. A list of rows shall be one stop whose rows are walked
-with Up and Down, each row walked to brought into view. A voice chooser shall open on Down. While a
+with Up and Down, each row walked to brought into view. A list shall show where focus is by its
+current row, brought into view as the keyboard lands on it; it shall wear no ring round the whole of
+it in any state. A voice chooser shall open on Down. While a
 menu is open, stepping to the next title in the bar shall open that title's menu with its first
 item under the keyboard; past either end of the bar the menu shall close and focus move on. A
 dialog shall open focused on its first control, hold a ring of its own that wraps within it and
 never reaches the window behind, close on Escape and give focus back to what opened it. Every dialog
 shall carry a cross at its header's end that closes it, the last stop on its ring. Opened from
-a menu, that is the menu's title. A region that scrolls shall show the ring when the keyboard lands
-on it; a disabled control shall wear the danger ring. Where the window comes up without the
+a menu, that is the menu's title. A region that scrolls with nothing to select shall show the ring when
+the keyboard lands on it, never under the pointer. Only a control, a list or a region that scrolls
+shall be a stop; no container shall wear a ring. A disabled control shall wear the danger ring. Where the window comes up without the
 keyboard, it shall take it.
 The setup program answers the same keys under FR-808.
 Verified by: "steps forward on Tab and on Right, from a neutral start", "wraps at both ends", "skips
 a stop that cannot be used" and "takes focus when the dialog opens, skipping a control that cannot
 be used" in `frontend/src/hooks.test.tsx`; "gives every dialog a cross that closes it" and "puts the cross
 last on the ring, so a dialog still opens on its first control" in `frontend/src/dialogs.test.tsx`; "walks its rows with the vertical arrows, wrapping at
-both ends" and "brings the row it walks to into view" in `frontend/src/shell.test.tsx`; "asks the
+both ends", "brings the row it walks to into view" and "brings its current row into view as the
+keyboard lands on it" in `frontend/src/shell.test.tsx`; "asks the
 window for the keyboard when the page finds it has none" and "keeps the ring inside a dialog,
 wrapping at its ends" in `frontend/src/App.test.tsx`; "hands focus back to the menu title a dialog
 was opened from" and "carries an open menu along the bar and lets it go at the end" in
 `frontend/src/App.menus.test.tsx`; `TestEveryDisabledControlWearsTheDangerRing` and
 `TestEveryScrollingRegionRingsForTheKeyboard` in `tests/structural/rings_test.go`;
+`TestNoListWearsARing`, `TestNoScrollingRegionRingsUnderThePointer`, `TestNoContainerWearsARing` and
+`TestOnlyControlsListsAndScrollingRegionsAreStops` in `tests/structural/noborder_test.go`, each seen
+to fail on a planted violation on 2026-09-15;
 `TestTheWindowIsRaisedOnceThePageExists` and `TestThePageCanAskForTheKeyboard` in `app_test.go`.
 Not verified by a test: real focus and paint in the window, since no test opens it.
 

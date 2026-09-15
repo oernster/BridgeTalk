@@ -293,13 +293,25 @@ describe('the home pane', () => {
     expect(selected()).toBe(1)
   })
 
+  /** scrollsDuring runs act with scrolling recorded, answering with every element scrolled into view. */
+  async function scrollsDuring(act: () => Promise<void>): Promise<Element[]> {
+    const original = Element.prototype.scrollIntoView
+    const scrolled: Element[] = []
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this)
+    }
+    try {
+      await act()
+    } finally {
+      Element.prototype.scrollIntoView = original
+    }
+    return scrolled
+  }
+
   // The arrows are swallowed, so the log would not scroll to the row they reach on its
   // own. A row walked past the edge of the log is brought back into view.
   it('brings the row it walks to into view', async () => {
-    const original = Element.prototype.scrollIntoView
-    const scrolled = vi.fn()
-    Element.prototype.scrollIntoView = scrolled
-    try {
+    const scrolled = await scrollsDuring(async () => {
       reactions.mockResolvedValue([played, dropped])
       render(<HomePane state={watching} />)
       await screen.findByText('StartJump')
@@ -307,12 +319,24 @@ describe('the home pane', () => {
       fireEvent.keyDown(screen.getByRole('listbox', { name: 'Reaction log' }), {
         key: 'ArrowDown',
       })
+    })
 
-      expect(scrolled).toHaveBeenCalledTimes(1)
-      expect(scrolled.mock.contexts[0]).toBe(screen.getAllByRole('option')[1])
-    } finally {
-      Element.prototype.scrollIntoView = original
-    }
+    expect(scrolled).toEqual([screen.getAllByRole('option')[1]])
+  })
+
+  // FR-713: the log is a list, so it shows where focus is by its current row rather than by a
+  // ring round the whole of it. The log keeps its newest entries in view, which can leave the
+  // current row out of sight, so focus arriving brings that row into view.
+  it('brings its current row into view as the keyboard lands on it', async () => {
+    const scrolled = await scrollsDuring(async () => {
+      reactions.mockResolvedValue([played, dropped])
+      render(<HomePane state={watching} />)
+      await screen.findByText('StartJump')
+
+      fireEvent.focus(screen.getByRole('listbox', { name: 'Reaction log' }))
+    })
+
+    expect(scrolled).toEqual([screen.getAllByRole('option')[0]])
   })
 
   it('ignores a key that is not one of its own', async () => {

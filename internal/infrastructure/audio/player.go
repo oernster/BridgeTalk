@@ -75,6 +75,17 @@ type Player struct {
 	volume   float64
 	out      *speaker
 
+	// load reads a clip whole; left nil, the package's own load does. A test sets it to hold a
+	// read part way, which is where a take can be cancelled while nothing of it has reached the
+	// speaker yet.
+	load func(path string) (beep.Streamer, error)
+
+	// sequence is held while a sequence is cancelled and the speaker cleared behind it; it is also
+	// held while a clip read for a sequence is handed to the speaker. A clip read for a sequence
+	// cancelled meanwhile is then never added after the clear. It is not p.mu: the speaker's
+	// Read holds the speaker's lock and takes p.mu, so p.mu held across an add could deadlock.
+	sequence sync.Mutex
+
 	// When the current clip was first asked for and how much audio sat ahead of it then, which
 	// is what the latency benchmark reads (NFR-P-202).
 	firstPull   time.Time
@@ -164,6 +175,7 @@ func (p *Player) Play(clips []string, gap time.Duration) error {
 	if len(clips) == 0 {
 		return ErrNoClips
 	}
+	p.sequence.Lock()
 	p.mu.Lock()
 	replaced := p.cancel
 	cancel := p.claim()
@@ -175,6 +187,7 @@ func (p *Player) Play(clips []string, gap time.Duration) error {
 			p.out.stop()
 		}
 	}
+	p.sequence.Unlock()
 	p.launch(clips, gap, cancel)
 	return nil
 }
@@ -243,18 +256,29 @@ func (p *Player) run(clips []string, gap time.Duration, cancel chan struct{}) {
 // nothing is waiting on them rather than inside the device's own request for the next
 // buffer, where being slow is heard rather than merely being slow.
 func (p *Player) playOne(path string, cancel chan struct{}) bool {
-	source, err := load(path)
+	source, err := p.loadClip(path)
 	if err != nil {
 		// One unreadable clip should not abandon the rest of the sequence.
 		return true
 	}
 
+	// The read can outlast the sequence it was for; a Play or a Stop meanwhile has already
+	// cleared the speaker. The clip is handed over only while its sequence still stands, checked
+	// under the lock they clear under, so it can never land behind a clear (NFR-P-202).
+	p.sequence.Lock()
+	select {
+	case <-cancel:
+		p.sequence.Unlock()
+		return false
+	default:
+	}
 	p.beginClip()
 	ended := make(chan struct{})
 	p.out.add(beep.Seq(
 		levelled{source: source, player: p, clock: time.Now},
 		beep.Callback(func() { close(ended) }),
 	))
+	p.sequence.Unlock()
 
 	// A cancel needs nothing dropped here: Play and Stop have already dropped this clip along
 	// with the audio queued behind it; dropping again could take the take that replaced it.
@@ -264,6 +288,14 @@ func (p *Player) playOne(path string, cancel chan struct{}) bool {
 	case <-cancel:
 		return false
 	}
+}
+
+// loadClip reads a clip whole with the player's load where one is set, else the package's own.
+func (p *Player) loadClip(path string) (beep.Streamer, error) {
+	if p.load != nil {
+		return p.load(path)
+	}
+	return load(path)
 }
 
 // sleepOrCancel waits for a gap, returning false when cancelled during it.
@@ -301,6 +333,8 @@ func (p *Player) complete(cancel chan struct{}) {
 
 // Stop ends the current sequence. It is safe to call when nothing is playing.
 func (p *Player) Stop() {
+	p.sequence.Lock()
+	defer p.sequence.Unlock()
 	p.mu.Lock()
 	cancel := p.cancel
 	p.cancel = nil

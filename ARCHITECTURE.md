@@ -654,8 +654,10 @@ are enabled, not hidden from assistive technology and actually rendered; the nav
 already open stays a stop. Tab and Right step forward; Shift+Tab and Left step back; both wrap. Text
 fields keep their own arrows and leave the ring by Tab; the volume slider gives Left and Right to the
 ring and keeps Up and Down. A drop-down list opens on Down; Up and Down never change its value with the
-list shut. A scrolling region joins the ring only while it overflows. The reaction list
-is a single stop whose rows are walked with Up and Down. A menu title opens on Down, Enter or Space;
+list shut. A scrolling region joins the ring only while it overflows and rings on focus alone, never
+under the pointer. The reaction list is a single stop whose rows are walked with Up and Down; being a
+list, it wears no ring and shows where focus is by its current row, brought into view as focus lands.
+No container is ever a stop. A menu title opens on Down, Enter or Space;
 Up and Down walk its items; Escape closes it back to the title. The main window starts neutral with
 nothing focused and no menu open; every dialog opens focused on its first enabled control and Escape
 closes it.

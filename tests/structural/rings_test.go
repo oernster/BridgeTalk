@@ -13,8 +13,9 @@ import (
 // window shows the wrong thing. Both belong to the keyboard model (FR-713).
 
 // scrollingRegions are the regions that become a ring stop while they overflow. None has
-// anything but its ring to show that focus has landed on it.
-var scrollingRegions = []string{".log", ".dialog .body", ".guide-body"}
+// anything but its ring to show that focus has landed on it. The reaction log is not one:
+// it is a list, which shows focus by its current row (TestNoListWearsARing).
+var scrollingRegions = []string{".dialog .body", ".guide-body"}
 
 // cssComment, cssRule and dangerRing take a style part apart: comments out, then each rule
 // as its selector list and its declarations, then whether a border wears the danger token.

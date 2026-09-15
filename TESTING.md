@@ -49,7 +49,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| `internal/infrastructure/audio` | 95.5% | 95% | `test.ps1` |
+| `internal/infrastructure/audio` | 95.3% | 95% | `test.ps1` |
 | the root package (the Wails facade) | 82.0% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 76.3% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
@@ -64,10 +64,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-830 test functions, which expand to 901 runs once their subtests are counted (measured on
+836 test functions, which expand to 907 runs once their subtests are counted (measured on
 2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
-Forty-four of them are the structural tests in `tests/structural`, which scan the source
+Forty-eight of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band, a doc comment on
 every exported type and the rule that the product is named in exactly one place
@@ -76,7 +76,9 @@ facade binds, the wire contract on both sides of it, colours confined to the tok
 with a token for every indicator tone, the contrast of the secondary lines (the
 purpose line and the Status cards' taglines) in both themes, every style part being
 read, the strip and the Status cards keeping their layout rules, every disabled control
-wearing the danger ring, every scrolling region ringed for the keyboard, the setup
+wearing the danger ring, every scrolling region ringed for the keyboard but never under
+the pointer, no list or container wearing a ring, nothing on the ring that cannot be acted
+on or scrolled, the setup
 program applying the boxes it shows with a header that repeats no title, the setup page
 loading every script it has with its body ringed for the keyboard, game vocabulary kept
 in its home, the shape of every cue id, the shipped script holding no problem with lines
@@ -117,7 +119,7 @@ only where the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.7%** |
 
-249 tests across 22 files, run under Vitest with jsdom.
+250 tests across 22 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -165,7 +167,7 @@ release is for.
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
   menu as drawn is not.
-- **`internal/infrastructure/audio` (95.5%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/audio` (95.3%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
   while a stop, an interrupting take and a take after silence each drop what is queued. The
@@ -176,7 +178,7 @@ release is for.
   failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
   rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
   error, an unreadable clip in `playOne` and a cancel landing between clips or during the
-  gap in `run`. The figure moves between runs: 95.0% and 95.5% were both
+  gap in `run`. The figure moves between runs: 95.0%, 95.3% and 95.5% were all
   measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
   into memory is tested directly, by deleting the file before streaming what came back:
   a streamer still holding reading to do fails there, which is exactly the reading that

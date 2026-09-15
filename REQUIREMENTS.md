@@ -466,7 +466,9 @@ Note: a machine voice is auditioned from its made lines, the line drawn being ma
 where it is not yet made (FR-545 to FR-548).
 Verified by: `TestTheAuditionPaneListsWhatAVoiceCanBeHeardOn` and
 `TestAnAuditionPlaysEvenWhileMuted` in `audition_test.go`; `TestAnAuditionDrawsFromTheNamedGroup`
-in `internal/infrastructure/library/catalogue_test.go`.
+in `internal/infrastructure/library/catalogue_test.go`; `TestTheEndOfAClipWithNoVoiceCastIsAnnounced`
+in `app_test.go` for an audition ending while no voice is cast, which ended the run until
+2026-09-15.
 
 **FR-217 The library is read only, with named exceptions**
 Priority: Must.

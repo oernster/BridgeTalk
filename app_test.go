@@ -70,6 +70,28 @@ func TestASupersededSequenceReportsThatSomethingIsStillPlaying(t *testing.T) {
 	}
 }
 
+// An audition plays with no voice cast (FR-216), so the end of its clip reaches the loop while no
+// scheduler exists. That end is announced like any other rather than ending the run: with nothing
+// cast, the window closed as the first auditioned line finished.
+func TestTheEndOfAClipWithNoVoiceCastIsAnnounced(t *testing.T) {
+	player := newFakePlayer()
+	current := &session{player: player}
+	fixtureMaking(t, current, offeredFiles(nil), makingtest.NewStore())
+	app := newApp(current, fixtureWatch, "library-root", nil)
+	log := newRecorder()
+	app.emit = log.emit
+
+	go app.run()
+	defer close(app.stop)
+
+	player.finish()
+
+	payload := log.await(t, playbackEvent)
+	if state, ok := payload.(PlaybackDTO); !ok || state.Playing {
+		t.Errorf("playback payload = %#v, want PlaybackDTO reporting nothing playing", payload)
+	}
+}
+
 // Before Wails calls startup there is no context to emit into. An event raised then
 // is dropped; the alternative is a nil-context panic on a path nothing can retry.
 func TestEmittingBeforeStartupIsDropped(t *testing.T) {

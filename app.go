@@ -205,7 +205,10 @@ func (a *App) run() {
 			}
 			a.handleTray(command)
 		case <-a.session.player.Done():
-			a.session.scheduler.Finished()
+			// An audition plays with no voice cast (FR-216), when there is no scheduler to tell.
+			if a.session.scheduler != nil {
+				a.session.scheduler.Finished()
+			}
 			a.emit(playbackEvent, PlaybackDTO{Playing: a.session.player.Playing()})
 		case <-ticker.C:
 			a.pollAndAnnounce()

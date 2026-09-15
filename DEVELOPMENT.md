@@ -271,7 +271,8 @@ Run the setup program:
 ```
 
 Everything it writes is per user, so Windows never asks for administrator rights: the
-files under `%LOCALAPPDATA%\Programs\BridgeTalk` with a copy of itself there as
+files in the install folder (`%LOCALAPPDATA%\Programs\BridgeTalk` unless Change on the Install screen
+picks another) with a copy of itself there as
 `uninstall.exe` plus the install record under `HKEY_CURRENT_USER`. Where you ask for
 them it also writes the Start Menu entry under `%APPDATA%`, the Desktop shortcut on your
 own Desktop and the login entry under `HKEY_CURRENT_USER`. With nothing installed it offers an install. Over an

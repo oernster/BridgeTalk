@@ -2,7 +2,24 @@
 
 function routeInstall(state) {
     $('install-title').textContent = `Install ${appName} ${state.thisVersion}`
-    $('install-path').textContent = state.installDir
+    // The folder the install writes. Change opens the folder picker and shows the folder the
+    // install would make inside the one picked; a folder that will not do is named with its
+    // reason while the last one that would stays (FR-809).
+    let installDir = state.installDir
+    const refusal = $('install-refusal')
+    const showLocation = (picked) => {
+        refusal.textContent = picked.refusal
+        refusal.hidden = !picked.refusal
+        if (picked.refusal) return
+        installDir = picked.dir
+        $('install-path').textContent = installDir
+    }
+    showLocation({dir: installDir, refusal: ''})
+    $('install-change').onclick = () => backend().ChooseInstallLocation(installDir)
+        .then((picked) => {
+            if (picked.dir || picked.refusal) showLocation(picked)
+        })
+        .catch((e) => showLocation({dir: installDir, refusal: String(e)}))
     const read = renderOptions($('install-options'), shortcutOptions(state).concat([
         launchOption(),
     ]))
@@ -13,7 +30,7 @@ function routeInstall(state) {
             label: 'Install', kind: 'primary',
             onClick: () => install(read, `Installing ${appName}`,
                 `${appName} is installed`,
-                'You are on v' + state.thisVersion + '.'),
+                'You are on v' + state.thisVersion + '.', installDir),
         },
     ])
 }

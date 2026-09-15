@@ -822,13 +822,22 @@ shown. On the install screen both shortcut boxes start ticked; on the update scr
 shortcuts the machine has. Every screen that writes files ends with a box, ticked by default, that starts
 the application and closes setup once the work succeeds.
 
-Everything is per user, so no step needs administrator rights: the files under
-`%LOCALAPPDATA%\Programs\BridgeTalk`, the Start Menu shortcut under `%APPDATA%`, the Desktop
-shortcut in the user's own Desktop directory and the install record and login entry under
-`HKEY_CURRENT_USER`. The shortcut boxes apply in both directions, so unticking one removes a shortcut
-rather than leaving a stale one behind. Setup copies itself into the install directory as
-`uninstall.exe` and registers that copy as the uninstaller and as the Modify target, with `NoModify` and
-`NoRepair` both zero.
+Everything is per user, so no step needs administrator rights: the files in the install folder, the
+Start Menu shortcut under `%APPDATA%`, the Desktop shortcut in the user's own Desktop directory and the
+install record and login entry under `HKEY_CURRENT_USER`. The shortcut boxes apply in both directions,
+so unticking one removes a shortcut rather than leaving a stale one behind. Setup copies itself into the
+install directory as `uninstall.exe` and registers that copy as the uninstaller and as the Modify
+target, with `NoModify` and `NoRepair` both zero.
+
+The install folder is chosen on the Install screen alone (FR-809). Setup offers
+`%LOCALAPPDATA%\Programs\BridgeTalk`; Change opens a folder picker and the install goes into a folder
+named for the product inside the folder picked, never into the picked folder itself, because uninstall
+deletes the install folder whole. `setup.CheckInstallDir` refuses a folder that already holds anything
+but the application, a path that is not full or stands beneath a file and a folder whose nearest
+existing folder this account cannot write to. The facade asks it when the picker returns and again
+before it writes. The folder is recorded as the Apps list entry's `InstallLocation`, which
+`setup.InstallDir` reads back for every later run; where nothing is recorded, the offered folder
+answers.
 
 Uninstall removes the shortcuts, the login entry and the install record, then the folder the made lines
 are kept in and the run log whatever is ticked (FR-525, FR-715), leaving the product's data folder around it, which can hold the
@@ -867,7 +876,7 @@ directory, so running setup leaves no folder beside the application's.
 | Made lines | `Made lines` in the product's local data folder (`%LOCALAPPDATA%\BridgeTalk` on Windows), one folder for the cast machine voice; never under the recordings directory |
 | Run log | `Log.txt` in the product's local data folder, started afresh once it passes 1 MB; removed by uninstall |
 | Theme and volume | the page's own storage, inside the web view's folder `%APPDATA%\BridgeTalk.exe` |
-| Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk`, per user |
+| Installed files | `%LOCALAPPDATA%\Programs\BridgeTalk` unless the Install screen picked another folder, per user; recorded in the install record |
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |
 | Login entry | `HKCU\...\CurrentVersion\Run`, written by setup or by Settings, one entry either way |
 | Login entry value | the quoted path plus `-hidden`, so a sign-in start waits in the tray |

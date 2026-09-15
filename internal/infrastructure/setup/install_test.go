@@ -20,7 +20,7 @@ func TestTheInstallAndStateDirectoriesComeFromTheEnvironment(t *testing.T) {
 	t.Setenv("LOCALAPPDATA", base)
 	t.Setenv("APPDATA", base)
 
-	install, err := InstallDir()
+	install, err := DefaultInstallDir()
 	if err != nil {
 		t.Fatalf("install dir: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestAMachineWithNoApplicationDataIsReportedRatherThanGuessedAt(t *testing.T
 	t.Setenv("LOCALAPPDATA", "")
 	t.Setenv("APPDATA", "")
 
-	if _, err := InstallDir(); err == nil {
+	if _, err := DefaultInstallDir(); err == nil {
 		t.Error("an install directory was invented with no LOCALAPPDATA")
 	}
 	if _, err := StateDir(); err == nil {

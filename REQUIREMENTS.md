@@ -1640,7 +1640,7 @@ skipped; with `bf_emma.bin`'s listed digest altered, they failed.
 Priority: Must.
 The application shall read the files a machine voice is made from out of the folder `models` beside
 its own executable.
-Rationale: setup writes the application under `%LOCALAPPDATA%\Programs\BridgeTalk` (FR-802) with
+Rationale: setup writes the application into the install folder (FR-802, FR-809) with
 those files beside it (FR-524). The repository's `models/` is found through `go.mod`, which an install
 does not have; one place to read from means no build quietly uses the repository's copy (recommended
 by Claude; accepted by Oliver on 2026-09-14).
@@ -2921,7 +2921,7 @@ button leads.
 **FR-802 Every install writes the same way**
 Priority: Must.
 When Install, Update, Go back or Reinstall is confirmed, setup shall write the application's files
-under `%LOCALAPPDATA%\Programs\BridgeTalk`, place a copy of itself there as `uninstall.exe` and
+into the install folder (FR-809), place a copy of itself there as `uninstall.exe` and
 record the application in the Apps list. It shall then apply the boxes as they stand (FR-235). Where
 the box to start the application is ticked, setup shall start it and close. Each shortcut setup writes
 shall name the program, its icon and its working directory exactly as those paths are spelled,
@@ -3017,6 +3017,45 @@ Enter as Space does" and "offers the body only while it holds more than fits" in
 screen opens on the action it leads with" tests in `frontend/src/setupScreens.test.ts`. Not verified
 by a test: real focus in the setup window.
 
+**FR-809 The install location can be chosen**
+Priority: Should.
+The Install screen shall show the folder setup will install into, `%LOCALAPPDATA%\Programs\BridgeTalk`
+until another is chosen, beside a Change button that opens a folder picker. When a folder is picked,
+setup shall show and install into a folder named `BridgeTalk` inside it; where the picked folder is
+already named `BridgeTalk`, setup shall use that folder itself. If that folder is not a full path, stands beneath a
+file, already holds files without `BridgeTalk.exe` among them or would first be written into a folder
+this account cannot write to, then setup shall name the folder with the reason beneath the location
+and keep the folder shown before. Setup shall check the folder again before it writes. Setup shall
+record the folder in the Apps list; Update, Go back, Repair, Reinstall, Uninstall and the boxes on the
+Installed screen shall act on the recorded folder. Only the Install screen shall offer the choice.
+Rationale: uninstall deletes the install folder with everything in it (FR-805), so setup never
+installs straight into a folder that may hold somebody's files. Picking `%LOCALAPPDATA%` would
+otherwise make `%LOCALAPPDATA%\BridgeTalk` the install folder, which holds the default recordings
+directory, the made lines and the log. Setup asks for no administrator rights, so a folder only an
+administrator may write to would fail part way through the install.
+Acceptance: Given nothing installed, when `D:\Games` is picked, then the location reads
+`D:\Games\BridgeTalk` and Install writes there. Given `%LOCALAPPDATA%\BridgeTalk\Recordings` exists,
+when `%LOCALAPPDATA%` is picked, then setup says `%LOCALAPPDATA%\BridgeTalk` already holds files that
+are not the application's and the location still reads the folder shown before.
+Note: offering the choice on the Install screen alone, always into a folder of its own inside the one
+picked, was recommended by Claude and accepted by Oliver on 2026-09-15. Moving an installed copy means
+uninstalling it and installing again.
+Verified by: `TestARecordedInstallLocationWinsOverTheOfferedFolder`,
+`TestAnInstallGoesIntoAFolderOfItsOwnInsideThePickedOne`,
+`TestAnInstallFolderThatIsNotThereYetIsTakenWithoutBeingMade`,
+`TestAnEmptyInstallFolderAndOneHoldingTheApplicationAreTaken`,
+`TestAnInstallFolderHoldingOtherFilesIsRefused`, `TestAnInstallFolderThatCannotBeUsedIsRefusedNamingIt`
+and `TestAnInstallFolderThisAccountCannotWriteToIsRefused` in
+`internal/infrastructure/setup/location_test.go`; `TestTheRegistryReadsAnswerWithoutFailing` in
+`internal/infrastructure/setup/windows_test.go`, for reading the recorded folder; "installs where it
+offers when nothing is changed", "shows the folder picked and installs into it", "names a folder that
+will not do and keeps the last one that would", "changes nothing when the picker is closed without a
+choice" and "leaves the folder to the setup program on every other screen" in
+`frontend/src/setupScreens.test.ts`. Not verified by a test: the folder picker; the facade checking the
+folder again before it writes; the recorded folder being read back after a real install; a real folder
+this account cannot write to, such as Program Files; a path whose drive does not exist; a folder that
+exists yet cannot be listed.
+
 ---
 
 ## 10. Build order
@@ -3044,7 +3083,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-724, NFR-P-201, NFR-P-204 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-809, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

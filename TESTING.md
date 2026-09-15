@@ -51,7 +51,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.3% | 95% | `test.ps1` |
 | the root package (the Wails facade) | 82.0% | 82% | `test.ps1` |
-| `internal/infrastructure/setup` | 76.3% | 61% | `test.ps1` |
+| `internal/infrastructure/setup` | 78.4% | 61% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 68.1% | 68% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
@@ -64,7 +64,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-836 test functions, which expand to 907 runs once their subtests are counted (measured on
+843 test functions, which expand to 914 runs once their subtests are counted (measured on
 2026-09-15: `func Test` in every `_test.go` file bar `TestMain`, then `=== RUN` in a verbose run of
 the whole suite; the build-tagged benchmarks are counted as functions but do not run).
 Forty-eight of them are the structural tests in `tests/structural`, which scan the source
@@ -120,7 +120,7 @@ only where the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.7%** |
 
-252 tests across 23 files, run under Vitest with jsdom.
+257 tests across 23 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -228,12 +228,15 @@ release is for.
 
 - **`installer` (0%).** The setup program's own Wails facade. Its methods write the
   uninstall registry key, create or remove shortcuts, write the login entry, close or
-  launch the application or extract a payload into the user's programs directory; the
-  few that do none of that read the machine or drive the Wails window. The logic
+  launch the application or extract a payload into the install folder; the
+  few that do none of that read the machine or drive the Wails window, such as the folder
+  picker behind the Install screen's Change button. Which folder it answers with is tested
+  in `internal/infrastructure/setup`; what the page does with the answer is tested in
+  `frontend/src/setupScreens.test.ts`. The logic
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (76.3% overall).**
+- **The registry writes in `internal/infrastructure/setup` (78.4% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -245,6 +248,11 @@ release is for.
   The same package's shortcuts go through the Windows shell's COM object; COM refusing
   to start, the object refusing to be made and a property or save being refused are not
   reached, nor is packing a payload failing on a read or a write inside the archive.
+  Checking a chosen install folder (FR-809) is tested over temporary folders, with a folder
+  this account cannot write to played by a probe that refuses; the real probe refusing is
+  not reached, nor is its empty file failing to close or to go. Neither is a path whose
+  drive does not exist, whose walk up would touch the machine's own drives, nor a folder
+  that exists yet cannot be listed.
 - **Process control in `process_windows.go`.** Closing and launching the application.
   Deleting the install directory is tested against a temporary directory: a PowerShell
   process started beside it waits for a stand-in for setup to exit, then deletes it, including

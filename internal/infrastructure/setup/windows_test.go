@@ -191,9 +191,9 @@ func TestApplyingShortcutsWithNowhereToPutThemIsNotAFailure(t *testing.T) {
 	ApplyShortcuts("", "", Shortcuts{})
 }
 
-// The three registry reads answer for this machine, so what they return is not a
-// test's to assert. What is a test's to assert is that each one answers rather than
-// failing, since every one of them is on the path the setup window opens on.
+// The registry reads answer for this machine, so what they return is not a test's to
+// assert. What is a test's to assert is that each one answers rather than failing, since
+// every one of them is on the path the setup window opens on.
 func TestTheRegistryReadsAnswerWithoutFailing(t *testing.T) {
 	_ = SystemPrefersDark()
 	_ = IsLaunchOnBoot()
@@ -201,6 +201,10 @@ func TestTheRegistryReadsAnswerWithoutFailing(t *testing.T) {
 
 	if version, installed := InstalledVersion(); installed && version == "" {
 		t.Fatal("the application reported as installed with no version")
+	}
+	// Installed or not, there is always a folder to act on: the recorded one or the offered one.
+	if dir, err := InstallDir(); err != nil || dir == "" {
+		t.Fatalf("install dir = %q, %v", dir, err)
 	}
 }
 

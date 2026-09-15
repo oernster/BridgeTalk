@@ -30,7 +30,11 @@
             <h1 id="install-title">Install</h1>
             <p class="lead">This installs for your account only, so Windows will not
                 ask for administrator rights.</p>
-            <div class="infobox">Install location<br/><span class="path" id="install-path"></span></div>
+            <div class="infobox location">
+                <div class="where">Install location<br/><span class="path" id="install-path"></span></div>
+                <button class="btn" id="install-change">Change</button>
+            </div>
+            <p class="refusal" id="install-refusal" hidden></p>
             <div class="options" id="install-options"></div>
         </section>
 

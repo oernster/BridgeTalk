@@ -34,17 +34,6 @@ const (
 	dirPerm       = 0o755
 )
 
-// InstallDir returns the per-user install directory,
-// %LOCALAPPDATA%\Programs\BridgeTalk. Installing under LOCALAPPDATA is what
-// keeps the whole flow free of an administrator prompt.
-func InstallDir() (string, error) {
-	base := os.Getenv("LOCALAPPDATA")
-	if base == "" {
-		return "", fmt.Errorf("LOCALAPPDATA is not set")
-	}
-	return filepath.Join(base, installSubdir, InstallFolder), nil
-}
-
 // StateDir returns the folder WebView2 creates for the application's window state
 // and theme choice. The application sets no WebviewUserDataPath, so WebView2 falls
 // back to %APPDATA% joined with the executable's own file name, the .exe suffix
@@ -175,6 +164,10 @@ const HiddenFlag = "-hidden"
 // uninstaller copy, so the registry entry and the setup program read it from here.
 const UninstallFlag = "-uninstall"
 
+// installLocationValue names the Apps list entry's record of the install folder, which every
+// run after the install reads back (FR-809).
+const installLocationValue = "InstallLocation"
+
 // uninstallValues is the text the Apps list entry holds, keyed by registry value name.
 //
 // It is kept apart from the registry write that stores it, which runs on Windows only,
@@ -182,13 +175,13 @@ const UninstallFlag = "-uninstall"
 func uninstallValues(info UninstallInfo) map[string]string {
 	quoted := quotedPath(info.UninstallExe)
 	return map[string]string{
-		"DisplayName":     AppName,
-		"DisplayVersion":  info.Version,
-		"InstallLocation": info.InstallDir,
-		"UninstallString": quoted + " " + UninstallFlag,
-		"ModifyPath":      quoted,
-		"DisplayIcon":     info.IconPath,
-		"Publisher":       Publisher,
+		"DisplayName":        AppName,
+		"DisplayVersion":     info.Version,
+		installLocationValue: info.InstallDir,
+		"UninstallString":    quoted + " " + UninstallFlag,
+		"ModifyPath":         quoted,
+		"DisplayIcon":        info.IconPath,
+		"Publisher":          Publisher,
 	}
 }
 

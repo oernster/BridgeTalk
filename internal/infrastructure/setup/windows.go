@@ -70,13 +70,24 @@ func RemoveUninstallEntry() error {
 
 // InstalledVersion returns the installed version and whether the application is
 // installed at all, read from the uninstall registry entry.
-func InstalledVersion() (string, bool) {
+func InstalledVersion() (string, bool) { return uninstallEntryValue("DisplayVersion") }
+
+// recordedInstallDir reads the install folder the uninstall registry entry records; empty
+// where there is no entry or it records none (FR-809).
+func recordedInstallDir() string {
+	dir, _ := uninstallEntryValue(installLocationValue)
+	return dir
+}
+
+// uninstallEntryValue reads one text value from the uninstall registry entry; false where
+// there is no entry or no such value.
+func uninstallEntryValue(name string) (string, bool) {
 	key, err := registry.OpenKey(registry.CURRENT_USER, uninstallKeyPath, registry.QUERY_VALUE)
 	if err != nil {
 		return "", false
 	}
 	defer key.Close()
-	value, _, err := key.GetStringValue("DisplayVersion")
+	value, _, err := key.GetStringValue(name)
 	if err != nil {
 		return "", false
 	}

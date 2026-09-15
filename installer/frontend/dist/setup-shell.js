@@ -221,10 +221,13 @@ async function withAppClosed(proceed) {
 
 // install runs one write of the files, whatever the screen called it. The launch
 // option is read here so a successful launch closes setup rather than leaving it
-// waiting on a Close button nobody needs.
-function install(read, title, doneTitle, doneMsg) {
+// waiting on a Close button nobody needs. installDir is the folder the Install screen
+// chose; every other screen leaves it empty, so the write goes where the application
+// already is (FR-809).
+function install(read, title, doneTitle, doneMsg, installDir = '') {
     const launchAfter = read('launch')
     const choices = {
+        installDir,
         startMenu: read('startMenu'),
         desktop: read('desktop'),
         launchOnBoot: read('boot'),

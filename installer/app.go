@@ -90,11 +90,22 @@ type StateDTO struct {
 	PrefersDark      bool   `json:"prefersDark"`
 }
 
-// OptionsDTO carries the choices made on the install or reinstall screen.
+// OptionsDTO carries the choices made on the install or reinstall screen. InstallDir is the
+// folder the Install screen chose; every other screen leaves it empty, so the write goes where
+// the application already is (FR-809).
 type OptionsDTO struct {
-	StartMenu    bool `json:"startMenu"`
-	Desktop      bool `json:"desktop"`
-	LaunchOnBoot bool `json:"launchOnBoot"`
+	InstallDir   string `json:"installDir"`
+	StartMenu    bool   `json:"startMenu"`
+	Desktop      bool   `json:"desktop"`
+	LaunchOnBoot bool   `json:"launchOnBoot"`
+}
+
+// InstallLocationDTO answers a pick made on the Install screen: the folder the install would
+// write plus the reason it will not do, where there is one. Both are empty when the picker
+// was closed without a choice.
+type InstallLocationDTO struct {
+	Dir     string `json:"dir"`
+	Refusal string `json:"refusal"`
 }
 
 // Progress is emitted on the "progress" event while a long operation runs.
@@ -142,6 +153,41 @@ func (a *App) DetectState() StateDTO {
 	}
 }
 
+// ChooseInstallLocation opens the folder picker where current would first be written and
+// answers with the install folder inside the folder picked, checked before the Install screen
+// shows it (FR-809).
+func (a *App) ChooseInstallLocation(current string) InstallLocationDTO {
+	start, _ := setup.NearestFolder(current)
+	picked, err := wailsruntime.OpenDirectoryDialog(a.ctx, wailsruntime.OpenDialogOptions{
+		Title:            "Choose where to install " + setup.AppName,
+		DefaultDirectory: start,
+	})
+	if err != nil {
+		return InstallLocationDTO{Refusal: err.Error()}
+	}
+	if picked == "" {
+		return InstallLocationDTO{}
+	}
+	dir := setup.InstallDirWithin(picked)
+	if err := setup.CheckInstallDir(dir); err != nil {
+		return InstallLocationDTO{Dir: dir, Refusal: err.Error()}
+	}
+	return InstallLocationDTO{Dir: dir}
+}
+
+// installTarget answers where a write goes. A folder chosen on the Install screen is checked
+// again rather than trusted, since the page holds only what it was told; every other write
+// goes where the application already is (FR-809).
+func installTarget(chosen string) (string, error) {
+	if chosen == "" {
+		return setup.InstallDir()
+	}
+	if err := setup.CheckInstallDir(chosen); err != nil {
+		return "", err
+	}
+	return chosen, nil
+}
+
 // AppRunning reports whether the application is open, so the front end can offer to
 // close it rather than failing later on a locked executable.
 func (a *App) AppRunning() bool { return setup.IsAppRunning() }
@@ -177,7 +223,7 @@ func (a *App) write(choices OptionsDTO) error {
 	if setup.IsAppRunning() {
 		return setup.ErrAppRunning
 	}
-	dir, err := setup.InstallDir()
+	dir, err := installTarget(choices.InstallDir)
 	if err != nil {
 		return err
 	}

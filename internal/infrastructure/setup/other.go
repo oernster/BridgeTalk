@@ -40,6 +40,9 @@ func RemoveUninstallEntry() error { return ErrUnsupported }
 // InstalledVersion reports nothing installed off Windows.
 func InstalledVersion() (string, bool) { return "", false }
 
+// recordedInstallDir records no install folder off Windows, so the offered folder answers.
+func recordedInstallDir() string { return "" }
+
 // SetLaunchOnBoot has no login entry to write off Windows.
 func SetLaunchOnBoot(string, bool) error { return ErrUnsupported }
 

@@ -26,11 +26,30 @@ interface State {
   prefersDark: boolean
 }
 
+/** Options are the choices the page hands an install. */
+interface Options {
+  installDir?: string
+  startMenu: boolean
+  desktop: boolean
+  launchOnBoot: boolean
+}
+
+/** InstallLocation answers a pick of the install folder. */
+interface InstallLocation {
+  dir: string
+  refusal: string
+}
+
 /** FakeSetup stands in for the setup program, recording the calls that change anything. */
 class FakeSetup {
   running = false
   quits = 0
   uninstalls: boolean[] = []
+  installs: Options[] = []
+  /** picks are the answers the folder picker gives, one per press of Change. */
+  picks: InstallLocation[] = []
+  /** pickedFrom records the folder each pick was opened from. */
+  pickedFrom: string[] = []
 
   AppRunning = (): Promise<boolean> => Promise.resolve(this.running)
   Quit = (): void => {
@@ -41,7 +60,14 @@ class FakeSetup {
     return Promise.resolve()
   }
   Repair = (): Promise<void> => Promise.resolve()
-  Install = (): Promise<void> => Promise.resolve()
+  Install = (choices: Options): Promise<void> => {
+    this.installs.push(choices)
+    return Promise.resolve()
+  }
+  ChooseInstallLocation = (current: string): Promise<InstallLocation> => {
+    this.pickedFrom.push(current)
+    return Promise.resolve(this.picks.shift() ?? { dir: '', refusal: '' })
+  }
   LaunchApp = (): Promise<void> => Promise.resolve()
   TakeKeyboard = (): Promise<void> => Promise.resolve()
   SetShortcuts = (): Promise<void> => Promise.resolve()
@@ -152,6 +178,73 @@ describe('each setup screen opens on the action it leads with', () => {
     await settle()
     expect(activeScreen()).toBe('screen-done')
     expect(focusedLabel()).toBe('Close')
+  })
+})
+
+/** pageElement finds one element of the page by id, failing loudly rather than handing back null. */
+function pageElement(id: string): HTMLElement {
+  const found = document.getElementById(id)
+  if (found === null) throw new Error(`no #${id} on the page`)
+  return found
+}
+
+describe('the install location (FR-809)', () => {
+  const nothingInstalled: State = { ...installed, mode: 'install', installed: false }
+
+  it('installs where it offers when nothing is changed', async () => {
+    setupPage.route(nothingInstalled)
+    expect(pageElement('install-path').textContent).toBe(installed.installDir)
+
+    footerButton('Install').click()
+    await settle()
+    expect(setup.installs.map((choices) => choices.installDir)).toEqual([installed.installDir])
+  })
+
+  it('shows the folder picked and installs into it', async () => {
+    setup.picks.push({ dir: 'D:\\Games\\Product', refusal: '' })
+    setupPage.route(nothingInstalled)
+
+    pageElement('install-change').click()
+    await settle()
+    expect(setup.pickedFrom).toEqual([installed.installDir])
+    expect(pageElement('install-path').textContent).toBe('D:\\Games\\Product')
+    expect(pageElement('install-refusal').hidden).toBe(true)
+
+    footerButton('Install').click()
+    await settle()
+    expect(setup.installs.map((choices) => choices.installDir)).toEqual(['D:\\Games\\Product'])
+  })
+
+  it('names a folder that will not do and keeps the last one that would', async () => {
+    const reason = 'D:\\Stuff\\Product already holds files, which uninstalling would delete'
+    setup.picks.push({ dir: 'D:\\Stuff\\Product', refusal: reason })
+    setupPage.route(nothingInstalled)
+
+    pageElement('install-change').click()
+    await settle()
+    expect(pageElement('install-refusal').hidden).toBe(false)
+    expect(pageElement('install-refusal').textContent).toBe(reason)
+    expect(pageElement('install-path').textContent).toBe(installed.installDir)
+
+    footerButton('Install').click()
+    await settle()
+    expect(setup.installs.map((choices) => choices.installDir)).toEqual([installed.installDir])
+  })
+
+  it('changes nothing when the picker is closed without a choice', async () => {
+    setupPage.route(nothingInstalled)
+
+    pageElement('install-change').click()
+    await settle()
+    expect(pageElement('install-path').textContent).toBe(installed.installDir)
+    expect(pageElement('install-refusal').hidden).toBe(true)
+  })
+
+  it('leaves the folder to the setup program on every other screen', async () => {
+    setupPage.route({ ...installed, relation: 'newer' })
+    footerButton('Update').click()
+    await settle()
+    expect(setup.installs.map((choices) => choices.installDir)).toEqual([''])
   })
 })
 

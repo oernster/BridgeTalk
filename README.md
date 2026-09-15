@@ -119,6 +119,7 @@ aside and the voice is found by its names alone.
 
 Download the setup program from [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/) and run
 it. Everything it writes is for your own Windows account, so it never asks for administrator rights.
+It installs under your own application data unless you choose another folder on its first screen.
 Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
 choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.
 

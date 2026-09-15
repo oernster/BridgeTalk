@@ -73,7 +73,6 @@ var shipped = []credit{
 	{"", "Kokoro-82M", "Apache-2.0, by hexgrad, converted to ONNX by onnx-community", "the voice model and its voices"},
 	{"github.com/gopxl/beep/v2", "beep", "MIT", "audio decoding, mixing and playback"},
 	{"github.com/ebitengine/oto/v3", "oto", "Apache-2.0", "the audio output device"},
-	{"github.com/ebitengine/purego", "purego", "Apache-2.0", "calling the system audio API without cgo"},
 	{"github.com/hajimehoshi/go-mp3", "go-mp3", "Apache-2.0", "MP3 decoding"},
 	{"github.com/jfreymuth/oggvorbis", "oggvorbis", "MIT", "Ogg Vorbis decoding"},
 	{"github.com/mewkiz/flac", "flac", "Unlicense", "FLAC decoding"},

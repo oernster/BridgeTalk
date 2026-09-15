@@ -65,6 +65,11 @@ export const guideSections: GuideSection[] = [
         text: 'where your recordings are, then every voice still missing a recording. For the one chosen it lists each missing moment with a line saying when it is heard, the folder its audio file belongs in and a button that opens that folder. Record the take in a program such as Audacity, save it there, then press Refresh.',
       },
       {
+        icons: [artwork.chatter],
+        name: 'Chatter',
+        text: 'which moments it speaks for, each with a switch of its own.',
+      },
+      {
         icons: [artwork.settings],
         name: 'Settings',
         text: 'the journal directory and whether it starts when you sign in.',
@@ -107,6 +112,11 @@ export const guideSections: GuideSection[] = [
     ],
   },
   {
+    heading: 'The Chatter pane',
+    intro:
+      'Choose here which moments are spoken for. Every moment the game raises is listed under its category, each with a switch: the knob sits at the right on orange while the moment is spoken for and at the left while it is switched off. A moment switched off stays quiet; the Status pane records it as off. The switch beside a category changes every moment in that category; Switch all on and Switch all off change every moment, asking first wherever more than one would change. The switches belong to no voice, so casting another voice leaves them as they are; they are kept for the next start.',
+  },
+  {
     heading: 'The notification area',
     intro: 'While the window is put away the application keeps watching the game and keeps speaking.',
     entries: [
@@ -123,7 +133,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The menus',
     paragraphs: [
-      'File holds Quit. Audio opens Cast, Audition or Missing takes and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
+      'File holds Quit. Audio opens Cast, Audition, Missing takes or Chatter and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
     ],
   },
   {
@@ -151,7 +161,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Quiet is often the right answer.',
-        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings. The game restating itself within 900 milliseconds collapses into one line; a cue the voice has no recording for stays silent rather than borrowing another. A machine voice makes a missing line when its cue fires; the cue is dropped where that line is not ready in time. While muted, nothing plays in answer to the game. The Status pane logs each of these decisions with its reason.',
+        text: 'An alert interrupts anything less urgent; a notice waits its turn; an ambient line is dropped when something is already waiting; incidental chatter is dropped whenever anything is waiting or speaking. Many cues also hold a minimum interval between two firings. The game restating itself within 900 milliseconds collapses into one line; a cue the voice has no recording for stays silent rather than borrowing another. A machine voice makes a missing line when its cue fires; the cue is dropped where that line is not ready in time. While muted, nothing plays in answer to the game. A moment switched off on the Chatter pane stays quiet whatever else is happening. The Status pane logs each of these decisions with its reason.',
       },
       {
         title: 'Your recordings are never changed.',
@@ -162,7 +172,7 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'Also worth knowing',
     paragraphs: [
-      'The cast voice and both directories are kept in a settings file under your own application data folder; the theme and the volume are kept by the window itself. All of them are picked up again at the next start.',
+      'The cast voice, both directories and the moments switched off are kept in a settings file under your own application data folder; the theme and the volume are kept by the window itself. All of them are picked up again at the next start.',
       'The journal directory is found under your own profile until you choose one. Choosing the journal directory in Settings or the recordings directory on the Missing takes pane takes effect at once. A recordings directory holding no voice yet is refused; until one is chosen, Make folders puts a new voice in a Recordings folder inside your local application data folder and keeps that as the recordings directory.',
       'With Start it when I sign in ticked, signing in to Windows starts it hidden in the notification area.',
       'Started from a command line it takes -library, -journal and -voice for that run only, over what Settings holds. -list prints the voices found with their coverage and -unbound the cues the chosen voice cannot serve, each then exiting; -no-tray runs it without the notification-area icon, when the cross on the window quits at once.',

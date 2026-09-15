@@ -106,6 +106,17 @@ describe('the guide pane', () => {
     expect(drawn).toEqual(declared)
   })
 
+  // FR-739: what the pane is for, what a category's switch does and that the switches belong to
+  // no voice.
+  it('describes the Chatter pane', () => {
+    render(<GuidePane />)
+
+    const said = screen.getByRole('heading', { name: 'The Chatter pane' }).parentElement?.textContent ?? ''
+    expect(said).toContain('which moments are spoken for')
+    expect(said).toContain('The switch beside a category changes every moment in that category')
+    expect(said).toContain('The switches belong to no voice')
+  })
+
   it('draws every rule and every paragraph', () => {
     render(<GuidePane />)
 

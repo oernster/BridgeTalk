@@ -57,6 +57,7 @@ vi.mock('./api', () => ({
     making: () => Promise.resolve(nothingMade),
     castMachineVoice: () => Promise.resolve(),
     openDonation: () => Promise.resolve(),
+    chatter: () => Promise.resolve({ categories: [], problem: '' }),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -129,6 +130,17 @@ describe('the shell', () => {
     expect(await screen.findByRole('heading', { name: 'Cast' })).toBeTruthy()
     expect(inBand().getByRole('button', { name: 'Cast' }).getAttribute('aria-current'))
       .toBe('page')
+  })
+
+  // FR-726.
+  it('opens the Chatter pane from the band', async () => {
+    await show()
+    await screen.findByRole('heading', { name: 'Cast' })
+
+    band('Chatter')
+
+    expect(await screen.findByRole('heading', { name: 'Chatter' })).toBeTruthy()
+    expect(inBand().getByRole('button', { name: 'Chatter' }).getAttribute('aria-current')).toBe('page')
   })
 
   it('switches the pane under the band rather than opening a dialog over it', async () => {
@@ -275,7 +287,7 @@ describe('the strip along the foot', () => {
   it('draws the strip beneath whichever pane is open', async () => {
     await show()
 
-    for (const label of ['Cast', 'Audition', 'Status', 'Missing takes', 'Settings', 'Guide']) {
+    for (const label of ['Cast', 'Audition', 'Status', 'Missing takes', 'Chatter', 'Settings', 'Guide']) {
       band(label)
       const strip = document.querySelector('main.pane + footer.strip') as HTMLElement | null
       expect(strip, `no strip beneath the ${label} pane`).not.toBeNull()

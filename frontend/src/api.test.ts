@@ -61,6 +61,10 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     SetLaunchOnBoot: record('SetLaunchOnBoot', undefined),
     MinimiseToTray: record('MinimiseToTray', undefined),
     RequestQuit: record('RequestQuit', undefined),
+    Chatter: record('Chatter', { categories: [], problem: '' }),
+    SetMoment: record('SetMoment', { categories: [], problem: '' }),
+    SetCategory: record('SetCategory', { categories: [], problem: '' }),
+    SetAllMoments: record('SetAllMoments', { categories: [], problem: '' }),
     ...overrides,
   }
   ;(window as unknown as { go: unknown }).go = { main: { App } }
@@ -112,6 +116,10 @@ describe('with the window bridge present', () => {
     await api.setLaunchOnBoot(true)
     await api.minimiseToTray()
     await api.requestQuit()
+    await api.chatter()
+    await api.setMoment('Docked', false)
+    await api.setCategory('Session', true)
+    await api.setAllMoments(false)
 
     expect(calls.map((call) => call.name)).toEqual([
       'State',
@@ -144,6 +152,10 @@ describe('with the window bridge present', () => {
       'SetLaunchOnBoot',
       'MinimiseToTray',
       'RequestQuit',
+      'Chatter',
+      'SetMoment',
+      'SetCategory',
+      'SetAllMoments',
     ])
   })
 
@@ -261,6 +273,11 @@ describe('with no window bridge at all', () => {
     expect(await api.setLaunchOnBoot(true)).toBeUndefined()
     expect(await api.minimiseToTray()).toBeUndefined()
     expect(await api.requestQuit()).toBeUndefined()
+    const noChatter = { categories: [], problem: '' }
+    expect(await api.chatter()).toEqual(noChatter)
+    expect(await api.setMoment('Docked', false)).toEqual(noChatter)
+    expect(await api.setCategory('Session', true)).toEqual(noChatter)
+    expect(await api.setAllMoments(false)).toEqual(noChatter)
   })
 
   // Making folders with no bridge makes none and answers with an empty path, so the Cast

@@ -119,6 +119,11 @@ type session struct {
 	// silence and the control still has to answer, so the session holds the answer
 	// and hands it to each service it builds.
 	muted bool
+
+	// chatter holds which moments are switched off. It is built once and handed to each reaction
+	// service and scheduler a cast builds, so casting another voice leaves every switch as it
+	// stands (FR-630).
+	chatter *services.ChatterService
 }
 
 // hasVoice reports whether a voice is cast.
@@ -149,6 +154,12 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 		s.table, s.catalogue, s.scheduler, s.chooser, s.reporter, systemClock{},
 	)
 	s.reactions.SetMuted(s.muted)
+	// The switches outlive the cast, so the ones in force stay in force (FR-630). A session built
+	// without them, as some tests build one, has every moment on.
+	if s.chatter != nil {
+		s.scheduler.SetSwitchboard(s.chatter)
+		s.reactions.SetSwitchboard(s.chatter)
+	}
 	// A machine voice makes a cue's lines when the cue fires with none (FR-514); a recorded voice has
 	// nothing more to make.
 	if maker, ok := source.(ports.CueMaker); ok {
@@ -275,6 +286,8 @@ func run() error {
 		table: table, available: found,
 		chooser: chooser, player: player,
 		making: making, maker: maker,
+		// Read once here, over the same store the directories came from (FR-629).
+		chatter: services.NewChatterService(table, settings),
 	}
 	if !*noTray {
 		current.tray = startTray(found, chosen.Name)

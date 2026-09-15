@@ -87,6 +87,19 @@ type Settings struct {
 	// because a recordings folder may carry a machine voice's id as its name; at most one of
 	// the two holds a voice (FR-540).
 	MachineVoice string
+
+	// SwitchedOff is the ids of the moments switched off on Chatter, in id order (FR-629). Every
+	// moment not named is switched on, so a file that names none, an older one included, has
+	// everything on (FR-628).
+	SwitchedOff []string
+}
+
+// Switchboard answers whether a moment is switched off on Chatter (FR-622).
+//
+// The engine asks it at each decision rather than holding a copy, so a switch changed from the
+// window applies from the next firing with no restart (FR-627).
+type Switchboard interface {
+	Off(id cue.ID) bool
 }
 
 // SettingsStore keeps those choices between runs.
@@ -137,4 +150,6 @@ const (
 	OutcomeDropped = "dropped"
 	// OutcomeMaking means the cue fired with no line made, so its line is being made for it (FR-514).
 	OutcomeMaking = "making"
+	// OutcomeOff means the cue is switched off on Chatter, so nothing was said (FR-622).
+	OutcomeOff = "off"
 )

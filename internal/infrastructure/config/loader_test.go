@@ -41,12 +41,16 @@ func TestTheShippedCueTableLoadsWithNoOverride(t *testing.T) {
 func TestAnOverrideFileReplacesTheShippedCueTable(t *testing.T) {
 	t.Parallel()
 	path := overrideFile(t, "cues.toml", `
+[[category]]
+name = "Tests"
+
 [[cue]]
 id = "test.only"
 source = "journal"
 event = "FSDJump"
 priority = "notice"
 purpose = "When a test says so."
+category = "Tests"
 `)
 	table, err := config.LoadCueTable(path)
 	if err != nil {

@@ -47,8 +47,12 @@ lines it makes on your own machine; record a voice of your own whenever you like
   an ambient line is dropped when something is already waiting; a flavour line is dropped when
   anything is playing or waiting. Many moments hold a minimum interval between two firings. The
   same moment raised twice within 900 milliseconds is heard once. Mute silences every answer to the game.
+- **Speaks only for the moments you choose.** The Chatter pane lists every moment the game raises
+  under its subject, each with a switch; a moment switched off stays quiet whichever voice is cast.
+  A category's switch, Switch all on and Switch all off change many at once, asking first. Station
+  traffic has a switch of its own, apart from every other message.
 - **Explains every decision.** For every moment the game raises that has a cue, the Status pane
-  logs what became of it (played, queued, making, dropped, cooldown, duplicate or unbound), including the
+  logs what became of it (played, queued, making, dropped, cooldown, duplicate, off or unbound), including the
   ones that produced no sound. It keeps the latest 200. The same pane names the journal directory
   and status file being watched and says when no audio device was found or the device ran dry.
 - **Shows what a voice covers.** For any voice, cast or not, the mark beside it on the Cast pane

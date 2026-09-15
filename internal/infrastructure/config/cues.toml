@@ -9,6 +9,47 @@
 #
 # cooldown is in seconds. A cue with no cooldown may fire as often as its event does.
 
+# ------------------------------------------------------------------- the categories
+
+# Chatter lists the moments under these, in this order (FR-634, FR-635). Every cue the
+# game raises names one; the cue from the application names none.
+
+[[category]]
+name = "Combat and danger"
+
+[[category]]
+name = "Flight and travel"
+
+[[category]]
+name = "Docking and stations"
+
+[[category]]
+name = "Comms"
+
+[[category]]
+name = "Ship systems"
+
+[[category]]
+name = "Exploration"
+
+[[category]]
+name = "Trade, missions and outfitting"
+
+[[category]]
+name = "Materials and engineering"
+
+[[category]]
+name = "On foot and vehicles"
+
+[[category]]
+name = "Fleet carriers"
+
+[[category]]
+name = "Wings, squadrons and friends"
+
+[[category]]
+name = "Session"
+
 # ------------------------------------------------------------------ the application
 
 # Played once when a voice is chosen. Its source is the application rather than the
@@ -26,6 +67,7 @@ priority = "notice"
 [[cue]]
 id = "ApproachBody"
 purpose = "When the ship comes close enough to a planet to enter orbital cruise."
+category = "Flight and travel"
 source = "journal"
 event = "ApproachBody"
 priority = "notice"
@@ -33,6 +75,7 @@ priority = "notice"
 [[cue]]
 id = "ApproachSettlement"
 purpose = "When the ship comes within range of a surface settlement."
+category = "Docking and stations"
 source = "journal"
 event = "ApproachSettlement"
 priority = "notice"
@@ -40,6 +83,7 @@ priority = "notice"
 [[cue]]
 id = "Bounty"
 purpose = "When you are awarded a bounty for destroying a wanted target."
+category = "Combat and danger"
 source = "journal"
 event = "Bounty"
 priority = "notice"
@@ -47,6 +91,7 @@ priority = "notice"
 [[cue]]
 id = "BuyAmmo"
 purpose = "When you pay to restock ammunition at a station."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "BuyAmmo"
 priority = "notice"
@@ -54,6 +99,7 @@ priority = "notice"
 [[cue]]
 id = "BuyDrones"
 purpose = "When you buy limpet drones."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "BuyDrones"
 priority = "notice"
@@ -61,6 +107,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierCrewServices"
 purpose = "When a crew service on your fleet carrier changes in a way the narrower carrier crew cues do not cover."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierCrewServices"
 priority = "notice"
@@ -68,6 +115,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierCrewServices.Operation.Deactivate"
 purpose = "When a crew service on your fleet carrier is shut down."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierCrewServices"
 match = { Operation = "Deactivate" }
@@ -76,6 +124,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierCrewServices.Operation.Pause"
 purpose = "When a crew service on your fleet carrier is suspended."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierCrewServices"
 match = { Operation = "Pause" }
@@ -84,6 +133,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierCrewServices.Operation.Resume"
 purpose = "When a suspended crew service on your fleet carrier starts again."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierCrewServices"
 match = { Operation = "Resume" }
@@ -92,6 +142,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierDepositFuel"
 purpose = "When you donate tritium to a fleet carrier's fuel store."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierDepositFuel"
 priority = "notice"
@@ -99,6 +150,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierDockingPermission"
 purpose = "When the docking access rules of your fleet carrier are changed."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierDockingPermission"
 priority = "notice"
@@ -106,6 +158,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierJump"
 purpose = "When a fleet carrier you are aboard arrives in a new system."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierJump"
 priority = "notice"
@@ -113,6 +166,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierJumpCancelled"
 purpose = "When a scheduled fleet carrier jump is called off."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierJumpCancelled"
 priority = "notice"
@@ -120,6 +174,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierJumpRequest"
 purpose = "When you schedule a jump for your fleet carrier."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierJumpRequest"
 priority = "notice"
@@ -127,6 +182,7 @@ priority = "notice"
 [[cue]]
 id = "CarrierTradeOrder"
 purpose = "When you set or cancel a buy or sell order on your fleet carrier's market."
+category = "Fleet carriers"
 source = "journal"
 event = "CarrierTradeOrder"
 priority = "notice"
@@ -134,6 +190,7 @@ priority = "notice"
 [[cue]]
 id = "CodexEntry"
 purpose = "When a new entry is logged in the codex, such as a species or a stellar phenomenon."
+category = "Exploration"
 source = "journal"
 event = "CodexEntry"
 priority = "notice"
@@ -141,6 +198,7 @@ priority = "notice"
 [[cue]]
 id = "ColonisationContribution"
 purpose = "When you deliver goods toward the construction of a colony."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ColonisationContribution"
 priority = "notice"
@@ -148,6 +206,7 @@ priority = "notice"
 [[cue]]
 id = "CommitCrime"
 purpose = "When you commit a crime that the narrower crime cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "CommitCrime"
 priority = "notice"
@@ -155,6 +214,7 @@ priority = "notice"
 [[cue]]
 id = "CommitCrime.CrimeType.assault"
 purpose = "When you attack someone who is not wanted."
+category = "Combat and danger"
 source = "journal"
 event = "CommitCrime"
 match = { CrimeType = "assault" }
@@ -163,6 +223,7 @@ priority = "notice"
 [[cue]]
 id = "CommitCrime.CrimeType.collidedAtSpeedInNoFireZone"
 purpose = "When you collide with something at speed inside a no fire zone."
+category = "Combat and danger"
 source = "journal"
 event = "CommitCrime"
 match = { CrimeType = "collidedAtSpeedInNoFireZone" }
@@ -171,6 +232,7 @@ priority = "notice"
 [[cue]]
 id = "CommitCrime.CrimeType.dockingMinorTresspass"
 purpose = "When you loiter in a station's docking area without permission."
+category = "Combat and danger"
 source = "journal"
 event = "CommitCrime"
 match = { CrimeType = "dockingMinorTresspass" }
@@ -179,6 +241,7 @@ priority = "notice"
 [[cue]]
 id = "CommitCrime.CrimeType.murder"
 purpose = "When you destroy a ship that was not wanted."
+category = "Combat and danger"
 source = "journal"
 event = "CommitCrime"
 match = { CrimeType = "murder" }
@@ -187,6 +250,7 @@ priority = "notice"
 [[cue]]
 id = "CrimeVictim"
 purpose = "When a crime is committed against you that the narrower victim cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "CrimeVictim"
 priority = "notice"
@@ -194,6 +258,7 @@ priority = "notice"
 [[cue]]
 id = "CrimeVictim.CrimeType.assault"
 purpose = "When someone attacks you while you are not wanted."
+category = "Combat and danger"
 source = "journal"
 event = "CrimeVictim"
 match = { CrimeType = "assault" }
@@ -202,6 +267,7 @@ priority = "notice"
 [[cue]]
 id = "CrimeVictim.CrimeType.interdiction"
 purpose = "When someone illegally pulls you out of supercruise."
+category = "Combat and danger"
 source = "journal"
 event = "CrimeVictim"
 match = { CrimeType = "interdiction" }
@@ -210,6 +276,7 @@ priority = "notice"
 [[cue]]
 id = "DataScanned"
 purpose = "When your ship finishes scanning a data point, such as a data link or a beacon."
+category = "Exploration"
 source = "journal"
 event = "DataScanned"
 priority = "notice"
@@ -217,6 +284,7 @@ priority = "notice"
 [[cue]]
 id = "Died"
 purpose = "When you are killed."
+category = "Combat and danger"
 source = "journal"
 event = "Died"
 priority = "alert"
@@ -224,6 +292,7 @@ priority = "alert"
 [[cue]]
 id = "Disembark"
 purpose = "When you step out onto foot in a way the two narrower cues do not cover."
+category = "On foot and vehicles"
 source = "journal"
 event = "Disembark"
 priority = "notice"
@@ -231,6 +300,7 @@ priority = "notice"
 [[cue]]
 id = "Disembark.SRV.false"
 purpose = "When you step out of a ship onto foot."
+category = "On foot and vehicles"
 source = "journal"
 event = "Disembark"
 match = { SRV = "false" }
@@ -239,6 +309,7 @@ priority = "notice"
 [[cue]]
 id = "Disembark.SRV.true"
 purpose = "When you step out of an SRV onto foot."
+category = "On foot and vehicles"
 source = "journal"
 event = "Disembark"
 match = { SRV = "true" }
@@ -247,6 +318,7 @@ priority = "notice"
 [[cue]]
 id = "DockSRV"
 purpose = "When your SRV is taken back aboard the ship."
+category = "On foot and vehicles"
 source = "journal"
 event = "DockSRV"
 priority = "notice"
@@ -254,6 +326,7 @@ priority = "notice"
 [[cue]]
 id = "Docked"
 purpose = "When the ship finishes docking, as the journal records it."
+category = "Docking and stations"
 source = "journal"
 event = "Docked"
 priority = "ambient"
@@ -262,6 +335,7 @@ cooldown = 30
 [[cue]]
 id = "DockingCancelled"
 purpose = "When you cancel a docking request."
+category = "Docking and stations"
 source = "journal"
 event = "DockingCancelled"
 priority = "notice"
@@ -269,6 +343,7 @@ priority = "notice"
 [[cue]]
 id = "DockingDenied"
 purpose = "When a docking request is refused for a reason the narrower cues do not cover."
+category = "Docking and stations"
 source = "journal"
 event = "DockingDenied"
 priority = "notice"
@@ -276,6 +351,7 @@ priority = "notice"
 [[cue]]
 id = "DockingDenied.Reason.Distance"
 purpose = "When a docking request is refused because the ship is too far away."
+category = "Docking and stations"
 source = "journal"
 event = "DockingDenied"
 match = { Reason = "Distance" }
@@ -284,6 +360,7 @@ priority = "notice"
 [[cue]]
 id = "DockingDenied.Reason.JumpImminent"
 purpose = "When a fleet carrier refuses docking because it is about to jump."
+category = "Docking and stations"
 source = "journal"
 event = "DockingDenied"
 match = { Reason = "JumpImminent" }
@@ -292,6 +369,7 @@ priority = "notice"
 [[cue]]
 id = "DockingDenied.Reason.NoSpace"
 purpose = "When a docking request is refused because no landing pad is free."
+category = "Docking and stations"
 source = "journal"
 event = "DockingDenied"
 match = { Reason = "NoSpace" }
@@ -300,6 +378,7 @@ priority = "notice"
 [[cue]]
 id = "DockingDenied.Reason.TooLarge"
 purpose = "When a docking request is refused because the ship is too big for the pads."
+category = "Docking and stations"
 source = "journal"
 event = "DockingDenied"
 match = { Reason = "TooLarge" }
@@ -308,6 +387,7 @@ priority = "notice"
 [[cue]]
 id = "DockingGranted"
 purpose = "When a station accepts a docking request and assigns a pad."
+category = "Docking and stations"
 source = "journal"
 event = "DockingGranted"
 priority = "ambient"
@@ -316,6 +396,7 @@ cooldown = 30
 [[cue]]
 id = "DockingRequested"
 purpose = "When you send a docking request."
+category = "Docking and stations"
 source = "journal"
 event = "DockingRequested"
 priority = "ambient"
@@ -324,6 +405,7 @@ cooldown = 30
 [[cue]]
 id = "DockingTimeout"
 purpose = "When a docking permission lapses before the ship lands."
+category = "Docking and stations"
 source = "journal"
 event = "DockingTimeout"
 priority = "notice"
@@ -331,6 +413,7 @@ priority = "notice"
 [[cue]]
 id = "EjectCargo"
 purpose = "When you jettison cargo."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "EjectCargo"
 priority = "notice"
@@ -338,6 +421,7 @@ priority = "notice"
 [[cue]]
 id = "Embark"
 purpose = "When you board a ship or SRV from foot."
+category = "On foot and vehicles"
 source = "journal"
 event = "Embark"
 priority = "notice"
@@ -345,6 +429,7 @@ priority = "notice"
 [[cue]]
 id = "EngineerCraft"
 purpose = "When an engineer applies a modification to a module."
+category = "Materials and engineering"
 source = "journal"
 event = "EngineerCraft"
 priority = "ambient"
@@ -353,6 +438,7 @@ cooldown = 30
 [[cue]]
 id = "FSDJump"
 purpose = "When the ship arrives in a new star system after a hyperspace jump."
+category = "Flight and travel"
 source = "journal"
 event = "FSDJump"
 priority = "notice"
@@ -360,6 +446,7 @@ priority = "notice"
 [[cue]]
 id = "FSDTarget"
 purpose = "When you select a star system as the next jump target."
+category = "Flight and travel"
 source = "journal"
 event = "FSDTarget"
 priority = "notice"
@@ -367,6 +454,7 @@ priority = "notice"
 [[cue]]
 id = "FSSAllBodiesFound"
 purpose = "When the full spectrum scanner has found every body in the system."
+category = "Exploration"
 source = "journal"
 event = "FSSAllBodiesFound"
 priority = "notice"
@@ -374,6 +462,7 @@ priority = "notice"
 [[cue]]
 id = "FSSDiscoveryScan"
 purpose = "When you fire the discovery scanner to sweep the system."
+category = "Exploration"
 source = "journal"
 event = "FSSDiscoveryScan"
 priority = "notice"
@@ -381,6 +470,7 @@ priority = "notice"
 [[cue]]
 id = "FetchRemoteModule"
 purpose = "When you request that a stored module be transferred to your location."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "FetchRemoteModule"
 priority = "notice"
@@ -388,6 +478,7 @@ priority = "notice"
 [[cue]]
 id = "Friends"
 purpose = "When a friend's status changes in a way the narrower friend cues do not cover."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 priority = "notice"
@@ -395,6 +486,7 @@ priority = "notice"
 [[cue]]
 id = "Friends.Status.Added"
 purpose = "When someone is added to your friends list."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 match = { Status = "Added" }
@@ -403,6 +495,7 @@ priority = "notice"
 [[cue]]
 id = "Friends.Status.Lost"
 purpose = "When someone is removed from your friends list."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 match = { Status = "Lost" }
@@ -411,6 +504,7 @@ priority = "notice"
 [[cue]]
 id = "Friends.Status.Offline"
 purpose = "When a friend goes offline."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 match = { Status = "Offline" }
@@ -419,6 +513,7 @@ priority = "notice"
 [[cue]]
 id = "Friends.Status.Online"
 purpose = "When a friend comes online."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 match = { Status = "Online" }
@@ -427,6 +522,7 @@ priority = "notice"
 [[cue]]
 id = "Friends.Status.Requested"
 purpose = "When a friend request is sent or received."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "Friends"
 match = { Status = "Requested" }
@@ -435,6 +531,7 @@ priority = "notice"
 [[cue]]
 id = "FuelScoop"
 purpose = "When the fuel scoop takes in fuel from a star."
+category = "Exploration"
 source = "journal"
 event = "FuelScoop"
 priority = "notice"
@@ -442,6 +539,7 @@ priority = "notice"
 [[cue]]
 id = "GameModeChange"
 purpose = "When the game records a change of play mode."
+category = "Session"
 source = "journal"
 event = "GameModeChange"
 priority = "notice"
@@ -449,6 +547,7 @@ priority = "notice"
 [[cue]]
 id = "HeatDamage"
 purpose = "When the ship takes damage from overheating."
+category = "Combat and danger"
 source = "journal"
 event = "HeatDamage"
 priority = "alert"
@@ -456,6 +555,7 @@ priority = "alert"
 [[cue]]
 id = "HeatWarning"
 purpose = "When the ship's heat passes the warning level."
+category = "Combat and danger"
 source = "journal"
 event = "HeatWarning"
 priority = "alert"
@@ -464,6 +564,7 @@ cooldown = 15
 [[cue]]
 id = "HullDamage"
 purpose = "When the ship's hull takes damage."
+category = "Combat and danger"
 source = "journal"
 event = "HullDamage"
 priority = "alert"
@@ -472,6 +573,7 @@ cooldown = 15
 [[cue]]
 id = "Interdicted"
 purpose = "When the ship is pulled out of supercruise in a way the narrower cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "Interdicted"
 priority = "alert"
@@ -479,6 +581,7 @@ priority = "alert"
 [[cue]]
 id = "Interdicted.Submitted.false"
 purpose = "When the ship is pulled out of supercruise after fighting the interdiction."
+category = "Combat and danger"
 source = "journal"
 event = "Interdicted"
 match = { Submitted = "false" }
@@ -487,6 +590,7 @@ priority = "alert"
 [[cue]]
 id = "Interdicted.Submitted.true"
 purpose = "When the ship is pulled out of supercruise after you submit to the interdiction."
+category = "Combat and danger"
 source = "journal"
 event = "Interdicted"
 match = { Submitted = "true" }
@@ -495,6 +599,7 @@ priority = "alert"
 [[cue]]
 id = "JoinedSquadron"
 purpose = "When you join a squadron."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "JoinedSquadron"
 priority = "notice"
@@ -502,6 +607,7 @@ priority = "notice"
 [[cue]]
 id = "LaunchDrone"
 purpose = "When you launch a limpet drone."
+category = "On foot and vehicles"
 source = "journal"
 event = "LaunchDrone"
 priority = "notice"
@@ -509,6 +615,7 @@ priority = "notice"
 [[cue]]
 id = "LaunchFighter"
 purpose = "When you launch a ship launched fighter."
+category = "On foot and vehicles"
 source = "journal"
 event = "LaunchFighter"
 priority = "notice"
@@ -516,6 +623,7 @@ priority = "notice"
 [[cue]]
 id = "LaunchSRV"
 purpose = "When you deploy an SRV onto a planet's surface."
+category = "On foot and vehicles"
 source = "journal"
 event = "LaunchSRV"
 priority = "notice"
@@ -523,6 +631,7 @@ priority = "notice"
 [[cue]]
 id = "LeaveBody"
 purpose = "When the ship leaves orbital cruise around a planet."
+category = "Flight and travel"
 source = "journal"
 event = "LeaveBody"
 priority = "notice"
@@ -530,6 +639,7 @@ priority = "notice"
 [[cue]]
 id = "LeftSquadron"
 purpose = "When you leave a squadron."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "LeftSquadron"
 priority = "notice"
@@ -537,6 +647,7 @@ priority = "notice"
 [[cue]]
 id = "Liftoff"
 purpose = "When a landed ship lifts off a planet's surface."
+category = "Flight and travel"
 source = "journal"
 event = "Liftoff"
 priority = "notice"
@@ -544,6 +655,7 @@ priority = "notice"
 [[cue]]
 id = "LoadGame"
 purpose = "When a game session loads in a mode the narrower cues do not cover."
+category = "Session"
 source = "journal"
 event = "LoadGame"
 priority = "notice"
@@ -551,6 +663,7 @@ priority = "notice"
 [[cue]]
 id = "LoadGame.GameMode.Group"
 purpose = "When a game session loads in a private group."
+category = "Session"
 source = "journal"
 event = "LoadGame"
 match = { GameMode = "Group" }
@@ -559,6 +672,7 @@ priority = "notice"
 [[cue]]
 id = "LoadGame.GameMode.Open"
 purpose = "When a game session loads in open play."
+category = "Session"
 source = "journal"
 event = "LoadGame"
 match = { GameMode = "Open" }
@@ -567,6 +681,7 @@ priority = "notice"
 [[cue]]
 id = "LoadGame.GameMode.Solo"
 purpose = "When a game session loads in solo play."
+category = "Session"
 source = "journal"
 event = "LoadGame"
 match = { GameMode = "Solo" }
@@ -575,6 +690,7 @@ priority = "notice"
 [[cue]]
 id = "MarketBuy"
 purpose = "When you buy commodities at a market."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MarketBuy"
 priority = "ambient"
@@ -583,6 +699,7 @@ cooldown = 30
 [[cue]]
 id = "MarketSell"
 purpose = "When you sell commodities at a market."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MarketSell"
 priority = "notice"
@@ -590,6 +707,7 @@ priority = "notice"
 [[cue]]
 id = "MaterialCollected"
 purpose = "When you collect a material of a category the narrower cues do not cover."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialCollected"
 priority = "ambient"
@@ -598,6 +716,7 @@ cooldown = 30
 [[cue]]
 id = "MaterialCollected.Category.Encoded"
 purpose = "When you collect encoded data."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialCollected"
 match = { Category = "Encoded" }
@@ -607,6 +726,7 @@ cooldown = 30
 [[cue]]
 id = "MaterialCollected.Category.Manufactured"
 purpose = "When you collect a manufactured material."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialCollected"
 match = { Category = "Manufactured" }
@@ -616,6 +736,7 @@ cooldown = 30
 [[cue]]
 id = "MaterialCollected.Category.Raw"
 purpose = "When you collect a raw material."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialCollected"
 match = { Category = "Raw" }
@@ -625,6 +746,7 @@ cooldown = 30
 [[cue]]
 id = "MaterialTrade"
 purpose = "When you trade materials with a trader of a type the narrower cues do not cover."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialTrade"
 priority = "notice"
@@ -632,6 +754,7 @@ priority = "notice"
 [[cue]]
 id = "MaterialTrade.TraderType.encoded"
 purpose = "When you trade with an encoded material trader."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialTrade"
 match = { TraderType = "encoded" }
@@ -640,6 +763,7 @@ priority = "notice"
 [[cue]]
 id = "MaterialTrade.TraderType.manufactured"
 purpose = "When you trade with a manufactured material trader."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialTrade"
 match = { TraderType = "manufactured" }
@@ -648,6 +772,7 @@ priority = "notice"
 [[cue]]
 id = "MaterialTrade.TraderType.raw"
 purpose = "When you trade with a raw material trader."
+category = "Materials and engineering"
 source = "journal"
 event = "MaterialTrade"
 match = { TraderType = "raw" }
@@ -656,6 +781,7 @@ priority = "notice"
 [[cue]]
 id = "MissionAbandoned"
 purpose = "When you abandon a mission."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MissionAbandoned"
 priority = "notice"
@@ -663,6 +789,7 @@ priority = "notice"
 [[cue]]
 id = "MissionAccepted"
 purpose = "When you accept a mission."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MissionAccepted"
 priority = "notice"
@@ -670,6 +797,7 @@ priority = "notice"
 [[cue]]
 id = "MissionCompleted"
 purpose = "When you hand in a completed mission."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MissionCompleted"
 priority = "notice"
@@ -677,6 +805,7 @@ priority = "notice"
 [[cue]]
 id = "MissionRedirected"
 purpose = "When a mission sends you to a new destination to finish it."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "MissionRedirected"
 priority = "notice"
@@ -684,6 +813,7 @@ priority = "notice"
 [[cue]]
 id = "ModuleBuy"
 purpose = "When you buy a module."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ModuleBuy"
 priority = "notice"
@@ -691,6 +821,7 @@ priority = "notice"
 [[cue]]
 id = "ModuleRetrieve"
 purpose = "When you fit a module taken out of storage."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ModuleRetrieve"
 priority = "notice"
@@ -698,6 +829,7 @@ priority = "notice"
 [[cue]]
 id = "ModuleSell"
 purpose = "When you sell a module."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ModuleSell"
 priority = "notice"
@@ -705,6 +837,7 @@ priority = "notice"
 [[cue]]
 id = "ModuleSellRemote"
 purpose = "When you sell a module held in storage elsewhere."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ModuleSellRemote"
 priority = "notice"
@@ -712,6 +845,7 @@ priority = "notice"
 [[cue]]
 id = "ModuleStore"
 purpose = "When you put a module into storage."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ModuleStore"
 priority = "notice"
@@ -719,6 +853,7 @@ priority = "notice"
 [[cue]]
 id = "MultiSellExplorationData"
 purpose = "When you sell exploration data for several systems at once."
+category = "Exploration"
 source = "journal"
 event = "MultiSellExplorationData"
 priority = "notice"
@@ -726,6 +861,7 @@ priority = "notice"
 [[cue]]
 id = "NavBeaconScan"
 purpose = "When you scan a system's navigation beacon."
+category = "Exploration"
 source = "journal"
 event = "NavBeaconScan"
 priority = "notice"
@@ -733,6 +869,7 @@ priority = "notice"
 [[cue]]
 id = "NavRoute"
 purpose = "When you plot a route in the galaxy map."
+category = "Flight and travel"
 source = "journal"
 event = "NavRoute"
 priority = "notice"
@@ -740,6 +877,7 @@ priority = "notice"
 [[cue]]
 id = "NavRouteClear"
 purpose = "When a plotted route is cleared."
+category = "Flight and travel"
 source = "journal"
 event = "NavRouteClear"
 priority = "notice"
@@ -747,6 +885,7 @@ priority = "notice"
 [[cue]]
 id = "PayBounties"
 purpose = "When you pay off bounties on your head."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "PayBounties"
 priority = "notice"
@@ -754,6 +893,7 @@ priority = "notice"
 [[cue]]
 id = "PayFines"
 purpose = "When you pay fines."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "PayFines"
 priority = "notice"
@@ -761,6 +901,7 @@ priority = "notice"
 [[cue]]
 id = "Promotion"
 purpose = "When you are promoted in a rank."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "Promotion"
 priority = "notice"
@@ -768,6 +909,7 @@ priority = "notice"
 [[cue]]
 id = "ReceiveText"
 purpose = "When a message arrives on a channel the narrower cues do not cover."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 priority = "ambient"
@@ -776,6 +918,7 @@ cooldown = 30
 [[cue]]
 id = "ReceiveText.Channel.npc"
 purpose = "When a message arrives from a non player character."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 match = { Channel = "npc" }
@@ -785,6 +928,7 @@ cooldown = 30
 [[cue]]
 id = "ReceiveText.Channel.starsystem"
 purpose = "When a message arrives on the local system channel."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 match = { Channel = "starsystem" }
@@ -797,6 +941,7 @@ cooldown = 30
 [[cue]]
 id = "ReceiveText.Pirate.Arrival"
 purpose = "When a pirate arrives and makes itself known to you."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_Arrival" }
@@ -805,6 +950,7 @@ priority = "notice"
 [[cue]]
 id = "ReceiveText.Pirate.OnStartScanCargo"
 purpose = "When a pirate starts scanning your cargo."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_OnStartScanCargo" }
@@ -813,6 +959,7 @@ priority = "notice"
 [[cue]]
 id = "ReceiveText.Pirate.NotEnoughCargo"
 purpose = "When a pirate decides your cargo is not worth taking."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_NotEnoughCargo" }
@@ -821,6 +968,7 @@ priority = "notice"
 [[cue]]
 id = "ReceiveText.Pirate.OnNoCargoFound"
 purpose = "When a pirate's scan finds no cargo in your hold."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_OnNoCargoFound" }
@@ -829,6 +977,7 @@ priority = "notice"
 [[cue]]
 id = "ReceiveText.Pirate.StartInterdiction"
 purpose = "When a pirate announces it is pulling you out of supercruise."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_StartInterdiction" }
@@ -837,14 +986,29 @@ priority = "alert"
 [[cue]]
 id = "ReceiveText.Pirate.OnDeclarePiracyAttack"
 purpose = "When a pirate declares it is attacking you for your cargo."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_OnDeclarePiracyAttack" }
 priority = "alert"
 
+# Station traffic (FR-637, FR-638): every message whose key stem begins with one of these,
+# whatever the rest of the stem. No one stem names it, so its id is not spelled from one.
+
+[[cue]]
+id = "ReceiveText.StationTraffic"
+purpose = "When the station, settlement or carrier you are approaching speaks to you: docking answers, welcomes and its no fire zone."
+category = "Docking and stations"
+source = "journal"
+event = "ReceiveText"
+begins = { Message = ["STATION_", "DockingChatter_", "DockingFailed_"] }
+priority = "ambient"
+cooldown = 30
+
 [[cue]]
 id = "RedeemVoucher"
 purpose = "When you cash in bounty vouchers, combat bonds or other vouchers."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "RedeemVoucher"
 priority = "notice"
@@ -852,6 +1016,7 @@ priority = "notice"
 [[cue]]
 id = "RefuelAll"
 purpose = "When you refuel the ship fully at a station."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "RefuelAll"
 priority = "ambient"
@@ -860,6 +1025,7 @@ cooldown = 30
 [[cue]]
 id = "Repair"
 purpose = "When you repair part of the ship at a station."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "Repair"
 priority = "ambient"
@@ -868,6 +1034,7 @@ cooldown = 30
 [[cue]]
 id = "RepairAll"
 purpose = "When you repair the whole ship at a station."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "RepairAll"
 priority = "notice"
@@ -875,6 +1042,7 @@ priority = "notice"
 [[cue]]
 id = "ReservoirReplenished"
 purpose = "When the main fuel tank is topped up from the fuel reservoir."
+category = "Flight and travel"
 source = "journal"
 event = "ReservoirReplenished"
 priority = "notice"
@@ -882,6 +1050,7 @@ priority = "notice"
 [[cue]]
 id = "RestockVehicle"
 purpose = "When you buy a replacement SRV or fighter."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "RestockVehicle"
 priority = "notice"
@@ -889,6 +1058,7 @@ priority = "notice"
 [[cue]]
 id = "Resurrect"
 purpose = "When you are revived after death by an option the narrower cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "Resurrect"
 priority = "notice"
@@ -896,6 +1066,7 @@ priority = "notice"
 [[cue]]
 id = "Resurrect.Option.rebuy"
 purpose = "When you pay the insurance rebuy to get your ship back after death."
+category = "Combat and danger"
 source = "journal"
 event = "Resurrect"
 match = { Option = "rebuy" }
@@ -904,6 +1075,7 @@ priority = "notice"
 [[cue]]
 id = "Resurrect.Option.rejoin"
 purpose = "When you rejoin the game after death without paying a rebuy."
+category = "Combat and danger"
 source = "journal"
 event = "Resurrect"
 match = { Option = "rejoin" }
@@ -912,6 +1084,7 @@ priority = "notice"
 [[cue]]
 id = "SAAScanComplete"
 purpose = "When you finish mapping a body with the surface scanner."
+category = "Exploration"
 source = "journal"
 event = "SAAScanComplete"
 priority = "notice"
@@ -919,6 +1092,7 @@ priority = "notice"
 [[cue]]
 id = "SAASignalsFound"
 purpose = "When the surface scanner reveals signals on a body."
+category = "Exploration"
 source = "journal"
 event = "SAASignalsFound"
 priority = "notice"
@@ -926,6 +1100,7 @@ priority = "notice"
 [[cue]]
 id = "SRVDestroyed"
 purpose = "When your SRV is destroyed."
+category = "On foot and vehicles"
 source = "journal"
 event = "SRVDestroyed"
 priority = "notice"
@@ -933,6 +1108,7 @@ priority = "notice"
 [[cue]]
 id = "Scan"
 purpose = "When a body scan completes by a method the narrower scan cues do not cover."
+category = "Exploration"
 source = "journal"
 event = "Scan"
 priority = "ambient"
@@ -941,6 +1117,7 @@ cooldown = 30
 [[cue]]
 id = "Scan.ScanType.AutoScan"
 purpose = "When a nearby body is scanned automatically as the ship passes it."
+category = "Exploration"
 source = "journal"
 event = "Scan"
 match = { ScanType = "AutoScan" }
@@ -950,6 +1127,7 @@ cooldown = 30
 [[cue]]
 id = "Scan.ScanType.Detailed"
 purpose = "When you complete a detailed scan of a body."
+category = "Exploration"
 source = "journal"
 event = "Scan"
 match = { ScanType = "Detailed" }
@@ -959,6 +1137,7 @@ cooldown = 30
 [[cue]]
 id = "Scan.ScanType.NavBeaconDetail"
 purpose = "When a body's details come from a navigation beacon scan."
+category = "Exploration"
 source = "journal"
 event = "Scan"
 match = { ScanType = "NavBeaconDetail" }
@@ -968,6 +1147,7 @@ cooldown = 30
 [[cue]]
 id = "ScanBaryCentre"
 purpose = "When the scanner records the barycentre of an orbiting pair of bodies."
+category = "Exploration"
 source = "journal"
 event = "ScanBaryCentre"
 priority = "notice"
@@ -975,6 +1155,7 @@ priority = "notice"
 [[cue]]
 id = "Scanned"
 purpose = "When another ship scans your ship."
+category = "Combat and danger"
 source = "journal"
 event = "Scanned"
 priority = "notice"
@@ -982,6 +1163,7 @@ priority = "notice"
 [[cue]]
 id = "SelfDestruct"
 purpose = "When you self destruct the ship."
+category = "Combat and danger"
 source = "journal"
 event = "SelfDestruct"
 priority = "alert"
@@ -989,6 +1171,7 @@ priority = "alert"
 [[cue]]
 id = "SellDrones"
 purpose = "When you sell limpet drones."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "SellDrones"
 priority = "notice"
@@ -996,6 +1179,7 @@ priority = "notice"
 [[cue]]
 id = "SellExplorationData"
 purpose = "When you sell exploration data."
+category = "Exploration"
 source = "journal"
 event = "SellExplorationData"
 priority = "notice"
@@ -1003,6 +1187,7 @@ priority = "notice"
 [[cue]]
 id = "SendText"
 purpose = "When you send a message."
+category = "Comms"
 source = "journal"
 event = "SendText"
 priority = "notice"
@@ -1010,6 +1195,7 @@ priority = "notice"
 [[cue]]
 id = "SetUserShipName"
 purpose = "When you name or rename your ship."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "SetUserShipName"
 priority = "notice"
@@ -1017,6 +1203,7 @@ priority = "notice"
 [[cue]]
 id = "SharedBookmarkToSquadron"
 purpose = "When you share a bookmark with your squadron."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "SharedBookmarkToSquadron"
 priority = "notice"
@@ -1024,6 +1211,7 @@ priority = "notice"
 [[cue]]
 id = "ShieldState"
 purpose = "When the ship's shields change state in a way the narrower cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "ShieldState"
 priority = "notice"
@@ -1031,6 +1219,7 @@ priority = "notice"
 [[cue]]
 id = "ShieldState.ShieldsUp.false"
 purpose = "When the ship's shields fail."
+category = "Combat and danger"
 source = "journal"
 event = "ShieldState"
 match = { ShieldsUp = "false" }
@@ -1039,6 +1228,7 @@ priority = "alert"
 [[cue]]
 id = "ShieldState.ShieldsUp.true"
 purpose = "When the ship's shields come back online."
+category = "Combat and danger"
 source = "journal"
 event = "ShieldState"
 match = { ShieldsUp = "true" }
@@ -1047,6 +1237,7 @@ priority = "notice"
 [[cue]]
 id = "ShipRedeemed"
 purpose = "When you get a lost ship back."
+category = "Combat and danger"
 source = "journal"
 event = "ShipRedeemed"
 priority = "notice"
@@ -1054,6 +1245,7 @@ priority = "notice"
 [[cue]]
 id = "ShipTargeted"
 purpose = "When the ship targets something in a way the narrower cues do not cover."
+category = "Combat and danger"
 source = "journal"
 event = "ShipTargeted"
 priority = "ambient"
@@ -1062,6 +1254,7 @@ cooldown = 30
 [[cue]]
 id = "ShipTargeted.TargetLocked.false"
 purpose = "When the ship loses its target lock."
+category = "Combat and danger"
 source = "journal"
 event = "ShipTargeted"
 match = { TargetLocked = "false" }
@@ -1071,6 +1264,7 @@ cooldown = 30
 [[cue]]
 id = "ShipTargeted.TargetLocked.true"
 purpose = "When the ship locks on to a target."
+category = "Combat and danger"
 source = "journal"
 event = "ShipTargeted"
 match = { TargetLocked = "true" }
@@ -1080,6 +1274,7 @@ cooldown = 30
 [[cue]]
 id = "ShipyardBuy"
 purpose = "When you buy a ship."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardBuy"
 priority = "notice"
@@ -1087,6 +1282,7 @@ priority = "notice"
 [[cue]]
 id = "ShipyardNew"
 purpose = "When a newly bought ship becomes your active ship."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardNew"
 priority = "notice"
@@ -1094,6 +1290,7 @@ priority = "notice"
 [[cue]]
 id = "ShipyardRedeem"
 purpose = "When you claim a ship that was granted to you rather than bought."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardRedeem"
 priority = "notice"
@@ -1101,6 +1298,7 @@ priority = "notice"
 [[cue]]
 id = "ShipyardSell"
 purpose = "When you sell a ship."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardSell"
 priority = "notice"
@@ -1108,6 +1306,7 @@ priority = "notice"
 [[cue]]
 id = "ShipyardSwap"
 purpose = "When you swap to a different ship you own at a shipyard."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardSwap"
 priority = "notice"
@@ -1115,6 +1314,7 @@ priority = "notice"
 [[cue]]
 id = "ShipyardTransfer"
 purpose = "When you request that a stored ship be transferred to your location."
+category = "Trade, missions and outfitting"
 source = "journal"
 event = "ShipyardTransfer"
 priority = "notice"
@@ -1122,6 +1322,7 @@ priority = "notice"
 [[cue]]
 id = "Shutdown"
 purpose = "When the game is shut down."
+category = "Session"
 source = "journal"
 event = "Shutdown"
 priority = "notice"
@@ -1129,6 +1330,7 @@ priority = "notice"
 [[cue]]
 id = "SquadronCreated"
 purpose = "When you create a squadron."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "SquadronCreated"
 priority = "notice"
@@ -1136,6 +1338,7 @@ priority = "notice"
 [[cue]]
 id = "StartJump"
 purpose = "When a frame shift drive jump begins of a kind the narrower cues do not cover."
+category = "Flight and travel"
 source = "journal"
 event = "StartJump"
 priority = "ambient"
@@ -1144,6 +1347,7 @@ cooldown = 30
 [[cue]]
 id = "StartJump.JumpType.Hyperspace"
 purpose = "When a hyperspace jump to another system begins."
+category = "Flight and travel"
 source = "journal"
 event = "StartJump"
 match = { JumpType = "Hyperspace" }
@@ -1153,6 +1357,7 @@ cooldown = 30
 [[cue]]
 id = "StartJump.JumpType.Supercruise"
 purpose = "When the ship begins to enter supercruise."
+category = "Flight and travel"
 source = "journal"
 event = "StartJump"
 match = { JumpType = "Supercruise" }
@@ -1162,6 +1367,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseDestinationDrop"
 purpose = "When the ship drops out of supercruise at a chosen destination such as a signal source."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseDestinationDrop"
 priority = "ambient"
@@ -1170,6 +1376,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseEntry"
 purpose = "When the ship enters supercruise."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseEntry"
 priority = "ambient"
@@ -1178,6 +1385,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit"
 purpose = "When the ship drops out of supercruise near something the narrower cues do not cover."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 priority = "ambient"
@@ -1186,6 +1394,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit.BodyType.Null"
 purpose = "When the ship drops out of supercruise away from any body."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 match = { BodyType = "Null" }
@@ -1195,6 +1404,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit.BodyType.Planet"
 purpose = "When the ship drops out of supercruise near a planet."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 match = { BodyType = "Planet" }
@@ -1204,6 +1414,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit.BodyType.PlanetaryRing"
 purpose = "When the ship drops out of supercruise at a planetary ring."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 match = { BodyType = "PlanetaryRing" }
@@ -1213,6 +1424,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit.BodyType.Star"
 purpose = "When the ship drops out of supercruise near a star."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 match = { BodyType = "Star" }
@@ -1222,6 +1434,7 @@ cooldown = 30
 [[cue]]
 id = "SupercruiseExit.BodyType.Station"
 purpose = "When the ship drops out of supercruise near a station."
+category = "Flight and travel"
 source = "journal"
 event = "SupercruiseExit"
 match = { BodyType = "Station" }
@@ -1231,6 +1444,7 @@ cooldown = 30
 [[cue]]
 id = "Synthesis"
 purpose = "When you synthesise something the narrower cues do not cover."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 priority = "notice"
@@ -1238,6 +1452,7 @@ priority = "notice"
 [[cue]]
 id = "Synthesis.Name.Ammo Basic"
 purpose = "When you synthesise a basic ammunition restock for your SRV."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 match = { Name = "Ammo Basic" }
@@ -1246,6 +1461,7 @@ priority = "notice"
 [[cue]]
 id = "Synthesis.Name.Cannon Ammo Basic"
 purpose = "When you synthesise basic cannon ammunition."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 match = { Name = "Cannon Ammo Basic" }
@@ -1254,6 +1470,7 @@ priority = "notice"
 [[cue]]
 id = "Synthesis.Name.Fuel Basic"
 purpose = "When you synthesise a basic fuel refill for your SRV."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 match = { Name = "Fuel Basic" }
@@ -1262,6 +1479,7 @@ priority = "notice"
 [[cue]]
 id = "Synthesis.Name.Missile Ammo Basic"
 purpose = "When you synthesise basic missile ammunition."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 match = { Name = "Missile Ammo Basic" }
@@ -1270,6 +1488,7 @@ priority = "notice"
 [[cue]]
 id = "Synthesis.Name.Repair Basic"
 purpose = "When you synthesise a basic repair for your SRV."
+category = "Materials and engineering"
 source = "journal"
 event = "Synthesis"
 match = { Name = "Repair Basic" }
@@ -1278,6 +1497,7 @@ priority = "notice"
 [[cue]]
 id = "Touchdown"
 purpose = "When the ship touches down on a planet's surface."
+category = "Flight and travel"
 source = "journal"
 event = "Touchdown"
 priority = "notice"
@@ -1285,6 +1505,7 @@ priority = "notice"
 [[cue]]
 id = "USSDrop"
 purpose = "When the ship drops into an unidentified signal source."
+category = "Flight and travel"
 source = "journal"
 event = "USSDrop"
 priority = "notice"
@@ -1292,6 +1513,7 @@ priority = "notice"
 [[cue]]
 id = "UnderAttack"
 purpose = "When the ship comes under attack."
+category = "Combat and danger"
 source = "journal"
 event = "UnderAttack"
 priority = "alert"
@@ -1300,6 +1522,7 @@ cooldown = 15
 [[cue]]
 id = "Undocked"
 purpose = "When the ship leaves its pad after docking."
+category = "Docking and stations"
 source = "journal"
 event = "Undocked"
 priority = "ambient"
@@ -1308,6 +1531,7 @@ cooldown = 30
 [[cue]]
 id = "WingAdd"
 purpose = "When a commander joins your wing."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "WingAdd"
 priority = "notice"
@@ -1315,6 +1539,7 @@ priority = "notice"
 [[cue]]
 id = "WingJoin"
 purpose = "When you join a wing."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "WingJoin"
 priority = "notice"
@@ -1322,6 +1547,7 @@ priority = "notice"
 [[cue]]
 id = "WingLeave"
 purpose = "When you leave a wing."
+category = "Wings, squadrons and friends"
 source = "journal"
 event = "WingLeave"
 priority = "notice"
@@ -1331,6 +1557,7 @@ priority = "notice"
 [[cue]]
 id = "Docked.Set"
 purpose = "When the status file first shows the ship docked."
+category = "Docking and stations"
 source = "status"
 flag = "Docked"
 edge = "rising"
@@ -1339,6 +1566,7 @@ priority = "ambient"
 [[cue]]
 id = "Docked.Cleared"
 purpose = "When the status file shows the ship is no longer docked."
+category = "Docking and stations"
 source = "status"
 flag = "Docked"
 edge = "falling"
@@ -1347,6 +1575,7 @@ priority = "ambient"
 [[cue]]
 id = "Landed.Set"
 purpose = "When the ship settles on a planet's surface."
+category = "Flight and travel"
 source = "status"
 flag = "Landed"
 edge = "rising"
@@ -1355,6 +1584,7 @@ priority = "ambient"
 [[cue]]
 id = "Landed.Cleared"
 purpose = "When a landed ship leaves the surface."
+category = "Flight and travel"
 source = "status"
 flag = "Landed"
 edge = "falling"
@@ -1363,6 +1593,7 @@ priority = "ambient"
 [[cue]]
 id = "LandingGearDown.Set"
 purpose = "When the landing gear is lowered."
+category = "Flight and travel"
 source = "status"
 flag = "LandingGearDown"
 edge = "rising"
@@ -1371,6 +1602,7 @@ priority = "ambient"
 [[cue]]
 id = "LandingGearDown.Cleared"
 purpose = "When the landing gear is raised."
+category = "Flight and travel"
 source = "status"
 flag = "LandingGearDown"
 edge = "falling"
@@ -1379,6 +1611,7 @@ priority = "ambient"
 [[cue]]
 id = "ShieldsUp.Set"
 purpose = "When the ship's shields come up."
+category = "Combat and danger"
 source = "status"
 flag = "ShieldsUp"
 edge = "rising"
@@ -1387,6 +1620,7 @@ priority = "ambient"
 [[cue]]
 id = "ShieldsUp.Cleared"
 purpose = "When the ship loses its shields."
+category = "Combat and danger"
 source = "status"
 flag = "ShieldsUp"
 edge = "falling"
@@ -1395,6 +1629,7 @@ priority = "ambient"
 [[cue]]
 id = "Supercruise.Set"
 purpose = "When the status file first shows the ship in supercruise."
+category = "Flight and travel"
 source = "status"
 flag = "Supercruise"
 edge = "rising"
@@ -1403,6 +1638,7 @@ priority = "ambient"
 [[cue]]
 id = "Supercruise.Cleared"
 purpose = "When the status file shows the ship is no longer in supercruise."
+category = "Flight and travel"
 source = "status"
 flag = "Supercruise"
 edge = "falling"
@@ -1411,6 +1647,7 @@ priority = "ambient"
 [[cue]]
 id = "FlightAssistOff.Set"
 purpose = "When flight assist is switched off."
+category = "Ship systems"
 source = "status"
 flag = "FlightAssistOff"
 edge = "rising"
@@ -1419,6 +1656,7 @@ priority = "ambient"
 [[cue]]
 id = "FlightAssistOff.Cleared"
 purpose = "When flight assist is switched back on."
+category = "Ship systems"
 source = "status"
 flag = "FlightAssistOff"
 edge = "falling"
@@ -1427,6 +1665,7 @@ priority = "ambient"
 [[cue]]
 id = "HardpointsDeployed.Set"
 purpose = "When the ship's hardpoints are deployed."
+category = "Combat and danger"
 source = "status"
 flag = "HardpointsDeployed"
 edge = "rising"
@@ -1435,6 +1674,7 @@ priority = "ambient"
 [[cue]]
 id = "HardpointsDeployed.Cleared"
 purpose = "When the ship's hardpoints are retracted."
+category = "Combat and danger"
 source = "status"
 flag = "HardpointsDeployed"
 edge = "falling"
@@ -1443,6 +1683,7 @@ priority = "ambient"
 [[cue]]
 id = "InWing.Set"
 purpose = "When you become part of a wing."
+category = "Wings, squadrons and friends"
 source = "status"
 flag = "InWing"
 edge = "rising"
@@ -1451,6 +1692,7 @@ priority = "ambient"
 [[cue]]
 id = "InWing.Cleared"
 purpose = "When you are no longer part of a wing."
+category = "Wings, squadrons and friends"
 source = "status"
 flag = "InWing"
 edge = "falling"
@@ -1459,6 +1701,7 @@ priority = "ambient"
 [[cue]]
 id = "LightsOn.Set"
 purpose = "When the ship's lights are switched on."
+category = "Ship systems"
 source = "status"
 flag = "LightsOn"
 edge = "rising"
@@ -1467,6 +1710,7 @@ priority = "ambient"
 [[cue]]
 id = "LightsOn.Cleared"
 purpose = "When the ship's lights are switched off."
+category = "Ship systems"
 source = "status"
 flag = "LightsOn"
 edge = "falling"
@@ -1475,6 +1719,7 @@ priority = "ambient"
 [[cue]]
 id = "CargoScoopDeployed.Set"
 purpose = "When the cargo scoop is deployed."
+category = "Ship systems"
 source = "status"
 flag = "CargoScoopDeployed"
 edge = "rising"
@@ -1483,6 +1728,7 @@ priority = "ambient"
 [[cue]]
 id = "CargoScoopDeployed.Cleared"
 purpose = "When the cargo scoop is retracted."
+category = "Ship systems"
 source = "status"
 flag = "CargoScoopDeployed"
 edge = "falling"
@@ -1491,6 +1737,7 @@ priority = "ambient"
 [[cue]]
 id = "SilentRunning.Set"
 purpose = "When silent running is switched on."
+category = "Ship systems"
 source = "status"
 flag = "SilentRunning"
 edge = "rising"
@@ -1499,6 +1746,7 @@ priority = "ambient"
 [[cue]]
 id = "SilentRunning.Cleared"
 purpose = "When silent running is switched off."
+category = "Ship systems"
 source = "status"
 flag = "SilentRunning"
 edge = "falling"
@@ -1507,6 +1755,7 @@ priority = "ambient"
 [[cue]]
 id = "ScoopingFuel.Set"
 purpose = "When the ship starts scooping fuel from a star."
+category = "Exploration"
 source = "status"
 flag = "ScoopingFuel"
 edge = "rising"
@@ -1515,6 +1764,7 @@ priority = "ambient"
 [[cue]]
 id = "ScoopingFuel.Cleared"
 purpose = "When the ship stops scooping fuel."
+category = "Exploration"
 source = "status"
 flag = "ScoopingFuel"
 edge = "falling"
@@ -1523,6 +1773,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvHandbrake.Set"
 purpose = "When the SRV handbrake is applied."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvHandbrake"
 edge = "rising"
@@ -1531,6 +1782,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvHandbrake.Cleared"
 purpose = "When the SRV handbrake is released."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvHandbrake"
 edge = "falling"
@@ -1539,6 +1791,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvTurret.Set"
 purpose = "When you switch to the SRV turret view."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvTurret"
 edge = "rising"
@@ -1547,6 +1800,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvTurret.Cleared"
 purpose = "When you leave the SRV turret view."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvTurret"
 edge = "falling"
@@ -1555,6 +1809,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvDriveAssist.Set"
 purpose = "When SRV drive assist is switched on."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvDriveAssist"
 edge = "rising"
@@ -1563,6 +1818,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvDriveAssist.Cleared"
 purpose = "When SRV drive assist is switched off."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvDriveAssist"
 edge = "falling"
@@ -1571,6 +1827,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdMassLocked.Set"
 purpose = "When a nearby mass blocks the frame shift drive."
+category = "Flight and travel"
 source = "status"
 flag = "FsdMassLocked"
 edge = "rising"
@@ -1579,6 +1836,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdMassLocked.Cleared"
 purpose = "When the frame shift drive is no longer blocked by a nearby mass."
+category = "Flight and travel"
 source = "status"
 flag = "FsdMassLocked"
 edge = "falling"
@@ -1587,6 +1845,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdCharging.Set"
 purpose = "When the frame shift drive starts charging."
+category = "Flight and travel"
 source = "status"
 flag = "FsdCharging"
 edge = "rising"
@@ -1595,6 +1854,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdCharging.Cleared"
 purpose = "When the frame shift drive stops charging."
+category = "Flight and travel"
 source = "status"
 flag = "FsdCharging"
 edge = "falling"
@@ -1603,6 +1863,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdCooldown.Set"
 purpose = "When the frame shift drive begins cooling down after use."
+category = "Flight and travel"
 source = "status"
 flag = "FsdCooldown"
 edge = "rising"
@@ -1611,6 +1872,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdCooldown.Cleared"
 purpose = "When the frame shift drive is ready to use again."
+category = "Flight and travel"
 source = "status"
 flag = "FsdCooldown"
 edge = "falling"
@@ -1619,6 +1881,7 @@ priority = "ambient"
 [[cue]]
 id = "LowFuel.Set"
 purpose = "When the ship's fuel falls low."
+category = "Flight and travel"
 source = "status"
 flag = "LowFuel"
 edge = "rising"
@@ -1628,6 +1891,7 @@ cooldown = 30
 [[cue]]
 id = "LowFuel.Cleared"
 purpose = "When the ship's fuel is no longer low."
+category = "Flight and travel"
 source = "status"
 flag = "LowFuel"
 edge = "falling"
@@ -1636,6 +1900,7 @@ priority = "ambient"
 [[cue]]
 id = "OverHeating.Set"
 purpose = "When the ship starts overheating."
+category = "Combat and danger"
 source = "status"
 flag = "OverHeating"
 edge = "rising"
@@ -1645,6 +1910,7 @@ cooldown = 30
 [[cue]]
 id = "OverHeating.Cleared"
 purpose = "When the ship stops overheating."
+category = "Combat and danger"
 source = "status"
 flag = "OverHeating"
 edge = "falling"
@@ -1653,6 +1919,7 @@ priority = "ambient"
 [[cue]]
 id = "IsInDanger.Set"
 purpose = "When the game marks the ship as in danger."
+category = "Combat and danger"
 source = "status"
 flag = "IsInDanger"
 edge = "rising"
@@ -1662,6 +1929,7 @@ cooldown = 30
 [[cue]]
 id = "IsInDanger.Cleared"
 purpose = "When the game no longer marks the ship as in danger."
+category = "Combat and danger"
 source = "status"
 flag = "IsInDanger"
 edge = "falling"
@@ -1670,6 +1938,7 @@ priority = "ambient"
 [[cue]]
 id = "BeingInterdicted.Set"
 purpose = "When another ship starts trying to pull you out of supercruise."
+category = "Combat and danger"
 source = "status"
 flag = "BeingInterdicted"
 edge = "rising"
@@ -1679,6 +1948,7 @@ cooldown = 30
 [[cue]]
 id = "BeingInterdicted.Cleared"
 purpose = "When an interdiction attempt on your ship ends."
+category = "Combat and danger"
 source = "status"
 flag = "BeingInterdicted"
 edge = "falling"
@@ -1687,6 +1957,7 @@ priority = "ambient"
 [[cue]]
 id = "InMainShip.Set"
 purpose = "When you take control of your main ship."
+category = "On foot and vehicles"
 source = "status"
 flag = "InMainShip"
 edge = "rising"
@@ -1695,6 +1966,7 @@ priority = "ambient"
 [[cue]]
 id = "InMainShip.Cleared"
 purpose = "When you stop controlling your main ship."
+category = "On foot and vehicles"
 source = "status"
 flag = "InMainShip"
 edge = "falling"
@@ -1703,6 +1975,7 @@ priority = "ambient"
 [[cue]]
 id = "InFighter.Set"
 purpose = "When you take control of a fighter."
+category = "On foot and vehicles"
 source = "status"
 flag = "InFighter"
 edge = "rising"
@@ -1711,6 +1984,7 @@ priority = "ambient"
 [[cue]]
 id = "InFighter.Cleared"
 purpose = "When you stop controlling a fighter."
+category = "On foot and vehicles"
 source = "status"
 flag = "InFighter"
 edge = "falling"
@@ -1719,6 +1993,7 @@ priority = "ambient"
 [[cue]]
 id = "InSRV.Set"
 purpose = "When you take control of an SRV."
+category = "On foot and vehicles"
 source = "status"
 flag = "InSRV"
 edge = "rising"
@@ -1727,6 +2002,7 @@ priority = "ambient"
 [[cue]]
 id = "InSRV.Cleared"
 purpose = "When you stop controlling an SRV."
+category = "On foot and vehicles"
 source = "status"
 flag = "InSRV"
 edge = "falling"
@@ -1735,6 +2011,7 @@ priority = "ambient"
 [[cue]]
 id = "HudInAnalysisMode.Set"
 purpose = "When the cockpit display switches to analysis mode."
+category = "Ship systems"
 source = "status"
 flag = "HudInAnalysisMode"
 edge = "rising"
@@ -1743,6 +2020,7 @@ priority = "ambient"
 [[cue]]
 id = "HudInAnalysisMode.Cleared"
 purpose = "When the cockpit display switches back to combat mode."
+category = "Ship systems"
 source = "status"
 flag = "HudInAnalysisMode"
 edge = "falling"
@@ -1751,6 +2029,7 @@ priority = "ambient"
 [[cue]]
 id = "NightVision.Set"
 purpose = "When night vision is switched on."
+category = "Ship systems"
 source = "status"
 flag = "NightVision"
 edge = "rising"
@@ -1759,6 +2038,7 @@ priority = "ambient"
 [[cue]]
 id = "NightVision.Cleared"
 purpose = "When night vision is switched off."
+category = "Ship systems"
 source = "status"
 flag = "NightVision"
 edge = "falling"
@@ -1767,6 +2047,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdJump.Set"
 purpose = "When a frame shift drive jump starts."
+category = "Flight and travel"
 source = "status"
 flag = "FsdJump"
 edge = "rising"
@@ -1775,6 +2056,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdJump.Cleared"
 purpose = "When a frame shift drive jump finishes."
+category = "Flight and travel"
 source = "status"
 flag = "FsdJump"
 edge = "falling"
@@ -1783,6 +2065,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvHighBeam.Set"
 purpose = "When the SRV's high beam lights are switched on."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvHighBeam"
 edge = "rising"
@@ -1791,6 +2074,7 @@ priority = "ambient"
 [[cue]]
 id = "SrvHighBeam.Cleared"
 purpose = "When the SRV's high beam lights are switched off."
+category = "On foot and vehicles"
 source = "status"
 flag = "SrvHighBeam"
 edge = "falling"
@@ -1799,6 +2083,7 @@ priority = "ambient"
 [[cue]]
 id = "OnFoot.Set"
 purpose = "When you start moving about on foot."
+category = "On foot and vehicles"
 source = "status"
 flag = "OnFoot"
 edge = "rising"
@@ -1807,6 +2092,7 @@ priority = "ambient"
 [[cue]]
 id = "OnFoot.Cleared"
 purpose = "When you are no longer on foot."
+category = "On foot and vehicles"
 source = "status"
 flag = "OnFoot"
 edge = "falling"
@@ -1815,6 +2101,7 @@ priority = "ambient"
 [[cue]]
 id = "InTaxi.Set"
 purpose = "When you board a taxi or dropship."
+category = "On foot and vehicles"
 source = "status"
 flag = "InTaxi"
 edge = "rising"
@@ -1823,6 +2110,7 @@ priority = "ambient"
 [[cue]]
 id = "InTaxi.Cleared"
 purpose = "When you leave a taxi or dropship."
+category = "On foot and vehicles"
 source = "status"
 flag = "InTaxi"
 edge = "falling"
@@ -1831,6 +2119,7 @@ priority = "ambient"
 [[cue]]
 id = "LowOxygen.Set"
 purpose = "When your suit's oxygen falls low."
+category = "On foot and vehicles"
 source = "status"
 flag = "LowOxygen"
 edge = "rising"
@@ -1840,6 +2129,7 @@ cooldown = 30
 [[cue]]
 id = "LowOxygen.Cleared"
 purpose = "When your suit's oxygen is no longer low."
+category = "On foot and vehicles"
 source = "status"
 flag = "LowOxygen"
 edge = "falling"
@@ -1848,6 +2138,7 @@ priority = "ambient"
 [[cue]]
 id = "LowHealth.Set"
 purpose = "When your health on foot falls low."
+category = "On foot and vehicles"
 source = "status"
 flag = "LowHealth"
 edge = "rising"
@@ -1857,6 +2148,7 @@ cooldown = 30
 [[cue]]
 id = "LowHealth.Cleared"
 purpose = "When your health on foot is no longer low."
+category = "On foot and vehicles"
 source = "status"
 flag = "LowHealth"
 edge = "falling"
@@ -1865,6 +2157,7 @@ priority = "ambient"
 [[cue]]
 id = "GlideMode.Set"
 purpose = "When the ship begins its glide down toward a planet's surface."
+category = "Flight and travel"
 source = "status"
 flag = "GlideMode"
 edge = "rising"
@@ -1873,6 +2166,7 @@ priority = "ambient"
 [[cue]]
 id = "GlideMode.Cleared"
 purpose = "When the ship's glide toward a planet's surface ends."
+category = "Flight and travel"
 source = "status"
 flag = "GlideMode"
 edge = "falling"
@@ -1881,6 +2175,7 @@ priority = "ambient"
 [[cue]]
 id = "BreathableAtmosphere.Set"
 purpose = "When you arrive somewhere with breathable air."
+category = "On foot and vehicles"
 source = "status"
 flag = "BreathableAtmosphere"
 edge = "rising"
@@ -1889,6 +2184,7 @@ priority = "ambient"
 [[cue]]
 id = "BreathableAtmosphere.Cleared"
 purpose = "When you leave breathable air."
+category = "On foot and vehicles"
 source = "status"
 flag = "BreathableAtmosphere"
 edge = "falling"
@@ -1897,6 +2193,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdHyperdriveCharging.Set"
 purpose = "When the frame shift drive starts charging for a hyperspace jump."
+category = "Flight and travel"
 source = "status"
 flag = "FsdHyperdriveCharging"
 edge = "rising"
@@ -1905,6 +2202,7 @@ priority = "ambient"
 [[cue]]
 id = "FsdHyperdriveCharging.Cleared"
 purpose = "When the frame shift drive stops charging for a hyperspace jump."
+category = "Flight and travel"
 source = "status"
 flag = "FsdHyperdriveCharging"
 edge = "falling"
@@ -1915,6 +2213,7 @@ priority = "ambient"
 [[cue]]
 id = "GuiFocus.NoFocus"
 purpose = "When you close every panel and map to return to the plain cockpit view."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "NoFocus" }
@@ -1924,6 +2223,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.InternalPanel"
 purpose = "When you open the right hand ship panel."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "InternalPanel" }
@@ -1933,6 +2233,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.ExternalPanel"
 purpose = "When you open the left hand target panel."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "ExternalPanel" }
@@ -1942,6 +2243,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.CommsPanel"
 purpose = "When you open the communications panel."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "CommsPanel" }
@@ -1951,6 +2253,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.RolePanel"
 purpose = "When you open the role panel."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "RolePanel" }
@@ -1960,6 +2263,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.StationServices"
 purpose = "When you open station services."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "StationServices" }
@@ -1969,6 +2273,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.GalaxyMap"
 purpose = "When you open the galaxy map."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "GalaxyMap" }
@@ -1978,6 +2283,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.SystemMap"
 purpose = "When you open the system map."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "SystemMap" }
@@ -1987,6 +2293,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.Orrery"
 purpose = "When you open the orrery view of the system map."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "Orrery" }
@@ -1996,6 +2303,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.FssMode"
 purpose = "When you enter the full spectrum scanner."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "FssMode" }
@@ -2005,6 +2313,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.SaaMode"
 purpose = "When you enter the surface scanner."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "SaaMode" }
@@ -2014,6 +2323,7 @@ cooldown = 5
 [[cue]]
 id = "GuiFocus.Codex"
 purpose = "When you open the codex."
+category = "Ship systems"
 source = "status"
 flag = "GuiFocus"
 match = { value = "Codex" }
@@ -2023,6 +2333,7 @@ cooldown = 5
 [[cue]]
 id = "Pips.Balanced"
 purpose = "When the power distribution changes so that no one of systems, engines or weapons holds more pips than the other two."
+category = "Ship systems"
 source = "status"
 flag = "Pips"
 match = { value = "Balanced" }
@@ -2032,6 +2343,7 @@ cooldown = 5
 [[cue]]
 id = "Pips.Systems"
 purpose = "When the power distribution changes so that systems hold more pips than engines and weapons."
+category = "Ship systems"
 source = "status"
 flag = "Pips"
 match = { value = "Systems" }
@@ -2041,6 +2353,7 @@ cooldown = 5
 [[cue]]
 id = "Pips.Engines"
 purpose = "When the power distribution changes so that engines hold more pips than systems and weapons."
+category = "Ship systems"
 source = "status"
 flag = "Pips"
 match = { value = "Engines" }
@@ -2050,6 +2363,7 @@ cooldown = 5
 [[cue]]
 id = "Pips.Weapons"
 purpose = "When the power distribution changes so that weapons hold more pips than systems and engines."
+category = "Ship systems"
 source = "status"
 flag = "Pips"
 match = { value = "Weapons" }
@@ -2059,6 +2373,7 @@ cooldown = 5
 [[cue]]
 id = "FireGroup.Changed"
 purpose = "When you select a different fire group."
+category = "Ship systems"
 source = "status"
 flag = "FireGroup"
 priority = "flavour"

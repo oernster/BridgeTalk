@@ -25,6 +25,8 @@ type Scheduler struct {
 	player   ports.AudioPlayer
 	reporter ports.Reporter
 	clock    ports.Clock
+	// switches says which moments are switched off on Chatter; nil has every moment on (FR-625).
+	switches ports.Switchboard
 
 	queue   []Request
 	current *Request
@@ -34,6 +36,10 @@ type Scheduler struct {
 func NewScheduler(player ports.AudioPlayer, reporter ports.Reporter, clock ports.Clock) *Scheduler {
 	return &Scheduler{player: player, reporter: reporter, clock: clock}
 }
+
+// SetSwitchboard hands over what says which moments are switched off on Chatter, so a request
+// switched off while it waits is let go when its turn comes (FR-625).
+func (s *Scheduler) SetSwitchboard(switches ports.Switchboard) { s.switches = switches }
 
 // Submit applies the priority policy to a new request, answering whether it was taken:
 // queued or started rather than let go.
@@ -83,14 +89,28 @@ func (s *Scheduler) sortQueue() {
 }
 
 // Advance starts the next request when nothing is playing. It is called after a
-// submission and again whenever the player reports it has finished.
+// submission and again whenever the player reports it has finished. A request whose moment
+// was switched off while it waited is let go and recorded rather than started; the one
+// behind it is taken instead (FR-625). A take already playing is never stopped by its switch
+// (FR-626).
 func (s *Scheduler) Advance() {
-	if s.player.Playing() || len(s.queue) == 0 {
+	if s.player.Playing() {
 		return
 	}
-	next := s.queue[0]
-	s.queue = s.queue[1:]
+	for len(s.queue) > 0 {
+		next := s.queue[0]
+		s.queue = s.queue[1:]
+		if s.switches != nil && s.switches.Off(next.Cue.ID()) {
+			s.report(next, ports.OutcomeOff)
+			continue
+		}
+		s.start(next)
+		return
+	}
+}
 
+// start plays one request.
+func (s *Scheduler) start(next Request) {
 	clips := next.Clips
 	if len(clips) > 1 {
 		clips = clips[:1]

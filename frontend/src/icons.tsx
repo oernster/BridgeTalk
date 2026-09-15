@@ -13,6 +13,7 @@ import donate from './assets/donate.png'
 import appIcon from './assets/icons/application-icon.png'
 import audition from './assets/icons/audition.png'
 import cast from './assets/icons/cast.png'
+import chatter from './assets/icons/chatter.png'
 import darkMode from './assets/icons/dark-mode.png'
 import helpInfo from './assets/icons/help-info.png'
 import lightMode from './assets/icons/light-mode.png'
@@ -43,6 +44,7 @@ export const DonateArt = () => <Icon src={donate} className="donate" />
 
 export const StatusIcon = () => <Icon src={status} />
 export const MissingTakesIcon = () => <Icon src={missingTakes} />
+export const ChatterIcon = () => <Icon src={chatter} />
 export const SettingsIcon = () => <Icon src={settings} />
 export const CastIcon = () => <Icon src={cast} />
 export const AuditionIcon = () => <Icon src={audition} />
@@ -84,6 +86,7 @@ export const artwork = {
   application: appIcon,
   audition,
   cast,
+  chatter,
   darkMode,
   helpInfo,
   lightMode,

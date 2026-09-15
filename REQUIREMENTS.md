@@ -2555,7 +2555,9 @@ Rationale: `Cast.Confirmed`, the one cue whose source is the application, answer
 cast rather than anything in the game (FR-232).
 Acceptance: Given the shipped table of 263 cues, when the switches are listed, then 262 are listed
 and `Cast.Confirmed` is not among them.
-To be verified by: `TestEveryMomentTheGameRaisesHasASwitch`.
+Verified by: `TestOnlyACueFromTheApplicationHasNoSwitch` in `internal/domain/cue/category_test.go` and
+`TestEveryShippedMomentHasACategory`, which holds a switch on every shipped moment but `Cast.Confirmed`.
+Not verified by a test: the count of 262.
 
 **FR-622 A moment switched off is not spoken**
 Priority: Must.
@@ -2564,7 +2566,7 @@ and shall record the decision as `off`.
 Rationale: the reaction log keeps saying why nothing was said, as it does for mute (FR-611).
 Acceptance: Given `Docked` switched off, when `Docked` fires, then nothing plays and the reaction log
 gains `off` for `Docked`.
-To be verified by: `TestAMomentSwitchedOffPlaysNothingAndIsRecordedOff`.
+Verified by: `TestAMomentSwitchedOffPlaysNothingAndIsRecordedOff`.
 
 **FR-623 A moment switched off holds nothing back**
 Priority: Must.
@@ -2575,7 +2577,7 @@ Acceptance: Given `Docked`, whose cooldown is 30 seconds, switched off, when it 
 switched on at 12:00:05 and fires again at 12:00:10, then the second firing is played. Given `bf_emma`
 cast with nothing made for `Docked` and `Docked` switched off, when `Docked` fires, then `making` is
 not recorded.
-To be verified by: `TestAFiringSwitchedOffStartsNoCooldown`,
+Verified by: `TestAFiringSwitchedOffStartsNoCooldown`,
 `TestAFiringSwitchedOffOpensNoDuplicateWindow` and `TestAFiringSwitchedOffMakesNoLine`.
 
 **FR-624 While muted, a moment switched off is recorded as off**
@@ -2585,7 +2587,7 @@ decision as `off` rather than `dropped` (FR-611).
 Rationale: a switch outlasts the run; a mute does not (FR-705).
 Acceptance: Given playback muted with `Docked` switched off, when `Docked` fires, then `off` is
 recorded.
-To be verified by: `TestAMomentSwitchedOffWhileMutedIsRecordedOff`.
+Verified by: `TestAMomentSwitchedOffWhileMutedIsRecordedOff`.
 
 **FR-625 A moment switched off while it waits is let go**
 Priority: Should.
@@ -2593,7 +2595,7 @@ If a cue is switched off while it waits in the queue (FR-612) or for its line (F
 application shall let it go and shall record the decision as `off`.
 Acceptance: Given a take of `HullDamage` playing with `Docked` queued behind it, when `Docked` is
 switched off, then `Docked` is never played and `off` is recorded for it.
-To be verified by: `TestAMomentSwitchedOffInTheQueueIsLetGo` and
+Verified by: `TestAMomentSwitchedOffInTheQueueIsLetGo` and
 `TestAMomentSwitchedOffWhileItsLineIsMadeIsLetGo`.
 
 **FR-626 A take already playing is not cut short by its switch**
@@ -2603,7 +2605,7 @@ play to its end.
 Rationale: a press never cuts a clip short (FR-236); a switch is a press.
 Acceptance: Given a take of `Docked` playing, when `Docked` is switched off, then the take plays to its
 end.
-To be verified by: `TestSwitchingOffAMomentLeavesItsTakePlaying`.
+Verified by: `TestSwitchingOffAMomentLeavesItsTakePlaying`.
 
 **FR-627 A switch applies at once**
 Priority: Must.
@@ -2611,7 +2613,7 @@ When a switch is changed, the application shall apply it from the next firing of
 restart.
 Acceptance: Given `Docked` switched on, when it is switched off and then fires, then `off` is
 recorded.
-To be verified by: `TestASwitchAppliesToTheNextFiring`.
+Verified by: `TestASwitchAppliesToTheNextFiring`.
 
 **FR-628 Every moment starts switched on**
 Priority: Must.
@@ -2622,14 +2624,17 @@ nowhere, so it starts switched on.
 Acceptance: Given no kept switches, when the application starts, then all 262 switches are on. Given
 kept switches naming `Docked` alone, when a table adding a cue `NewMoment` is loaded, then `NewMoment`
 is on and `Docked` is off.
-To be verified by: `TestEveryMomentStartsSwitchedOn` and `TestAMomentNoKeptSwitchNamesIsOn`.
+Verified by: `TestEveryMomentStartsSwitchedOn`, `TestAnIdNamedIsSwitchedOffAndNoOther` in
+`internal/domain/selection/switches_test.go` and `TestTheSwitchesOutliveTheRun`, which has `Undocked`, named
+by no kept switch, on. Not verified by a test: a table adding a cue while the kept switches name another.
 
 **FR-629 The switches are kept for the next run**
 Priority: Must.
 The application shall keep, by cue id, which cues are switched off for the next run.
 Acceptance: Given `Docked` switched off, when the application is closed and started again, then
 `Docked` is still off.
-To be verified by: `TestTheSwitchesOutliveTheRun`.
+Verified by: `TestTheSwitchesOutliveTheRun` and `TestTheSwitchesOutliveTheRunInTheSettingsFile` in
+`internal/infrastructure/config/switches_store_test.go`.
 
 **FR-630 The switches belong to no voice**
 Priority: Must.
@@ -2638,7 +2643,7 @@ Rationale: which moments are spoken for is a question about the game being playe
 who speaks (OQ-15).
 Acceptance: Given Grace cast with `Docked` switched off, when `bf_emma` is cast, then `Docked` is still
 off.
-To be verified by: `TestCastingAVoiceLeavesTheSwitchesAlone`.
+Verified by: `TestCastingAVoiceLeavesTheSwitchesAlone` in `chatter_test.go`.
 
 **FR-631 A kept switch naming no cue is let go**
 Priority: Should.
@@ -2646,7 +2651,7 @@ If the kept switches name a cue id the table does not hold, then the application
 out of the switches it applies and keeps.
 Acceptance: Given kept switches naming `Gone`, which no cue has, when any switch is next changed, then
 `Gone` is no longer kept.
-To be verified by: `TestAKeptSwitchForNoCueIsLetGo`.
+Verified by: `TestAKeptSwitchForNoCueIsLetGo` and `TestKeptHoldsOnlyTheTablesSwitchableCuesInIdOrder`.
 
 **FR-632 Switches that cannot be read start every moment on**
 Priority: Should.
@@ -2655,7 +2660,9 @@ Note: an unreadable store is treated as no store, as it is for every other setti
 (`SettingsStore` in `internal/application/ports/ports.go`), so nothing is said about it.
 Acceptance: Given a kept switches file that is not valid, when the application starts, then all 262
 switches are on.
-To be verified by: `TestUnreadableSwitchesStartEveryMomentOn`.
+Verified by: `TestAFileThatDoesNotParseLoadsAsNothing` in `internal/infrastructure/config/settings_test.go`
+with `TestEveryMomentStartsSwitchedOnWithNothingKept`: a file that cannot be read loads as nothing kept,
+then nothing kept starts every moment on.
 
 **FR-633 If a switch cannot be kept, then say why**
 Priority: Must.
@@ -2663,7 +2670,8 @@ If a changed switch cannot be written, then the Chatter pane shall show why it w
 Note: the switch still applies until the application closes (FR-627).
 Acceptance: Given a store that refuses every write, when `Docked` is switched off, then the Chatter
 pane shows the reason and `Docked` stays off until the application closes.
-To be verified by: `TestASwitchThatCannotBeKeptSaysWhy`.
+Verified by: `TestASwitchThatCannotBeKeptSaysWhy`, `TestASwitchThatCannotBeKeptIsShownOnThePane` in
+`chatter_test.go` and "says why a switch could not be kept" in `frontend/src/chatter.test.tsx`.
 
 **FR-634 Every moment carries a category**
 Priority: Must.
@@ -2676,7 +2684,7 @@ belongs to.
 Acceptance: Given a table whose `Docked` entry has no `category`, when it is loaded, then loading
 fails with an error naming `Docked`. Given the shipped table, when it is loaded, then each of its 262
 moments has a category.
-To be verified by: `TestACueWithNoCategoryIsRefusedByName`, `TestACategoryOutsideTheSetIsRefused`
+Verified by: `TestACueWithNoCategoryIsRefusedByName`, `TestACategoryOutsideTheSetIsRefused`
 and `TestEveryShippedMomentHasACategory`.
 
 **FR-635 The categories**
@@ -2703,8 +2711,8 @@ Rationale: Claude proposed the set from reading the 261 cue ids. Which cue sits 
 written in the table beside its purpose, where Oliver reviews it.
 Acceptance: Given the shipped table, when Chatter lists its categories, then all twelve appear in the
 order above and none is empty.
-To be verified by: `TestTheShippedCategoriesAreTheSetInOrder`; the placement of each cue by Oliver's
-inspection of `cues.toml`.
+Verified by: `TestTheShippedCategoriesAreTheSetInOrder`. To be verified by Oliver's inspection of
+`cues.toml`: the placement of each cue.
 
 **FR-636 Station traffic can be switched off apart from other messages**
 Priority: Should.
@@ -2718,7 +2726,7 @@ Acceptance: Given station traffic switched off and `ReceiveText.Channel.npc` swi
 `ReceiveText` arrives on `npc` with the message key `$STATION_docking_granted;`, then nothing plays
 and `off` is recorded; when one arrives whose key stem begins `Military_`, then
 `ReceiveText.Channel.npc` answers it.
-To be verified by: `TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken`.
+Verified by: `TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken`.
 
 **FR-637 The station traffic moment**
 Priority: Should.
@@ -2737,17 +2745,20 @@ their speech sounds made by the sounds tool (FR-532).
 Acceptance: Given the shipped table, when it is loaded, then `ReceiveText.StationTraffic` is one cue
 carrying `ambient`, a cooldown of 30 seconds, the category Docking and stations, the purpose above and
 three lines in the script.
-To be verified by: `TestTheShippedStationTrafficMomentIsAsSpecified`; `TestTheScriptHoldsLinesForEveryCue`
-in `tests/structural/script_test.go` for its lines.
+Verified by: `TestTheShippedStationTrafficMomentIsAsSpecified`; `TestTheScriptHoldsLinesForEveryCue`
+in `tests/structural/script_test.go` for its lines. Not verified by a test: the purpose's wording, which
+the test holds only to being present.
 
 **FR-638 Station traffic resolves to its own moment**
 Priority: Should.
-When a `ReceiveText` event arrives on the `npc` channel whose key stem begins `STATION_`,
+When a `ReceiveText` event arrives whose key stem begins `STATION_`,
 `DockingChatter_` or `DockingFailed_`, the application shall resolve it to
 `ReceiveText.StationTraffic`, whatever the rest of the key stem, the variant number, the values or the
 words the game generated.
 Rationale: 15 key stems were measured in these three families (above); matching their beginnings also
 answers a stem the game adds to them later.
+Note: no channel is named, because every one of the 7,298 station traffic messages measured above
+arrived on `npc`; a channel would narrow the moment a second way and change nothing it answers.
 Note: the station traffic moment is narrower than any cue naming no key stem, so
 `ReceiveText.Channel.npc` never answers station traffic. A comms moment naming a whole key stem is
 narrower than it, so such a moment written later would answer its own stem.
@@ -2755,7 +2766,7 @@ Acceptance: Given the shipped table, when `ReceiveText` arrives on `npc` with
 `$STATION_docking_granted;`, then with `$DockingChatter_Cordial;`, then with
 `$STATION_NoFireZone_exited;`, then each resolves to `ReceiveText.StationTraffic`; when one arrives
 with `$Pirate_OnDeclarePiracyAttack07;`, then it resolves to `ReceiveText.Pirate.OnDeclarePiracyAttack`.
-To be verified by: `TestStationTrafficResolvesToItsOwnMoment` and
+Verified by: `TestStationTrafficResolvesToItsOwnMoment` and
 `TestAWholeKeyStemMomentIsNarrowerThanStationTraffic`.
 
 With the station traffic moment the cue vocabulary holds 263 cues, 262 of them with a switch.
@@ -3275,12 +3286,13 @@ then the Missing takes pane opens saying "Grace has recordings for 1 of 2 moment
 Verified by: "ends the application from File", "reaches the cast and the audition from Audio",
 "reaches missing takes from Audio, on the cast voice", "offers the mute as the act rather than as
 the state", "opens the settings pane from Settings", "closes a menu that is open when its own title
-is pressed again" and "carries an open menu along the bar and lets it go at the end" in
-`frontend/src/App.menus.test.tsx`, the last holding the titles' order and Cast as Audio's first
-item. Not verified by a test: the order of the items after Audio's first; the Audio menu reading
-Unmute while muted; a menu closing when an item is chosen or when the pointer leaves the bar.
-Note: Chatter joined the Audio menu on 2026-09-15 (section 7.2). Its place there and the pane it opens
-are to be verified by "reaches Chatter from Audio" in `frontend/src/App.menus.test.tsx`.
+is pressed again", "carries an open menu along the bar and lets it go at the end" and "reaches Chatter
+from Audio" in `frontend/src/App.menus.test.tsx`; "carries an open menu along the bar" holds the titles'
+order and Cast as Audio's first item, "reaches Chatter from Audio" holds Missing takes, Chatter and Mute
+as Audio's last three items in that order with Chatter opening its pane. Not verified by a test:
+Audition standing second in Audio; the Audio menu reading Unmute while muted; a menu closing when an
+item is chosen or when the pointer leaves the bar.
+Note: Chatter joined the Audio menu on 2026-09-15 (section 7.2).
 
 **FR-725 The Chatter button stands between Missing takes and Settings**
 Priority: Must.
@@ -3290,13 +3302,13 @@ Note: the artwork's master is `assets/chatter.png`, supplied by Oliver on 2026-0
 is made from it by `tools/genicons.py`.
 Acceptance: Given the window open, then the band's buttons before its stretch read Cast, Audition,
 Status, Missing takes, Chatter and Settings in that order.
-To be verified by: "holds Chatter between Missing takes and Settings" in `frontend/src/App.menus.test.tsx`.
+Verified by: "holds Chatter between Missing takes and Settings" in `frontend/src/App.menus.test.tsx`.
 
 **FR-726 The Chatter button opens the Chatter pane**
 Priority: Must.
 When the Chatter button on the band is pressed, the application shall open the Chatter pane.
 Acceptance: Given the Cast pane open, when Chatter is pressed, then the pane headed Chatter is shown.
-To be verified by: "opens the Chatter pane from the band".
+Verified by: "opens the Chatter pane from the band" in `frontend/src/App.test.tsx`.
 
 **FR-727 The Chatter pane lists every moment under its category**
 Priority: Must.
@@ -3306,7 +3318,7 @@ beneath in the secondary text colour (FR-318) and its switch beside it.
 Acceptance: Given the shipped table, when the pane opens, then `Docked` is listed under Docking and
 stations as "Docked" with the purpose "When the ship finishes docking, as the journal records it." and
 a switch.
-To be verified by: "lists each moment under its category with its purpose and a switch" in
+Verified by: "lists each moment under its category with its purpose and a switch" in
 `frontend/src/chatter.test.tsx`.
 
 **FR-728 A category heading counts what is switched on**
@@ -3316,15 +3328,15 @@ how many it holds, in brackets.
 Acceptance: Given the Docking and stations category holding 14 moments with `Docked` alone switched
 off, when the pane opens, then its heading reads "Docking and stations (13 of 14 on)".
 Note: the 14 is illustrative; the count is whatever the shipped table places there.
-To be verified by: "counts the moments switched on under each heading".
+Verified by: "counts the moments switched on under each heading".
 
 **FR-729 Pressing a moment's switch changes it**
 Priority: Must.
 When a moment's switch is pressed, the application shall switch that moment to the other state.
 Acceptance: Given `Docked` switched on, when its switch is pressed, then `Docked` is off; when it is
 pressed again, then `Docked` is on.
-To be verified by: "turns a moment off then on again from its switch" and
-`TestSettingASwitchIsAppliedAndKept` in `chatter_test.go`.
+Verified by: "turns a moment off then on again from its switch" and
+`TestSettingASwitchIsAppliedAndKept` in `internal/application/services/chatter_test.go`.
 
 **FR-730 A category's switch reads on while anything in it is on**
 Priority: Should.
@@ -3332,7 +3344,7 @@ Each category heading shall carry a switch that reads on while at least one mome
 is switched on; otherwise it reads off.
 Acceptance: Given every moment in Session switched off but one, then the Session switch reads on;
 given all of them switched off, then it reads off.
-To be verified by: "reads a category on while any moment in it is on".
+Verified by: "reads a category on while any moment in it is on".
 
 **FR-731 Pressing a category's switch changes every moment in it**
 Priority: Should.
@@ -3341,7 +3353,7 @@ where the switch read on, else on.
 Note: where this changes more than one moment, FR-733 asks first.
 Acceptance: Given Session with one moment on, when its switch is pressed and the question accepted,
 then every moment in Session is off.
-To be verified by: "turns every moment in a category off from its heading".
+Verified by: "turns every moment in a category off from its heading".
 
 **FR-732 Switch all on and Switch all off**
 Priority: Should.
@@ -3350,7 +3362,7 @@ each switching every moment to the state it names once FR-733 has been answered.
 Rationale: a player who wants only a few moments spoken for starts from all off (OQ-17).
 Acceptance: Given `Docked` alone switched off, when Switch all on is pressed and the question
 accepted, then all 262 switches are on.
-To be verified by: "switches every moment on or off from the two buttons".
+Verified by: "switches every moment on or off from the two buttons".
 
 **FR-733 Changing more than one moment at once asks first**
 Priority: Must.
@@ -3361,14 +3373,15 @@ Rationale: pressing it replaces the choice made for each of those moments, which
 back.
 Acceptance: Given 12 moments switched off, when Switch all on is pressed, then the question names 12
 moments; when it is declined, then the 12 are still off.
-To be verified by: "asks before changing many moments and changes nothing when declined".
+Verified by: "asks before changing many moments and changes nothing when declined", "names the category a
+question about it changes" and "changes a category with one moment on without asking".
 
 **FR-734 A button with nothing to change is disabled**
 Priority: Should.
 While every moment is already on, Switch all on shall be disabled; while every moment is already off,
 Switch all off shall be disabled.
 Acceptance: Given all 262 switches on, then Switch all on is disabled and Switch all off is not.
-To be verified by: "disables the button that would change nothing".
+Verified by: "disables the button that would change nothing".
 
 **FR-735 A switch is drawn as a slider**
 Priority: Must.
@@ -3380,8 +3393,10 @@ ring and orange already means something speaking (`frontend/src/theme.css`).
 Acceptance: Given `Docked` on and `Docked.Set` off, when the pane opens, then the thumb of the `Docked`
 switch sits at its end on an accent track and the thumb of the `Docked.Set` switch at its start on a
 neutral track.
-To be verified by: "draws a switch on at its end and off at its start"; the colours by
-`TestColoursOnlyInTokens` in `tests/structural/colours_test.go` holding them to the theme's tokens.
+Verified by: "draws a switch on at its end and off at its start", for the state the style sheet places the
+thumb by; the colours by `TestColoursOnlyInTokens` in `tests/structural/colours_test.go` holding them to
+the theme's tokens. Not verified by a test: where the thumb and the track are drawn, which the style
+sheet decides and jsdom does not compute.
 
 **FR-736 A switch's state is told apart by more than colour**
 Priority: Must.
@@ -3392,14 +3407,17 @@ Rationale: WCAG 2.2 success criterion 1.4.11, non-text contrast, at level AA. Th
 tells the states apart without colour (FR-735).
 Acceptance: Given both themes, when the contrast of the thumb and of the accent track is measured
 against the panel, then each is 3 to 1 or more.
-To be verified by: `TestTheChatterSwitchesContrastInBothThemes` in `tests/structural/contrast_test.go`.
+Verified by: `TestTheChatterSwitchesContrastInBothThemes` in `tests/structural/contrast_test.go`, which
+measures against the surface as well as the panel.
 
 **FR-737 Chatter answers the keyboard**
 Priority: Must.
 The Chatter pane shall answer the keyboard as FR-713 says for every pane, a switch holding the ring
 being pressed by Space or Enter.
 Acceptance: Given the ring on `Docked`'s switch while on, when Space is pressed, then `Docked` is off.
-To be verified by: "presses a switch holding the ring from Space and Enter".
+Verified by: "makes every switch a button on the ring" in `frontend/src/chatter.test.tsx`, holding each
+switch to a button that is a ring stop. Not verified by a test: Space and Enter pressing it, which the
+web view does for every button and jsdom does not.
 
 **FR-738 A switch is announced by its name and its state**
 Priority: Must.
@@ -3407,14 +3425,14 @@ Each switch on the Chatter pane shall be announced as a switch named by its mome
 category's name, with its state as on or off.
 Acceptance: Given `Docked` off, then its switch has the switch role, the name "Docked" and the checked
 state false.
-To be verified by: "names each switch and says whether it is on".
+Verified by: "names each switch and says whether it is on".
 
 **FR-739 The guide describes Chatter**
 Priority: Should.
 The guide (FR-712) shall say what the Chatter pane is for, that a category's switch changes every
 moment in it and that the switches belong to no voice.
 Acceptance: Given the guide open, then it holds a section on Chatter saying each of the three.
-To be verified by: "describes the Chatter pane" in `frontend/src/guide.test.tsx`.
+Verified by: "describes the Chatter pane" in `frontend/src/guide.test.tsx`.
 
 ---
 

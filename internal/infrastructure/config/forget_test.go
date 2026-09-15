@@ -7,6 +7,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
@@ -29,7 +30,7 @@ func TestForgettingRemovesTheChoicesAndTheirDirectory(t *testing.T) {
 	if _, err := os.Stat(filepath.Dir(store.path)); !os.IsNotExist(err) {
 		t.Errorf("the settings directory survived: %v", err)
 	}
-	if held := store.Load(); held != (ports.Settings{}) {
+	if held := store.Load(); !reflect.DeepEqual(held, ports.Settings{}) {
 		t.Errorf("after forgetting the store loaded %+v, want nothing", held)
 	}
 }

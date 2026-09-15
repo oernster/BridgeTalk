@@ -180,3 +180,23 @@ type ChecklistDTO struct {
 	Missing  []CueDTO `json:"missing"`
 	Folder   string   `json:"folder"`
 }
+
+// ChatterDTO is what the Chatter pane shows: every category in the table's order with its moments
+// (FR-727). Problem says why the last switch pressed could not be kept, the switch applying all the
+// same; empty while it was kept (FR-633).
+type ChatterDTO struct {
+	Categories []ChatterCategoryDTO `json:"categories"`
+	Problem    string               `json:"problem"`
+}
+
+// ChatterCategoryDTO is one category Chatter lists, its moments in the table's order.
+type ChatterCategoryDTO struct {
+	Name    string             `json:"name"`
+	Moments []ChatterMomentDTO `json:"moments"`
+}
+
+// ChatterMomentDTO is one moment named for a reader, with whether it is switched on (FR-727).
+type ChatterMomentDTO struct {
+	Cue CueDTO `json:"cue"`
+	On  bool   `json:"on"`
+}

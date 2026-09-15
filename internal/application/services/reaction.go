@@ -29,8 +29,8 @@ type waiting struct {
 
 // ReactionService turns events into playback requests.
 //
-// It owns the whole decision for one event: find the cue, check it is not a repeat,
-// check its cooldown, ask the catalogue what the active voice can play, choose a
+// It owns the whole decision for one event: find the cue, check it is switched on, check it is
+// not a repeat, check its cooldown, ask the catalogue what the active voice can play, choose a
 // take and hand the result to the scheduler. Every step that ends in silence is
 // reported, so nothing fails invisibly.
 type ReactionService struct {
@@ -48,6 +48,8 @@ type ReactionService struct {
 	maker ports.CueMaker
 	// waiting holds the cues waiting for their lines, in the order they fired.
 	waiting []waiting
+	// switches says which moments are switched off on Chatter; nil has every moment on (FR-622).
+	switches ports.Switchboard
 }
 
 // NewReactionService wires the decision path.
@@ -79,15 +81,21 @@ func (r *ReactionService) SetMuted(muted bool) { r.muted = muted }
 // voice is given one; a recorded voice has every line it will ever have on disk, so it is not.
 func (r *ReactionService) SetCueMaker(maker ports.CueMaker) { r.maker = maker }
 
+// SetSwitchboard hands over what says which moments are switched off on Chatter (FR-622). The
+// switchboard outlives the service, which is rebuilt with each cast, so the switches do too (FR-630).
+func (r *ReactionService) SetSwitchboard(switches ports.Switchboard) { r.switches = switches }
+
 // Tick hands over each waiting cue whose line has been written, as though it fired now; lets go of
-// each that has waited longer than madeOnCallLimit; then lets the scheduler start whatever should now
-// be speaking (FR-514). The poll loop calls it on every tick.
+// each switched off since it fired (FR-625) or that has waited longer than madeOnCallLimit; then lets
+// the scheduler start whatever should now be speaking (FR-514). The poll loop calls it on every tick.
 func (r *ReactionService) Tick() {
 	now := r.clock.Now()
 	var still []waiting
 	for _, each := range r.waiting {
 		performance, served := r.catalogue.Clips(each.matched.ID())
 		switch {
+		case r.off(each.matched.ID()):
+			r.report(each.matched, each.candidate, "", ports.OutcomeOff)
 		case served && len(performance.Clips) > 0:
 			r.speak(each.matched, each.candidate, performance.Clips, now)
 		case now.Sub(each.fired) > madeOnCallLimit:
@@ -107,6 +115,13 @@ func (r *ReactionService) Muted() bool { return r.muted }
 func (r *ReactionService) Handle(candidate event.Event) {
 	matched, ok := r.table.Resolve(candidate)
 	if !ok {
+		return
+	}
+	// A moment switched off is recorded before anything else is asked of it, so it opens no repeat
+	// window, starts no cooldown, picks no take, makes no line and reads as off while muted too
+	// (FR-622 to FR-624).
+	if r.off(matched.ID()) {
+		r.report(matched, candidate, "", ports.OutcomeOff)
 		return
 	}
 	if r.isWaiting(matched.ID()) {
@@ -130,6 +145,11 @@ func (r *ReactionService) Handle(candidate event.Event) {
 		return
 	}
 	r.speak(matched, candidate, performance.Clips, now)
+}
+
+// off reports whether a moment is switched off on Chatter.
+func (r *ReactionService) off(id cue.ID) bool {
+	return r.switches != nil && r.switches.Off(id)
 }
 
 // makeOnCall answers a cue with no take: where a line is on its way for it, it waits for that line,

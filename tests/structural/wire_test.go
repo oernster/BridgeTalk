@@ -34,20 +34,23 @@ const dtoSuffix = "DTO"
 // pair whose names differ: CueDTO is CueEntry on the page, because Cue there would sit
 // beside the cue field on a reaction log line and read as the same thing.
 var wireShapes = map[string]string{
-	"AboutDTO":        "About",
-	"AuditionDTO":     "Audition",
-	"ChecklistDTO":    "Checklist",
-	"CueBreakdownDTO": "CueBreakdown",
-	"CueDTO":          "CueEntry",
-	"GroupDTO":        "Group",
-	"LineFailureDTO":  "LineFailure",
-	"MachineVoiceDTO": "MachineVoice",
-	"MakingDTO":       "Making",
-	"PlaybackDTO":     "Playback",
-	"ReactionDTO":     "Reaction",
-	"StateDTO":        "State",
-	"VoiceDTO":        "Voice",
-	"VoiceFoldersDTO": "VoiceFolders",
+	"AboutDTO":           "About",
+	"AuditionDTO":        "Audition",
+	"ChatterDTO":         "Chatter",
+	"ChatterCategoryDTO": "ChatterCategory",
+	"ChatterMomentDTO":   "ChatterMoment",
+	"ChecklistDTO":       "Checklist",
+	"CueBreakdownDTO":    "CueBreakdown",
+	"CueDTO":             "CueEntry",
+	"GroupDTO":           "Group",
+	"LineFailureDTO":     "LineFailure",
+	"MachineVoiceDTO":    "MachineVoice",
+	"MakingDTO":          "Making",
+	"PlaybackDTO":        "Playback",
+	"ReactionDTO":        "Reaction",
+	"StateDTO":           "State",
+	"VoiceDTO":           "Voice",
+	"VoiceFoldersDTO":    "VoiceFolders",
 }
 
 // tsInterface captures one interface and its body; tsField matches one field inside

@@ -27,6 +27,16 @@ var secondaryLines = []string{".row .purpose", ".card .tagline"}
 // normal text.
 const minimumSecondaryContrast = 7.0
 
+// switchRules is the style part drawing Chatter's switches; switchParts are the selectors whose
+// fills FR-736 measures, the thumb and the track while on.
+var (
+	switchRules = filepath.Join("frontend", "src", "theme", "chatter.css")
+	switchParts = []string{".switch .thumb", ".switch[aria-checked='true']"}
+)
+
+// minimumSwitchContrast is the ratio FR-736 requires: WCAG 2.2 non-text contrast at level AA.
+const minimumSwitchContrast = 3.0
+
 // themeSelectors name the palette's two blocks, light then dark; backgroundTokens are the
 // grounds a row can stand on.
 var (
@@ -52,10 +62,11 @@ const (
 )
 
 // ruleColour captures the token a rule's own color declaration reads, passing over a
-// background-color or a border-color; themeBlock captures one palette block by selector;
-// tokenLine captures one token's hex value.
+// background-color or a border-color; ruleFill captures the token its background reads;
+// themeBlock captures one palette block by selector; tokenLine captures one token's hex value.
 var (
 	ruleColour = regexp.MustCompile(`(?:^|[\s;])color:\s*var\(--([\w-]+)\)`)
+	ruleFill   = regexp.MustCompile(`(?:^|[\s;])background(?:-color)?:\s*var\(--([\w-]+)\)`)
 	themeBlock = regexp.MustCompile(`(?ms)^(:root[^{\n]*?)\s*\{(.*?)^\}`)
 	tokenLine  = regexp.MustCompile(`--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;`)
 )
@@ -154,8 +165,43 @@ func namesEvery(selectors, wanted []string) bool {
 // theme, then reading the exit code. A paler light secondary token was caught too.
 func TestTheSecondaryLinesContrastInBothThemes(t *testing.T) {
 	root := repoRoot(t)
-	token := secondaryToken(t, root)
+	holdsContrast(t, root, secondaryToken(t, root), "the secondary lines", minimumSecondaryContrast, "FR-318")
+}
 
+// fillToken reads the token the one rule naming selector in the switches' style part fills with.
+func fillToken(t *testing.T, root, selector string) string {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join(root, switchRules))
+	if err != nil {
+		t.Fatalf("reading %s: %v", filepath.ToSlash(switchRules), err)
+	}
+	for _, rule := range parseRules(filepath.Base(switchRules), raw) {
+		if !slices.Contains(rule.selectors, selector) {
+			continue
+		}
+		if found := ruleFill.FindStringSubmatch(rule.body); found != nil {
+			return found[1]
+		}
+	}
+	t.Fatalf("%s has no rule for %s that fills from a token", filepath.ToSlash(switchRules), selector)
+	return ""
+}
+
+// TestTheChatterSwitchesContrastInBothThemes holds FR-736: the thumb of every switch and the track
+// of a switch while on each read at 3 to 1 or better against every ground a row stands on, in each
+// theme. The tokens are read from the rules rather than named here, so recolouring a switch is
+// measured rather than trusted.
+func TestTheChatterSwitchesContrastInBothThemes(t *testing.T) {
+	root := repoRoot(t)
+	for _, part := range switchParts {
+		holdsContrast(t, root, fillToken(t, root, part), part, minimumSwitchContrast, "FR-736")
+	}
+}
+
+// holdsContrast measures one token, drawn for what, against every ground a row stands on in each
+// theme, failing wherever it reads under minimum, the ratio the requirement named asks for.
+func holdsContrast(t *testing.T, root, token, what string, minimum float64, requirement string) {
+	t.Helper()
 	themes := palettes(t, root)
 	for _, selector := range themeSelectors {
 		tokens, ok := themes[selector]
@@ -165,7 +211,7 @@ func TestTheSecondaryLinesContrastInBothThemes(t *testing.T) {
 		}
 		fore, ok := tokens[token]
 		if !ok {
-			t.Errorf("%s defines no --%s for the secondary lines", selector, token)
+			t.Errorf("%s defines no --%s for %s", selector, token, what)
 			continue
 		}
 		for _, ground := range backgroundTokens {
@@ -174,10 +220,10 @@ func TestTheSecondaryLinesContrastInBothThemes(t *testing.T) {
 				t.Errorf("%s defines no --%s", selector, ground)
 				continue
 			}
-			if ratio := contrast(t, fore, back); ratio < minimumSecondaryContrast {
+			if ratio := contrast(t, fore, back); ratio < minimum {
 				t.Errorf(
-					"%s: --%s on --%s measures %.2f to 1, under the %.0f to 1 FR-318 requires",
-					selector, token, ground, ratio, minimumSecondaryContrast,
+					"%s: %s, --%s on --%s, measures %.2f to 1, under the %.0f to 1 %s requires",
+					selector, what, token, ground, ratio, minimum, requirement,
 				)
 			}
 		}

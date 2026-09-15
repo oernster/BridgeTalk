@@ -1,0 +1,68 @@
+/* ---------------------------------------------------------------- chatter */
+
+/* Switch all on and Switch all off, above the first category (FR-732). */
+.chatter-actions {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+
+/* A category heading stands on a row of its own with its switch at the end, so the row keeps
+   the heading's space above it rather than the rule a row draws between moments. */
+.row.category {
+  margin-top: 18px;
+  border-top: none;
+}
+
+.row.category h3 {
+  margin: 0;
+}
+
+/* A switch is a rounded track holding a round thumb (FR-735). --track-width and --track-height are
+   the track as drawn, ring included; --ring-width is the ring every stop wears on hover and focus;
+   --thumb-gap is the space between the thumb and the track's edge. The thumb's size follows from
+   those, so it cannot outgrow the track. While on, the thumb sits at the end on the accent; while
+   off, at the start on the raised fill with the border round it. Where the thumb sits is what tells
+   the two apart without colour (FR-736). */
+.switch {
+  --track-width: 48px;
+  --track-height: 28px;
+  --ring-width: 2px;
+  --thumb-gap: 3px;
+  --thumb-size: calc(var(--track-height) - 2 * var(--ring-width) - 2 * var(--thumb-gap));
+
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--track-width);
+  height: var(--track-height);
+  padding: 0;
+  border: var(--ring-width) solid transparent;
+  border-radius: calc(var(--track-height) / 2);
+  background: var(--raised);
+  box-shadow: inset 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.switch .thumb {
+  position: absolute;
+  top: var(--thumb-gap);
+  left: var(--thumb-gap);
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.switch[aria-checked='true'] .thumb {
+  left: calc(100% - var(--thumb-gap) - var(--thumb-size));
+}
+
+.switch:enabled:hover,
+.switch:enabled:focus {
+  border-color: var(--ring);
+}

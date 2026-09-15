@@ -7,6 +7,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
@@ -22,7 +23,7 @@ func storeIn(t *testing.T) *Settings {
 // TestNothingChosenYetLoadsAsNothing covers the first run, which is the common case.
 func TestNothingChosenYetLoadsAsNothing(t *testing.T) {
 	t.Parallel()
-	if held := storeIn(t).Load(); held != (ports.Settings{}) {
+	if held := storeIn(t).Load(); !reflect.DeepEqual(held, ports.Settings{}) {
 		t.Errorf("a store with no file loaded %+v, want the zero value", held)
 	}
 }
@@ -42,7 +43,7 @@ func TestChoicesSurviveASave(t *testing.T) {
 	if err := store.Save(want); err != nil {
 		t.Fatalf("saving: %v", err)
 	}
-	if got := store.Load(); got != want {
+	if got := store.Load(); !reflect.DeepEqual(got, want) {
 		t.Errorf("loaded %+v, want %+v", got, want)
 	}
 }
@@ -61,7 +62,7 @@ func TestAFileThatDoesNotParseLoadsAsNothing(t *testing.T) {
 	if err := os.WriteFile(store.path, []byte("{ this is not json"), filePerm); err != nil {
 		t.Fatalf("planting: %v", err)
 	}
-	if held := store.Load(); held != (ports.Settings{}) {
+	if held := store.Load(); !reflect.DeepEqual(held, ports.Settings{}) {
 		t.Errorf("a damaged file loaded %+v, want the zero value", held)
 	}
 }
@@ -111,7 +112,7 @@ func TestASecondSaveReplacesTheFirst(t *testing.T) {
 func TestAMachineWithNoConfigDirectoryStillStarts(t *testing.T) {
 	t.Parallel()
 	store := &Settings{}
-	if held := store.Load(); held != (ports.Settings{}) {
+	if held := store.Load(); !reflect.DeepEqual(held, ports.Settings{}) {
 		t.Errorf("loaded %+v, want the zero value", held)
 	}
 	if err := store.Save(ports.Settings{LibraryRoot: "anywhere"}); err == nil {

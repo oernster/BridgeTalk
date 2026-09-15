@@ -18,8 +18,9 @@ var ErrInvalidCue = errors.New("invalid cue")
 //
 // Ids are written in the game's own words: the journal event or status value first,
 // then whatever narrows it, "ShieldState.ShieldsUp.false" or "LightsOn.Set". That
-// first segment is the only grouping the vocabulary needs, so Group reads it rather
-// than a second table being kept in step with this one.
+// first segment is what Audition groups by, so Group reads it rather than a second
+// table being kept in step with this one. Chatter's categories are a different
+// question, which subject a moment belongs to, so they are written in the table.
 type ID string
 
 // Group returns the part of the id before the first dot, which names the area of
@@ -68,15 +69,17 @@ func ParsePriority(text string) (Priority, error) {
 
 // Cue is one thing the application can say, plus the condition that says it.
 type Cue struct {
-	id       ID
-	source   event.Source
-	name     string
-	edge     event.Edge
-	match    map[string]string
-	stems    map[string]string
-	priority Priority
-	cooldown time.Duration
-	purpose  string
+	id         ID
+	source     event.Source
+	name       string
+	edge       event.Edge
+	match      map[string]string
+	stems      map[string]string
+	beginnings map[string][]string
+	priority   Priority
+	cooldown   time.Duration
+	purpose    string
+	category   string
 }
 
 // Definition is the unvalidated shape a cue arrives in from the cue table.
@@ -89,10 +92,16 @@ type Definition struct {
 	Match  map[string]string
 	// Stem names the field holding a message key and the key stem that key must have, which makes
 	// the cue a comms moment (FR-617).
-	Stem     map[string]string
+	Stem map[string]string
+	// Begins names the field holding a message key and the beginnings its key stem may have, which
+	// makes the cue a comms moment answering a family of stems, such as station traffic (FR-638).
+	Begins   map[string][]string
 	Priority string
 	Cooldown time.Duration
 	Purpose  string
+	// Category names the set Chatter lists the cue under (FR-634). Whether one is needed is a
+	// question about the whole table, so NewCategorisedTable asks it rather than New.
+	Category string
 }
 
 // endsInDigits reports whether an id's final segment is made of digits alone (FR-219).
@@ -204,17 +213,23 @@ func New(definition Definition) (Cue, error) {
 	if err != nil {
 		return Cue{}, err
 	}
+	beginnings, err := keyBeginnings(definition)
+	if err != nil {
+		return Cue{}, err
+	}
 
 	return Cue{
-		id:       ID(definition.ID),
-		source:   source,
-		name:     name,
-		edge:     edge,
-		match:    copied,
-		stems:    stems,
-		priority: priority,
-		cooldown: definition.Cooldown,
-		purpose:  definition.Purpose,
+		id:         ID(definition.ID),
+		source:     source,
+		name:       name,
+		edge:       edge,
+		match:      copied,
+		stems:      stems,
+		beginnings: beginnings,
+		priority:   priority,
+		cooldown:   definition.Cooldown,
+		purpose:    definition.Purpose,
+		category:   definition.Category,
 	}, nil
 }
 
@@ -228,6 +243,13 @@ func (c Cue) Title() string { return c.id.Title() }
 // piece of reader facing text written by hand rather than generated from the id.
 func (c Cue) Purpose() string { return c.purpose }
 
+// Category returns the set Chatter lists the cue under (FR-634); empty for a cue with none.
+func (c Cue) Category() string { return c.category }
+
+// Switchable reports whether the cue can be switched off (FR-621). Every cue the game raises can;
+// a cue from the application answers the player's own act rather than the game, so it cannot.
+func (c Cue) Switchable() bool { return c.source != event.SourceApplication }
+
 // Source returns which event source can drive this cue.
 func (c Cue) Source() event.Source { return c.source }
 
@@ -240,9 +262,9 @@ func (c Cue) Priority() Priority { return c.priority }
 // Cooldown returns the minimum interval between two firings of this cue.
 func (c Cue) Cooldown() time.Duration { return c.cooldown }
 
-// Specificity reports how many payload fields the cue constrains, a key stem among them. A cue
-// matching more fields describes a narrower situation, so it wins over a broader one.
-func (c Cue) Specificity() int { return len(c.match) + len(c.stems) }
+// Specificity reports how many payload fields the cue constrains, a key stem or key beginnings among
+// them. A cue matching more fields describes a narrower situation, so it wins over a broader one.
+func (c Cue) Specificity() int { return len(c.match) + len(c.stems) + len(c.beginnings) }
 
 // Matches reports whether an event belongs to this cue.
 func (c Cue) Matches(candidate event.Event) bool {
@@ -258,7 +280,7 @@ func (c Cue) Matches(candidate event.Event) bool {
 			return false
 		}
 	}
-	return c.matchesStems(candidate)
+	return c.matchesStems(candidate) && c.matchesBeginnings(candidate)
 }
 
 // equalField compares a payload value against the cue table's textual expectation.

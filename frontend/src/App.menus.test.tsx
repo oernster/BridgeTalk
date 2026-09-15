@@ -61,6 +61,7 @@ vi.mock('./api', () => ({
         folder: `D:/Recordings/${voice}/`,
       }),
     rescan: () => Promise.resolve(0),
+    chatter: () => Promise.resolve({ categories: [], problem: '' }),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -145,6 +146,32 @@ describe('the menu bar', () => {
     expect(await screen.findByText('Grace has recordings for 1 of 2 moments.')).toBeTruthy()
     // The recordings directory is chosen here now, so the pane names the one in use.
     expect(screen.getByText('D:/Recordings')).toBeTruthy()
+  })
+
+  // FR-724: Chatter follows Missing takes in Audio and opens the pane the band's button does.
+  it('reaches Chatter from Audio', async () => {
+    await show()
+
+    fireEvent.click(inMenuBar().getByRole('button', { name: 'Audio' }))
+    const items = Array.from(document.querySelectorAll('.menupopup .menuitem')).map(
+      (item) => item.textContent,
+    )
+    expect(items.slice(items.indexOf('Missing takes'))).toEqual(['Missing takes', 'Chatter', 'Mute'])
+    fireEvent.click(inMenuBar().getByRole('button', { name: 'Chatter' }))
+
+    expect(await screen.findByRole('heading', { name: 'Chatter' })).toBeTruthy()
+  })
+
+  // FR-725: the buttons before the band's stretch, in order.
+  it('holds Chatter between Missing takes and Settings', async () => {
+    await show()
+
+    const before: string[] = []
+    for (const child of Array.from(document.querySelector('.navband')?.children ?? [])) {
+      if (child.classList.contains('spacer')) break
+      before.push(child.getAttribute('aria-label') ?? '')
+    }
+    expect(before).toEqual(['Cast', 'Audition', 'Status', 'Missing takes', 'Chatter', 'Settings'])
   })
 
   // The icon is the state and the name is the action: a muted application shows a

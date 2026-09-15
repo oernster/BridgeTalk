@@ -31,6 +31,7 @@ exactly like one that holds.
 | Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
 | No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
 | The secondary lines, the Missing takes purpose line and the Status cards' taglines, share one rule whose colour reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestTheSecondaryLinesContrastInBothThemes` | `contrast_test.go` |
+| The thumb of every Chatter switch and the track of a switch while on read at 3 to 1 or better against the surface and panel grounds in both themes | `TestTheChatterSwitchesContrastInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
 | Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
@@ -243,8 +244,10 @@ field and a value where one payload field narrows it. A status cue's id is the f
 `Set` or `Cleared`; a status value's id is its name followed by what it became (`GuiFocus.GalaxyMap`),
 except the fire group, whose one cue is `FireGroup.Changed`. The one cue with no name from the game is
 the application's own `Cast.Confirmed`. The first segment is therefore the moment the cue listens for.
-It is the only grouping the vocabulary needs: the audition pane reads it rather than keeping a second
-taxonomy in step. A list of cues does not: the Missing takes pane and the Moments spoken for dialog show each cue
+The audition pane groups by it rather than keeping a taxonomy of its own in step. Chatter needs a
+grouping a player reads by subject instead, which no part of an id gives, so every cue the game raises
+names its category in the table beside its purpose, from the set the table lists in order (FR-634,
+FR-635). A list of cues reads neither: the Missing takes pane and the Moments spoken for dialog show each cue
 under its full title alone (FR-233), since a heading read from the first segment would repeat the start
 of every title beneath it.
 
@@ -470,6 +473,8 @@ pane's Stop button.
 ## Scheduling
 
 Each event goes through one decision in `ReactionService.Handle`, in this order: resolve the cue; record
+a cue switched off on Chatter as `off`, before anything else is asked of it, so it opens no repeat window,
+starts no cooldown, makes no line and reads as `off` while muted too (FR-622 to FR-624); record
 a cue still waiting for its line to be made as a repeat; drop a repeat of the same cue inside the 900
 millisecond dedupe window; drop a cue still inside its cooldown; ask the catalogue for takes, where there
 are none either wait for a line the making service will make next or record the cue as unserved; drop
@@ -490,6 +495,10 @@ and the priority policy live in the Application (`services`).
 - **Cooldown per cue**, from the table. A cue that fires again inside its cooldown is dropped.
 - **Dedupe window.** The journal can restate a situation in quick succession, so a short window collapses
   repeats of one cue into one utterance.
+- **Switches (FR-625, FR-626).** A request switched off while it waits in the queue is let go and
+  recorded as `off` when its turn comes, the one behind it taken instead; a cue switched off while it
+  waits for its line is let go the same way on the next tick. A take already playing is never stopped
+  by its switch.
 
 Pre-emption is a cut, not a fade. The player stops the current clip outright and the next starts; there
 is no mixer, no ducking and no crossfade. What the player does carry is a single gain applied per audio
@@ -503,7 +512,11 @@ audition starts through `PlayIfIdle`, so it never stops anything.
 reports completion over a channel. The facade's poll loop selects over that channel, the tray's command
 channel and the poll ticker; on completion it tells the scheduler where a voice is cast (an audition
 plays with none, when no scheduler exists) then announces the playback state to the
-page, so nothing on the audio path reaches Wails directly.
+page, so nothing on the audio path reaches Wails directly. The switches are read on the poll loop's
+goroutine and changed from the window's own, so `ChatterService` holds them as one value swapped in
+whole: a reader always has a complete set without taking a lock, while changes are taken one at a time.
+The service is built once at start and handed to each reaction service and scheduler a cast builds,
+so casting another voice leaves every switch as it stands (FR-630).
 
 ## Choosing where to read from
 
@@ -544,7 +557,7 @@ the cues it covers, then exits; `-unbound` lists the cues the chosen voice canno
 and `-unbound` exit with an error where the recordings directory holds no voice. A windowed build started
 from a terminal attaches to it first (`runlog.ReportToTerminal`), so both reports print there.
 
-## Ambient chatter: not built
+## Idle remarks: not built
 
 **Nothing below runs today.** The application registers exactly two event sources, journal and status.
 It speaks only in answer to the game or to a press of its own controls. This section records what the
@@ -571,23 +584,23 @@ so the close is allowed through instead of leaving a running application with no
 summon it.
 
 ```
-+-------------------------------------------------------------------------------------------+
-| File   Audio   Settings   Help                                                            |
-+-------------------------------------------------------------------------------------------+
-| [Cast] [Audition] [Status] [Missing takes] [Settings]   [Volume] [Mute] [Theme] [Guide]   |
-+-------------------------------------------------------------------------------------------+
-|                                                                                           |
-|   main pane: a switched view, not a stack of modal dialogs                                |
-|                                                                                           |
-+-------------------------------------------------------------------------------------------+
-| [Donate]                                                                   live indicator |
-+-------------------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------------------+
+| File   Audio   Settings   Help                                                                      |
++-----------------------------------------------------------------------------------------------------+
+| [Cast] [Audition] [Status] [Missing takes] [Chatter] [Settings]   [Volume] [Mute] [Theme] [Guide]   |
++-----------------------------------------------------------------------------------------------------+
+|                                                                                                     |
+|   main pane: a switched view, not a stack of modal dialogs                                          |
+|                                                                                                     |
++-----------------------------------------------------------------------------------------------------+
+| [Donate]                                                                             live indicator |
++-----------------------------------------------------------------------------------------------------+
 ```
 
 The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
-order. The main pane switches between Cast, Audition, Status, Missing takes, Settings and Guide; it opens
-on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition, Missing takes and
-Mute; Settings holds the
+order. The main pane switches between Cast, Audition, Status, Missing takes, Chatter, Settings and Guide;
+it opens on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition, Missing
+takes, Chatter and Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.
 
 **Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` offers them under their own heading
@@ -604,10 +617,11 @@ lists share, the part a cast voice plays and the counted figures, live in `front
 where making stands before anything is made lives in `frontend/src/making.ts`, apart from `api.ts`,
 because a test replaces that module whole.
 
-Four surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
-licence, the close choice and the Moments spoken for dialog. Each opens focused on its first
-control; the close choice lists Minimise first, since Enter straight after pressing the cross must not
-mean stop. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
+Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
+licence, the close choice, the Moments spoken for dialog and the question Chatter asks before changing
+more than one moment. Each opens focused on its first control; the close choice lists Minimise first,
+since Enter straight after pressing the cross must not mean stop. Chatter's question lists Cancel first
+for the same reason: Enter straight after the press keeps the choice made for each moment. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
 and the terms the source carries cannot differ; About names the licence in a sentence.
 
 **Status.** Four cards widen to share their row: the cast voice, Moments covered, the journal directory
@@ -632,9 +646,19 @@ nothing until its first take (FR-316). It opens on the voice already chosen, els
 first. For the voice chosen it lists each missing moment by title, its purpose beneath and the folder its
 take belongs in, with Open folder beside it.
 
+**Chatter.** Switch all on and Switch all off, each disabled while it would change nothing, then every
+category in the table's order: a heading counting the moments switched on, the category's switch beside
+it reading on while any moment in it is on, then each moment by its title with its purpose beneath and
+its own switch. A switch is a button with the switch role, named by its moment or its category, drawn
+as a track holding a thumb whose position tells on from off (FR-735, FR-736). A press that would change
+more than one moment asks first, naming how many. The page keeps no copy of the switches: each press is
+answered with the pane as the application then holds it, with the reason beside it where a change
+applied without being kept (FR-633). The pane is `frontend/src/chatter.tsx`; its style part is
+`theme/chatter.css`.
+
 **Audition.** The cast pane says what a voice covers; the audition pane lets it be heard. Groups come
-from the cue vocabulary's own first segment, the moment in the game's own words, so no second taxonomy is
-kept in step with the cue table; a group with no takes is not offered. Each group button plays one clip
+from the cue vocabulary's own first segment, the moment in the game's own words, so the audition keeps no
+grouping of its own in step with the cue table; a group with no takes is not offered. Each group button plays one clip
 drawn at random from the union of its cues' takes, deduplicated, so one take answering several cues is not
 weighted by them; a press can repeat the previous clip. A Stop button ends whatever is playing, a reaction
 to the game included. The voice being auditioned starts as the cast one but is not tied to it: hearing a
@@ -897,7 +921,7 @@ directory, so running setup leaves no folder beside the application's.
 | Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile |
 | Recordings | `-library`, else the stored choice; at startup nothing is detected |
 | Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
-| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories and the cast voice, kept as a recorded voice's name or a machine voice's id with the other forgotten. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories, the cast voice (a recorded voice's name or a machine voice's id, the other forgotten) and the ids of the moments switched off on Chatter. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice; a switch writes the switches |
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
@@ -1020,4 +1044,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
 | ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
 | Every address is converted to uintptr in the argument list of `syscall.SyscallN` itself | Only there does Go keep the variable where ONNX Runtime was told it is; through a Go helper, a moving goroutine stack left ONNX Runtime writing the old copy, which broke a build on 2026-09-14 | A helper taking `...uintptr`; pinning every out-parameter instead |
+| The Chatter switches are kept in the settings file | The engine needs them before any page loads, which the theme and the volume do not | The page's own storage, beside the theme and the volume |
+| The switches are one value swapped in whole | The poll loop reads them while the window changes them from another goroutine, so a reader holds a whole set without a lock on the path every firing takes | A map edited in place under a lock taken on every firing |
+| A moment switched off while it waits is let go when it is reached | Nothing waiting is edited from the window's goroutine; the scheduler and the tick ask the switch as they come to it | Removing it from the queue at the press |
 | Model files found by Go in `models/` beside `go.mod`, filled from a pinned list | Every machine finds them the same way with nothing to set; the rule that a file must match its published SHA-256 lives once, in Go (Oliver, 2026-09-14) | An environment variable naming a folder, with the checksums checked a second time in PowerShell |

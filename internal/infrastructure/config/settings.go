@@ -39,6 +39,8 @@ type stored struct {
 	Voice       string `json:"voice"`
 	// MachineVoice is absent from a file an older build wrote, which reads as no machine voice kept.
 	MachineVoice string `json:"machineVoice"`
+	// SwitchedOff is absent from a file an older build wrote, which reads as every moment on (FR-628).
+	SwitchedOff []string `json:"switchedOff"`
 }
 
 // Settings reads and writes the choices that outlive a run.
@@ -85,6 +87,7 @@ func (s *Settings) Load() ports.Settings {
 		JournalDir:   held.JournalDir,
 		Voice:        held.Voice,
 		MachineVoice: held.MachineVoice,
+		SwitchedOff:  held.SwitchedOff,
 	}
 }
 
@@ -106,6 +109,7 @@ func (s *Settings) Save(chosen ports.Settings) error {
 		JournalDir:   chosen.JournalDir,
 		Voice:        chosen.Voice,
 		MachineVoice: chosen.MachineVoice,
+		SwitchedOff:  chosen.SwitchedOff,
 	}, "", "  ")
 
 	dir := filepath.Dir(s.path)

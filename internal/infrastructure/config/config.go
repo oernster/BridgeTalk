@@ -26,19 +26,26 @@ var embeddedCues []byte
 // refused along with any other key this shape does not hold, rather than the key being
 // dropped in silence and the table appearing to say something it does not. The purpose is
 // the exception: it says when the cue is heard, which no id can, so it is written by hand
-// and every cue must carry one (FR-231).
+// and every cue must carry one (FR-231). So is the category: which subject a moment belongs
+// to is no part of its id, so the table lists the categories in the order Chatter shows them
+// and each cue the game raises names one (FR-634, FR-635).
 type cueFile struct {
+	Category []struct {
+		Name string `toml:"name"`
+	} `toml:"category"`
 	Cue []struct {
-		ID       string            `toml:"id"`
-		Source   string            `toml:"source"`
-		Event    string            `toml:"event"`
-		Flag     string            `toml:"flag"`
-		Edge     string            `toml:"edge"`
-		Match    map[string]string `toml:"match"`
-		Stem     map[string]string `toml:"stem"`
-		Priority string            `toml:"priority"`
-		Cooldown int               `toml:"cooldown"`
-		Purpose  string            `toml:"purpose"`
+		ID       string              `toml:"id"`
+		Source   string              `toml:"source"`
+		Event    string              `toml:"event"`
+		Flag     string              `toml:"flag"`
+		Edge     string              `toml:"edge"`
+		Match    map[string]string   `toml:"match"`
+		Stem     map[string]string   `toml:"stem"`
+		Begins   map[string][]string `toml:"begins"`
+		Priority string              `toml:"priority"`
+		Cooldown int                 `toml:"cooldown"`
+		Purpose  string              `toml:"purpose"`
+		Category string              `toml:"category"`
 	} `toml:"cue"`
 }
 
@@ -71,9 +78,11 @@ func LoadCueTable(override string) (cue.Table, error) {
 			Edge:     entry.Edge,
 			Match:    entry.Match,
 			Stem:     entry.Stem,
+			Begins:   entry.Begins,
 			Priority: entry.Priority,
 			Cooldown: time.Duration(entry.Cooldown) * time.Second,
 			Purpose:  entry.Purpose,
+			Category: entry.Category,
 		})
 		if err != nil {
 			return cue.Table{}, err
@@ -86,7 +95,11 @@ func LoadCueTable(override string) (cue.Table, error) {
 		}
 		cues = append(cues, built)
 	}
-	return cue.NewTable(cues), nil
+	categories := make([]string, 0, len(parsed.Category))
+	for _, listed := range parsed.Category {
+		categories = append(categories, listed.Name)
+	}
+	return cue.NewCategorisedTable(categories, cues)
 }
 
 // contents returns an override file's bytes; or the embedded default.

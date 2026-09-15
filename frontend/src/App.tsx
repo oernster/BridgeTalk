@@ -9,6 +9,7 @@ import { useTheme, useVolume } from './preferences'
 import {
   AuditionIcon,
   CastIcon,
+  ChatterIcon,
   GuideIcon,
   MissingTakesIcon,
   MoonIcon,
@@ -20,12 +21,13 @@ import {
 } from './icons'
 import { AuditionPane } from './audition'
 import { CastPane } from './cast'
+import { ChatterPane } from './chatter'
 import { GuidePane } from './guide'
 import { MissingTakesPane } from './missingTakes'
 import { HomePane, SettingsPane } from './panes'
 import { Strip } from './strip'
 
-type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'takes' | 'guide'
+type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'takes' | 'chatter' | 'guide'
 type Menu = 'file' | 'audio' | 'settings' | 'help' | null
 
 // How long the keyboard is given to settle on the window before the page decides
@@ -148,7 +150,7 @@ export function App() {
           >
             Audition
           </button>
-          {/* Also on the band, between Status and Settings; the menu repeats it as it
+          {/* Missing takes and Chatter are on the band too; the menu repeats them as it
               repeats Cast and Audition. */}
           <button
             className="menuitem"
@@ -159,6 +161,16 @@ export function App() {
             }}
           >
             Missing takes
+          </button>
+          <button
+            className="menuitem"
+            type="button"
+            onClick={() => {
+              setPane('chatter')
+              setMenu(null)
+            }}
+          >
+            Chatter
           </button>
           <button
             className="menuitem"
@@ -273,6 +285,13 @@ export function App() {
           <MissingTakesIcon />
         </NavButton>
         <NavButton
+          label="Chatter"
+          current={pane === 'chatter'}
+          onClick={() => setPane('chatter')}
+        >
+          <ChatterIcon />
+        </NavButton>
+        <NavButton
           label="Settings"
           current={pane === 'settings'}
           onClick={() => setPane('settings')}
@@ -328,6 +347,7 @@ export function App() {
         {pane === 'takes' && (
           <MissingTakesPane cast={state?.voice ?? ''} libraryRoot={state?.libraryRoot} />
         )}
+        {pane === 'chatter' && <ChatterPane />}
         {pane === 'guide' && <GuidePane />}
       </main>
 

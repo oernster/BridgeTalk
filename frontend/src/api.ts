@@ -6,6 +6,9 @@
 
 import { nothingMade } from './making'
 
+/** noChatter is a Chatter pane with nothing to list, the answer outside the window. */
+const noChatter = (): Chatter => ({ categories: [], problem: '' })
+
 export interface State {
   /** Identifies the cast voice; empty while none is cast. */
   voice: string
@@ -205,6 +208,32 @@ interface Bridge {
   SetLaunchOnBoot(enabled: boolean): Promise<void>
   MinimiseToTray(): Promise<void>
   RequestQuit(): Promise<void>
+  Chatter(): Promise<Chatter>
+  SetMoment(id: string, on: boolean): Promise<Chatter>
+  SetCategory(name: string, on: boolean): Promise<Chatter>
+  SetAllMoments(on: boolean): Promise<Chatter>
+}
+
+/**
+ * Chatter is what the Chatter pane shows: every category in order with its moments (FR-727).
+ * problem says why the last switch pressed could not be kept, the switch applying all the same;
+ * empty while it was kept (FR-633).
+ */
+export interface Chatter {
+  categories: ChatterCategory[]
+  problem: string
+}
+
+/** ChatterCategory is one category Chatter lists, its moments in the table's order. */
+export interface ChatterCategory {
+  name: string
+  moments: ChatterMoment[]
+}
+
+/** ChatterMoment is one moment named for a reader, with whether it is switched on. */
+export interface ChatterMoment {
+  cue: CueEntry
+  on: boolean
 }
 
 interface WailsWindow {
@@ -314,6 +343,18 @@ export const api = {
    */
   minimiseToTray: (): Promise<void> => bridge()?.MinimiseToTray() ?? Promise.resolve(),
   requestQuit: (): Promise<void> => bridge()?.RequestQuit() ?? Promise.resolve(),
+
+  /** What the Chatter pane shows (FR-727); with no bridge it lists nothing. */
+  chatter: (): Promise<Chatter> => bridge()?.Chatter() ?? Promise.resolve(noChatter()),
+  /** Switches one moment on or off, answering the pane as it now stands (FR-729). */
+  setMoment: (id: string, on: boolean): Promise<Chatter> =>
+    bridge()?.SetMoment(id, on) ?? Promise.resolve(noChatter()),
+  /** Switches every moment in one category on or off (FR-731). */
+  setCategory: (name: string, on: boolean): Promise<Chatter> =>
+    bridge()?.SetCategory(name, on) ?? Promise.resolve(noChatter()),
+  /** Switches every moment on or off (FR-732). */
+  setAllMoments: (on: boolean): Promise<Chatter> =>
+    bridge()?.SetAllMoments(on) ?? Promise.resolve(noChatter()),
 }
 
 // on subscribes to a Wails event and returns the unsubscribe function; a no-op

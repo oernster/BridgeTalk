@@ -1,7 +1,9 @@
 package cue
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/event"
 )
@@ -9,8 +11,9 @@ import (
 // Table is the whole cue vocabulary, indexed so that resolving an event does not
 // scan every cue.
 type Table struct {
-	byKey map[key][]Cue
-	all   []Cue
+	byKey      map[key][]Cue
+	all        []Cue
+	categories []string
 }
 
 // key is the lookup pair every event carries.
@@ -39,6 +42,60 @@ func NewTable(cues []Cue) Table {
 	return Table{byKey: byKey, all: all}
 }
 
+// NewCategorisedTable indexes cues as NewTable does and holds the categories Chatter lists them under,
+// in the order given (FR-634, FR-635).
+//
+// It refuses a category left blank or named twice, a cue the game raises whose category is missing or
+// not listed, a cue from the application that names one and a listed category no cue sits in. Each
+// refusal names what is wrong, so a table written by hand says where to look.
+func NewCategorisedTable(categories []string, cues []Cue) (Table, error) {
+	holding := make(map[string]int, len(categories))
+	for _, name := range categories {
+		if strings.TrimSpace(name) == "" {
+			return Table{}, fmt.Errorf("%w: a category has no name", ErrInvalidCue)
+		}
+		if _, twice := holding[name]; twice {
+			return Table{}, fmt.Errorf("%w: the category %q is named twice", ErrInvalidCue, name)
+		}
+		holding[name] = 0
+	}
+	for _, item := range cues {
+		if err := categoryOf(item, holding); err != nil {
+			return Table{}, err
+		}
+	}
+	for _, name := range categories {
+		if holding[name] == 0 {
+			return Table{}, fmt.Errorf("%w: the category %q holds no cue", ErrInvalidCue, name)
+		}
+	}
+	table := NewTable(cues)
+	table.categories = append([]string(nil), categories...)
+	return table, nil
+}
+
+// categoryOf checks one cue's category against those listed, counting the cue into it.
+func categoryOf(item Cue, holding map[string]int) error {
+	if !item.Switchable() {
+		if item.category != "" {
+			return fmt.Errorf(
+				"%w: %s comes from the application, so it sits in no category", ErrInvalidCue, item.id,
+			)
+		}
+		return nil
+	}
+	if item.category == "" {
+		return fmt.Errorf("%w: %s has no category, the set Chatter lists it under", ErrInvalidCue, item.id)
+	}
+	if _, listed := holding[item.category]; !listed {
+		return fmt.Errorf(
+			"%w: %s names the category %q, which the table does not list", ErrInvalidCue, item.id, item.category,
+		)
+	}
+	holding[item.category]++
+	return nil
+}
+
 // Resolve returns the most specific cue an event satisfies.
 //
 // A cue constraining more payload fields describes a narrower situation, so a
@@ -62,6 +119,12 @@ func (t Table) All() []Cue {
 	out := make([]Cue, len(t.all))
 	copy(out, t.all)
 	return out
+}
+
+// Categories returns the categories Chatter lists the cues under, in the table's order; none for a
+// table built without them.
+func (t Table) Categories() []string {
+	return append([]string(nil), t.categories...)
 }
 
 // Confirmation returns the cue played when a voice is cast (FR-232, FR-521), so the choice is

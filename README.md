@@ -1,4 +1,4 @@
-# Bridge Talk
+# <img width="128" height="128" alt="application-icon" src="https://github.com/user-attachments/assets/482dbfad-c806-46a7-afec-cfcb0ebf4e87" /> Bridge Talk
 
 A ship's voice for Elite Dangerous, speaking with a machine voice of its own or with recordings you
 supply.

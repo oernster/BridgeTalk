@@ -55,7 +55,11 @@ function Card({
  */
 export function HomePane({ state }: { state: State | null }) {
   const [log, setLog] = useState<Reaction[]>([])
-  const [row, setRow] = useState(0)
+  // walked is the row the arrows have reached while the keyboard is on the log. Until then the
+  // current row is the newest entry, as it is again once the keyboard leaves; that is where the
+  // log keeps its view.
+  const [walked, setWalked] = useState<number | null>(null)
+  const row = walked ?? log.length - 1
   const rowsRef = useRef<HTMLDivElement>(null)
   const name = useProductName()
   // A tagline naming the product waits for About to name it; the page keeps no copy of the name.
@@ -87,7 +91,7 @@ export function HomePane({ state }: { state: State | null }) {
     if (log.length === 0) return
     const delta = event.key === 'ArrowDown' ? 1 : -1
     const next = (row + delta + log.length) % log.length
-    setRow(next)
+    setWalked(next)
     // The arrows are swallowed above, so the log would not scroll to the row they reach
     // on its own; a row walked past the edge would be selected out of sight.
     showRow(next)
@@ -96,6 +100,9 @@ export function HomePane({ state }: { state: State | null }) {
   // The log is a list, so it shows where focus is by its current row and never by a ring round
   // the whole of it (FR-713). That row has to be in sight when focus lands; otherwise nothing shows.
   const onFocus = () => showRow(row)
+
+  // Leaving the log hands its current row back to the newest entry.
+  const onBlur = () => setWalked(null)
 
   return (
     <>
@@ -166,6 +173,7 @@ export function HomePane({ state }: { state: State | null }) {
         aria-label="Reaction log"
         onKeyDown={onKey}
         onFocus={onFocus}
+        onBlur={onBlur}
       >
         <div className="logrows" ref={rowsRef}>
           {log.length === 0 ? (

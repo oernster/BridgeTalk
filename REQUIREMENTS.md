@@ -712,7 +712,7 @@ is complete" and the note beneath it does not say it again. After Browse, the ne
 once, in its row; the message beneath does not repeat it. A cast row carries no tooltip
 repeating its own words. The setup program's header carries no title line beneath the window's
 own title bar, which already names the program.
-Verified by: `frontend/src/shell.test.tsx` for the reaction log; `frontend/src/missingTakes.test.tsx`
+Verified by: `frontend/src/log.test.tsx` for the reaction log; `frontend/src/missingTakes.test.tsx`
 for the complete note and the recordings message; `frontend/src/panes.test.tsx` for the journal
 message; `frontend/src/cast.test.tsx` for the cast rows; `TestTheSetupHeaderRepeatsNoTitle` in
 `tests/structural/setupheader_test.go` for the setup header. Each failed with its repeat put back.
@@ -2359,7 +2359,7 @@ alone. It shall keep the 200 newest, newest last, adding each to the reaction lo
 as it is made.
 Verified by: `TestADecisionIsRecordedAndAnnounced`, `TestTheHistoryKeepsOnlyTheMostRecentDecisions`
 and `TestAClipIsTrimmedToItsFileNameForTheLog` in `facade_test.go`; "adds each new decision as it is
-announced" in `frontend/src/shell.test.tsx`. Not verified by a test: which 200 are kept, since the
+announced" in `frontend/src/log.test.tsx`. Not verified by a test: which 200 are kept, since the
 test's decisions are all alike.
 
 **FR-615 Both sources are asked every 250 milliseconds**
@@ -2560,7 +2560,8 @@ Shift+Tab and the Left arrow shall move it back. Both directions shall wrap at t
 over any control that is disabled or hidden. A list of rows shall be one stop whose rows are walked
 with Up and Down, each row walked to brought into view. A list shall show where focus is by its
 current row, brought into view as the keyboard lands on it; it shall wear no ring round the whole of
-it in any state. A voice chooser shall open on Down. While a
+it in any state. While the keyboard is elsewhere, a list's current row shall be its newest entry; a row
+walked to shall stay current until the keyboard leaves the list. A voice chooser shall open on Down. While a
 menu is open, stepping to the next title in the bar shall open that title's menu with its first
 item under the keyboard; past either end of the bar the menu shall close and focus move on. A
 dialog shall open focused on its first control, hold a ring of its own that wraps within it and
@@ -2575,8 +2576,10 @@ Verified by: "steps forward on Tab and on Right, from a neutral start", "wraps a
 a stop that cannot be used" and "takes focus when the dialog opens, skipping a control that cannot
 be used" in `frontend/src/hooks.test.tsx`; "gives every dialog a cross that closes it" and "puts the cross
 last on the ring, so a dialog still opens on its first control" in `frontend/src/dialogs.test.tsx`; "walks its rows with the vertical arrows, wrapping at
-both ends", "brings the row it walks to into view" and "brings its current row into view as the
-keyboard lands on it" in `frontend/src/shell.test.tsx`; "asks the
+both ends", "brings the row it walks to into view", "brings its current row into view as the
+keyboard lands on it", "keeps its current row on the newest entry while the keyboard is elsewhere" and
+"holds the row walked to while the keyboard is on it, then follows the newest again" in
+`frontend/src/log.test.tsx`; "asks the
 window for the keyboard when the page finds it has none" and "keeps the ring inside a dialog,
 wrapping at its ends" in `frontend/src/App.test.tsx`; "hands focus back to the menu title a dialog
 was opened from" and "carries an open menu along the bar and lets it go at the end" in

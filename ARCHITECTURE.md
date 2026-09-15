@@ -657,7 +657,8 @@ ring and keeps Up and Down. A drop-down list opens on Down; Up and Down never ch
 list shut. A scrolling region joins the ring only while it overflows and rings on focus alone, never
 under the pointer. The reaction list is a single stop whose rows are walked with Up and Down; being a
 list, it wears no ring and shows where focus is by its current row, brought into view as focus lands.
-No container is ever a stop. A menu title opens on Down, Enter or Space;
+That row is the newest entry while the keyboard is elsewhere and stays where the arrows put it while
+the keyboard is on the log. No container is ever a stop. A menu title opens on Down, Enter or Space;
 Up and Down walk its items; Escape closes it back to the title. The main window starts neutral with
 nothing focused and no menu open; every dialog opens focused on its first enabled control and Escape
 closes it.

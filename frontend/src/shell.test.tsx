@@ -1,61 +1,15 @@
-// The home pane.
-//
-// It is the diagnostic surface, so what is asserted here is that it records the SILENT
-// outcomes as well as the played ones: a cue that never speaks explaining itself is the
-// whole reason the log exists.
+// The home pane: the cards across it, the lines beneath their figures and what it says about
+// the audio device and the journal. The reaction log it holds is tested in log.test.tsx.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { About, Reaction, State } from './api'
+import { render, screen, waitFor } from '@testing-library/react'
+import type { State } from './api'
 import { watching } from './testState'
+import { about, resetHome } from './testHome'
 
-const reactions = vi.fn<() => Promise<Reaction[]>>()
-const about = vi.fn<() => Promise<About | null>>()
-const handlers = new Map<string, (...data: unknown[]) => void>()
-
-vi.mock('./api', () => ({
-  api: {
-    reactions: () => reactions(),
-    about: () => about(),
-    chooseLibraryRoot: () => Promise.resolve(''),
-    chooseJournalDir: () => Promise.resolve(''),
-    setLaunchOnBoot: () => Promise.resolve(),
-  },
-  on: (name: string, handler: (...data: unknown[]) => void) => {
-    handlers.set(name, handler)
-    return () => handlers.delete(name)
-  },
-}))
+vi.mock('./api', async () => (await import('./testHome')).mockedApi)
 
 const { HomePane } = await import('./panes')
-
-const played: Reaction = {
-  at: '09:30:00',
-  cue: 'StartJump',
-  title: 'Start jump',
-  clip: 'a.mp3',
-  outcome: 'played',
-}
-const dropped: Reaction = {
-  at: '09:30:01',
-  cue: 'ShieldState.ShieldsUp.false',
-  title: 'Shield state: shields up false',
-  clip: '',
-  outcome: 'dropped',
-}
-
-/** named is About naming the product, so a tagline naming it has a name to show. */
-const named: About = {
-  name: 'The Product',
-  tagline: '',
-  version: '9.9.9',
-  author: '',
-  copyright: '',
-  authorship: '',
-  attribution: '',
-  licence: '',
-  credits: [],
-}
 
 /** taglines reads the lines beneath one card's figure, in order. */
 function taglines(label: string): string[] {
@@ -63,13 +17,7 @@ function taglines(label: string): string[] {
   return Array.from(card.querySelectorAll('.tagline')).map((line) => line.textContent ?? '')
 }
 
-beforeEach(() => {
-  handlers.clear()
-  reactions.mockReset()
-  reactions.mockResolvedValue([])
-  about.mockReset()
-  about.mockResolvedValue(named)
-})
+beforeEach(resetHome)
 
 describe('the home pane', () => {
   it('says what is cast and where it is watching', async () => {
@@ -234,134 +182,5 @@ describe('the home pane', () => {
     render(<HomePane state={null} />)
 
     expect(screen.getAllByText('...').length).toBeGreaterThan(0)
-  })
-
-  it('says the log is empty rather than drawing an empty box', async () => {
-    render(<HomePane state={watching} />)
-
-    expect(
-      await screen.findByText('Nothing yet. Start the game and this will fill up.'),
-    ).toBeTruthy()
-  })
-
-  // The silent outcomes are the point. A cue that produced no sound is recorded under
-  // its cue with the reason, so a cue that never fires can be diagnosed by looking
-  // rather than by guessing.
-  it('records the decisions that produced no sound as well as the ones that did', async () => {
-    reactions.mockResolvedValue([played, dropped])
-    render(<HomePane state={watching} />)
-
-    expect(await screen.findByText('StartJump')).toBeTruthy()
-    expect(screen.getByText('a.mp3')).toBeTruthy()
-    expect(screen.getByText('played')).toBeTruthy()
-
-    expect(screen.getByText('ShieldState.ShieldsUp.false')).toBeTruthy()
-    expect(screen.getByText('dropped')).toBeTruthy()
-    // FR-234: with no clip to name, nothing stands in its place, so the cue is shown once.
-    expect(screen.getAllByText('ShieldState.ShieldsUp.false')).toHaveLength(1)
-    expect(screen.queryByText('ShieldState')).toBeNull()
-  })
-
-  it('adds each new decision as it is announced', async () => {
-    render(<HomePane state={watching} />)
-    await screen.findByText('Nothing yet. Start the game and this will fill up.')
-
-    handlers.get('reaction')?.(played)
-
-    expect(await screen.findByText('StartJump')).toBeTruthy()
-  })
-
-  // The log is one ring stop whose rows are walked with the vertical arrows; it
-  // wraps at both ends so a long log can be crossed from either direction.
-  it('walks its rows with the vertical arrows, wrapping at both ends', async () => {
-    reactions.mockResolvedValue([played, dropped])
-    render(<HomePane state={watching} />)
-    await screen.findByText('StartJump')
-    const log = screen.getByRole('listbox', { name: 'Reaction log' })
-
-    const selected = () =>
-      screen
-        .getAllByRole('option')
-        .findIndex((row) => row.getAttribute('aria-selected') === 'true')
-
-    expect(selected()).toBe(0)
-    fireEvent.keyDown(log, { key: 'ArrowDown' })
-    expect(selected()).toBe(1)
-    fireEvent.keyDown(log, { key: 'ArrowDown' })
-    expect(selected()).toBe(0)
-    fireEvent.keyDown(log, { key: 'ArrowUp' })
-    expect(selected()).toBe(1)
-  })
-
-  /** scrollsDuring runs act with scrolling recorded, answering with every element scrolled into view. */
-  async function scrollsDuring(act: () => Promise<void>): Promise<Element[]> {
-    const original = Element.prototype.scrollIntoView
-    const scrolled: Element[] = []
-    Element.prototype.scrollIntoView = function (this: Element) {
-      scrolled.push(this)
-    }
-    try {
-      await act()
-    } finally {
-      Element.prototype.scrollIntoView = original
-    }
-    return scrolled
-  }
-
-  // The arrows are swallowed, so the log would not scroll to the row they reach on its
-  // own. A row walked past the edge of the log is brought back into view.
-  it('brings the row it walks to into view', async () => {
-    const scrolled = await scrollsDuring(async () => {
-      reactions.mockResolvedValue([played, dropped])
-      render(<HomePane state={watching} />)
-      await screen.findByText('StartJump')
-
-      fireEvent.keyDown(screen.getByRole('listbox', { name: 'Reaction log' }), {
-        key: 'ArrowDown',
-      })
-    })
-
-    expect(scrolled).toEqual([screen.getAllByRole('option')[1]])
-  })
-
-  // FR-713: the log is a list, so it shows where focus is by its current row rather than by a
-  // ring round the whole of it. The log keeps its newest entries in view, which can leave the
-  // current row out of sight, so focus arriving brings that row into view.
-  it('brings its current row into view as the keyboard lands on it', async () => {
-    const scrolled = await scrollsDuring(async () => {
-      reactions.mockResolvedValue([played, dropped])
-      render(<HomePane state={watching} />)
-      await screen.findByText('StartJump')
-
-      fireEvent.focus(screen.getByRole('listbox', { name: 'Reaction log' }))
-    })
-
-    expect(scrolled).toEqual([screen.getAllByRole('option')[0]])
-  })
-
-  it('ignores a key that is not one of its own', async () => {
-    reactions.mockResolvedValue([played, dropped])
-    render(<HomePane state={watching} />)
-    await screen.findByText('StartJump')
-    const log = screen.getByRole('listbox', { name: 'Reaction log' })
-
-    fireEvent.keyDown(log, { key: 'ArrowDown' })
-    fireEvent.keyDown(log, { key: 'Enter' })
-
-    const rows = screen.getAllByRole('option')
-    expect(rows[1].getAttribute('aria-selected')).toBe('true')
-  })
-
-  // An empty log has no row to move to, so the arrows must not walk off the end of
-  // nothing.
-  it('does not walk an empty log', async () => {
-    render(<HomePane state={watching} />)
-    await screen.findByText('Nothing yet. Start the game and this will fill up.')
-
-    fireEvent.keyDown(screen.getByRole('listbox', { name: 'Reaction log' }), {
-      key: 'ArrowDown',
-    })
-
-    expect(screen.queryAllByRole('option')).toHaveLength(0)
   })
 })

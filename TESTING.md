@@ -108,18 +108,19 @@ only where the call into it is made.
 | `statusWords.ts` | 100% | 100% |
 | `strip.tsx` | 100% | 100% |
 | `testAudition.ts` | 100% | 100% |
+| `testHome.ts` | 100% | 100% |
 | `testLayout.ts` | 100% | 100% |
 | `testState.ts` | 100% | 100% |
 | `App.tsx` | 100% | 96.3% |
 | `hooks.ts` | 100% | 96.3% |
-| `panes.tsx` | 100% | 95.8% |
+| `panes.tsx` | 100% | 95.9% |
 | `chrome.tsx` | 100% | 94.3% |
 | `guide.tsx` | 100% | 86.7% |
 | `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.7%** |
 
-250 tests across 22 files, run under Vitest with jsdom.
+252 tests across 23 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit

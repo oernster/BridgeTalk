@@ -310,6 +310,20 @@ h2.section-title {
 .faq .card h3 { font-family: var(--sans); font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 .faq .card p { color: var(--text); }
 
+/* The comparison with other tools: a table that scrolls sideways inside its own box on a
+   narrow screen rather than widening the page. Bridge Talk's column sits on the accent's
+   soft ground so it reads as the subject. */
+.compare-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+.compare { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 15px; }
+.compare th, .compare td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.compare tbody tr:last-child th, .compare tbody tr:last-child td { border-bottom: 0; }
+.compare thead th, .compare thead td { font-family: var(--mono); color: var(--text); background: var(--raised); }
+.compare thead th:nth-child(2) { color: var(--accent); }
+.compare tbody th { font-family: var(--mono); font-size: 14px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.compare td { color: var(--muted); }
+.compare td:nth-child(2) { color: var(--text); background: var(--accent-soft); }
+.compare-note { margin: 18px 0 0; color: var(--muted); font-size: 14px; max-width: 760px; }
+
 /* Download */
 #download { text-align: center; }
 #download .eyebrow, #download h2.section-title { text-align: left; }

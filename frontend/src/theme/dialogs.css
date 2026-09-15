@@ -10,7 +10,18 @@
   padding: 24px;
 }
 
+/* --header-pad is the header's padding above and below its title, --header-inline its
+   padding before the title. --cross-size is the cross as drawn, border included; the title's
+   line is set to the same height, so a cross placed at the header's padding is centred on the
+   title by construction rather than by a measured offset. --cross-mark is the drawn mark
+   inside the cross. */
 .dialog {
+  --header-pad: 14px;
+  --header-inline: 18px;
+  --cross-size: 32px;
+  --cross-mark: 14px;
+
+  position: relative;
   display: flex;
   flex-direction: column;
   width: min(680px, 100%);
@@ -22,10 +33,46 @@
   overflow: hidden;
 }
 
+/* The title stops short of the cross, so a long one wraps before it runs under it. */
 .dialog header {
-  padding: 14px 18px;
+  padding: var(--header-pad) calc(var(--cross-size) + 2 * var(--header-pad)) var(--header-pad)
+    var(--header-inline);
   border-bottom: 1px solid var(--border);
+  line-height: var(--cross-size);
   font-weight: 600;
+}
+
+/* The cross sits at the header's end. It is written last in the dialog so it is the last
+   stop on the ring (dialogs.tsx says why), which is why it is placed rather than laid out. */
+.dialog .cross {
+  position: absolute;
+  top: var(--header-pad);
+  right: var(--header-pad);
+  display: grid;
+  place-items: center;
+  width: var(--cross-size);
+  height: var(--cross-size);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dialog .cross:enabled:hover,
+.dialog .cross:enabled:focus {
+  border-color: var(--ring);
+  color: var(--text);
+}
+
+.dialog .cross svg {
+  width: var(--cross-mark);
+  height: var(--cross-mark);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 .dialog .body {

@@ -8,7 +8,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { CloseChoiceDialog } from './dialogs'
+import { CloseChoiceDialog, Dialog } from './dialogs'
 
 /** open renders the dialog with spies for its three answers. */
 function open() {
@@ -60,6 +60,14 @@ describe('the close choice', () => {
     expect(onQuit).not.toHaveBeenCalled()
   })
 
+  it('cancels the close from its own cross, changing nothing', () => {
+    const { onMinimise, onQuit, onCancel } = open()
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(onCancel).toHaveBeenCalled()
+    expect(onMinimise).not.toHaveBeenCalled()
+    expect(onQuit).not.toHaveBeenCalled()
+  })
+
   it('draws nothing at all while it is closed', () => {
     render(
       <CloseChoiceDialog
@@ -70,5 +78,30 @@ describe('the close choice', () => {
       />,
     )
     expect(screen.queryByRole('button', { name: 'Quit' })).toBeNull()
+  })
+})
+
+// The cross belongs to the shell, so every dialog has one and none can be left without it.
+describe('the dialog shell', () => {
+  it('gives every dialog a cross that closes it', () => {
+    const onClose = vi.fn()
+    render(
+      <Dialog title="About" open onClose={onClose}>
+        <p>Read me.</p>
+      </Dialog>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('puts the cross last on the ring, so a dialog still opens on its first control', () => {
+    render(
+      <Dialog title="About" open onClose={vi.fn()}>
+        <p>Read me.</p>
+      </Dialog>,
+    )
+    const stops = Array.from(screen.getByRole('dialog').querySelectorAll('[data-stop]'))
+    expect(stops[stops.length - 1]?.getAttribute('aria-label')).toBe('Dismiss')
+    expect(document.activeElement?.textContent).toBe('Close')
   })
 })

@@ -52,6 +52,11 @@ export function ReadingBody({
  * It opens focused on its first stop, the deliberate opposite of the main window's
  * neutral start: the user opened it to do the one thing it is for. Escape closes it
  * and focus returns to whatever opened it.
+ *
+ * Its cross closes it too, as Escape and the scrim do. The cross is drawn at the
+ * header's end but written after the footer: the ring and the first stop both follow
+ * the page's order, so written in the header it would take the opening focus from the
+ * dialog's own first control.
  */
 export function Dialog({
   title,
@@ -118,6 +123,11 @@ export function Dialog({
             </button>
           )}
         </footer>
+        <button className="cross" data-stop type="button" aria-label="Dismiss" onClick={onClose}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M3 3 13 13M13 3 3 13" />
+          </svg>
+        </button>
       </div>
     </div>
   )

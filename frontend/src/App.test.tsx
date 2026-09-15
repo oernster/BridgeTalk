@@ -223,9 +223,9 @@ describe('what the backend tells the window', () => {
     expect(requestQuit).not.toHaveBeenCalled()
   })
 
-  // A dialog holds the ring while it is open. Tab walks its own buttons and wraps at their
-  // ends; it never reaches the window behind the scrim, which is where it used to go
-  // (FR-713).
+  // A dialog holds the ring while it is open. Tab walks its own buttons with the cross last,
+  // then wraps at their ends; it never reaches the window behind the scrim, which is where it
+  // used to go (FR-713). The cross carries a drawing rather than text, so it is read by its name.
   it('keeps the ring inside a dialog, wrapping at its ends', async () => {
     layOut()
     try {
@@ -237,10 +237,11 @@ describe('what the backend tells the window', () => {
       for (let press = 0; press < 3; press++) {
         fireEvent.keyDown(document, { key: 'Tab' })
         expect(dialog.contains(document.activeElement)).toBe(true)
-        reached.push(document.activeElement?.textContent ?? '')
+        const active = document.activeElement
+        reached.push(active?.textContent || active?.getAttribute('aria-label') || '')
       }
 
-      expect(reached).toEqual(['Quit', 'Minimise to the notification area', 'Quit'])
+      expect(reached).toEqual(['Quit', 'Dismiss', 'Minimise to the notification area'])
     } finally {
       unlayOut()
     }

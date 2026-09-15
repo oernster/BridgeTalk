@@ -2447,14 +2447,15 @@ no test does to the real registry.
 Priority: Must.
 While the tray icon is shown, when the window's cross is pressed, the application shall raise the
 window and ask whether to minimise to the notification area or to quit, focused on minimising.
-Escape or a press outside the question shall change nothing. While there is no tray icon, the cross
+Escape, a press outside the question or the question's own cross shall change nothing. While there is no tray icon, the cross
 shall close the application. A quit already chosen from the File menu, the tray or the question
 itself shall not be asked about again.
 Verified by: `TestTheCrossAsksRatherThanClosing`, `TestAQuitAlreadyDecidedIsNotAskedAboutAgain`,
 `TestTheCrossClosesWithNowhereToHide` and `TestMinimiseToTrayHidesWithoutEnding` in
 `window_life_test.go`; "offers both answers rather than acting on the cross", "opens focused on
-minimising, so Enter after the cross does not quit" and "costs nothing when it is dismissed, since
-the press may have been an accident" in `frontend/src/dialogs.test.tsx`. Not verified by a test: a
+minimising, so Enter after the cross does not quit", "costs nothing when it is dismissed, since
+the press may have been an accident" and "cancels the close from its own cross, changing nothing" in
+`frontend/src/dialogs.test.tsx`. Not verified by a test: a
 press outside the question.
 
 **FR-710 The notification area icon**
@@ -2514,14 +2515,16 @@ with Up and Down, each row walked to brought into view. A voice chooser shall op
 menu is open, stepping to the next title in the bar shall open that title's menu with its first
 item under the keyboard; past either end of the bar the menu shall close and focus move on. A
 dialog shall open focused on its first control, hold a ring of its own that wraps within it and
-never reaches the window behind, close on Escape and give focus back to what opened it. Opened from
+never reaches the window behind, close on Escape and give focus back to what opened it. Every dialog
+shall carry a cross at its header's end that closes it, the last stop on its ring. Opened from
 a menu, that is the menu's title. A region that scrolls shall show the ring when the keyboard lands
 on it; a disabled control shall wear the danger ring. Where the window comes up without the
 keyboard, it shall take it.
 The setup program answers the same keys under FR-808.
 Verified by: "steps forward on Tab and on Right, from a neutral start", "wraps at both ends", "skips
 a stop that cannot be used" and "takes focus when the dialog opens, skipping a control that cannot
-be used" in `frontend/src/hooks.test.tsx`; "walks its rows with the vertical arrows, wrapping at
+be used" in `frontend/src/hooks.test.tsx`; "gives every dialog a cross that closes it" and "puts the cross
+last on the ring, so a dialog still opens on its first control" in `frontend/src/dialogs.test.tsx`; "walks its rows with the vertical arrows, wrapping at
 both ends" and "brings the row it walks to into view" in `frontend/src/shell.test.tsx`; "asks the
 window for the keyboard when the page finds it has none" and "keeps the ring inside a dialog,
 wrapping at its ends" in `frontend/src/App.test.tsx`; "hands focus back to the menu title a dialog

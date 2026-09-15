@@ -501,7 +501,8 @@ audition starts through `PlayIfIdle`, so it never stops anything.
 
 **Threading.** The audio library runs its own output thread and nothing on it touches the UI. The player
 reports completion over a channel. The facade's poll loop selects over that channel, the tray's command
-channel and the poll ticker; on completion it tells the scheduler and announces the playback state to the
+channel and the poll ticker; on completion it tells the scheduler where a voice is cast (an audition
+plays with none, when no scheduler exists) then announces the playback state to the
 page, so nothing on the audio path reaches Wails directly.
 
 ## Choosing where to read from

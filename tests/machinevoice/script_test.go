@@ -58,7 +58,7 @@ func TestMakingACompleteScriptKeepsWithinDisk(t *testing.T) {
 	defer maker.Close()
 	confirmation, _ := table.Confirmation()
 	service := services.NewMakingService(
-		voiced, shippedPauses(t), confirmation, voicefiles.New(dir), maker, madelines.New(store), runlog.NewLines(os.Stderr),
+		voiced, shippedPauses(t), shippedEndings(t), confirmation, voicefiles.New(dir), maker, madelines.New(store), runlog.NewLines(os.Stderr),
 	)
 	defer service.Stop()
 

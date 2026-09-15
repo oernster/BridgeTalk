@@ -1,19 +1,22 @@
-// Command pauses finds, for every machine voice, where the pause before a final commander goes in each
-// line the script joins, then writes the pauses as pauses.toml beside sounds.toml (FR-551, FR-552).
+// Command pauses measures every machine voice's lines before the build: where the pause before a final
+// commander goes in each line the script joins, written as pauses.toml (FR-551, FR-552), then where
+// each line ending on a nasal fades, written as endings.toml (FR-555), both beside sounds.toml.
 //
 // Each line is made with the model in models/, which go run ./tools/models fills; the break in it is
-// found with Praat by pauses.py, run in the tool's own venv. Run it from anywhere inside the repository
-// after the saved speech sounds or the model files change:
+// found with Praat by pauses.py and the burst by endings.py, each run in the tool's own venv. Run it
+// from anywhere inside the repository after the saved speech sounds or the model files change:
 //
 //	go run ./tools/pauses
 //
-// A full run makes every joined line for all 28 voices. For a quick check over some of them:
+// A full run makes every joined line and every line ending on a nasal for all 28 voices. For a quick
+// check over some of them:
 //
-//	go run ./tools/pauses -only bf_emma,bm_george -out <path>
+//	go run ./tools/pauses -only bf_emma,bm_george -out <path> -endings <path>
 //
-// -only names the voices, repeated or comma separated. -out names the file the pauses are written to;
-// by default the shipped pauses.toml, which a run with -only refuses, since it would ship pauses
-// missing voices. The venv is made once, as tools/pauses/requirements.txt says.
+// -only names the voices, repeated or comma separated. -out names the file the pauses are written to
+// and -endings the file the endings are written to; by default the shipped files, which a run with
+// -only refuses, since it would ship books missing voices. The venv is made once, as
+// tools/pauses/requirements.txt says.
 package main
 
 import (
@@ -33,7 +36,7 @@ import (
 // owner.
 const fileMode = 0o644
 
-// workPattern names the temporary folder a run writes its lines in for the finder.
+// workPattern names the temporary folder a run writes its lines in for the finders.
 const workPattern = "bridge-talk-pauses-*"
 
 // fillModels says how to fill models/ where it does not match the list.
@@ -47,7 +50,8 @@ func main() {
 }
 
 // start reads the flags, the voiced script and the model files, then finds every voice's pauses and
-// writes them, until it ends or is interrupted.
+// writes them, then every voice's endings and writes them, until it ends or is interrupted. The pauses
+// are written before the endings are looked for, so a failure finding the endings keeps them.
 func start() error {
 	working, err := os.Getwd()
 	if err != nil {
@@ -89,18 +93,31 @@ func start() error {
 	defer model.Close()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	run := finding{files: voicefiles.New(dir), maker: model, finder: python{root: root}, work: work, out: os.Stdout}
+	finders := python{root: root}
+	run := finding{files: voicefiles.New(dir), maker: model, finder: finders, ends: finders, work: work, out: os.Stdout}
 	book, err := run.book(ctx, voiced, chosen.voices)
 	if err != nil {
 		return err
 	}
-	written, err := config.EncodePauses(book)
+	if err := writeBook(chosen.out, "pauses", book, config.EncodePauses); err != nil {
+		return err
+	}
+	endings, err := run.endings(ctx, voiced, chosen.voices)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(chosen.out, written, fileMode); err != nil {
+	return writeBook(chosen.endings, "endings", endings, config.EncodeEndings)
+}
+
+// writeBook encodes a book and writes it to path, saying what it wrote where.
+func writeBook[B any](path, what string, book B, encode func(B) ([]byte, error)) error {
+	written, err := encode(book)
+	if err != nil {
 		return err
 	}
-	fmt.Printf("wrote the pauses to %s\n", chosen.out)
+	if err := os.WriteFile(path, written, fileMode); err != nil {
+		return err
+	}
+	fmt.Printf("wrote the %s to %s\n", what, path)
 	return nil
 }

@@ -6,7 +6,6 @@
 package main
 
 import (
-	"embed"
 	"errors"
 	"flag"
 	"fmt"
@@ -29,13 +28,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 	"github.com/oernster/bridge-talk/internal/product"
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
-
-//go:embed all:frontend/dist
-var assets embed.FS
 
 // pollInterval is how often both sources are asked for new events. The journal read
 // is a seek and a read of only the appended bytes, usually none, so this is cheap
@@ -45,24 +38,6 @@ const pollInterval = 250 * time.Millisecond
 // appTitle names the application in the window title, the tray tooltip and the
 // About dialog: the product name as a reader sees it.
 const appTitle = product.Name
-
-// Window geometry. The default is wide enough for the reaction log's columns without
-// horizontal scrolling and tall enough for the Cast pane to reach its machine voices,
-// which sit below the recorded ones; the minimum is where the nav band stops fitting
-// on one row.
-//
-// The minimum is measured rather than chosen; it is re-measured whenever the band
-// gains a button. The band needs 1022 pixels for its eight buttons, the volume slider
-// at its full width, the gaps and its own padding, so anything under that squeezes
-// the slider or pushes the last button off the row; 1045 leaves the two groups
-// visibly apart. The default grew with the icons, so a window opened at it has room
-// for the band and a useful pane rather than the band and a sliver.
-const (
-	windowWidth     = 1344
-	windowHeight    = 960
-	windowMinWidth  = 1045
-	windowMinHeight = 600
-)
 
 // systemClock is the real clock, injected so the domain never reads the wall clock.
 type systemClock struct{}
@@ -311,33 +286,6 @@ func run() error {
 	return launch(app, *hidden && current.tray != nil)
 }
 
-// launch runs the Wails window.
-//
-// Started hidden, the window exists but is not shown: the tray icon summons it, which
-// is what the login entry wants. Anything else opens it as usual.
-func launch(app *App, hidden bool) error {
-	app.startedHidden = hidden
-	err := wails.Run(&options.App{
-		StartHidden:      hidden,
-		Title:            appTitle,
-		Width:            windowWidth,
-		Height:           windowHeight,
-		MinWidth:         windowMinWidth,
-		MinHeight:        windowMinHeight,
-		AssetServer:      &assetserver.Options{Assets: assets},
-		BackgroundColour: &options.RGBA{R: 12, G: 12, B: 14, A: 1},
-		OnBeforeClose:    app.beforeClose,
-		OnStartup:        app.startup,
-		OnDomReady:       app.domReady,
-		OnShutdown:       app.shutdown,
-		Bind:             []interface{}{app},
-	})
-	if err != nil {
-		return fmt.Errorf("running the window: %w", err)
-	}
-	return nil
-}
-
 // startTray builds and shows the tray, returning nil when it cannot appear.
 //
 // A tray that fails to start is not fatal. The application still watches the journal
@@ -368,6 +316,10 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	if err != nil {
 		return nil, nil, err
 	}
+	endings, err := config.LoadEndings()
+	if err != nil {
+		return nil, nil, err
+	}
 	executable, notFound := os.Executable()
 	made, noStore := madelines.Dir()
 	dir := voicefiles.Beside(executable)
@@ -375,5 +327,5 @@ func newMaking(table cue.Table) (*services.MakingService, *speechmodel.Maker, er
 	files := filesUnless(voicefiles.New(dir), errors.Join(notFound, noStore))
 	// A table without the confirmation's cue makes nothing on a cast; every line is then made on call.
 	confirmation, _ := table.Confirmation()
-	return services.NewMakingService(voiced, pauses, confirmation, files, maker, madelines.New(made), runLog()), maker, nil
+	return services.NewMakingService(voiced, pauses, endings, confirmation, files, maker, madelines.New(made), runLog()), maker, nil
 }

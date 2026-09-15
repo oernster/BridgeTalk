@@ -22,9 +22,9 @@ const commaBefore = ", "
 // finalMarks are the marks a joining line may end with, exactly one of them (FR-550).
 var finalMarks = []string{".", "!", "?"}
 
-// JoinedLine is one line of the script that FR-550 joins, with its saved speech sounds in one
-// accent.
-type JoinedLine struct {
+// SavedLine is one line of the script with its saved speech sounds in one accent: a line FR-550
+// joins or a line ending on a nasal (FR-555).
+type SavedLine struct {
 	// Cue is the cue the line is spoken for.
 	Cue cue.ID
 	// Index is the line's place among its cue's lines, from zero.
@@ -94,15 +94,9 @@ func (s Script) Join(line speech.Line, accent machinevoice.Accent, sounds string
 
 // Joined returns every line the script joins with its saved speech sounds in one accent, cue by
 // cue in the order Cues gives, then line by line (FR-550).
-func (v Voiced) Joined(accent machinevoice.Accent) []JoinedLine {
-	var joined []JoinedLine
-	for _, id := range v.Cues() {
-		sounds := v.saved[id].forAccent(accent)
-		for index, line := range v.byCue[id] {
-			if _, _, joins := v.joining(line); joins {
-				joined = append(joined, JoinedLine{Cue: id, Index: index, Sounds: sounds[index]})
-			}
-		}
-	}
-	return joined
+func (v Voiced) Joined(accent machinevoice.Accent) []SavedLine {
+	return v.linesWhere(accent, func(line speech.Line, _ string) bool {
+		_, _, joins := v.joining(line)
+		return joins
+	})
 }

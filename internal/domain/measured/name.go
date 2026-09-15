@@ -1,4 +1,4 @@
-package pause
+package measured
 
 import (
 	"fmt"

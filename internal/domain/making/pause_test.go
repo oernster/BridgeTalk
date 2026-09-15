@@ -48,14 +48,14 @@ func oldKey(sounds string) string {
 // FR-553: a line carries the pause the book gives its voice for it; the voice's other lines and every
 // line of a voice the book gives nothing carry none.
 func TestALineCarriesItsVoicesPauseAndNoOther(t *testing.T) {
-	lines := making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), nil).ToMake()
+	lines := making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), noEndings, nil).ToMake()
 	for index, line := range lines {
 		given := index == 1
 		if line.PauseGiven != given || line.Paused() != given || (given && line.Pause != pausedAt) {
 			t.Errorf("bf_emma's line %d carries %+v given %v; want a pause only on Docked's second", index, line.Pause, line.PauseGiven)
 		}
 	}
-	for _, line := range making.New(voiced(t, "bə"), michael, files, bookOf(t, pausedAt), nil).ToMake() {
+	for _, line := range making.New(voiced(t, "bə"), michael, files, bookOf(t, pausedAt), noEndings, nil).ToMake() {
 		if line.PauseGiven || line.Paused() {
 			t.Errorf("am_michael's %s line %d carries bf_emma's pause", line.Cue, line.Index)
 		}
@@ -66,11 +66,11 @@ func TestALineCarriesItsVoicesPauseAndNoOther(t *testing.T) {
 // under before pauses, so no made line already on a user's disk goes stale.
 func TestALineWithNoPauseOrADoubtfulOneKeepsItsKeyFromBeforePauses(t *testing.T) {
 	doubtful := pause.Entry{Cue: "Docked", Index: 0, Sounds: "bə", Digest: foundIn, Doubtful: true}
-	lines := making.New(voiced(t, "bə"), emma, files, bookOf(t, doubtful), nil).ToMake()
+	lines := making.New(voiced(t, "bə"), emma, files, bookOf(t, doubtful), noEndings, nil).ToMake()
 	if !lines[0].PauseGiven || lines[0].Paused() {
 		t.Fatalf("Docked's first line carries %+v given %v; want its doubtful pause, not paused", lines[0].Pause, lines[0].PauseGiven)
 	}
-	lines = append(lines, making.New(voiced(t, "bə"), michael, files, noPauses, nil).ToMake()...)
+	lines = append(lines, making.New(voiced(t, "bə"), michael, files, noPauses, noEndings, nil).ToMake()...)
 	for _, line := range lines {
 		if want := oldKey(line.Sounds); line.Key != want {
 			t.Errorf("%s line %d is keyed %s, want %s as before pauses", line.Cue, line.Index, line.Key, want)
@@ -97,18 +97,18 @@ func TestAPausedLinesKeyChangesWithItsSampleOrItsDigest(t *testing.T) {
 			t.Errorf("a changed %s left the key unchanged", name)
 		}
 	}
-	if line := making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), nil).ToMake()[1]; line.Key != base {
+	if line := making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), noEndings, nil).ToMake()[1]; line.Key != base {
 		t.Errorf("the paused line is keyed %s, want %s", line.Key, base)
 	}
 }
 
 // FR-513: a line whose pause changed or went is made again and no other line is.
 func TestALineWhosePauseChangedIsTheOnlyOneMadeAgain(t *testing.T) {
-	made := keysOf(making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), nil).ToMake())
+	made := keysOf(making.New(voiced(t, "bə"), emma, files, bookOf(t, pausedAt), noEndings, nil).ToMake())
 	moved := pausedAt
 	moved.Sample = 8
 	for name, book := range map[string]pause.Book{"moved": bookOf(t, moved), "gone": noPauses} {
-		again := making.New(voiced(t, "bə"), emma, files, book, made).ToMake()
+		again := making.New(voiced(t, "bə"), emma, files, book, noEndings, made).ToMake()
 		if len(again) != 1 || again[0].Cue != "Docked" || again[0].Index != 1 {
 			t.Errorf("with the pause %s, to make again = %+v; want Docked's second line alone", name, again)
 		}

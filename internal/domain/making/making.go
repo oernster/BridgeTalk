@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
@@ -20,6 +21,10 @@ import (
 // changes the key.
 const keySeparator = "\x00"
 
+// fadeMark goes before a fade's parts of a key, so a pause and a fade at the same sample found in the
+// same samples are keyed apart (FR-513).
+const fadeMark = "fade"
+
 // Files are the digests of what a voice's made lines are made from besides their speech sounds:
 // the voice's style file and the model (FR-513).
 type Files struct {
@@ -27,8 +32,9 @@ type Files struct {
 	Model string
 }
 
-// Line is one line a voice speaks: its cue, its place among that cue's lines, its speech sounds
-// in the voice's accent, the pause the voice's book gives it and the key its made line is stored under.
+// Line is one line a voice speaks: its cue, its place among that cue's lines, its speech sounds in
+// the voice's accent, the pause and the ending the voice's books give it and the key its made line is
+// stored under.
 type Line struct {
 	Cue    cue.ID
 	Index  int
@@ -37,12 +43,20 @@ type Line struct {
 	Pause pause.Entry
 	// PauseGiven reports whether the book gives the voice a pause for the line, doubtful or not.
 	PauseGiven bool
-	Key        string
+	// Ending is the voice's ending for the line (FR-556); it means nothing unless EndingGiven.
+	Ending ending.Entry
+	// EndingGiven reports whether the book gives the voice an ending for the line, fading or not.
+	EndingGiven bool
+	Key         string
 }
 
 // Paused reports whether the line's made line gets its pause: the book gives one that is not
 // doubtful (FR-552, FR-553).
 func (l Line) Paused() bool { return l.PauseGiven && !l.Pause.Doubtful }
+
+// Faded reports whether the line's made line is faded: the book gives it an ending that fades
+// (FR-556).
+func (l Line) Faded() bool { return l.EndingGiven && l.Ending.Fades() }
 
 // Key is the name a made line is stored under. It changes whenever the line's speech sounds, the
 // style file or the model does, so an old rendering is never taken for current (FR-513). Two
@@ -53,10 +67,22 @@ func Key(sounds string, files Files) string { return keyOf(sounds, files.Style, 
 // and the digest it was found in, so a changed pause is made again (FR-513). A doubtful pause adds
 // nothing, answering Key.
 func PausedKey(sounds string, files Files, entry pause.Entry) string {
-	if entry.Doubtful {
-		return Key(sounds, files)
+	return lineKey(Line{Sounds: sounds, Pause: entry, PauseGiven: true}, files)
+}
+
+// lineKey is the key of a line with what its books give it: Key's parts, then the pause's sample and
+// digest where it is paused, then fadeMark with the fade's sample and digest where it is faded. A line
+// neither paused nor faded answers Key, so no made line keyed before pauses and endings goes stale
+// (FR-513).
+func lineKey(line Line, files Files) string {
+	parts := []string{line.Sounds, files.Style, files.Model}
+	if line.Paused() {
+		parts = append(parts, strconv.Itoa(line.Pause.Sample), line.Pause.Digest)
 	}
-	return keyOf(sounds, files.Style, files.Model, strconv.Itoa(entry.Sample), entry.Digest)
+	if line.Faded() {
+		parts = append(parts, fadeMark, strconv.Itoa(line.Ending.Sample), line.Ending.Digest)
+	}
+	return keyOf(parts...)
 }
 
 // keyOf is the SHA-256 of a key's parts kept apart by keySeparator, written as hexadecimal.
@@ -72,9 +98,9 @@ type Plan struct {
 	onDisk  []string
 }
 
-// New sets every line of the script, in the voice's accent with the pauses the book gives the voice,
-// against the keys already on disk.
-func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pause.Book, onDisk []string) Plan {
+// New sets every line of the script, in the voice's accent with the pauses and the endings the books
+// give the voice, against the keys already on disk.
+func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pause.Book, endings ending.Book, onDisk []string) Plan {
 	current := make(map[string]bool, len(onDisk))
 	for _, key := range onDisk {
 		current[key] = true
@@ -83,10 +109,10 @@ func New(voiced script.Voiced, voice machinevoice.Voice, files Files, pauses pau
 	for _, id := range voiced.Cues() {
 		sounds, _ := voiced.Sounds(id, voice.Accent())
 		for index, each := range sounds {
-			line := Line{Cue: id, Index: index, Sounds: each, Key: Key(each, files)}
-			if entry, given := pauses.Entry(voice.ID(), id, index); given {
-				line.Pause, line.PauseGiven, line.Key = entry, true, PausedKey(each, files, entry)
-			}
+			line := Line{Cue: id, Index: index, Sounds: each}
+			line.Pause, line.PauseGiven = pauses.Entry(voice.ID(), id, index)
+			line.Ending, line.EndingGiven = endings.Entry(voice.ID(), id, index)
+			line.Key = lineKey(line, files)
 			lines = append(lines, line)
 		}
 	}

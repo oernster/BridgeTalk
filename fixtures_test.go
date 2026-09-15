@@ -14,6 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/event"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
@@ -137,7 +138,7 @@ func fixtureMaking(t *testing.T, current *session, files ports.VoiceFiles, store
 	t.Helper()
 	maker := makingtest.NewMaker()
 	confirmation, _ := fixtureTable(t).Confirmation()
-	current.making = services.NewMakingService(fixtureScript(t), pause.Book{}, confirmation, files, maker, store, &makingtest.Log{})
+	current.making = services.NewMakingService(fixtureScript(t), pause.Book{}, ending.Book{}, confirmation, files, maker, store, &makingtest.Log{})
 	current.maker = maker
 	t.Cleanup(current.making.Stop)
 	return maker

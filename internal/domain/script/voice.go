@@ -116,3 +116,18 @@ func (v Voiced) Sounds(id cue.ID, accent machinevoice.Accent) ([]string, bool) {
 	entry, ok := v.saved[id]
 	return slices.Clone(entry.forAccent(accent)), ok
 }
+
+// linesWhere returns every line whose saved speech sounds in one accent keep answers true for, with
+// those sounds, cue by cue in the order Cues gives, then line by line (FR-550, FR-555).
+func (v Voiced) linesWhere(accent machinevoice.Accent, keep func(line speech.Line, sounds string) bool) []SavedLine {
+	var kept []SavedLine
+	for _, id := range v.Cues() {
+		sounds := v.saved[id].forAccent(accent)
+		for index, line := range v.byCue[id] {
+			if keep(line, sounds[index]) {
+				kept = append(kept, SavedLine{Cue: id, Index: index, Sounds: sounds[index]})
+			}
+		}
+	}
+	return kept
+}

@@ -15,17 +15,22 @@ import (
 // pausesPath is where the shipped pauses are written, from the repository root.
 const pausesPath = "internal/infrastructure/config/pauses.toml"
 
+// endingsPath is where the shipped endings are written, from the repository root (FR-555).
+const endingsPath = "internal/infrastructure/config/endings.toml"
+
 // onlySeparator separates voice ids given together to -only.
 const onlySeparator = ","
 
-// errShippedWithOnly means a run over some voices was asked to write the shipped pauses, which would
-// ship a book missing the rest.
-var errShippedWithOnly = errors.New("a run with -only would ship pauses missing voices: name another file with -out")
+// errShippedWithOnly means a run over some voices was asked to write a shipped file, which would ship
+// a book missing the rest.
+var errShippedWithOnly = errors.New("a run with -only would ship a book missing voices: name other files with -out and -endings")
 
-// options is what a run was asked for: the voices to find pauses for and where to write them.
+// options is what a run was asked for: the voices to measure and where to write their pauses and
+// their endings.
 type options struct {
-	voices []machinevoice.Voice
-	out    string
+	voices  []machinevoice.Voice
+	out     string
+	endings string
 }
 
 // voiceIDs collects the ids given to -only, repeated or comma separated.
@@ -41,35 +46,38 @@ func (ids *voiceIDs) Set(value string) error {
 }
 
 // parseOptions reads the flags for the repository at root. Without -only every voice offered is
-// found; with it, the voices named, each once in the order they are offered. -out defaults to the
-// shipped pauses, which a run with -only refuses.
+// measured; with it, the voices named, each once in the order they are offered. -out and -endings
+// default to the shipped pauses and endings, either of which a run with -only refuses.
 func parseOptions(args []string, root string, output io.Writer) (options, error) {
 	flags := flag.NewFlagSet("pauses", flag.ContinueOnError)
 	flags.SetOutput(output)
-	shipped := filepath.Join(root, pausesPath)
+	shippedPauses, shippedEndings := filepath.Join(root, pausesPath), filepath.Join(root, endingsPath)
 	var only voiceIDs
-	flags.Var(&only, "only", "find the pauses of these voices alone, repeated or comma separated; needs -out")
-	out := flags.String("out", shipped, "the file the pauses are written to")
+	flags.Var(&only, "only", "measure these voices alone, repeated or comma separated; needs -out and -endings")
+	out := flags.String("out", shippedPauses, "the file the pauses are written to")
+	endings := flags.String("endings", shippedEndings, "the file the endings are written to")
 	if err := flags.Parse(args); err != nil {
 		return options{}, err
 	}
-	voices := machinevoice.All()
+	chosen := options{voices: machinevoice.All(), out: *out, endings: *endings}
 	if len(only) == 0 {
-		return options{voices: voices, out: *out}, nil
+		return chosen, nil
 	}
-	chosen := make(map[string]bool, len(only))
+	picked := make(map[string]bool, len(only))
 	for _, id := range only {
 		voice, err := machinevoice.Parse(strings.TrimSpace(id))
 		if err != nil {
 			return options{}, err
 		}
-		chosen[voice.ID()] = true
+		picked[voice.ID()] = true
 	}
-	if sameFile(*out, shipped) {
-		return options{}, fmt.Errorf("%w: %s", errShippedWithOnly, shipped)
+	for _, each := range [][2]string{{*out, shippedPauses}, {*endings, shippedEndings}} {
+		if sameFile(each[0], each[1]) {
+			return options{}, fmt.Errorf("%w: %s", errShippedWithOnly, each[1])
+		}
 	}
-	voices = slices.DeleteFunc(voices, func(voice machinevoice.Voice) bool { return !chosen[voice.ID()] })
-	return options{voices: voices, out: *out}, nil
+	chosen.voices = slices.DeleteFunc(chosen.voices, func(voice machinevoice.Voice) bool { return !picked[voice.ID()] })
+	return chosen, nil
 }
 
 // sameFile reports whether two paths name the same file, each resolved from the working directory.

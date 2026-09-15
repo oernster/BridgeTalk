@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
 )
@@ -44,7 +45,7 @@ func pausedMaking(t *testing.T, entry pause.Entry, store *makingtest.Store, log 
 	maker := makingtest.NewMaker()
 	maker.Answer = modelAnswer
 	files := makingtest.Files{Material: makingtest.Material()}
-	return services.NewMakingService(twoCues(t, "di"), book, "Docked", files, maker, store, log)
+	return services.NewMakingService(twoCues(t, "di"), book, ending.Book{}, "Docked", files, maker, store, log)
 }
 
 // castAndWait casts bf_emma, waiting for the confirmation's lines to be made.

@@ -10,6 +10,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
@@ -40,7 +41,7 @@ func makingWith(t *testing.T, lastBritish string, files makingtest.Files, maker 
 	if files.Material.Files == (making.Files{}) {
 		files.Material = makingtest.Material()
 	}
-	return services.NewMakingService(twoCues(t, lastBritish), pause.Book{}, "Docked", files, maker, store, &makingtest.Log{})
+	return services.NewMakingService(twoCues(t, lastBritish), pause.Book{}, ending.Book{}, "Docked", files, maker, store, &makingtest.Log{})
 }
 
 // twoCues is a script giving Docked and Undocked three lines each. lastBritish is Undocked's third

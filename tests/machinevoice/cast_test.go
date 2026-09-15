@@ -10,6 +10,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
@@ -57,6 +58,16 @@ func shippedPauses(t *testing.T) pause.Book {
 	return book
 }
 
+// shippedEndings loads the shipped endings, which the application fades its lines with (FR-556).
+func shippedEndings(t *testing.T) ending.Book {
+	t.Helper()
+	book, err := config.LoadEndings()
+	if err != nil {
+		t.Fatalf("endings.toml: %v", err)
+	}
+	return book
+}
+
 // TestAMachineVoiceIsCastWithinFiveSeconds casts the measured voice over an empty store with the real
 // model, then holds how soon its confirmation is current, with the hand-over added, to NFR-P-205. It
 // then asks for the last cue in the table, which nothing has made; it holds how soon that cue's first
@@ -78,7 +89,7 @@ func TestAMachineVoiceIsCastWithinFiveSeconds(t *testing.T) {
 	maker := speechmodel.New(dir)
 	defer maker.Close()
 	service := services.NewMakingService(
-		voiced, shippedPauses(t), confirmation, voicefiles.New(dir), maker, madelines.New(t.TempDir()), runlog.NewLines(os.Stderr),
+		voiced, shippedPauses(t), shippedEndings(t), confirmation, voicefiles.New(dir), maker, madelines.New(t.TempDir()), runlog.NewLines(os.Stderr),
 	)
 	defer service.Stop()
 

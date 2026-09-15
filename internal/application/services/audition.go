@@ -31,7 +31,7 @@ func (m *MakingService) Audition(voice machinevoice.Voice, group string, chooser
 	if err != nil {
 		return "", err
 	}
-	plan := making.New(m.voiced, voice, material.Files, m.pauses, m.store.Keys(voice))
+	plan := making.New(m.voiced, voice, material.Files, m.pauses, m.endings, m.store.Keys(voice))
 	lines := plan.Group(group)
 	if len(lines) == 0 {
 		return "", fmt.Errorf("%w: %s", ErrNothingToAudition, group)

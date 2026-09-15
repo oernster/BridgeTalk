@@ -27,6 +27,13 @@ const freshDigest = "0123456789abcdef"
 // the model files list gives the model file and each voice's style file (FR-554). The rules live in
 // the domain; this hands them the list's digests.
 func stalePauses(book pause.Book, voices []machinevoice.Voice, voiced script.Voiced, listed []modelfiles.File) []error {
+	model, styles := listedDigests(listed, voices)
+	return pause.Check(book, voices, voiced, model, styles)
+}
+
+// listedDigests answers the digests the model files list gives the model file and each voice's style
+// file, which both the pauses and the endings are checked against (FR-554, FR-557).
+func listedDigests(listed []modelfiles.File, voices []machinevoice.Voice) (string, map[string]string) {
 	digests := make(map[string]string, len(listed))
 	for _, file := range listed {
 		digests[file.Name] = file.SHA256
@@ -35,7 +42,7 @@ func stalePauses(book pause.Book, voices []machinevoice.Voice, voiced script.Voi
 	for _, voice := range voices {
 		styles[voice.ID()] = digests[voicefiles.StyleFile(voice)]
 	}
-	return pause.Check(book, voices, voiced, digests[voicefiles.ModelFile], styles)
+	return digests[voicefiles.ModelFile], styles
 }
 
 // shippedPauseInputs loads the shipped script with its saved sounds and the shipped model files list.

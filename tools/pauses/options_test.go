@@ -51,34 +51,47 @@ func TestWithoutFlagsEveryVoiceIsFoundForTheShippedFile(t *testing.T) {
 	if want := filepath.Join(root, pausesPath); chosen.out != want {
 		t.Errorf("out = %q, want %q", chosen.out, want)
 	}
+	if want := filepath.Join(root, endingsPath); chosen.endings != want {
+		t.Errorf("endings = %q, want %q (FR-555)", chosen.endings, want)
+	}
 }
 
-// -only takes voices repeated or comma separated, each once, in the order they are offered.
+// -only takes voices repeated or comma separated, each once, in the order they are offered; -out and
+// -endings name where the pauses and the endings go.
 func TestOnlyTakesVoicesRepeatedOrCommaSeparatedInTheOrderTheyAreOffered(t *testing.T) {
-	out := filepath.Join(t.TempDir(), "pauses.toml")
-	chosen, err := parseOptions([]string{"-only", "bm_george,bf_emma", "-only", "bf_emma", "-out", out}, testRoot(t), io.Discard)
+	dir := t.TempDir()
+	out, endings := filepath.Join(dir, "pauses.toml"), filepath.Join(dir, "endings.toml")
+	chosen, err := parseOptions([]string{"-only", "bm_george,bf_emma", "-only", "bf_emma", "-out", out, "-endings", endings}, testRoot(t), io.Discard)
 	if err != nil {
 		t.Fatalf("parseOptions: %v", err)
 	}
 	if got, want := idsOf(chosen.voices), []string{"bf_emma", "bm_george"}; !slices.Equal(got, want) {
 		t.Errorf("voices = %v, want %v", got, want)
 	}
-	if chosen.out != out {
-		t.Errorf("out = %q, want %q", chosen.out, out)
+	if chosen.out != out || chosen.endings != endings {
+		t.Errorf("out = %q endings = %q, want %q and %q", chosen.out, chosen.endings, out, endings)
 	}
 }
 
-// A run with -only would ship a book missing voices, so it refuses the shipped file however it is named.
+// A run with -only would ship a book missing voices, so it refuses either shipped file however it is
+// named.
 func TestOnlyRefusesToWriteTheShippedFile(t *testing.T) {
 	root := testRoot(t)
 	working, _ := os.Getwd()
-	relative, err := filepath.Rel(working, filepath.Join(root, pausesPath))
-	if err != nil {
-		t.Fatalf("Rel: %v", err)
-	}
-	for _, args := range [][]string{{"-only", "bf_emma"}, {"-only", "bf_emma", "-out", relative}} {
-		if _, err := parseOptions(args, root, io.Discard); !errors.Is(err, errShippedWithOnly) {
-			t.Errorf("parseOptions(%q) = %v, want errShippedWithOnly", args, err)
+	dir := t.TempDir()
+	for _, shipped := range []string{pausesPath, endingsPath} {
+		relative, err := filepath.Rel(working, filepath.Join(root, shipped))
+		if err != nil {
+			t.Fatalf("Rel: %v", err)
+		}
+		for _, args := range [][]string{
+			{"-only", "bf_emma", "-endings", filepath.Join(dir, "endings.toml")},
+			{"-only", "bf_emma", "-out", filepath.Join(dir, "pauses.toml")},
+			{"-only", "bf_emma", "-out", relative, "-endings", relative},
+		} {
+			if _, err := parseOptions(args, root, io.Discard); !errors.Is(err, errShippedWithOnly) {
+				t.Errorf("parseOptions(%q) = %v, want errShippedWithOnly", args, err)
+			}
 		}
 	}
 }

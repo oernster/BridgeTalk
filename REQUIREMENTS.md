@@ -51,7 +51,7 @@ project.
 | Machine voices in any language but English | The 28 voices in scope are the British and American English ones |
 | Editing the script from the user interface | `script.toml` is edited as a file, as `cues.toml` is |
 | Changing a machine voice's speed or pitch | Every line is made at the model's own speed |
-| Processing a made line's audio | The model's samples are written as made, apart from the pause FR-553 inserts at a spot measured before the build (Oliver, 2026-09-14) |
+| Processing a made line's audio | The model's samples are written as made, apart from the pause FR-553 inserts (Oliver, 2026-09-14) and the fade FR-556 applies (Oliver, 2026-09-15), each at a spot measured before the build |
 | Working out pronunciation while the application runs | Every line's speech sounds are made before the build by the sounds tool (FR-532); a misread word is put right in the script (FR-529) |
 | Distributing recordings between users | No transport, no store, no upload |
 | Editing the cue vocabulary from the user interface | `cues.toml` is edited as a file |
@@ -72,6 +72,7 @@ project.
 | **Line** | One entry in the script for a cue. A cue in the script has three. |
 | **Made line** | An audio file the application made from one line for one machine voice. |
 | **Pause** | 40 ms of silence the application inserts in a made line before a final commander, at the sample the pauses tool found for that voice and line (FR-551, FR-553). |
+| **Fade** | The end of a made line whose last speech sound is a nasal, falling linearly to zero over 10 ms from the start of the hiss the model adds after that nasal, then silent to the line's end, at the sample the pauses tool found for that voice and line (FR-555, FR-556). |
 | **Library root** | One directory the user chooses, holding one subdirectory per voice. |
 | **Manifest** | `voice.toml` in a voice directory. Optional; it may carry the name a voice is shown by, a credit and takes the convention cannot find (FR-210). |
 | **Take** | One audio file answering one cue. A cue may have several takes. |
@@ -965,8 +966,11 @@ goes and commander is joined to the word before it; British voices use the short
 ear; 40 ms of silence goes in before commander. He accepted Claude's recommendations that the spot is
 found for every voice before the build rather than while the application runs, that a line whose spot
 is doubtful gets no pause and that a line whose samples differ from those measured is written without
-one and logged (FR-549 to FR-554). Inserting that silence is the one change made to a made line's
-samples; the pitch itself is not processed.
+one and logged (FR-549 to FR-554). Inserting that silence was then the one change made to a made
+line's samples; the pitch itself is not processed. On 2026-09-15 he heard British female voices end
+"You'll be hearing from me from here on." as "on't" and ruled a second change: the hiss the model adds
+after a final nasal is faded out. He accepted Claude's recommendation that the hiss is found for every
+voice before the build, as the pause is, then chose a fade of 10 ms by ear (FR-555 to FR-557).
 
 Measured before any of this was written, on the development machine, processor only:
 
@@ -1004,6 +1008,32 @@ Measured for the pause before commander on 2026-09-14, on the development machin
   voice's median (FR-552).
 - Eight lines made again in a second process matched the first byte for byte. Whether another machine
   makes the same samples is not measured; FR-553 is written so that it does not matter.
+
+Measured for the hiss after a final nasal on 2026-09-15, on the development machine, over lines made
+with the real model for `bf_alice`, `bf_emma`, `bf_isabella`, `bf_lily` and `bm_daniel`, each written
+as the application writes it:
+
+- Stressing the final on of "You'll be hearing from me from here on." did not cure the "on't": after
+  it, `bf_alice`, `bf_emma` and `bf_lily` still ended on a burst in every form of the line tried
+  (stressed, unstressed, with no full stop, with the American vowel). For `bf_alice` and `bf_lily` the
+  probe's line held its bursts at the same places as the made line installed on the machine.
+- After the murmur of the nasal the model adds 40 to 120 ms of noise with nearly all its energy above
+  3 kHz, starting within 10 to 20 ms of the murmur's end. For `bf_alice` it peaks at -24 dB, as loud
+  as the nasal. A clean ending fades with at most a fifth of its energy above 3 kHz.
+- Over 40 takes of 8 lines, with a share of 0.4 above 3 kHz on 10 ms frames, every burst ended 0 to
+  50 ms before the end of sound; every clean ending was 200 ms or more away. With a share of 0.5,
+  `bf_isabella`'s "You'll be hearing from me from here on." read as clean at 630 ms. With a share of 0.3
+  or frames stepped by 5 ms, clean endings came within 105 and 50 ms. The share was chosen over the same
+  takes it was scored on.
+- Final stressed or short syllables burst ("here on", "Move along.", "Back at the helm."); unstressed
+  endings such as -ing and "spectrum" did not. `bm_daniel` never burst.
+- 91 of the 768 lines end on a nasal in each accent (n 65, ŋ 22, m 4); none is a line FR-550 joins.
+- Of fades over 5, 10 and 20 ms from the start of the burst, Oliver chose 10 ms by ear over "You'll be
+  hearing from me from here on." for the four British female voices, `bf_alice`'s "Back at the helm."
+  and `bf_emma`'s "Move along.".
+- `endings.py`, handed the settings FR-555 gives, found a burst in exactly those 12 of the 40 takes and in
+  no other, starting at the samples the listening files were faded from: 49,200 for `bf_alice`'s "You'll
+  be hearing from me from here on." and 44,400 for `bf_isabella`'s.
 
 The script, `script.toml`, sits beside `cues.toml`:
 
@@ -1960,6 +1990,120 @@ digest read under the voice's id, each failing its test; planting only the first
 29 problems named over the empty book shipped before the pauses tool first ran to 1. Measured on
 2026-09-14: over the book the full run wrote (FR-551), `TestTheShippedPausesAreNotStale` passes.
 
+**FR-555 The pauses tool finds the hiss after a final nasal**
+Priority: Should.
+In the same run as the pauses (FR-551), the pauses tool shall make every line whose last speech sound
+is n, m or ŋ in its saved sounds for each of the 28 machine voices, find where each ends on a burst
+and write `endings.toml` whole beside `pauses.toml`. For each voice and line the file shall give the
+saved speech sounds the line was made from, a digest of the samples made and the sample the fade
+starts at where the line ends on a burst. It shall also give the digests of the model file and of each
+voice's style file the lines were made with. For each voice the tool shall print how many of its lines
+were given a sample, naming each by voice, cue and line; then the total over every voice.
+A burst is a run of 10 ms frames, counted from the line's first sample, each louder than -50 dB with
+at least 0.4 of its energy above 3 kHz read through a Hann window, whose last frame ends no more than 50 ms before the end of the
+line's last frame louder than -50 dB. The fade starts at the first sample of the run's first frame.
+Note: the share was chosen over the 40 takes of five British voices it was scored on (section 6.1).
+No American voice was measured, so the tool's first full run is the first measurement of them.
+Finding the endings adds 2,548 lines to a full run: about 13 minutes at the 0.29 s a line the full run
+of FR-551 took.
+Rationale: the model gives samples with no word timings, so the hiss is found in the sound. Finding it
+before the build means every change to a made line is known before it ships, as for the pause
+(recommended by Claude, accepted by Oliver on 2026-09-15). One run makes the lines, takes their digests
+and writes both files, so nothing the pauses tool already does is done twice.
+Acceptance: Given `models/` filled as the list says, when the tool runs, then `endings.toml` gives
+each of the 28 voices an entry for each of the 91 lines ending on a nasal in its accent. Its entry for
+`bf_alice` and "You'll be hearing from me from here on." gives a sample; its entry for `bm_daniel` and
+the same line gives none.
+Verified by: in part, `TestALineEndsOnANasalWhereItsLastSpeechSoundIsNMOrEng`,
+`TestMarksAndPunctuationAfterTheLastSpeechSoundAreReadPast` and `TestOnlyNMAndEngCountAsTheNasalALineEndsOn` in
+`internal/domain/speech/nasal_test.go` for the last speech sound;
+`TestEndingOnNasalListsEachLineEndingOnANasalInItsAccentInCueThenLineOrder` in `internal/domain/script/nasal_test.go`;
+`TestABookGivesWhatItWasMadeWith`, `TestABookIsTheCallersOwnCopy`, `TestTheEmptyBookIsValid` and
+`TestAnEndingThatCannotBeShippedIsRefusedNamingItsLine` in `internal/domain/ending/book_test.go`, with the rules every
+measured book shares held in `internal/domain/measured/measured_test.go`, for what a book may hold;
+`TestTheShippedEndingsLoad`, `TestTheEmptyEndingsAreWrittenAsTheirHeaderAlone`,
+`TestEndingsAreWrittenAsAFileThatReadsBackTheSame`, `TestALineWithNoFadeIsWrittenWithoutASample`,
+`TestEndingsWithAKeyOutsideTheirShapeAreRefused`, `TestEndingsThatAreNotTomlAreRefused` and
+`TestEndingsTheBooksRulesRefuseAreRefused` in `internal/infrastructure/config/endings_test.go` for `endings.toml`. The
+tool itself, over a hand-written maker and finder: `TestTheFadeIsTenMillisecondsOfSamples`,
+`TestTheEndingFinderIsAskedWithEverySetting`, `TestEachVoicesEndingsFollowItsLinesEndingOnANasalInOrder`,
+`TestALineAnsweredWithNoStartHasNoFade`, `TestAnEndingFinderAnswerThatCannotBeMatchedToItsLineIsRefused` and
+`TestEachVoiceIsListedWithItsFadedLinesThenTheTotal` in `tools/pauses/endings_test.go`, with
+`TestOnlyRefusesToWriteTheShippedFile` in `options_test.go` beside it. Each was first seen to fail against stubs.
+Proved on 2026-09-15 by planting the stress mark not read past, ɲ counted as a nasal, lines listed by the opposite
+rule, a negative sample accepted, a line with sample 0 fading, the first fading line searched for over voices in
+reverse, a line with no fade written with a sample, a pause's key accepted in `endings.toml`, a run with `-only`
+writing the shipped endings, a start at sample 0 accepted, a burst frame of 5 ms and faded lines left unlisted; each
+failed its test, each file restored by SHA-256. `endings.py` has no unit test, as `pauses.py` has none: handed the
+settings above over the 40 probe takes of section 6.1, it found a burst in exactly the 12 takes the share flags, at
+the samples the listening files were faded from.
+
+**FR-556 A made line loses its hiss only where its samples are those measured**
+Priority: Should.
+When a line whose last speech sound is a nasal is made for a machine voice (for a cue or for an
+audition) where `endings.toml` gives that voice and line a sample, the application shall write the made
+line faded from that sample where the digest of the samples made equals the one saved: the samples
+fall linearly to zero over 10 ms, then stay silent to the line's end, so it keeps its length. Where the
+digests differ, it shall write the samples as made and log the voice, the cue and the line. The fade is
+applied to the samples as made, before any pause FR-553 inserts.
+Rationale: Oliver chose 10 ms by ear on 2026-09-15 over 5 and 20 ms (section 6.1). A line whose
+samples differ from those measured keeps its hiss rather than lose samples at a spot found in other
+samples; a log line alone is enough, as for FR-553. No line that ends on a nasal is joined today, so no
+line gets both a fade and a pause; the order is stated so that a word joined later cannot move the
+fade.
+Acceptance: Given `endings.toml` giving `bf_alice` and "You'll be hearing from me from here on." a
+fade at sample S found in samples with digest D, when that line is made with samples of digest D, then
+the made line holds as many samples as the model gave: those before S unchanged, sample S + i
+multiplied by (240 - i) / 240 for each i below 240 (10 ms at the model's 24 kHz) and every sample from
+S + 240 zero. When it is made with samples of another digest, then the made line holds the model's
+samples unchanged and the log names `bf_alice`, `Cast.Confirmed` and the line.
+Verified by: in part, `TestAFadeFallsLinearlyToZeroFromItsStartThenStaysSilent`,
+`TestAFadeCutShortByTheEndOfTheLineFallsAsFarAsTheLineGoes` and `TestAFadeOutsideTheLineOrOfNoLengthIsRefused` in
+`internal/domain/ending/fade_test.go` for the fade, with `TestAFadeWithNoLengthIsRefusedNamingTheLine` in
+`book_test.go` beside it; `TestALineCarriesItsVoicesEndingAndNoOther`,
+`TestALineWithNoEndingOrNoFadeKeepsItsKeyFromBeforeEndings`, `TestAFadedLinesKeyChangesWithItsSampleOrItsDigest`,
+`TestAPauseAndAFadeAreKeyedApart` and `TestALineWhoseFadeChangedIsTheOnlyOneMadeAgain` in
+`internal/domain/making/ending_test.go` for the key; `TestARunWritesALineFadedWhereItsSamplesAreThoseMeasured`,
+`TestARunWritesSamplesOtherThanThoseMeasuredWithoutTheFadeLoggingTheLine`,
+`TestALineWithNoFadeIsWrittenAsMadeLoggingNothing`, `TestAFadeThatCannotBeAppliedIsALineThatCannotBeMade`,
+`TestTheFadeGoesOnTheSamplesAsMadeBeforeThePauseIsInserted` and
+`TestAnAuditionWritesTheLineFadedOrAsMadeLoggingWhereItsSamplesDiffer` in
+`internal/application/services/making_ending_test.go` for a run and an audition over fakes. Each was first seen to
+fail against stubs. Proved on 2026-09-15 by planting the ramp one step short, a fade from the end of the line
+refused, a fade of no samples accepted, a book accepting a fade of no length, a fade keyed without its mark, a line's
+ending left off, a fade applied whatever the digest, the pause inserted in the samples as made so dropping the fade
+and a fade's error dropped; each failed its test, each file restored by SHA-256. Not verified by a test: `newMaking`
+in `main.go` loading `endings.toml`. Measured on 2026-09-15 after the full run wrote `endings.toml` in 42 minutes,
+fading 281 of 2,548 lines and leaving `pauses.toml` unchanged byte for byte: lines made through the making service
+with the shipped books and the real model faded "You'll be hearing from me from here on." and "Back at the helm." for
+`bf_alice`, `bf_emma`, `bf_isabella` and `bf_lily` from the samples the approved listening files were faded from, the
+sound ending at the fade where the burst had run on for up to 120 ms. "Ready when you are." and every line of
+`bm_daniel` kept the high-frequency spans the model alone gave.
+
+**FR-557 If `endings.toml` is stale, then the build fails**
+Priority: Must.
+If `endings.toml` lacks an entry for a machine voice and a line whose last speech sound is a nasal,
+holds one for a line that no longer ends on one, was made from saved speech sounds other than the
+line's now or gives a digest of the model file or a style file other than the list's (FR-535), then a
+structural test shall fail naming what is stale.
+Rationale: as FR-554 for the pauses. A stale entry would be skipped on every machine by FR-556's digest
+check with nothing said when the application is built.
+Acceptance: Given "Back at the helm." changed to "Back at the controls." with the sounds tool run and
+the pauses tool not, when the structural tests run, then one fails naming `InMainShip.Set` and that
+line.
+Verified by: `TestEndingsFoundForTheScriptWithTheListedFilesAreNotStale`, `TestAVoiceWithNoEndingsIsStaleNamingIt`,
+`TestALineEndingOnANasalWithNoEndingIsStaleNamingItAndItsText`,
+`TestAnEndingForALineThatNoLongerEndsOnANasalIsStaleNamingIt`, `TestAnEndingFoundInSoundsOtherThanTheLinesNowIsStale`
+and `TestEndingsFoundWithOtherFilesAreStale` in `internal/domain/ending/check_test.go` for the rules. The pauses share
+them through `internal/domain/measured`, where `TestStaleEntriesAreNamedInOneOrderInTheKindsWords` holds their words
+and their order. Proved on 2026-09-15 by planting a wanted line left unchecked, a line no longer wanted kept and
+changed sounds left unchecked; each failed its test. `TestTheShippedEndingsAreNotStale` in
+`tests/structural/endings_test.go` reads `endings.toml` through these rules against every machine voice, the shipped
+script and the list's digests, naming every problem; `TestEndingsFoundForTheShippedScriptWithTheListedFilesPass`,
+`TestAShippedLineEndingOnANasalWithNoEndingIsNamed`, `TestAShippedEndingFoundInOtherSoundsIsNamed` for the
+acceptance and `TestShippedEndingsFoundWithOtherFilesAreNamed` hold that reading over books built from the shipped
+script.
+
 ### 6.2 Machine voices, non-functional
 
 | ID | Requirement | Method |
@@ -2745,10 +2889,10 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-722, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616, FR-703, FR-707, FR-712, FR-716 to FR-722, NFR-P-201, NFR-P-204 |
 | **Could** | Nothing at present |
-| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
+| **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 
 ---
 

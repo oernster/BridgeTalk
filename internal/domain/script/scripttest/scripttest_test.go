@@ -62,7 +62,7 @@ func TestAScriptBuiltJoiningJoinsItsFinalWords(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildJoining: %v", err)
 	}
-	want := []script.JoinedLine{{Cue: "Docked", Index: 2, Sounds: "ækəmˈændəɹ."}}
+	want := []script.SavedLine{{Cue: "Docked", Index: 2, Sounds: "ækəmˈændəɹ."}}
 	if got := voiced.Joined(machinevoice.American); !slices.Equal(got, want) {
 		t.Errorf("Joined(American) = %+v, want %+v", got, want)
 	}

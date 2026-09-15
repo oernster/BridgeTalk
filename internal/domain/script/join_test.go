@@ -146,7 +146,7 @@ func TestJoinedListsEveryJoiningLineInCueThenLineOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Voice: %v", err)
 	}
-	want := []script.JoinedLine{
+	want := []script.SavedLine{
 		{Cue: "Docked", Index: 0, Sounds: "dˈɑktkəmˈændəɹ."},
 		{Cue: "Docked", Index: 2, Sounds: "dˈWn sˈAfkəmˈændəɹ!"},
 		{Cue: "Undocked", Index: 0, Sounds: "klˈɪɹkəmˈændəɹ?"},

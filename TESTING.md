@@ -14,9 +14,13 @@ Two rules govern everything below.
 **A floor is a measurement, never an aspiration.** A gate set to a number the code
 does not reach teaches people to lower it. Every floor in `test.ps1` sits at or below
 what that package measured, so it fails once cover is lost, which is
-the only moment it is worth being told. `internal/infrastructure/setup`'s floor leaves
-room on purpose: its registry reads branch on what the registry of the machine running
-the tests holds, so part of its figure moves from one machine to the next.
+the only moment it is worth being told. `internal/infrastructure/setup` is the one to
+watch: its registry reads branch on what the registry of the machine running the tests
+holds, so part of its figure moves from one machine to the next. Its floor was raised
+from 61% to 78% on 2026-09-16, which is what this machine reads three runs running with
+nothing to spare. Where another machine reads below it, the answer is to measure there
+and set the floor at the lower of the two, never to lower it by reflex to whatever that
+run happened to give.
 
 **A gap is named or it is closed.** Where something cannot be tested, this document
 says what it is and what stops it. An unexplained shortfall is indistinguishable
@@ -52,8 +56,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 82.8% | 82% | `test.ps1` |
-| `internal/infrastructure/setup` | 78.4% | 61% | `test.ps1` |
+| the root package (the Wails facade) | 84.4% | 82% | `test.ps1` |
+| `internal/infrastructure/setup` | 78.4% | 78% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 68.1% | 68% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |

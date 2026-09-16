@@ -790,7 +790,7 @@ where making stands before anything is made lives in `frontend/src/making.ts`, a
 because a test replaces that module whole.
 
 **Plugin voices on the Cast pane.** `frontend/src/pluginVoices.tsx` offers the voices the loaded
-plugins hold after the machine voices, in a section for each plugin headed by its name; nothing is drawn
+plugins hold above the machine voices (FR-592), in a section for each plugin headed by its name; nothing is drawn
 while no plugin offers a voice (FR-562, FR-583). Inside a section the voices in no group come first,
 then a panel for each group the plugin names, in the order it first names each one; the panels are the
 machine voices' panels, one style for both (FR-584). A voice is shown by its own name inside its

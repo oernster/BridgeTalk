@@ -261,9 +261,11 @@ export function CastPane({
         </p>
       )}
 
-      <MachineVoices active={active} machine={machine} total={total} />
-
+      {/* Plugin voices stand above the machine voices (FR-592): a user who installed a plugin chose
+          those voices on purpose, while the machine voices are always there. */}
       <PluginVoices active={active} plugin={plugin} />
+
+      <MachineVoices active={active} machine={machine} total={total} />
 
       <MomentsDialog
         voice={showing}

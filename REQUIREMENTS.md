@@ -2855,6 +2855,20 @@ Verified by: `TestTwoSpansOfOneFileAreToldApartByTheirKeys` in `internal/domain/
 `TestSpansOfOneFileAreAvoidedOneByOne` in `internal/domain/selection/record_test.go`, both seen to fail
 with a span's key taken from its path alone.
 
+**FR-592 The Cast pane stands plugin voices above the machine voices**
+Priority: Should.
+While at least one plugin offers a voice, the Cast pane shall show every plugin's section above the
+machine voices, every group in them alike.
+Rationale: Oliver, 2026-09-16. A user who installed a plugin chose its voices on purpose, while the
+machine voices are always there; the voices chosen belong nearer the top. It amends only where the
+sections stand on the Cast pane: the notification area's menu (FR-509) and the Audition chooser (FR-585)
+keep plugin voices after the machine voices.
+Acceptance: Given a plugin offering `Ada` in `Crew`, when the Cast pane opens, then the heading of that
+plugin's section stands before the heading Machine voices.
+Built on 2026-09-16.
+Verified by: `stands the plugin voices above the machine voices` in `frontend/src/cast.order.test.tsx`,
+seen to fail with the sections below the machine voices. Not verified in a running window.
+
 ---
 
 ## 7. The cue engine
@@ -4769,7 +4783,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

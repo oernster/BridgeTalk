@@ -2967,7 +2967,9 @@ every moment at once and what a switched off moment does elsewhere. Oliver took 
 recommendation on each; the requirements below record the answers. OQ-19 then asked what answers station
 traffic while it is switched on; Oliver took Claude's recommendation of a moment of its own (FR-637).
 Claude added FR-625, FR-626, FR-632 and FR-733 with searching Chatter's list left out of scope
-unasked; Oliver accepted each the same day. OQ-20 remains open in section 11. OQ-24 asked how to
+unasked; Oliver accepted each the same day. OQ-20 asked which moments a player heard together; Oliver
+closed it on 2026-09-16 untested, since a switch per moment (FR-621) and station traffic on a switch of
+its own (FR-636) already let a player silence whichever one they do not want. OQ-24 asked how to
 reach a category without scrolling the list; Oliver took Claude's recommendation on 2026-09-16, which
 FR-743 and FR-744 record.
 
@@ -4189,7 +4191,6 @@ headless test is how it gets tested.
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
 | OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
-| OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---
 

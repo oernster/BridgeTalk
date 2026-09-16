@@ -16,10 +16,7 @@ does not reach teaches people to lower it. Every floor in `test.ps1` sits at or 
 what that package measured, so it fails once cover is lost, which is
 the only moment it is worth being told. `internal/infrastructure/setup` is the one to
 watch: its registry reads branch on what the registry of the machine running the tests
-holds, so part of its figure moves from one machine to the next. Its floor was raised
-from 61% to 78% on 2026-09-16, which is what this machine read three runs running with
-nothing to spare, then to 79% the same day when the plugins folder brought 79.6% three runs
-running. Where another machine reads below it, the answer is to measure there
+holds, so part of its figure moves from one machine to the next. Its floor sits at 79%, the lowest this machine has read over three runs. Where another machine reads below it, the answer is to measure there
 and set the floor at the lower of the two, never to lower it by reflex to whatever that
 run happened to give.
 
@@ -45,6 +42,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/nativelib` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/status` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
@@ -53,31 +52,29 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 98.6% | 98% | `test.ps1` |
-| `internal/infrastructure/nativelib` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/plugin` | 94.3% | 91% | `test.ps1` |
-| `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
+| `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
+| `internal/infrastructure/plugin` | 94.8% | 91% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 85.4% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 85.8% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
+| `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 69.6% | 67% | `test.ps1` |
-| `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
-| `internal/infrastructure/window` | 7.0% | 7% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/sounds` | 44.9% | 44% | `test.ps1` |
+| `internal/infrastructure/window` | 7.0% | 7% | `test.ps1` |
 | `internal/infrastructure/modelfiles/modelfilestest` | test support with no tests of its own, used by the `modelfiles`, `speechmodel`, `tools/models`, `tools/payload`, `tests/structural` and `tests/machinevoice` tests | none | not gated |
 | `internal/infrastructure/nativelib/nativelibtest` | test support with no tests of its own, used by the `nativelib`, `speechmodel` and `plugin` tests | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,041 test functions, which expand to 1,147 runs once their subtests are counted (measured on
+1,059 test functions, which expand to 1,169 runs once their subtests are counted (measured on
 Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
 uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
-which are 1,035 top-level runs plus 112 subtests; the
+which are 1,053 top-level runs plus 116 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
 Fifty-seven of them are the structural tests in `tests/structural`, which scan the source
@@ -106,7 +103,6 @@ where it goes with no other setup write called and the flatpak granted what it u
 
 | File | Statements | Branches |
 |---|---|---|
-| `api.ts` | 100% | 100% |
 | `audition.tsx` | 100% | 100% |
 | `autoscroll.ts` | 100% | 100% |
 | `cast.tsx` | 100% | 100% |
@@ -135,15 +131,16 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `hooks.ts` | 100% | 96.3% |
 | `panes.tsx` | 100% | 94.7% |
 | `chrome.tsx` | 100% | 94.3% |
-| `App.tsx` | 100% | 93.7% |
+| `App.tsx` | 100% | 92.2% |
 | `guide.tsx` | 100% | 86.7% |
 | `setupPage.ts` | 100% | 80.6% |
 | `dialogs.tsx` | 99.3% | 69.4% |
+| `api.ts` | 93.4% | 100% |
 | `main.tsx` | 0% | 0% |
 | `wire.ts` | 0% | 0% |
-| **all files** | **99.5%** | **96.2%** |
+| **all files** | **99.3%** | **96.3%** |
 
-313 tests across 28 files, run under Vitest with jsdom.
+320 tests across 30 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -252,7 +249,8 @@ release is for.
   `plugin` tests are written for both platforms and were run on Linux on 2026-09-16 by building each
   package's tests with `GOOS=linux` and cgo disabled, then running the binary under WSL Ubuntu from the
   package's folder, with `libonnxruntime.so` fetched into `models/` by `tools/models` built the same
-  way. Every test passed, the stress test included. The flatpak's own build has cgo on, which that run
+  way. Every test passed then, the stress test included; the `plugin` tests have changed since the
+  plugin interface was revised and have not been run there again. The flatpak's own build has cgo on, which that run
   does not cover.
 - **A plugin's three calls in `internal/infrastructure/plugin` (94.3%).** `Version`, `Describe` and
   `Takes` in `native.go`, with the line of `OpenLibrary` that keeps a function it found, need a
@@ -331,6 +329,11 @@ release is for.
   `models/` in the repository. `run` is tested over temporary folders: a packing, a models folder that
   does not match, an application folder without the application and a missing flag. A flag that
   does not parse is not reached.
+- **`tools/linuxicons` (80.6%).** The Linux icons tool. `main` hands `run` the real arguments and
+  exits. `run` is tested installing every picture at its size and refusing an install that cannot go
+  ahead: no prefix, no icon, a file that is not an icon and an unknown flag. In `install`, an icon
+  holding no square picture, a picture that cannot be read out of it and a folder or file that
+  cannot be written are not reached.
 
 ### It could not happen, so it is gone
 
@@ -366,6 +369,10 @@ rather than excused. Four of them, in code that still exists:
   the setup suites. What is not run is its own failure branches, a page with no body and a
   button or element that is not there, plus the empty fallbacks beside them. Each fires only
   when a test asks for something the page lacks, which no passing run does.
+- **`api.ts` (93.4% of statements).** The two plugin audition calls, `pluginAuditionGroups` and
+  `auditionPluginVoice`, are not run by `api.test.ts` or `api.refusals.test.ts`, which run the
+  machine voice's two beside them. Nothing stops a test reaching them, so this is a gap to close
+  rather than a limit of the harness.
 - **`wire.ts` (0%).** Interfaces alone, which compile to nothing;
   `tests/structural/wire_test.go` holds them to the facade.
 
@@ -391,12 +398,8 @@ same for the setup page, whose ring is a script of its own loaded as the page sh
 Every command below is PowerShell, run from the repository root unless it says
 otherwise.
 
-The gate needs the model files in `models/`, which the model files tool downloads from
-their pinned addresses, fetching only what is missing or different:
-
-```powershell
-go run ./tools/models
-```
+The gate needs the model files in `models/`; [DEVELOPMENT.md](DEVELOPMENT.md#the-model-files) says
+how to fetch them.
 
 The whole backend gate, which `build.ps1` runs before it builds and cannot be told
 to skip:
@@ -483,7 +486,11 @@ npx vitest run --coverage
 One package's coverage in detail, when a figure needs explaining:
 
 ```powershell
-go test -coverprofile=cover.out ./internal/infrastructure/library && go tool cover -func=cover.out
+go test -coverprofile=cover.out ./internal/infrastructure/library
+```
+
+```powershell
+go tool cover -func=cover.out
 ```
 
 ## Keeping this honest
@@ -504,7 +511,7 @@ verdict. The exit code is the only answer.
 
 ## See also
 
-- [DEVELOPMENT.md](DEVELOPMENT.md) for building and running on Windows.
+- [DEVELOPMENT.md](DEVELOPMENT.md) for building and running on Windows and Linux.
 - [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants the structural tests enforce.
 - [TECH_DEBT.md](TECH_DEBT.md) for what is open, what is deliberately left and what
   only looks like debt.

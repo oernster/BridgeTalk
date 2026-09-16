@@ -220,7 +220,7 @@ A plugin in C offering one voice, The Quartermaster, whose one recording answers
 Every other cue is answered with no takes. The same code path answers the size and then the answer,
 so the two can never disagree: a cursor with no buffer only counts, a cursor with one writes.
 
-**Not yet built.** No C toolchain was on the development machine when this was written, so this file has not been compiled and no plugin has yet been loaded by Bridge Talk. It
+**Not yet built.** This example has not been compiled, so Bridge Talk has never loaded it. It
 follows the contract above line for line; treat it as a starting point and prove it by the steps in
 [Using a plugin](#using-a-plugin).
 

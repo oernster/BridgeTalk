@@ -93,7 +93,7 @@ project.
 | **Library root** | One directory the user chooses, holding one subdirectory per voice. |
 | **Manifest** | `voice.toml` in a voice directory. Optional; it may carry the name a voice is shown by, a credit and takes the convention cannot find (FR-210). |
 | **Take** | One answer to one cue, made of one part or more played in order. A cue may have several takes. |
-| **Part** | One audio file of a take. A take of several parts is played in order, with no join beyond the natural one (FR-573). |
+| **Part** | One piece of a take: a whole audio file or a span of bytes inside one (FR-588). A take of several parts is played in order, with no join beyond the natural one (FR-573). |
 | **Plugin** | A native library file in the application's plugins folder, offering one voice or more whose audio is already on the user's machine. It answers takes for cue ids and nothing else (FR-502, section 6.3). |
 | **Plugin voice** | A voice offered by a plugin, identified by the plugin it came from and by its own id within that plugin (FR-569). |
 | **Cast** | The act of selecting the voice that speaks. |
@@ -111,6 +111,7 @@ project.
 
 - `ARCHITECTURE.md`: the layering invariants and the tests that enforce them.
 - `internal/infrastructure/config/cues.toml`: the cue vocabulary.
+- `PLUGINS-GUIDE.md`: the plugin interface as an author reads it.
 - ISO/IEC/IEEE 29148 for requirement quality; EARS for requirement syntax.
 
 ---
@@ -131,11 +132,12 @@ graph LR
   DROP["Drop in a folder<br/>of audio files"] --> ROOT
   PORT["Audio source port<br/>section 6"] --> CAT
   MV["Machine voices<br/>section 6.1"] --> PORT
+  PLUG["Plugins<br/>section 6.3"] --> PORT
   SCRIPT["script.toml"] -.-> MV
 ```
 
-The cue engine asks the catalogue for a take for a cue id and gets a path or
-nothing back. Everything about how audio is stored sits below that line.
+The cue engine asks the catalogue for the takes of a cue id and gets a take or
+nothing back; a take is one part or more, each a whole file or a span of one (FR-573, FR-588). Everything about how audio is stored sits below that line.
 
 ### 2.2 User classes
 
@@ -935,7 +937,8 @@ Priority: Must.
 The Missing takes pane shall offer in its voice chooser every immediate subdirectory of the
 library root that has no take for at least one cue, including one that holds no take at all,
 each named with how many cues it is missing. A voice folder with a take for every cue shall not
-be offered.
+be offered. While a plugin voice is cast and has no take for at least one cue, the chooser shall also
+offer that voice, first and with no folder (FR-571).
 Rationale: the chooser is for what still needs recording (Oliver, 2026-09-13). A voice made
 under FR-223 holds no take until the first is saved, so under FR-209 it is not yet a voice; it
 is exactly the one that needs the list.
@@ -993,7 +996,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-1 | Coverage over `internal/domain` and `internal/application` stays at 100 percent | `test.ps1` fails below the floor and names every function short of it |
 | NFR-M-2 | No source file exceeds 400 lines; none sits between 381 and 400, each counted as an editor numbers its lines | `TestNoFileExceedsLineLimit` and `TestNoFileInDangerBand` in `tests/structural/boundary_test.go`, over the Go source and both front ends, with the count itself held by `TestLineCountCountsTheLinesAnEditorShows` in `tests/structural/linecount_test.go`; each guard was seen to fail on a planted file on 2026-09-15; build scripts are not counted |
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
-| NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned at v0.8.1 in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that version on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
+| NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned to one release in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that release on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to four names in the setup package, so of setup's writes only the sign-in entry and the plugins folder are reached; the plugins folder is made by the application on Linux alone (FR-819). The fourth name was seen to fail on 2026-09-16 when taken off the list. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; on Linux the plugins folder in its data folder (FR-819, added 2026-09-16); the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory on Windows and the data folder on Linux, each per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `nativelib.Open` by its whole path, which is `windows.LoadDLL` on Windows and `dlopen` through purego on Linux; nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
@@ -1038,7 +1041,8 @@ file name after the dot. A supplier of audio from outside the application is a p
 shape of a take rather than a change to playback behaviour; it is answered through this same method
 and is offered to every kind of voice.
 Verified by: in part, `ports.AudioSource` declares one method, `Lookup`, which answers takes for a cue id.
-A scanned `library.Voice` and the made voice `MakingService.Cast` answers with both implement it.
+Three types implement it: a scanned `library.Voice`; the made voice `MakingService.Cast` answers with; a
+plugin's `plugin.Voice`.
 
 ### 6.1 Machine voices
 
@@ -1085,8 +1089,9 @@ Measured before any of this was written, on the development machine, processor o
   eSpeak NG for a word they lack, matched misaki's own on 99.4 percent of words in each accent;
   without eSpeak NG, 97.7 percent. Seven distinct words in each accent reached eSpeak NG. eSpeak NG
   alone matched 81.0 percent British and 77.1 percent American.
-- misaki 0.9.4 itself, called the way Kokoro calls it, reproduced all 512 reference lines exactly:
-  loading took 2.9 s and making all 512 took 0.76 s, in Python 3.11.9.
+- misaki itself, at the release `tools/sounds/requirements.txt` pins and called the way Kokoro calls
+  it, reproduced all 512 reference lines exactly: loading took 2.9 s and making all 512 took 0.76 s, in
+  a Python install outside the tool's venv.
 - In the sounds tool's own venv, holding only the packages pinned in `tools/sounds/requirements.txt`
   (69 packages pinned, re-counted on 2026-09-15; 292.9 MB, no torch), misaki reproduced all 512 lines again: loading took 1.6 s and
   making took 0.71 s. spaCy imports click, which nothing else installed, so it is pinned by hand.
@@ -1244,7 +1249,7 @@ Verified by: `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` and
 `internal/infrastructure/taskbar/tray_windows_test.go`;
 `TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices` in `machine_test.go`;
 `TestTheTrayOffersThePluginVoicesAfterTheMachineVoices` and
-`TestAPluginVoiceChosenFromTheTrayIsCast` in `pluginvoices_test.go`; "selecting a machine voice casts it" in `facade_test.go`. Not verified by
+`TestAPluginVoiceChosenFromTheTrayIsCast` in `pluginvoices_test.go`; "selecting a machine voice casts it" in `TestEachTrayChoiceActsThroughTheControlItMirrors` in `loop_test.go`. Not verified by
 a test: the menu as drawn, with its separators.
 
 **FR-510 A machine voice speaks with its own accent**
@@ -1610,7 +1615,7 @@ table matched the file exactly.
 **FR-532 Every line's speech sounds are saved with the script**
 Priority: Must.
 The sounds tool shall save, beside `script.toml`, the speech sounds of every line in each accent,
-made by misaki 0.9.4 the way Kokoro calls it. The application shall make each line from its saved
+made by the misaki release `tools/sounds/requirements.txt` pins, called the way Kokoro calls it. The application shall make each line from its saved
 speech sounds.
 Rationale: the script is embedded, so every word the application speaks is known when it is built;
 working out pronunciation while it runs has nothing to do that making the sounds beforehand does not
@@ -1944,7 +1949,7 @@ the sounds tool shall save its speech sounds in each accent with the comma and t
 word left out, joining it to the word before it.
 Rationale: after a comma the model restarts its pitch on commander, which Oliver heard as the start of
 a new sentence; joined, the jump fell in every take measured (section 6.1). Oliver ruled that the pitch
-itself is not processed (2026-09-14). The four lines where commander follows a comma without ending
+itself is not processed (2026-09-14). The lines where commander follows a comma without ending
 the line were not measured, so they keep their comma.
 Acceptance: Given "Breathable atmosphere, commander.", when the sounds tool runs, then its British
 saved sounds read `bɹˈiːðəbᵊl ˈatməsfɪəkəmˈɑndə.` and its American `bɹˈiðəbᵊl ˈætməsfˌɪɹkəmˈændəɹ.`;
@@ -1969,8 +1974,7 @@ ended with the comma and the given spelling in every one.
 **FR-551 The pauses tool**
 Priority: Should.
 The repository shall hold the pauses tool under `tools/pauses` with its own Python venv, its packages
-pinned to those section 6.1 measured with: Python 3.13.11, praat-parselmouth 0.4.7, numpy 2.5.3 and
-soundfile 0.14.0. In one run the tool shall make every line FR-550 joins for each of the 28 machine
+pinned in `tools/pauses/requirements.txt` to those section 6.1 measured with. In one run the tool shall make every line FR-550 joins for each of the 28 machine
 voices with the model files of FR-535, find the break before commander in each and write
 `pauses.toml` whole beside `sounds.toml`. For each voice and line the file shall give the saved speech
 sounds the line was made from, a digest of the samples the break was found in and the sample the pause
@@ -2028,7 +2032,7 @@ the 480 joined takes of `bf_emma` and `bm_george` an earlier probe of the rule h
 same break and the same pause sample in all 480; planting a bridged gap one frame short left 341 breaks
 the same. Measured on 2026-09-14 with `-only bf_emma,bm_george`: the run took 152 s; each of the 412
 samples it gave fell inside the probe's break; a second run over `bf_emma` gave the same digest, sample
-and verdict for all 240 lines. The venv was made with Python 3.13.11 from `tools/pauses/requirements.txt`.
+and verdict for all 240 lines. The venv was made from `tools/pauses/requirements.txt` with the Python release its header names.
 Measured on 2026-09-14 over all 28 voices: the full run wrote the shipped `pauses.toml` in 32.9 minutes.
 
 **FR-552 If a line's break is doubtful, then it gets no pause**
@@ -2329,7 +2333,7 @@ Rationale: almost every user has no plugin. Nothing about the ordinary case shou
 Verified by: `TestAnAbsentFolderIsNotAFault` and `TestAFolderHoldingNothingLoadsNothing` in
 `internal/infrastructure/plugin/load_test.go`. A folder that exists and cannot be read is the
 other case and is named rather than passed over, held by
-`TestAFolderThatCannotBeReadIsNamedWithTheReason`.
+`TestAFolderThatCannotBeReadIsNamedWithTheReason` in `internal/infrastructure/plugin/load_internal_test.go`.
 
 **FR-563 A plugin states the interface version it was built against**
 Priority: Must.
@@ -2412,8 +2416,10 @@ one name as well, the file each was loaded from tells them apart: that is the on
 plugin the user can see by opening the folder.
 Verified by: `TestTwoVoicesUnderOneNameAreShownWithTheirPlugins` and
 `TestTwoPluginsUnderOneNameAreToldApartByTheirFiles` in `pluginvoices_test.go`;
-`shows each voice by the name the facade worked out` in `frontend/src/pluginVoices.test.tsx`
-for the pane showing what it was given rather than the plain name.
+`shows a shared name plainly inside each plugin section` in `frontend/src/pluginVoices.test.tsx`
+for the Cast pane showing the plain name inside a section; `offers the plugin voices that can speak
+after the machine voices` in `frontend/src/audition.plugin.test.tsx` for the chooser showing the name
+worked out.
 
 **FR-569 A plugin voice is cast as a kind of its own**
 Priority: Must.
@@ -2619,8 +2625,8 @@ Verified by: `TestOnlyAPluginsFolderHoldingSomethingIsOfferedToKeep`,
 `TestAPluginsFolderThatCannotBeReadIsOfferedToKeep` and
 `TestTheUninstallKeepsThePluginsOnlyWhereThereIsSomethingToKeep` in
 `internal/infrastructure/setup/plugins_test.go`; `TestAFolderToKeepIsCarriedAsAValue` in
-`deletion_test.go`; `TestKeepingThePluginsFolderRemovesEverythingElse` in
-`deletion_windows_test.go`, which runs the real PowerShell delete over a temporary directory; "offers
+`internal/infrastructure/setup/deletion_test.go`; `TestKeepingThePluginsFolderRemovesEverythingElse` in
+`internal/infrastructure/setup/deletion_windows_test.go`, which runs the real PowerShell delete over a temporary directory; "offers
 nothing about plugins where the folder holds nothing", "keeps the plugins unless asked, saying where
 they are" and "removes the plugins when the box is ticked, saying nothing is kept" in
 `frontend/src/setupScreens.test.ts`. Each was seen to fail against a planted fault: an empty folder
@@ -2631,8 +2637,8 @@ real install directory, with the real setup window closing.
 **FR-579 An answer larger than the application will set aside is refused**
 Priority: Must.
 If a plugin names, for one answer, a size larger than the most the application will set aside, then
-the application shall pass over that answer, shall record the size it named and shall not ask the
-plugin for that answer again.
+the application shall pass over that answer, shall record the size it named and shall not make the
+call that would fill it.
 Rationale: the size a plugin names is the one number acted on before anything can be read, since the
 buffer is made to fit before a byte arrives. A size field is 32 bits wide, so a plugin answering
 garbage can ask for two gigabytes; an allocation that large is not an error a program recovers from,
@@ -2699,7 +2705,7 @@ Acceptance: Given a plugin describing `quartermaster` in the group `Crew` and `d
 group, then the first is read in `Crew` and the second in no group.
 Built on 2026-09-16: the group is read between the voice's name and its ready flag.
 Verified by: `TestADescriptionReadsBackAsItWasWritten` in `internal/infrastructure/plugin/wire_test.go`
-and `TestAGroupAndASpanAreWrittenWhereTheyAreRead` in `plugintest_test.go`, both seen to fail with the
+and `TestAGroupAndASpanAreWrittenWhereTheyAreRead` in `internal/infrastructure/plugin/plugintest/plugintest_test.go`, both seen to fail with the
 group read and dropped.
 
 **FR-583 The Cast pane shows each plugin's voices in a section of its own**
@@ -2763,7 +2769,7 @@ such a voice auditioned.
 Priority: Should.
 When a group is auditioned with a plugin voice chosen, the application shall play a take that plugin
 answers for that voice (drawn as FR-745 draws one) and shall leave the cast voice as it was.
-Rationale: today only the cast plugin voice is asked for takes (FR-571), so auditioning a voice that is
+Rationale: before this requirement only the cast plugin voice was asked for takes (FR-571), so auditioning a voice that is
 not cast needs its takes asked for on its own account. Casting stays a separate act on the Cast pane,
 as it does for every other kind of voice. The group counts follow FR-746 over the same answers.
 Acceptance: Given `Ada` cast and `Bo` chosen on the Audition pane, with `Bo` answering one take for
@@ -2839,7 +2845,7 @@ the plugin read it is measured as it stands.
 Verified by: `TestASpanThatCannotBeReadAsGivenIsRefused` and
 `TestASpanOutsideItsFileIsRecordedAndTheTakeCarriesOn` in `internal/infrastructure/audio/parts_test.go`,
 both seen to fail with the check removed; `TestANegativeSpanReadsBackForThePlayerToJudge` in
-`wire_test.go` for the reader leaving the judgement to the player.
+`internal/infrastructure/plugin/wire_test.go` for the reader leaving the judgement to the player.
 
 **FR-591 Two spans of one file are two different takes**
 Priority: Must.
@@ -3194,7 +3200,7 @@ Verified by: `TestTheShippedPirateMomentsAnswerTheirMessages` in
 `TestTheShippedScriptHoldsNoProblem` in `tests/structural/script_test.go` for their lines. Not verified
 by a test: what the game's words say for each key, which the purposes were read from.
 
-With the pirate moments the cue vocabulary holds 262 cues. The sounds tool made the speech sounds of
+With the pirate moments the cue vocabulary held 262 cues. The sounds tool made the speech sounds of
 their 18 lines. None of those lines ends by joining a commander or on a nasal, so the pauses and the
 endings needed no new entry; `TestTheShippedPausesAreNotStale` and `TestTheShippedEndingsAreNotStale`
 pass over them.
@@ -3718,7 +3724,7 @@ Rationale: on 2026-09-14 the application crashed at about line 100 of 768 while 
 lines and left nothing behind. A windowed program started with no error output reads a handle of 0, so
 what Go prints as it fails is lost. Go's crash file (`runtime/debug.SetCrashOutput`) was measured
 carrying a panic's report whole but not the first line of a fatal error's, which the runtime prints
-before it copies anything to the file (`runtime.throw`, read in Go 1.26.3). Pointing the error output
+before it copies anything to the file (`runtime.throw`, read in the Go runtime's source). Pointing the error output
 at a file carried every line of a stack overflow, of concurrent map writes and of a panic. It is named
 `Log.txt` rather than a crash log since it also holds the WebView2 line Wails prints on every run. The
 1 MB limit only stops it growing, a crash report measuring 0.4 to 24 KB. It goes on uninstall as the
@@ -3889,7 +3895,7 @@ as drawn in the window; a screen reader announcing it.
 
 **FR-720 The machine voices are offered in four groups**
 Priority: Should.
-The Cast pane shall offer the machine voices not cast in four panels side by side, one for each accent
+The Cast pane shall offer every machine voice in four panels side by side, one for each accent
 and sex in the order FR-508 gives: British female, British male, American female, American male. Each
 panel shall be headed by its accent and sex, such as "British, female"; it shall hold its voices as
 pills sorted by name ignoring case, wrapping onto a further line as the panel fills. A pill shall show
@@ -3919,7 +3925,7 @@ Priority: Should.
 While a machine voice is cast, the Cast pane shall show it above the four panels on a card of its own,
 on the ground a recorded voice's cast row takes (`--secondary-soft`). The card shall read the name
 FR-528 gives followed by "is cast as your ship's voice", with how far making has got beneath it
-(FR-515, FR-522). Its pill shall not be shown in its panel. The card shall cast nothing when pressed and
+(FR-515, FR-522). Its pill shall stay in its panel, disabled and wearing the danger ring (FR-593). The card shall cast nothing when pressed and
 shall take no place in the keyboard ring.
 Rationale: Oliver asked on 2026-09-15 for the cast voice to stand apart at the top with a tagline,
 leaving its group. Pressing it would cast it again, which makes and plays its confirmation a second
@@ -3928,9 +3934,10 @@ Recommended by Claude; accepted by Oliver on 2026-09-15.
 Acceptance: Given a vocabulary of 256 moments, a script of 768 lines and `bf_emma` cast with 120 of
 those lines made for 40 moments, when the Cast pane opens,
 then the card reads "Emma (British, female) is cast as your ship's voice" above "120 of 768 lines made;
-40 of 256 moments spoken" while British, female holds Alice, Isabella, Lily. Given `bm_george` then
+40 of 256 moments spoken" while British, female holds Alice, Emma, Isabella, Lily with Emma disabled. Given `bm_george` then
 cast, then the card reads "George (British, male) is cast as your ship's voice", British, female holds
-Alice, Emma, Isabella, Lily while British, male holds Daniel, Fable, Lewis.
+Alice, Emma, Isabella, Lily with none disabled while British, male holds Daniel, Fable, George, Lewis
+with George disabled.
 Amended on 2026-09-16 by FR-593: the cast voice's pill now stays in its panel, disabled, beside the card.
 Verified by: "puts the cast machine voice on a card above the panels and disables its pill" and "reads
 how far making has got for the cast voice and follows it" in `frontend/src/machineVoices.test.tsx`. Not verified by a test: the card's ground as
@@ -4172,6 +4179,33 @@ Verified by: "keeps each moment inside its category's group" in `frontend/src/ch
 Not verified by a test: the rule down each group's side and the heading staying in view, which the
 style sheet decides and jsdom does not compute.
 
+**FR-742 A fault in the loop watching the game ends the loop alone**
+Priority: Must.
+If the loop that watches the game raises a fault, then the application shall end that loop, shall
+write the fault and where it was raised to the run log (FR-715) and shall say on the Status pane that
+it has stopped reacting, in the words the fault was raised with.
+Rationale: on 2026-09-15 a nil pointer in one of the loop's arms ended the whole run (b4e0065). The
+window went; the only account of why reached a log nobody had been asked to open. The fix that
+day was the missing check; this is the rule that stops the next one of its kind ending the run, since
+the loop reads a journal the application does not write and answers a game it does not control.
+The loop stays ended rather than starting again: running it into the same fault four times a second
+would fill the log with one line repeated and change nothing. Everything the window itself does keeps
+working, since the panes and Quit are called from the page rather than from the loop; the tray menu
+is read by the loop and goes quiet with it, which is why the words on screen say to start the
+application again rather than implying all is well.
+A recovered fault that reaches no surface is worse than the application ending, because a window that
+looks alive and answers nothing tells the reader nothing at all. That is why the saying is part of
+the requirement rather than a courtesy.
+Acceptance: Given a run watching a journal, when the source raises a fault while being polled, then
+the Status pane says Bridge Talk has stopped reacting to the game in the fault's own words, the run
+log holds the fault with its stack and the source is never polled again.
+Verified by: `TestAFaultInTheLoopIsSaidRatherThanEndingTheRun` in `app_test.go`, seen to fail with
+the guard removed, where the fault took the whole test process down; "says the application has
+stopped reacting and what to do about it" in `frontend/src/shell.test.tsx`, seen to fail with the
+callout removed.
+Not verified by a test: the fault reaching `Log.txt`, which FR-715 holds for everything written to
+error output; a real fault of the kind this exists for.
+
 **FR-743 Moving the list to a category**
 Priority: Should.
 The Chatter pane's header shall show each category's name beside its switch as a button of its own.
@@ -4199,6 +4233,123 @@ moments is shown and the heading still counts them; pressed again, all 39 are sh
 Verified by: "collapses a category from its heading and opens it again" in
 `frontend/src/chatter.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
 either control wears, which the style sheet draws and jsdom does not compute.
+
+**FR-745 An audition draws only on moments switched on**
+Priority: Should.
+When a group is auditioned, the application shall draw the take or the line from the moments of that
+group switched on in Chatter alone, for a recorded voice, a plugin voice and a machine voice alike.
+Rationale: Oliver, 2026-09-16. Audition is for hearing what the ship would say; a moment switched off
+is never said (FR-622), so hearing it on Audition misleads. An audition group is every moment sharing
+the first segment of its id (FR-216) while Chatter switches one moment at a time, so a group is
+filtered within rather than dropped whole: Oliver chose that over hiding a group once any one of its
+moments is off, which would have taken all 12 GuiFocus moments away with one switch. A moment Chatter
+does not list, the cue from the application (FR-634), is always switched on.
+Acceptance: Given `bf_emma` with `Docked.Cleared` switched off and `Docked` and `Docked.Set` on, when
+Docked is auditioned, then the line played is one of the lines of `Docked` or `Docked.Set`.
+Built for a plugin voice on 2026-09-16 by FR-585 to FR-587: the chooser offers the plugin voices that
+can speak and a plugin voice is auditioned from a catalogue over it, which applies the switches as it
+does for a recorded voice.
+Verified by: `TestAPluginAuditionAsksChatterWhatIsSwitchedOn` in `audition_plugin_test.go` for a plugin
+voice; `TestAnAuditionDrawsOnlyOnMomentsSwitchedOn` in
+`internal/infrastructure/library/heard_test.go` for a recorded voice;
+`TestAGroupGivesOnlyTheLinesOfItsCuesHeard` in `internal/domain/making/group_test.go` and
+`TestAMachineAuditionDrawsOnlyOnMomentsSwitchedOn` in
+`internal/application/services/making_audition_test.go` for a machine voice;
+`TestTheAuditionPaneAsksChatterWhatIsSwitchedOn` and `TestAMachineAuditionAsksChatterWhatIsSwitchedOn`
+in `audition_heard_test.go` for the facade reading the switches. Each layer's tests were seen to fail
+on 2026-09-16 with that layer's filter taken out.
+
+**FR-746 A group's count covers its moments switched on**
+Priority: Should.
+The Audition pane shall count on each group's button the takes or lines of that group's moments
+switched on in Chatter alone.
+Rationale: a count including moments that cannot be drawn promises more than a press can play.
+Acceptance: Given `bf_emma` with `Docked.Cleared` switched off, when the Audition pane opens, then the
+Docked button counts the lines of `Docked` and `Docked.Set` and not those of `Docked.Cleared`.
+Verified by: `TestAGroupCountsOnlyItsMomentsSwitchedOn` in
+`internal/infrastructure/library/heard_test.go`; `TestAMachineGroupCountsOnlyItsMomentsSwitchedOn`
+in `internal/domain/script/groups_test.go`; both seen to fail on 2026-09-16 with the filter taken out.
+
+**FR-747 A group with every moment switched off is not offered**
+Priority: Should.
+While every moment of a group is switched off in Chatter, the Audition pane shall not offer that
+group.
+Rationale: a button that can play nothing is a fault to the reader. The pane asks for its groups each
+time it opens, so a group comes back the next time the pane is opened after any of its moments is
+switched on again; Chatter and Audition are never open at once.
+Acceptance: Given `bf_emma` with `Docked`, `Docked.Set` and `Docked.Cleared` all switched off, when the
+Audition pane opens, then no Docked button is offered; given `Docked.Set` then switched on, when the
+pane opens again, then the Docked button is offered, counting the lines of `Docked.Set`.
+Verified by: `TestAGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
+`internal/infrastructure/library/heard_test.go` and
+`TestAMachineGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
+`internal/domain/script/groups_test.go` for the group being marked; "leaves out a group whose moments
+Chatter has all switched off" and "asks for the groups again each time it opens" in
+`frontend/src/audition.test.tsx` for the pane. Each was seen to fail on 2026-09-16 with its filter
+taken out. That the pane asks again on opening is held by the test yet was not seen to fail on its
+own, since nothing short of caching the answer across openings would break it.
+
+**FR-748 If Chatter has switched off everything a voice has, then say so**
+Priority: Should.
+If every group a voice has something for has every moment switched off in Chatter, then the Audition
+pane shall say that Chatter has switched off everything that voice could be heard on.
+Rationale: the pane's usual "This voice has nothing to audition." would send the reader looking for
+missing recordings when the recordings are there.
+Acceptance: Given a recorded voice with takes for Docked alone and every Docked moment switched off,
+when the Audition pane opens on that voice, then it reads "Chatter has switched off everything this
+voice could be heard on." and offers no group.
+Verified by: "says Chatter has switched off everything the voice could be heard on" in
+`frontend/src/audition.test.tsx`, seen to fail on 2026-09-16 with the pane's filter taken out; the
+backend's marking of each group is FR-747's.
+
+**FR-749 An audition group belongs to the category holding most of its moments**
+Priority: Should.
+The application shall place each audition group in the Chatter category holding the most of that
+group's moments, the earlier category in Chatter's order where two hold as many; a group none of whose
+moments Chatter lists shall belong to no category.
+Rationale: Oliver, 2026-09-16. A group is every moment sharing the first segment of its id (FR-216)
+while Chatter categorises one moment at a time, so a group's moments could in principle fall in more
+than one category. Measured over the shipped table that day, 149 of the 151 groups sit wholly in one
+category; ReceiveText has 9 moments in Comms and 1, station traffic, in Docking and stations; Cast,
+the cue from the application, is in none. Oliver chose one place for ReceiveText, under Comms, over
+showing it under both.
+Acceptance: Given the shipped table, when the Audition pane lists a voice's groups, then ReceiveText
+belongs to Comms, Docked to Docking and stations and Cast to no category.
+Verified by: `TestAGroupBelongsToTheCategoryHoldingMostOfItsMoments` in
+`internal/domain/cue/groupcategory_test.go`, seen to fail on 2026-09-16 with a tie going to the later category.
+
+**FR-750 The Audition pane lists its groups under their categories**
+Priority: Should.
+The Audition pane shall list the groups it offers under a heading for each category, the categories in
+Chatter's order, each heading followed by its groups in the order of FR-216, then the groups belonging
+to no category under the heading "This application"; a category offering no group shall have no
+heading.
+Rationale: Oliver, 2026-09-16: among 151 buttons in one grid it was hard to see what was relevant. The
+headings are plain rather than collapsing (Oliver, the same day); smaller buttons (FR-751) already cut
+the scrolling.
+Acceptance: Given a voice with groups for Docked, Receive text and Cast, when the Audition pane opens,
+then it shows Docking and stations with Docked, then Comms with Receive text, then This application
+with Cast, in that order.
+Verified by: `TestTheAuditionGroupsComeInCategoryOrder` in `audition_heard_test.go` for the order and
+the category each group carries; "lists the groups under their categories in order" in
+`frontend/src/audition.test.tsx` for the headings. Both seen to fail on 2026-09-16, the first with the
+sort taken out, the second with every group put under one heading.
+
+**FR-751 The Audition pane's group buttons are half their earlier height**
+Priority: Should.
+Each group button on the Audition pane shall draw its play mark at 48 px, its name at 14 px and its
+count at 13 px, in columns at least 220 px wide.
+Rationale: Oliver, 2026-09-16, asking for buttons about half the size. Measured in the browser pane
+that day over all 151 group labels at the shipped type: a button had been 137 px tall with a 113 px
+mark in columns at least 260 px wide. At the sizes above, 144 buttons are 69 px tall, half the earlier
+height; the 7 longest labels, "Shared bookmark to squadron" among them, take a second line and stand
+95 px tall. Halving the width as well was measured and turned down: at 130 px a label keeps about
+46 px beside the mark, where the median label needs 100 px at 17 px, so most labels would break over
+several lines.
+Acceptance: Given the pane open on a voice, when its buttons are measured, then the play mark is 48 px
+square, the name is 14 px, the count is 13 px and the grid's columns are at least 220 px.
+Verified by: inspection of `frontend/src/theme/audition.css` and a measurement in the browser pane on
+2026-09-16; jsdom computes no layout, so no test measures it.
 
 **FR-752 A category's moments stand in three columns**
 Priority: Should.
@@ -4256,149 +4407,6 @@ Verified by: `TestTheHeadingPillsContrastInBothThemes` in `tests/structural/cont
 contrast; "draws each category heading as a pill" in `frontend/src/chatter.test.tsx` and in
 `frontend/src/audition.test.tsx` for the markup. Not verified by a test: the pill as drawn, which the
 style sheet decides and jsdom does not compute.
-
-**FR-745 An audition draws only on moments switched on**
-Priority: Should.
-Built for a plugin voice on 2026-09-16 by FR-585 to FR-587: the chooser offers the plugin voices that
-can speak and a plugin voice is auditioned from a catalogue over it, which applies the switches as it
-does for a recorded voice.
-When a group is auditioned, the application shall draw the take or the line from the moments of that
-group switched on in Chatter alone, for a recorded voice, a plugin voice and a machine voice alike.
-Rationale: Oliver, 2026-09-16. Audition is for hearing what the ship would say; a moment switched off
-is never said (FR-622), so hearing it on Audition misleads. An audition group is every moment sharing
-the first segment of its id (FR-216) while Chatter switches one moment at a time, so a group is
-filtered within rather than dropped whole: Oliver chose that over hiding a group once any one of its
-moments is off, which would have taken all 12 GuiFocus moments away with one switch. A moment Chatter
-does not list, the cue from the application (FR-634), is always switched on.
-Acceptance: Given `bf_emma` with `Docked.Cleared` switched off and `Docked` and `Docked.Set` on, when
-Docked is auditioned, then the line played is one of the lines of `Docked` or `Docked.Set`.
-Verified by: `TestAnAuditionDrawsOnlyOnMomentsSwitchedOn` in
-`internal/infrastructure/library/heard_test.go` for a recorded voice;
-`TestAGroupGivesOnlyTheLinesOfItsCuesHeard` in `internal/domain/making/group_test.go` and
-`TestAMachineAuditionDrawsOnlyOnMomentsSwitchedOn` in
-`internal/application/services/making_audition_test.go` for a machine voice;
-`TestTheAuditionPaneAsksChatterWhatIsSwitchedOn` and `TestAMachineAuditionAsksChatterWhatIsSwitchedOn`
-in `audition_heard_test.go` for the facade reading the switches. Each layer's tests were seen to fail
-on 2026-09-16 with that layer's filter taken out.
-
-**FR-746 A group's count covers its moments switched on**
-Priority: Should.
-The Audition pane shall count on each group's button the takes or lines of that group's moments
-switched on in Chatter alone.
-Rationale: a count including moments that cannot be drawn promises more than a press can play.
-Acceptance: Given `bf_emma` with `Docked.Cleared` switched off, when the Audition pane opens, then the
-Docked button counts the lines of `Docked` and `Docked.Set` and not those of `Docked.Cleared`.
-Verified by: `TestAGroupCountsOnlyItsMomentsSwitchedOn` in
-`internal/infrastructure/library/heard_test.go`; `TestAMachineGroupCountsOnlyItsMomentsSwitchedOn`
-in `internal/domain/script/groups_test.go`; both seen to fail on 2026-09-16 with the filter taken out.
-
-**FR-747 A group with every moment switched off is not offered**
-Priority: Should.
-While every moment of a group is switched off in Chatter, the Audition pane shall not offer that
-group.
-Rationale: a button that can play nothing is a fault to the reader. The pane asks for its groups each
-time it opens, so a group comes back the next time the pane is opened after any of its moments is
-switched on again; Chatter and Audition are never open at once.
-Acceptance: Given `bf_emma` with `Docked`, `Docked.Set` and `Docked.Cleared` all switched off, when the
-Audition pane opens, then no Docked button is offered; given `Docked.Set` then switched on, when the
-pane opens again, then the Docked button is offered, counting the lines of `Docked.Set`.
-Verified by: `TestAGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
-`internal/infrastructure/library/heard_test.go` and
-`TestAMachineGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
-`internal/domain/script/groups_test.go` for the group being marked; "leaves out a group whose moments
-Chatter has all switched off" and "asks for the groups again each time it opens" in
-`frontend/src/audition.test.tsx` for the pane. Each was seen to fail on 2026-09-16 with its filter
-taken out. That the pane asks again on opening is held by the test yet was not seen to fail on its
-own, since nothing short of caching the answer across openings would break it.
-
-**FR-749 An audition group belongs to the category holding most of its moments**
-Priority: Should.
-The application shall place each audition group in the Chatter category holding the most of that
-group's moments, the earlier category in Chatter's order where two hold as many; a group none of whose
-moments Chatter lists shall belong to no category.
-Rationale: Oliver, 2026-09-16. A group is every moment sharing the first segment of its id (FR-216)
-while Chatter categorises one moment at a time, so a group's moments could in principle fall in more
-than one category. Measured over the shipped table that day, 149 of the 151 groups sit wholly in one
-category; ReceiveText has 9 moments in Comms and 1, station traffic, in Docking and stations; Cast,
-the cue from the application, is in none. Oliver chose one place for ReceiveText, under Comms, over
-showing it under both.
-Acceptance: Given the shipped table, when the Audition pane lists a voice's groups, then ReceiveText
-belongs to Comms, Docked to Docking and stations and Cast to no category.
-Verified by: `TestAGroupBelongsToTheCategoryHoldingMostOfItsMoments` in
-`internal/domain/cue/groupcategory_test.go`, seen to fail on 2026-09-16 with a tie going to the later category.
-
-**FR-750 The Audition pane lists its groups under their categories**
-Priority: Should.
-The Audition pane shall list the groups it offers under a heading for each category, the categories in
-Chatter's order, each heading followed by its groups in the order of FR-216, then the groups belonging
-to no category under the heading "This application"; a category offering no group shall have no
-heading.
-Rationale: Oliver, 2026-09-16: among 151 buttons in one grid it was hard to see what was relevant. The
-headings are plain rather than collapsing (Oliver, the same day); smaller buttons (FR-751) already cut
-the scrolling.
-Acceptance: Given a voice with groups for Docked, Receive text and Cast, when the Audition pane opens,
-then it shows Docking and stations with Docked, then Comms with Receive text, then This application
-with Cast, in that order.
-Verified by: `TestTheAuditionGroupsComeInCategoryOrder` in `audition_heard_test.go` for the order and
-the category each group carries; "lists the groups under their categories in order" in
-`frontend/src/audition.test.tsx` for the headings. Both seen to fail on 2026-09-16, the first with the
-sort taken out, the second with every group put under one heading.
-
-**FR-751 The Audition pane's group buttons are half their earlier height**
-Priority: Should.
-Each group button on the Audition pane shall draw its play mark at 48 px, its name at 14 px and its
-count at 13 px, in columns at least 220 px wide.
-Rationale: Oliver, 2026-09-16, asking for buttons about half the size. Measured in the browser pane
-that day over all 151 group labels at the shipped type: a button had been 137 px tall with a 113 px
-mark in columns at least 260 px wide. At the sizes above, 144 buttons are 69 px tall, half the earlier
-height; the 7 longest labels, "Shared bookmark to squadron" among them, take a second line and stand
-95 px tall. Halving the width as well was measured and turned down: at 130 px a label keeps about
-46 px beside the mark, where the median label needs 100 px at 17 px, so most labels would break over
-several lines.
-Acceptance: Given the pane open on a voice, when its buttons are measured, then the play mark is 48 px
-square, the name is 14 px, the count is 13 px and the grid's columns are at least 220 px.
-Verified by: inspection of `frontend/src/theme/audition.css` and a measurement in the browser pane on
-2026-09-16; jsdom computes no layout, so no test measures it.
-
-**FR-748 If Chatter has switched off everything a voice has, then say so**
-Priority: Should.
-If every group a voice has something for has every moment switched off in Chatter, then the Audition
-pane shall say that Chatter has switched off everything that voice could be heard on.
-Rationale: the pane's usual "This voice has nothing to audition." would send the reader looking for
-missing recordings when the recordings are there.
-Acceptance: Given a recorded voice with takes for Docked alone and every Docked moment switched off,
-when the Audition pane opens on that voice, then it reads "Chatter has switched off everything this
-voice could be heard on." and offers no group.
-Verified by: "says Chatter has switched off everything the voice could be heard on" in
-`frontend/src/audition.test.tsx`, seen to fail on 2026-09-16 with the pane's filter taken out; the
-backend's marking of each group is FR-747's.
-
-**FR-742 A fault in the loop watching the game ends the loop alone**
-Priority: Must.
-If the loop that watches the game raises a fault, then the application shall end that loop, shall
-write the fault and where it was raised to the run log (FR-715) and shall say on the Status pane that
-it has stopped reacting, in the words the fault was raised with.
-Rationale: on 2026-09-15 a nil pointer in one of the loop's arms ended the whole run (b4e0065). The
-window went; the only account of why reached a log nobody had been asked to open. The fix that
-day was the missing check; this is the rule that stops the next one of its kind ending the run, since
-the loop reads a journal the application does not write and answers a game it does not control.
-The loop stays ended rather than starting again: running it into the same fault four times a second
-would fill the log with one line repeated and change nothing. Everything the window itself does keeps
-working, since the panes and Quit are called from the page rather than from the loop; the tray menu
-is read by the loop and goes quiet with it, which is why the words on screen say to start the
-application again rather than implying all is well.
-A recovered fault that reaches no surface is worse than the application ending, because a window that
-looks alive and answers nothing tells the reader nothing at all. That is why the saying is part of
-the requirement rather than a courtesy.
-Acceptance: Given a run watching a journal, when the source raises a fault while being polled, then
-the Status pane says Bridge Talk has stopped reacting to the game in the fault's own words, the run
-log holds the fault with its stack and the source is never polled again.
-Verified by: `TestAFaultInTheLoopIsSaidRatherThanEndingTheRun` in `app_test.go`, seen to fail with
-the guard removed, where the fault took the whole test process down; "says the application has
-stopped reacting and what to do about it" in `frontend/src/shell.test.tsx`, seen to fail with the
-callout removed.
-Not verified by a test: the fault reaching `Log.txt`, which FR-715 holds for everything written to
-error output; a real fault of the kind this exists for.
 
 ---
 
@@ -4501,7 +4509,7 @@ through the setup program. Where neither is there it draws no Close rather than 
 Verified by `frontend/src/setupUnreachable.test.ts`, seen to fail on 2026-09-16 with Close left off
 that screen, with the web view's channel taken away and with Close drawn where nothing could close.
 Not verified by a test: that Wails closes the window on that message, which is read from its source
-(`dispatcher.go` in wails v2.12.0) and has not been seen on screen.
+(`dispatcher.go` in the Wails source the application builds against) and has not been seen on screen.
 
 **FR-808 Setup answers the keyboard**
 Priority: Must.
@@ -4784,10 +4792,11 @@ flatpak's data folder.
 Requirements are elicited outside in. The system is built inside out: domain,
 then application, then infrastructure, then user interface.
 
-The diagnostic that says the foundation is sound: every user visible action in
-this document is executable from a Go test with no window open. Choosing a root,
+The diagnostic that says the foundation is sound: every action that changes what
+the application does is executable from a Go test with no window open. Choosing a root,
 scanning, casting, auditioning, making a voice's folders and opening a moment's folder
-are each one named entry point. If a user interface over them turns out to be hard,
+are each one named entry point. What the window alone decides, such as the theme or
+where the Chatter list stands, is held by the front end's own tests. If a user interface over them turns out to be hard,
 the actions were not given callable homes; that is a hypothesis; the
 headless test is how it gets tested.
 
@@ -4815,4 +4824,5 @@ There are no open questions.
 A requirement that names an acceptance criterion is tested against it; the rest are
 tested against their own statement. Each built requirement carries a `Verified by:` line
 naming its tests or saying what no test holds. No requirement is
-considered met until its test exists and has been seen to fail without the implementation.
+considered met until its test exists and has been seen to fail without the implementation;
+where no test can hold it, its `Verified by:` line says what was inspected or measured instead.

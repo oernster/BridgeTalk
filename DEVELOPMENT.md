@@ -13,7 +13,7 @@ Testing has a document of its own, [TESTING.md](TESTING.md).
 | Part | Choice |
 |---|---|
 | Backend | Go |
-| Desktop shell | Wails v2 over WebView2 |
+| Desktop shell | Wails v2 over WebView2 on Windows and webkit2gtk on Linux |
 | Front end | React and TypeScript, built with Vite |
 | Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
 | Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with no binding written: with cgo disabled on Windows; through purego with cgo on inside the Linux flatpak |
@@ -28,7 +28,7 @@ the start.
 | Tool | Version | Why |
 |---|---|---|
 | Go | 1.26.3, which `go.mod` requires | the backend and both Wails applications |
-| Node.js | 24.11.1 on the machine this was written on | the React front end and its build |
+| Node.js | a current LTS release; `package.json` pins no minimum and the flatpak builds with Node 22 | the React front end and its build |
 | Wails CLI | v2.12.0, the version of the Wails module `go.mod` requires | packages the Go binary and the web assets into one executable |
 | WebView2 runtime | any current | the window the front end is drawn in |
 | Python | 3, as `python` on the path | `build.ps1` stamps the version into the site with `stamp_version.py` |
@@ -129,7 +129,7 @@ npm --prefix frontend install
 ```
 
 `wails build` runs `npm install` itself through the `frontend:install` hook in
-`wails.json`. The gate runs before that hook and refuses to start without
+`wails.json`. The gate runs before that hook and stops at its front-end step without
 `frontend/node_modules`, so run the second command once before `test.ps1` or `build.ps1`.
 
 ### The model files
@@ -166,8 +166,7 @@ It does six things in order and stops at the first failure:
 
 1. Reads the version from `VERSION`, then stamps it into the site's version tokens with
    `python stamp_version.py`.
-2. Pins `CGO_ENABLED=0` for everything that follows, so no machine's default decides how
-   the binary is linked.
+2. Pins `CGO_ENABLED=0` for everything that follows; see [A note on cgo](#a-note-on-cgo).
 3. Runs `test.ps1 -Benchmarks`, the gate [TESTING.md](TESTING.md#running-it) describes plus
    the tests that need the real model for minutes. There is no switch to skip it: a gate that
    can be skipped is a gate that is skipped on the day it would have caught something.
@@ -295,9 +294,8 @@ the application makes it. [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) has the rest.
 
 ## Testing
 
-`build.ps1` runs the whole gate before it builds (the Go checks, staticcheck and the front end's
-lint, type check and component tests) together with the tests that need the real model. [TESTING.md](TESTING.md) holds every test command, from that gate to the front end's
-suites, with what each figure is and what is deliberately not tested.
+`build.ps1` runs the whole gate before it builds; [TESTING.md](TESTING.md) holds every test command
+with what each figure is and what is deliberately not tested.
 
 ## Installing what you built
 
@@ -425,9 +423,9 @@ go run ./tools/pauses -endings-only
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `audition_machine.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `icon_other.go`, `icon_windows.go`, `journaldir.go`, `loop.go`, `machine.go`, `plugins.go`, `pluginvoices.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `audition_plugin.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `icon_other.go`, `icon_windows.go`, `journaldir.go`, `loop.go`, `machine.go`, `plugins.go`, `pluginvoices.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
-| `internal/domain` | the cue model, events, selection with the Chatter switches, the machine voices, the script, speech sounds, making, pauses, endings and the measured books they share; no I/O at all |
+| `internal/domain` | the cue model, events, takes and the parts they play, selection with the Chatter switches, the machine voices, the script, speech sounds, making, pauses, endings and the measured books they share; no I/O at all |
 | `internal/application` | the reaction, scheduling, making, audition and Chatter services, over ports |
 | `internal/infrastructure` | appdata, audio, config, iconfile, journal, library, madelines, modelfiles, nativelib, plugin, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
@@ -460,9 +458,8 @@ behind each decision; it lists every structural test against the rule it enforce
   `frontend/index.html` and the build scripts sit outside that test and still carry it.
 - **The version lives in `VERSION`.** The application embeds it; the setup program
   receives it at build time.
-- **Every new guard is proved by planting a violation** and reading the exit code,
-  with the plant restored in a `finally`. A guard that has never been seen to fail is
-  not yet a guard.
+- **Every new guard is proved by planting a violation**; [TESTING.md](TESTING.md#keeping-this-honest)
+  says how.
 
 ## See also
 

@@ -29,7 +29,7 @@ lines it makes on your own machine; record a voice of your own whenever you like
 
 - **Speaks with a machine voice, with nothing to record.** 28 voices speak British and American
   English, female and male. On the Cast pane they sit in a panel for each accent and sex; cast one
-  and it becomes the ship's voice, standing apart above the panels with how far its lines are made.
+  and it becomes the ship's voice, with a card above the panels saying how far its lines are made.
   Each line is made on your own machine the first time its moment happens, then kept, so nothing is
   downloaded and nothing is sent anywhere. The Audition pane plays any of them before you cast it.
 - **Casts a recorded voice.** Every folder in your recordings directory that holds at least one recording
@@ -38,9 +38,11 @@ lines it makes on your own machine; record a voice of your own whenever you like
   `Cast.Confirmed` and mute is off, it plays that as it takes the part. The choice is remembered
   for the next run.
 - **Takes voices from plugins.** A plugin is a library file placed in the plugins folder, offering
-  voices whose audio already sits on your machine. Its voices are cast from the Cast pane or the
-  notification-area menu like any other and remembered for the next run; a voice whose audio is
-  missing is listed with the reason its plugin gave. The Missing takes pane lists what the cast plugin
+  voices whose audio already sits on your machine. On the Cast pane each plugin's voices stand in a
+  section of their own above the machine voices, in the groups the plugin names. Its voices are
+  auditioned on the Audition pane, cast from the Cast pane or the notification-area menu like any
+  other and remembered for the next run; a voice whose audio is missing is listed with the reason its
+  plugin gave. The Missing takes pane lists what the cast plugin
   voice has no take for. A plugin that will not load is named in the run log with the reason and
   never stops the application starting.
 - **Plays one recording per moment.** Where a voice holds several takes for a moment, one is chosen

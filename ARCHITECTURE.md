@@ -42,7 +42,7 @@ exactly like one that holds.
 | A category heading's words read at 4.5 to 1 or better against its pill in both themes | `TestTheHeadingPillsContrastInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
-| Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
+| Every rule the theme gives a disabled control draws the danger ring | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
 | Every region that is a keyboard stop because it scrolls wears a focus ring | `TestEveryScrollingRegionRingsForTheKeyboard` | `rings_test.go` |
 | No list wears a ring in any state | `TestNoListWearsARing` | `noborder_test.go` |
 | No scrolling region wears a ring under the pointer | `TestNoScrollingRegionRingsUnderThePointer` | `noborder_test.go` |
@@ -107,7 +107,9 @@ exactly like one that holds.
   commander: the digest tying a pause to the samples it was found in, inserting its silence and the
   rule that finds a break doubtful (FR-551 to FR-554). `ending` holds the hiss the model adds after a
   final nasal: where each line fades and the fade itself (FR-555 to FR-557). `take` holds a take as
-  one or more parts played in order, identified by its first part (FR-573).
+  one or more parts played in order (FR-573); a part is a whole file or a span of one with its format,
+  offset and length (FR-588); a take is identified by its first part's key, which carries the span
+  (FR-591).
 - **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling, making and Chatter services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`, `Switchboard`). `Switchboard` answers whether a moment is switched off, which the
@@ -134,7 +136,7 @@ exactly like one that holds.
   the notification-area icon on Windows and Linux (`taskbar`), keyboard focus for the web view on
   Windows plus opening a folder in the platform's file manager (`window`), the plugin adapter
   (`plugin`), reading the pictures out of the committed `.ico` for Linux (`iconfile`), the model run through ONNX Runtime's C API with no binding written for it (`speechmodel`), loading a
-  native library and calling into it on Windows and Linux for both of those (`nativelib`), the one rule
+  native library and calling into it on Windows and Linux for the plugin adapter and the model run (`nativelib`), the one rule
   for putting a file in place whole or not at all, which the made lines, the stored settings, the model
   files and the payload archive are written through (`wholefile`) and the per-user install work behind
   the setup program (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
@@ -147,7 +149,7 @@ exactly like one that holds.
 - **UI**: the React front end plus a Wails facade in package `main`, which calls the Application
   services and maps what they return into the shapes in `dto.go`.
 - **Outside the layers**: `internal/product` holds the product's name and `internal/refusal` words a
-  refusal over a path. Each is a leaf that several layers read, so it belongs to none of them.
+  refusal over a path and the line for anything passed over (`PassedOver`). Each is a leaf that several layers read, so it belongs to none of them.
 - **The sounds tool** (`tools/sounds`): a command run while developing, never shipped. It reads the
   script through `config` and the `script` and `machinevoice` packages, asks misaki in the tool's own Python venv for every line's
   speech sounds in each accent with the table of words spelled in (FR-549) and writes `sounds.toml`.
@@ -192,7 +194,7 @@ failing to load stops the run, then hands the service `runlog.Lines` over the ru
 `RunLog`. No service is held in a
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
-facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
+facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`, `audition_plugin.go`,
 `chatter.go`, `donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
 `loop.go` (the loop watching the game), `plugins.go` and `pluginvoices.go` (the plugin surface)
 plus `icon_windows.go` and `icon_other.go` (the icon a Linux tray is handed), each a slice of the surface it would otherwise outgrow the size limit
@@ -445,12 +447,15 @@ with no C written for it. On Windows that is `windows.LoadDLL` and `syscall.Sysc
 purego's `Dlopen` and `SyscallN`. A plugin on Windows is a DLL; on Linux it is a shared object.
 
 **Three functions; why so few.** The version, one description of the plugin with its voices, then one
-answer per cue. The interface is at version 2, which added a voice's group and a part that is a span
-of a file; version 1 is refused rather than read, since its layouts would read wrongly (FR-581). Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
+answer per cue. Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
 carried more interface surface in exchange for nothing to decode. Every buffer is asked for its size first, then filled, so nothing is allocated on
 one side of the boundary and freed on the other; a negative return is always a refusal rather than a
 size, so the two can never be confused. Strings carry their own length, so no encoding of the answer
 depends on a separator that a path might contain.
+
+**Version 2.** The interface is at version 2, which added a voice's group and a part that is a span of
+a file. A plugin stating any other version is passed over by name (FR-564); version 1 is refused
+rather than read, since its layouts would read wrongly (FR-581).
 
 **Every address is converted inside the call.** `uintptr(unsafe.Pointer(...))` appears only in the
 argument list of `nativelib.Call` itself, as it does for ONNX Runtime and for the same measured
@@ -523,8 +528,9 @@ every rule the guide states, with invented voices and invented paths, so no test
 document needs any real content to exist.
 
 That proves the layouts, the protocol and everything read back from them. It does not prove the
-call into a library file. That belongs to the Windows half and is measured there, against a library
-every Windows machine already has rather than one this repository cannot build.
+call into a library file. That belongs to the native half and is measured there, against a library
+the operating system already provides (`kernel32.dll` on Windows, `libc.so.6` on Linux) rather than one
+this repository cannot build.
 
 ## Resolving a cue
 
@@ -535,12 +541,12 @@ the same cue; the scheduler hands that take's parts to the player.
 **A take is one or more parts.** A take is one alternative answer to a cue; its parts are the files
 that answer is made of, played in order with no added gap (FR-573). Most takes have one part. The
 port answers takes of parts for every kind of voice, so no part of the application asks where a take
-came from before deciding what a take is. The player has always played a sequence: `Play` takes a
-list of clips and a gap, with `takeGap` at zero. So the change was small: the scheduler no longer
-keeps only the first clip, while the picker chooses among takes rather than among files, identifying
-the take it last chose by its first part (`take.Take.Key`).
+came from before deciding what a take is. The player plays a sequence: `Play` takes a take's
+parts and a gap, with `takeGap` at zero (`services/scheduler.go`). The picker chooses among takes
+rather than among files, identifying the take it last chose by its first part's key (`take.Take.Key`).
 
-**A part is a whole file or a span of one.** A plugin may hold many recordings to one file, so a part
+**A part is a whole file or a span of one.** The audio a plugin offers may hold many recordings to one
+file, so a part
 carries its path; a span also carries the format its bytes are decoded as, their offset and their
 length (FR-588, FR-589). The span lives in the domain as data alone; whether it lies inside its file is
 a question about the disk, so the player asks as the part is opened and passes over one that does not
@@ -621,8 +627,9 @@ samples; one longer than half a second means the buffer emptied before it was re
 the longest wait are reported on the status pane, only once the count is above zero. The timing restarts
 with each clip.
 
-**An unreadable clip is skipped.** A clip that fails to open or decode plays nothing and raises no error.
-The scheduler has already logged the request as played by then, so the reaction list shows it as played.
+**An unreadable part is passed over.** A part that fails to open or decode, a span outside its file
+included, plays nothing and raises no error; a line naming the part and the reason goes to the run's
+error output while the take's other parts still play (FR-574, FR-590). The scheduler has already logged the request as played by then, so the reaction list shows it as played.
 
 **A button never cuts a clip short.** An audition starts through `PlayIfIdle`, which asks whether anything
 is playing and claims the device under the one lock, so a press while a clip sounds is ignored rather than
@@ -776,7 +783,7 @@ takes, Chatter and Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.
 
 **Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` offers them under their own heading
-after the recorded voices, as pills in a panel for each accent and sex, the panels sharing the row
+after the recorded voices and any plugin sections, as pills in a panel for each accent and sex, the panels sharing the row
 (FR-720). The panels keep the group order the facade offers, which is FR-508's; each sorts its pills
 by name. `machinevoice.Voice` gives each voice's name alone and its group beside the full name, so the
 id's format keeps one home. The cast machine voice stands on a card above them (not a control) and
@@ -796,9 +803,11 @@ while no plugin offers a voice (FR-562, FR-583). Inside a section the voices in 
 then a panel for each group the plugin names, in the order it first names each one; the panels are the
 machine voices' panels, one style for both (FR-584). A voice is shown by its own name inside its
 section, since the heading says which plugin offers it; where two plugins carry one name, the facade
-heads each section with the file it was loaded from. A voice whose audio is not on this machine is
+heads each section with the plugin's name followed by the file it was loaded from (`sectionOf` in
+`pluginvoices.go`). A voice whose audio is not on this machine is
 named in its section with the reason its plugin gave and cannot be cast (FR-570). The cast plugin voice
-stands on a card at the top of its section and keeps its pill in its group, disabled (FR-593). The flat lists, the notification area's menu and the
+stands on a card at the top of its section and keeps its pill where it stands, in its group or among the
+voices in no group, disabled with the danger ring (FR-593). The flat lists, the notification area's menu and the
 Audition chooser, still show a name two plugins share with the plugin offering it (FR-568).
 
 Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
@@ -1166,6 +1175,7 @@ autostart file (FR-815).
 | Login entry value | the quoted path plus `-hidden`, so a sign-in start waits in the tray |
 | Login entry on Linux | `uk.codecrafter.BridgeTalk.desktop` in `~/.config/autostart`, even inside the flatpak (FR-815) |
 | Install record | `HKCU\...\Uninstall\BridgeTalk`, per user |
+| Plugins folder | `plugins` beside the executable on Windows, made by setup in the install directory (FR-576); `plugins` in the product's data folder on Linux, made by the application as it starts (FR-818); loading a plugin writes nothing |
 
 Nothing is written to the game's directories. Under the recordings directory the application writes only
 the empty folders described in Making folders; it never changes or removes a file there.
@@ -1191,10 +1201,15 @@ journal reader tests a read error's text against `"EOF"`.
 - **Said on the Status pane, the window still working:** a fault raised in the loop watching the
   game, which ends that loop alone and writes the fault with its stack to standard error (FR-742).
 - **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
-  tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a clip that
-  fails to decode is skipped after being logged as played; a made line whose samples differ from those
+  tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a part that
+  will not open or decode is passed over with a line in the run log while the take's other parts play,
+  a span reaching outside its file included (FR-574, FR-590); a made line whose samples differ from those
   its pause or its ending was found in is written without that pause or fade and logged (FR-553,
   FR-556).
+- **Passed over at startup, named in the run log:** a plugins folder that cannot be found, made or
+  read; a plugin file that will not load, states a version other than 2, will not describe itself or
+  offers no usable voice; a plugin voice whose audio is not on this machine (FR-564, FR-566, FR-567,
+  FR-570).
 - **Recorded in the reaction list:** a cue switched off on Chatter, a repeat inside the dedupe window, a
   cue in cooldown, a cue the voice has no takes for and a request dropped by the mute or by the priority
   policy, beside what was queued, what is being made and what played.
@@ -1282,6 +1297,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 |---|---|---|
 | Go with a web front end | A single binary with no runtime to ship; the same web view serves the setup program | A Python and Qt desktop stack |
 | Pure-Go audio, cgo disabled | No system codec, no external process | A system media framework; a bundled transcoder, too heavy for the job |
+| A part may be a span of a file, read in place through a section of the open file, with a 64 bit offset and length | Audio holding many recordings to one file is played where it stands, so nothing is copied to the user's disk; a file can be larger than a 32 bit number reaches (FR-588) | A plugin copying each recording out to a file of its own |
+| Only version 2 of the plugin interface is read; version 1 is refused | A group and a span each change a layout, so a version 1 plugin would be read wrongly (FR-581) | Reading both versions side by side |
 | The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no mapping file | A mapping file per voice, kept in step by hand |
 | One cue plays one take | A cue is answered once, by one alternative chosen from what the voice holds | Playing every take a voice has for a cue |
 | A take is one or more parts, played in order with no added gap | A line is sometimes recorded in pieces; offering the pieces as separate takes would let the picker speak the middle of a line on its own (Oliver, 2026-09-16) | One file per take, which was the rule until plugins needed otherwise |
@@ -1299,7 +1316,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
 | No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |
 | ONNX Runtime called through its C API table with no C written for it, loaded by full path | The Windows build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in. On Linux the flatpak build has cgo on for webkit2gtk and the audio output, so purego loads the library through the C runtime there; no binding is written either way | cgo bindings, which need a C toolchain and the library's headers on every build machine |
-| The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
+| The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 326 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
 | ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
 | Every address is converted to uintptr in the argument list of `nativelib.Call` itself | Converted earlier, a moving goroutine stack left ONNX Runtime writing the old copy, which broke a build on 2026-09-14 | Converting before the call; pinning every out-parameter instead |
 | One call helper for Windows and Linux, `nativelib.Call`, taking `...uintptr` and marked `//go:uintptrescapes` | ONNX Runtime and a plugin are written once for both platforms. Measured on 2026-09-16 with the compiler's escape analysis over `speechmodel`: with the mark, every local whose address crosses was moved to the heap, where no stack move reaches it; with it replaced by `//go:noinline`, none was. The stress test passed both ways, so the structural test refusing a `...uintptr` function without the mark is what notices it gone | A copy of each loader per platform calling `syscall.SyscallN` and `purego.SyscallN` directly |

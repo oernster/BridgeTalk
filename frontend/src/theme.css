@@ -42,9 +42,13 @@
   --ambient: #4338ca;
   --flavour: #6b6560;
   --shadow: rgba(28, 26, 24, 0.18);
+  /* Native parts of a control, such as the list a dropdown opens, follow this rather than the
+     tokens. Said per theme, so Linux draws them in the page's theme rather than the desktop's. */
+  color-scheme: light;
 }
 
 :root[data-theme='dark'] {
+  color-scheme: dark;
   --surface: #0c0c0e;
   --panel: #16161a;
   --raised: #202027;

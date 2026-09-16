@@ -52,7 +52,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
-| `internal/infrastructure/plugin` | 91.2% | 91% | `test.ps1` |
+| `internal/infrastructure/plugin` | 91.5% | 91% | `test.ps1` |
 | `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |

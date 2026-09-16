@@ -85,6 +85,52 @@ func TestEveryPluginInTheFolderIsLoadedInNameOrder(t *testing.T) {
 	}
 }
 
+// Every plugin is opened by its whole path inside the folder it was found in, never by its name
+// alone, which Windows would look for along its search path and could find somewhere the user never
+// put it. Only what the user put in the folder is loaded (FR-560, NFR-S-3).
+func TestEveryPluginIsOpenedByItsWholePathInTheFolder(t *testing.T) {
+	t.Parallel()
+
+	dir := folder(t, "crew.dll", "deck.dll")
+	var opened []string
+	set := plugin.Load(dir, func(path string) (plugin.Library, error) {
+		opened = append(opened, path)
+		return crew(filepath.Base(path)), nil
+	})
+	defer set.Close()
+
+	want := []string{filepath.Join(dir, "crew.dll"), filepath.Join(dir, "deck.dll")}
+	if len(opened) != len(want) || opened[0] != want[0] || opened[1] != want[1] {
+		t.Errorf("opened %v, want %v", opened, want)
+	}
+}
+
+// A voice that cannot speak and gives no reason is said to have given none, so nothing reading the
+// reason trails off after a colon (FR-570). A voice that can speak carries no reason at all.
+func TestAVoiceThatGivesNoReasonIsSaidToHaveGivenNone(t *testing.T) {
+	t.Parallel()
+
+	dir := folder(t, "crew.dll")
+	set := plugin.Load(dir, opening(map[string]plugin.Library{
+		"crew.dll": &plugintest.Plugin{Name: "Crew", Voices: []plugintest.Voice{
+			{ID: "one", Name: "The First Officer", Ready: true},
+			{ID: "two", Name: "The Pilot"},
+		}},
+	}, nil))
+	defer set.Close()
+
+	voices := set.Voices()
+	if len(voices) != 2 {
+		t.Fatalf("loaded %d voices, want 2", len(voices))
+	}
+	if voices[0].Reason != "" {
+		t.Errorf("a voice that can speak carries the reason %q, want none", voices[0].Reason)
+	}
+	if voices[1].Reason != "it gave no reason" {
+		t.Errorf("a voice that cannot speak and gave no reason carries %q", voices[1].Reason)
+	}
+}
+
 func TestAnAbsentFolderIsNotAFault(t *testing.T) {
 	t.Parallel()
 

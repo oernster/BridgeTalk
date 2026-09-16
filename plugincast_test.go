@@ -118,3 +118,19 @@ func TestAPluginVoiceWithNoAudioIsRefusedWithItsReason(t *testing.T) {
 		t.Errorf("refused with %q, want the voice named", err)
 	}
 }
+
+// A plugin may mark a voice unavailable and give no reason. Every place the reason is read then says
+// the plugin gave none rather than trailing off after a colon: the Cast pane beside the voice and the
+// refusal when it is cast anyway (FR-570).
+func TestAVoiceThatGaveNoReasonIsSaidToHaveGivenNone(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	app.session.plugins = offering(t, "Bridge Crew", plugintest.Voice{ID: "one", Name: "The Pilot"})
+
+	if listed := app.PluginVoices(); len(listed) != 1 || listed[0].Reason != "it gave no reason" {
+		t.Errorf("listed %+v, want the voice shown as having given no reason", listed)
+	}
+	err := app.CastPluginVoice("Bridge Crew", "one")
+	if err == nil || !strings.HasSuffix(err.Error(), "cannot speak: it gave no reason") {
+		t.Errorf("refused with %v, want it said that the plugin gave no reason", err)
+	}
+}

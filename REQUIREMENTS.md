@@ -987,7 +987,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned at v0.8.1 in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that version on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to three names in the setup package, so of setup's writes only the sign-in entry is reached. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
-| NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection of the loader once it is built; no test today |
+| NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `windows.LoadDLL` by its whole path and nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
 | NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. The limit is a proposal for Oliver to react to rather than a measurement; nothing has been built to measure |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
@@ -2366,16 +2366,15 @@ does not offer it (FR-509), so it is passed over as surely as a file that would 
 pane says so beside the voice and that is gone when the window closes; the log is what is still
 there when the user is asked afterwards what happened. The plugin is named by its file, as a
 refused plugin is, since two plugins may honestly choose one name (FR-568). A plugin that marks a
-voice unavailable and gives no reason is said to have given none, rather than the line trailing
-off after the colon; the words are `refusal.PassedOver`, which is also what a part that will not
-open is worded by (FR-574), so everything passed over reads the same way.
+voice unavailable and gives no reason is said to have given none (FR-570). The line is worded by
+`refusal.PassedOver`, which is also what a part that will not open is worded by (FR-574), so
+everything passed over reads the same way.
 Verified by: `TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog` in `plugins_test.go`, which
 puts a text file named as a library in the folder and reads the line back; seen to fail with the
 line not written. `TestAVoicePassedOverInsideALoadedPluginIsNamedInTheLog` in the same file for
 the voice, seen to fail twice: once with the walk over the voices deleted and once with the skip
 over a voice that can speak deleted, which then named every voice.
-`TestWhatWasPassedOverIsWordedTheOneWay` in `internal/refusal/refusal_test.go` for the wording and
-for a reason of nothing.
+`TestWhatWasPassedOverIsWordedTheOneWay` in `internal/refusal/refusal_test.go` for the wording.
 
 **FR-568 Two voices offered under one name stay apart**
 Priority: Should.
@@ -2427,11 +2426,18 @@ Built on 2026-09-16: a voice that says its audio is absent is refused rather tha
 the voice and the reason it gave; it is never asked for a take. Completed that day in the window,
 where such a voice is listed with the reason it gave rather than left out and is never drawn as a
 control: a control that refuses when pressed says the same thing later and worse.
+A plugin may mark a voice unavailable and give no reason. The loader then gives it the reason "it
+gave no reason" where it reads the voice, the one home for those words, so the Cast pane, a refused
+cast and the log all say it rather than trailing off after a colon; measured on 2026-09-16, all three
+did. A voice that can speak carries no reason.
 Verified by: `TestAPluginVoiceWithNoAudioIsRefusedWithItsReason` in `plugincast_test.go`,
 `TestAVoiceThatIsNotReadyIsNeverAsked` in `internal/infrastructure/plugin/lookup_test.go`,
 `TestAVoiceWithNoAudioIsListedWithTheReasonItGave` in `pluginvoices_test.go` and
 `names a voice that cannot speak with the reason it gave` in
-`frontend/src/pluginVoices.test.tsx`.
+`frontend/src/pluginVoices.test.tsx`. `TestAVoiceThatGivesNoReasonIsSaidToHaveGivenNone` in
+`internal/infrastructure/plugin/load_test.go` and `TestAVoiceThatGaveNoReasonIsSaidToHaveGivenNone`
+in `plugincast_test.go` for a reason left empty, seen to fail with no reason filled in and with one
+filled in for a voice that can speak.
 
 **FR-571 The checklist offers no folder for a plugin voice**
 Priority: Should.

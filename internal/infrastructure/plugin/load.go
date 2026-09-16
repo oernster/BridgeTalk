@@ -141,13 +141,23 @@ func (s *Set) one(path, name string, open Opener) (*Plugin, string) {
 		if voice.Name == "" || voice.ID == "" {
 			return nil, fmt.Sprintf("its voice %d has no %s", index+1, missing(voice))
 		}
+		reason := voice.Reason
+		if !voice.Ready && reason == "" {
+			reason = noReasonGiven
+		}
 		loaded.voices = append(loaded.voices, &Voice{
-			ID: voice.ID, Name: voice.Name, Ready: voice.Ready, Reason: voice.Reason,
+			ID: voice.ID, Name: voice.Name, Ready: voice.Ready, Reason: reason,
 			plugin: loaded, index: int32(index),
 		})
 	}
 	return loaded, ""
 }
+
+// noReasonGiven stands in for the reason a voice that cannot speak did not give. It is filled in
+// here, where the voice is read, so the Cast pane, a refused cast and the log all say it rather than
+// trailing off after a colon (FR-570). A plugin may leave the reason empty; nothing checks that it
+// does not.
+const noReasonGiven = "it gave no reason"
 
 // missing says which of the two things a voice has to have it is without, so the refusal
 // tells the plugin's author which one to put right.

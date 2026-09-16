@@ -49,13 +49,9 @@ func Reason(err error) error {
 // the run log (FR-567, FR-574).
 //
 // It is here rather than beside any one of them for the reason Reason is here: three packages
-// need these words and none of them may depend on another. A reason of nothing says so rather
-// than trailing off, since a plugin may mark a voice unavailable and give no reason at all; a
-// line ending in a colon reads as a line that was cut off.
+// need these words and none of them may depend on another. A voice that gave no reason arrives
+// with one filled in by the plugin loader, which is the one home for those words.
 func PassedOver(what, why string) string {
-	if why == "" {
-		why = "it gave no reason"
-	}
 	return "note: " + what + " was passed over: " + why
 }
 

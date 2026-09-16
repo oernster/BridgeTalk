@@ -179,7 +179,9 @@ to `dist-installer/BridgeTalkSetup.exe`. [DEVELOPMENT.md](DEVELOPMENT.md) sets u
 nothing, fetches the model files the build needs and lists the command-line options.
 [ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
 [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) is the contract for writing a plugin: a library file offering
-voices whose audio already sits on the machine the application runs on.
+voices whose audio already sits on the machine the application runs on. Bridge Talk does not check
+who wrote a plugin or whether it has been altered; a plugin runs with your own rights, so put in the
+plugins folder only a plugin whose author you trust.
 
 ## Supporting
 

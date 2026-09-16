@@ -12,19 +12,13 @@ import (
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
-// Everything passed over reads the same way, whatever was passed over (FR-567, FR-574); a
-// reason of nothing is said rather than left as a line that trails off.
+// Everything passed over reads the same way, whatever was passed over (FR-567, FR-574).
 func TestWhatWasPassedOverIsWordedTheOneWay(t *testing.T) {
 	t.Parallel()
 
 	said := refusal.PassedOver("the plugin crew.dll", "it offers no voice")
 	if said != "note: the plugin crew.dll was passed over: it offers no voice" {
 		t.Errorf("the line reads %q", said)
-	}
-
-	silent := refusal.PassedOver("the voice The Engineer in the plugin crew.dll", "")
-	if !strings.HasSuffix(silent, "was passed over: it gave no reason") {
-		t.Errorf("a voice that gave no reason reads %q", silent)
 	}
 }
 

@@ -13,7 +13,8 @@ import (
 )
 
 // PluginVoices lists every voice every loaded plugin offers, in the order the plugins were loaded
-// and each offered them (FR-565).
+// and each offered them (FR-565), each with the section and group the Cast pane shows it under
+// (FR-583, FR-584).
 //
 // A voice whose audio is not on this machine is listed with the reason it gave rather than left
 // out (FR-570): a voice the user installed and cannot see is a fault they have no way to read.
@@ -25,6 +26,7 @@ func (a *App) PluginVoices() []PluginVoiceDTO {
 	}
 	offered := a.session.plugins.Voices()
 	shown := pluginDisplays(offered)
+	_, sharedPlugin := shared(offered)
 	out := make([]PluginVoiceDTO, 0, len(offered))
 	for index, voice := range offered {
 		out = append(out, PluginVoiceDTO{
@@ -32,11 +34,23 @@ func (a *App) PluginVoices() []PluginVoiceDTO {
 			ID:      voice.ID,
 			Name:    voice.Name,
 			Display: shown[index],
+			Section: sectionOf(voice.Plugin(), sharedPlugin),
+			Group:   voice.Group,
 			Ready:   voice.Ready,
 			Reason:  voice.Reason,
 		})
 	}
 	return out
+}
+
+// sectionOf answers the heading a plugin's voices stand under on the Cast pane: the plugin's own
+// name, with the file it was loaded from where another file carries that name too (FR-583). The
+// file is what tells two such plugins apart, as it does for a voice name they share (FR-568).
+func sectionOf(from *plugin.Plugin, sharedPlugin map[string]bool) string {
+	if sharedPlugin[from.Name] {
+		return fmt.Sprintf("%s (%s)", from.Name, from.File)
+	}
+	return from.Name
 }
 
 // pluginDisplays answers the name each voice is shown by, in the order given (FR-568).

@@ -17,7 +17,7 @@ import (
 // fakePlayer records what it was asked to do. It is hand-written rather than
 // generated, so the test states exactly the behaviour it depends on.
 type fakePlayer struct {
-	played  [][]string
+	played  []take.Take
 	gaps    []time.Duration
 	stops   int
 	playing bool
@@ -29,7 +29,7 @@ func newFakePlayer() *fakePlayer {
 	return &fakePlayer{done: make(chan struct{}, 1)}
 }
 
-func (f *fakePlayer) Play(clips []string, gap time.Duration) error {
+func (f *fakePlayer) Play(clips []take.Part, gap time.Duration) error {
 	if f.fail {
 		return ports.ErrPlaybackFailed
 	}

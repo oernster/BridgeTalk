@@ -11,6 +11,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // board is a switchboard a test can change between firings.
@@ -135,7 +136,7 @@ func TestAMomentSwitchedOffInTheQueueIsLetGo(t *testing.T) {
 	player.finish()
 	scheduler.Finished()
 
-	want := [][]string{{"hull.mp3"}, {"undocked.mp3"}}
+	want := []take.Take{take.Of("hull.mp3"), take.Of("undocked.mp3")}
 	if !slices.EqualFunc(player.played, want, slices.Equal) {
 		t.Errorf("played %v, want %v", player.played, want)
 	}
@@ -206,7 +207,7 @@ func TestStationTrafficSwitchedOffLeavesOtherMessagesSpoken(t *testing.T) {
 	}
 
 	service.HandleAll([]event.Event{message("$Military_Patrol01;")})
-	if want := [][]string{{"npc.mp3"}}; !slices.EqualFunc(player.played, want, slices.Equal) {
+	if want := []take.Take{take.Of("npc.mp3")}; !slices.EqualFunc(player.played, want, slices.Equal) {
 		t.Errorf("played %v, want %v", player.played, want)
 	}
 }

@@ -65,6 +65,8 @@ interface Bridge {
   Audition(voice: string, group: string): Promise<Audition>
   StopAudition(): Promise<void>
   MachineAuditionGroups(): Promise<Group[]>
+  PluginAuditionGroups(plugin: string, id: string): Promise<Group[]>
+  AuditionPluginVoice(plugin: string, id: string, group: string): Promise<Audition>
   AuditionMachineVoice(id: string, group: string): Promise<Audition>
   Playing(): Promise<boolean>
   TakeKeyboard(): Promise<void>
@@ -170,6 +172,17 @@ export const api = {
   /** Plays a line of a group for a machine voice, making it first where it is not yet made (FR-546). */
   auditionMachineVoice: (id: string, group: string, refused: Refused): Promise<Audition | null> =>
     settled<Audition | null>(bridge()?.AuditionMachineVoice(id, group), null, refused),
+  /** The groups a plugin voice is auditioned on, cast or not, each counting its takes (FR-586). */
+  pluginAuditionGroups: (plugin: string, id: string): Promise<Group[]> =>
+    bridge()?.PluginAuditionGroups(plugin, id) ?? Promise.resolve([]),
+  /** Plays a take of a group for a plugin voice without casting it (FR-586). */
+  auditionPluginVoice: (
+    plugin: string,
+    id: string,
+    group: string,
+    refused: Refused,
+  ): Promise<Audition | null> =>
+    settled<Audition | null>(bridge()?.AuditionPluginVoice(plugin, id, group), null, refused),
   /** Whether the device is sounding anything, asked once when the audition pane opens. */
   playing: (): Promise<boolean> => bridge()?.Playing() ?? Promise.resolve(false),
   takeKeyboard: (): Promise<void> => bridge()?.TakeKeyboard() ?? Promise.resolve(),

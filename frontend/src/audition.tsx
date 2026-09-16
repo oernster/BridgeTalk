@@ -4,7 +4,15 @@
 // pane holding a running action; panes.tsx is already close to the size cap.
 
 import { useCallback, useEffect, useState } from 'react'
-import { api, on, type Group, type MachineVoice, type Playback, type Voice } from './api'
+import {
+  api,
+  on,
+  type Group,
+  type MachineVoice,
+  type Playback,
+  type PluginVoice,
+  type Voice,
+} from './api'
 import { PlayIcon } from './icons'
 
 /**
@@ -12,6 +20,24 @@ import { PlayIcon } from './icons'
  * a machine voice's id as its name, so the two are kept apart; no folder name holds a slash.
  */
 const machinePrefix = 'machine/'
+
+/**
+ * pluginPrefix marks a plugin voice's value in the chooser. The value carries the plugin's name and
+ * the voice's id, each encoded, since an id identifies a voice within its own plugin alone (FR-569).
+ */
+const pluginPrefix = 'plugin/'
+
+/** pluginValue is the chooser's value for a plugin voice. */
+function pluginValue(plugin: string, id: string): string {
+  return `${pluginPrefix}${encodeURIComponent(plugin)}/${encodeURIComponent(id)}`
+}
+
+/** pluginOf reads a plugin voice back out of a chooser value; undefined for every other kind. */
+function pluginOf(value: string): { plugin: string; id: string } | undefined {
+  if (!value.startsWith(pluginPrefix)) return undefined
+  const [plugin, id] = value.slice(pluginPrefix.length).split('/')
+  return { plugin: decodeURIComponent(plugin), id: decodeURIComponent(id) }
+}
 
 /** applicationHeading heads the groups Chatter lists under no category, the cue from the application's (FR-750). */
 const applicationHeading = 'This application'
@@ -38,9 +64,13 @@ function sectionsOf(offered: Group[]): Section[] {
   return sections
 }
 
-/** chosenFor is the chooser's value for a voice: a folder's name as it is; a machine voice's id marked. */
-function chosenFor(name: string, machine: boolean): string {
+/**
+ * chosenFor is the chooser's value for a voice: a folder's name as it is; a machine voice's id marked;
+ * a plugin voice's plugin and id marked.
+ */
+function chosenFor(name: string, machine: boolean, plugin: string): string {
   if (!name) return ''
+  if (plugin) return pluginValue(plugin, name)
   return machine ? machinePrefix + name : name
 }
 
@@ -50,15 +80,25 @@ function chosenFor(name: string, machine: boolean): string {
  * The voice being auditioned starts as the one that is cast but is not tied to it,
  * because hearing a voice before committing to it is the entire point of an
  * audition. Casting stays a separate act on the cast pane. The recorded voices come
- * first, then every machine voice (FR-545); `machine` says the cast voice is one.
+ * first, then every machine voice (FR-545), then every plugin voice that can speak (FR-585);
+ * `machine` says the cast voice is a machine voice and `plugin` names the plugin it came from.
  */
-export function AuditionPane({ cast, machine = false }: { cast: string; machine?: boolean }) {
+export function AuditionPane({
+  cast,
+  machine = false,
+  plugin = '',
+}: {
+  cast: string
+  machine?: boolean
+  plugin?: string
+}) {
   const [voices, setVoices] = useState<Voice[]>([])
   const [machines, setMachines] = useState<MachineVoice[]>([])
+  const [plugins, setPlugins] = useState<PluginVoice[]>([])
   // Whether the lists have arrived. An empty list and an unanswered one look the same,
   // so the pane says no voices exist only once it has been told so.
   const [loaded, setLoaded] = useState(false)
-  const [voice, setVoice] = useState(chosenFor(cast, machine))
+  const [voice, setVoice] = useState(chosenFor(cast, machine, plugin))
   const [groups, setGroups] = useState<Group[]>([])
   const [playing, setPlaying] = useState('')
   // Whether anything at all is sounding or being made, the ship's reactions to the game
@@ -69,18 +109,22 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
   const [failure, setFailure] = useState('')
 
   useEffect(() => {
-    void Promise.all([api.voices(), api.machineVoices()]).then(([found, offered]) => {
-      setVoices(found)
-      setMachines(offered)
-      setLoaded(true)
-    })
+    void Promise.all([api.voices(), api.machineVoices(), api.pluginVoices()]).then(
+      ([found, offered, supplied]) => {
+        setVoices(found)
+        setMachines(offered)
+        // A voice that cannot speak is not offered, as it is not a control on the Cast pane (FR-585).
+        setPlugins(supplied.filter((each) => each.ready))
+        setLoaded(true)
+      },
+    )
   }, [])
 
   // The pane opens on whoever is cast. Later changes to the cast do not drag the
   // audition along with them, so a switch made here survives.
   useEffect(() => {
-    setVoice((current) => current || chosenFor(cast, machine))
-  }, [cast, machine])
+    setVoice((current) => current || chosenFor(cast, machine, plugin))
+  }, [cast, machine, plugin])
 
   // The machine voice chosen, by id; empty while a recorded voice is.
   const machineId = voice.startsWith(machinePrefix) ? voice.slice(machinePrefix.length) : ''
@@ -88,7 +132,12 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
   useEffect(() => {
     if (!voice) return
     setFailure('')
-    const asked = machineId ? api.machineAuditionGroups() : api.auditionGroups(voice)
+    const supplied = pluginOf(voice)
+    const asked = supplied
+      ? api.pluginAuditionGroups(supplied.plugin, supplied.id)
+      : machineId
+        ? api.machineAuditionGroups()
+        : api.auditionGroups(voice)
     void asked.then(setGroups)
   }, [voice, machineId])
 
@@ -125,9 +174,12 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
         setBusy(false)
         setFailure(reason)
       }
-      void (machineId
-        ? api.auditionMachineVoice(machineId, group.key, refused)
-        : api.audition(voice, group.key, refused))
+      const supplied = pluginOf(voice)
+      void (supplied
+        ? api.auditionPluginVoice(supplied.plugin, supplied.id, group.key, refused)
+        : machineId
+          ? api.auditionMachineVoice(machineId, group.key, refused)
+          : api.audition(voice, group.key, refused))
     },
     [voice, machineId],
   )
@@ -142,7 +194,7 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
   // No voice exists to choose. The chooser still stands at its full width holding
   // None, because an empty control shrunk to its arrow reads as a rendering fault
   // rather than as an answer.
-  const none = loaded && voices.length === 0 && machines.length === 0
+  const none = loaded && voices.length === 0 && machines.length === 0 && plugins.length === 0
 
   return (
     <>
@@ -168,13 +220,21 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
             {voices.map((item) => (
               <option key={item.name} value={item.name}>
                 {item.display}
-                {!machine && item.name === cast ? ' (cast)' : ''}
+                {!machine && !plugin && item.name === cast ? ' (cast)' : ''}
               </option>
             ))}
             {machines.map((item) => (
               <option key={machinePrefix + item.id} value={machinePrefix + item.id}>
                 {item.name}
                 {machine && item.id === cast ? ' (cast)' : ''}
+              </option>
+            ))}
+            {/* A flat list says which plugin offers a shared name, as the notification area's menu
+                does (FR-568). */}
+            {plugins.map((item) => (
+              <option key={pluginValue(item.plugin, item.id)} value={pluginValue(item.plugin, item.id)}>
+                {item.display}
+                {item.plugin === plugin && item.id === cast ? ' (cast)' : ''}
               </option>
             ))}
           </select>

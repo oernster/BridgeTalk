@@ -12,6 +12,7 @@ import (
 	"github.com/gopxl/beep/v2"
 
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
 )
 
@@ -39,7 +40,7 @@ func TestAMadeLinePlaysWithoutTheFlacLibraryLogging(t *testing.T) {
 	log.SetOutput(&logged)
 	defer log.SetOutput(previous)
 
-	streamer, format, closer, err := decode(store.Path(voice, "line"))
+	streamer, format, closer, err := decode(take.File(store.Path(voice, "line")))
 	if err != nil {
 		t.Fatalf("decoding: %v", err)
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
@@ -51,7 +52,7 @@ func TestCastingAMachineVoiceIsConfirmedInAMadeLine(t *testing.T) {
 		t.Fatalf("casting bf_emma: %v", err)
 	}
 
-	want := [][]string{{makingtest.PathOf("bf_emma", makingtest.Key("du"))}}
+	want := []take.Take{take.Of(makingtest.PathOf("bf_emma", makingtest.Key("du")))}
 	if !slices.EqualFunc(player.played, want, slices.Equal) {
 		t.Errorf("played %v, want the one made confirmation %v", player.played, want)
 	}

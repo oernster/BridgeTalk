@@ -12,6 +12,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // untilMade waits for making to end, failing the test past makingtest.AwaitLimit.
@@ -27,10 +28,10 @@ func untilMade(t *testing.T, app *App) {
 }
 
 // playedSoFar returns what the device has been given, under its lock.
-func playedSoFar(player *fakePlayer) [][]string {
+func playedSoFar(player *fakePlayer) []take.Take {
 	player.mu.Lock()
 	defer player.mu.Unlock()
-	return append([][]string(nil), player.played...)
+	return append([]take.Take(nil), player.played...)
 }
 
 // FR-521: with nothing made at the cast, the confirmation plays on the tick after it is written, once.
@@ -58,7 +59,7 @@ func TestAConfirmationWrittenAfterTheCastIsPlayedOnTheNextTick(t *testing.T) {
 	for _, sounds := range []string{"du", "dɪ", "di"} {
 		lines = append(lines, makingtest.PathOf("bf_emma", makingtest.Key(sounds)))
 	}
-	if got := playedSoFar(player); len(got) != 1 || len(got[0]) != 1 || !slices.Contains(lines, got[0][0]) {
+	if got := playedSoFar(player); len(got) != 1 || len(got[0]) != 1 || !slices.Contains(lines, got[0].Source()) {
 		t.Errorf("played %v, want one of the confirmation's lines %v once", got, lines)
 	}
 }
@@ -115,7 +116,7 @@ func TestAConfirmationIsForgottenWhenAnotherVoiceIsCastFirst(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("played %v, want Alpha's own confirmation alone", got)
 	}
-	if strings.Contains(got[0][0], "bf_emma") {
+	if strings.Contains(got[0].Source(), "bf_emma") {
 		t.Errorf("played %v, a confirmation of the voice cast before", got)
 	}
 }

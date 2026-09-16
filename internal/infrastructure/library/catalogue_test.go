@@ -99,7 +99,7 @@ func TestTheAcknowledgementIsFoundByItsSource(t *testing.T) {
 	clip, ok := catalogueOver(voice, table, fixedChooser{at: 1}).Acknowledgement()
 
 	if !ok || clip.Key() != "second.wav" {
-		t.Fatalf("acknowledgement = %q, %v; want the take the chooser picked", clip, ok)
+		t.Fatalf("acknowledgement = %v, %v; want the take the chooser picked", clip, ok)
 	}
 }
 
@@ -202,7 +202,7 @@ func TestAnAuditionDrawsFromTheNamedGroup(t *testing.T) {
 	catalogue := catalogueOver(voice, table, fixedChooser{at: 1})
 
 	if clip, ok := catalogue.Audition("DockingDenied", cue.HeardAll); !ok || clip.Key() != "yes.wav" {
-		t.Errorf("audition = %q, %v; want the take the chooser picked", clip, ok)
+		t.Errorf("audition = %v, %v; want the take the chooser picked", clip, ok)
 	}
 	if _, ok := catalogue.Audition("UnderAttack", cue.HeardAll); ok {
 		t.Error("a group the voice has nothing for was auditioned")

@@ -19,6 +19,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/appdata"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
@@ -69,8 +70,8 @@ func main() {
 // whether the device opened at all. Declaring it makes the device replaceable in a
 // test, which is the only way the facade's behaviour can be exercised at all.
 type audioPlayer interface {
-	Play(clips []string, gap time.Duration) error
-	PlayIfIdle(clips []string, gap time.Duration) (bool, error)
+	Play(clips []take.Part, gap time.Duration) error
+	PlayIfIdle(clips []take.Part, gap time.Duration) (bool, error)
 	Stop()
 	Playing() bool
 	Done() <-chan struct{}

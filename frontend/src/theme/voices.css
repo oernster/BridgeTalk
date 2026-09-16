@@ -71,23 +71,23 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* One column for each group the voices arrive in (FR-720), rather than a count written
+/* One column for each group the voices arrive in (FR-720, FR-584), rather than a count written
    here, so the panels share the row whatever number of groups the facade offers. */
-.machinegroups {
+.voicegroups {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
-.machinegroup {
+.voicegroup {
   padding: 12px 14px;
   border-radius: 10px;
   background: var(--panel);
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-.machinegroup h4 {
+.voicegroup h4 {
   margin: 0 0 10px;
   font-size: 15px;
   font-weight: 600;

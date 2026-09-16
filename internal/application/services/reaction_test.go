@@ -9,6 +9,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // fakeCatalogue answers for whatever voice is pretended to be active.
@@ -104,8 +105,8 @@ func TestAServedCueIsPlayedWithOneTake(t *testing.T) {
 	if len(player.played) != 1 || len(player.played[0]) != 1 {
 		t.Fatalf("played %v, want exactly one take", player.played)
 	}
-	if player.played[0][0] != "one.mp3" {
-		t.Errorf("played %q, want the chooser's pick", player.played[0][0])
+	if player.played[0].Source() != "one.mp3" {
+		t.Errorf("played %v, want the chooser's pick", player.played[0])
 	}
 }
 
@@ -289,7 +290,7 @@ func TestATakeLetGoIsNotTheOneTheCuePlayedLast(t *testing.T) {
 	moving.now = moment.Add(2 * time.Hour)
 	service.HandleAll([]event.Event{journalEvent("Chatter", moving.now)})
 
-	if want := [][]string{{"a.mp3"}, {"docked.mp3"}, {"b.mp3"}}; !slices.EqualFunc(player.played, want, slices.Equal) {
+	if want := []take.Take{take.Of("a.mp3"), take.Of("docked.mp3"), take.Of("b.mp3")}; !slices.EqualFunc(player.played, want, slices.Equal) {
 		t.Errorf("played %v, want %v: the take let go was taken for the one heard", player.played, want)
 	}
 }

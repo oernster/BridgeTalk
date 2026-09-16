@@ -8,8 +8,10 @@ package plugintest_test
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
 )
@@ -21,9 +23,9 @@ func crew() *plugintest.Plugin {
 		Name: "Bridge Crew",
 		Voices: []plugintest.Voice{{
 			ID: "one", Name: "The First Officer", Ready: true,
-			Answers: map[string][][]string{
-				"DockingGranted": {{`C:\audio\granted.mp3`}},
-				"StartJump":      {{`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`}},
+			Answers: map[string][]take.Take{
+				"DockingGranted": {take.Of(`C:\audio\granted.mp3`)},
+				"StartJump":      {take.Of(`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`)},
 			},
 		}},
 	}
@@ -166,7 +168,7 @@ func TestTheStandaloneBuilderWritesWhatAPluginWrites(t *testing.T) {
 	fromPlugin := make([]byte, subject.Takes(0, id, nil))
 	subject.Takes(0, id, fromPlugin)
 
-	standalone := plugintest.Takes([]string{`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`})
+	standalone := plugintest.Takes(take.Of(`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`))
 
 	if !bytes.Equal(fromPlugin, standalone) {
 		t.Errorf("the builder wrote %v, the plugin wrote %v", standalone, fromPlugin)
@@ -187,5 +189,36 @@ func TestAVoiceThatIsNotReadyCarriesItsReason(t *testing.T) {
 	}
 	if got.Voices[0].Ready || got.Voices[0].Reason == "" {
 		t.Errorf("voice = %+v, want it not ready with a reason", got.Voices[0])
+	}
+}
+
+// A voice refusing one moment refuses that moment alone and answers the rest.
+func TestAVoiceRefusesOnlyTheMomentsItNames(t *testing.T) {
+	t.Parallel()
+	subject := crew()
+	subject.Voices[0].Refuses = []string{"StartJump"}
+
+	if got := subject.Takes(0, []byte("StartJump"), nil); got != plugintest.Refused {
+		t.Errorf("the moment named answered %d, want a refusal", got)
+	}
+	if got := subject.Takes(0, []byte("DockingGranted"), nil); got <= 0 {
+		t.Errorf("a moment not named answered %d, want a size", got)
+	}
+}
+
+// The version 2 fields are written where a reader looks for them: a voice's group and a span's
+// format, offset and length (FR-582, FR-588).
+func TestAGroupAndASpanAreWrittenWhereTheyAreRead(t *testing.T) {
+	t.Parallel()
+	spanned := take.Take{take.SpanOf(`C:\audio\many.bin`, "mp3", 4000, 2000), take.File(`C:\audio\b.mp3`)}
+
+	described, err := plugin.DecodeDescription(plugintest.Description("Crew",
+		plugintest.Voice{ID: "one", Name: "The First Officer", Group: "Officers", Ready: true}))
+	if err != nil || len(described.Voices) != 1 || described.Voices[0].Group != "Officers" {
+		t.Errorf("description = %+v, %v; want the voice in Officers", described, err)
+	}
+	takes, err := plugin.DecodeTakes(plugintest.Takes(spanned))
+	if err != nil || len(takes) != 1 || !reflect.DeepEqual(takes[0], spanned) {
+		t.Errorf("takes = %v, %v; want %v", takes, err, spanned)
 	}
 }

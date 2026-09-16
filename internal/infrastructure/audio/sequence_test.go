@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
@@ -47,7 +48,7 @@ func TestPlayingIfIdleLeavesACurrentSequenceAlone(t *testing.T) {
 	player.playing = true
 	player.cancel = current
 
-	started, err := player.PlayIfIdle([]string{"anything.mp3"}, 0)
+	started, err := player.PlayIfIdle(whole("anything.mp3"), 0)
 	if err != nil {
 		t.Fatalf("playing if idle: %v", err)
 	}
@@ -69,7 +70,7 @@ func TestPlayingIfIdleStartsWhenNothingPlays(t *testing.T) {
 	t.Parallel()
 	player := silentPlayer()
 
-	started, err := player.PlayIfIdle([]string{"anything.mp3"}, 0)
+	started, err := player.PlayIfIdle(whole("anything.mp3"), 0)
 	if err != nil || !started {
 		t.Fatalf("got %v, %v; want a start with no error", started, err)
 	}
@@ -103,7 +104,7 @@ func TestASilentPlayerCompletesTheSequenceImmediately(t *testing.T) {
 	if !player.Silent() {
 		t.Fatal("a player built with no device does not report itself silent")
 	}
-	if err := player.Play([]string{"anything.mp3"}, 0); err != nil {
+	if err := player.Play(whole("anything.mp3"), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	if !waitForFinish(t, player) {
@@ -149,7 +150,7 @@ func TestAGapIsWaitedOutUnlessItIsCancelled(t *testing.T) {
 
 func TestAClipThatIsNotThereCannotBeDecoded(t *testing.T) {
 	t.Parallel()
-	_, _, closer, err := decode(filepath.Join(t.TempDir(), "absent.mp3"))
+	_, _, closer, err := decode(take.File(filepath.Join(t.TempDir(), "absent.mp3")))
 	if err == nil {
 		t.Fatal("a clip that is not there decoded")
 	}
@@ -170,7 +171,7 @@ func TestAFormatTheDecodersDoNotKnowIsNamedAsUnsupported(t *testing.T) {
 		t.Fatalf("planting: %v", err)
 	}
 
-	if _, _, _, err := decode(path); !errors.Is(err, ErrUnsupportedFormat) {
+	if _, _, _, err := decode(take.File(path)); !errors.Is(err, ErrUnsupportedFormat) {
 		t.Fatalf("got %v, want %v", err, ErrUnsupportedFormat)
 	}
 }
@@ -186,7 +187,7 @@ func TestAFileWithTheRightNameAndTheWrongContentsFailsToDecode(t *testing.T) {
 		if err := os.WriteFile(path, []byte("not audio at all"), 0o644); err != nil {
 			t.Fatalf("planting %q: %v", name, err)
 		}
-		_, _, _, err := decode(path)
+		_, _, _, err := decode(take.File(path))
 		if err == nil {
 			t.Fatalf("%q decoded although it holds no audio", name)
 		}
@@ -204,7 +205,7 @@ func TestARealClipDecodesToAStreamAndItsFormat(t *testing.T) {
 		t.Fatalf("planting: %v", err)
 	}
 
-	streamer, format, closer, err := decode(path)
+	streamer, format, closer, err := decode(take.File(path))
 	if err != nil {
 		t.Fatalf("decoding: %v", err)
 	}
@@ -255,7 +256,7 @@ func TestAClipIsReadWholeBeforeItReachesTheDevice(t *testing.T) {
 		t.Fatalf("writing the clip: %v", err)
 	}
 
-	source, err := load(path)
+	source, err := load(take.File(path))
 	if err != nil {
 		t.Fatalf("loading: %v", err)
 	}
@@ -288,7 +289,7 @@ func TestAClipIsReadWholeBeforeItReachesTheDevice(t *testing.T) {
 // moment of silence nobody can account for.
 func TestAClipThatCannotBeReadIsReported(t *testing.T) {
 	t.Parallel()
-	if _, err := load(filepath.Join(t.TempDir(), "absent.mp3")); err == nil {
+	if _, err := load(take.File(filepath.Join(t.TempDir(), "absent.mp3"))); err == nil {
 		t.Fatal("a clip that is not there loaded without error")
 	}
 
@@ -296,7 +297,7 @@ func TestAClipThatCannotBeReadIsReported(t *testing.T) {
 	if err := os.WriteFile(path, []byte("not audio"), 0o644); err != nil {
 		t.Fatalf("writing: %v", err)
 	}
-	if _, err := load(path); !errors.Is(err, ErrUnsupportedFormat) {
+	if _, err := load(take.File(path)); !errors.Is(err, ErrUnsupportedFormat) {
 		t.Fatalf("got %v, want %v", err, ErrUnsupportedFormat)
 	}
 }

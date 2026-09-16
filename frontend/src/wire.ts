@@ -67,10 +67,17 @@ export interface PluginVoice {
   plugin: string
   /** The voice's id within that plugin, which a cast sends back. */
   id: string
-  /** The name the plugin gave the voice. */
+  /** The name the plugin gave the voice, which the Cast pane shows inside the voice's section. */
   name: string
-  /** The name the screen shows: the name above, unless another plugin offers one like it (FR-568). */
+  /**
+   * The name a flat list of voices shows: the name above, unless another plugin offers one like it
+   * (FR-568).
+   */
   display: string
+  /** The heading of the plugin's section on the Cast pane (FR-583). */
+  section: string
+  /** The group the voice stands in within that section; empty for none (FR-584). */
+  group: string
   /** Whether the audio the voice needs is on this machine (FR-570). */
   ready: boolean
   /** Why it is not; empty while it is (FR-570). */

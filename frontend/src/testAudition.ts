@@ -4,7 +4,7 @@
 import { vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import type { Audition, Group, MachineVoice, Refused, Voice } from './api'
+import type { Audition, Group, MachineVoice, PluginVoice, Refused, Voice } from './api'
 
 export const voices = vi.fn<() => Promise<Voice[]>>()
 export const auditionGroups = vi.fn<(voice: string) => Promise<Group[]>>()
@@ -16,6 +16,10 @@ export const machineVoices = vi.fn<() => Promise<MachineVoice[]>>()
 export const machineAuditionGroups = vi.fn<() => Promise<Group[]>>()
 export const auditionMachineVoice =
   vi.fn<(id: string, group: string, refused: Refused) => Promise<Audition | null>>()
+export const pluginVoices = vi.fn<() => Promise<PluginVoice[]>>()
+export const pluginAuditionGroups = vi.fn<(plugin: string, id: string) => Promise<Group[]>>()
+export const auditionPluginVoice =
+  vi.fn<(plugin: string, id: string, group: string, refused: Refused) => Promise<Audition | null>>()
 
 /** handlers holds whatever the pane subscribed to, so a test can raise the event. */
 export const handlers = new Map<string, (...data: unknown[]) => void>()
@@ -32,6 +36,10 @@ export const mockedApi = {
     machineAuditionGroups: () => machineAuditionGroups(),
     auditionMachineVoice: (id: string, group: string, refused: Refused) =>
       auditionMachineVoice(id, group, refused),
+    pluginVoices: () => pluginVoices(),
+    pluginAuditionGroups: (plugin: string, id: string) => pluginAuditionGroups(plugin, id),
+    auditionPluginVoice: (plugin: string, id: string, group: string, refused: Refused) =>
+      auditionPluginVoice(plugin, id, group, refused),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -57,7 +65,7 @@ export const docked: Group = {
 
 /**
  * resetAudition clears every spy and subscription. Grace and Kate are then the recorded voices with
- * no machine voice; every voice has the Shields and Combat groups; every audition plays.
+ * no machine voice and no plugin voice; every voice has the Shields and Combat groups; every audition plays.
  */
 export function resetAudition() {
   handlers.clear()
@@ -70,6 +78,9 @@ export function resetAudition() {
     machineVoices,
     machineAuditionGroups,
     auditionMachineVoice,
+    pluginVoices,
+    pluginAuditionGroups,
+    auditionPluginVoice,
   ])
     spy.mockReset()
   voices.mockResolvedValue([grace, kate])
@@ -80,6 +91,9 @@ export function resetAudition() {
   machineVoices.mockResolvedValue([])
   machineAuditionGroups.mockResolvedValue([shields, combat])
   auditionMachineVoice.mockResolvedValue({ group: 'shields', clip: 'k.flac' })
+  pluginVoices.mockResolvedValue([])
+  pluginAuditionGroups.mockResolvedValue([shields, combat])
+  auditionPluginVoice.mockResolvedValue({ group: 'shields', clip: 'p.mp3' })
 }
 
 /** shown renders a pane and waits for its groups. */

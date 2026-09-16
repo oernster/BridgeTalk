@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
 )
@@ -37,7 +38,7 @@ func TestAVoiceAnswersATakeWithItsPartsInOrder(t *testing.T) {
 	if !ok || len(takes) != 1 {
 		t.Fatalf("takes = %v, %v; want the one take it holds", takes, ok)
 	}
-	want := []string{`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`}
+	want := take.Of(`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`)
 	for index, part := range want {
 		if takes[0][index] != part {
 			t.Fatalf("take = %v, want %v in that order", takes[0], want)

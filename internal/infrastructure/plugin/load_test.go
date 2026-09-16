@@ -8,11 +8,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
+	"github.com/oernster/bridge-talk/internal/product"
 )
 
 // folder writes a file per name into a new directory, since the loader reads a directory
@@ -50,9 +53,9 @@ func crew(name string) *plugintest.Plugin {
 		Name: name,
 		Voices: []plugintest.Voice{{
 			ID: "one", Name: "The First Officer", Ready: true,
-			Answers: map[string][][]string{
-				"DockingGranted": {{`C:\audio\granted.mp3`}},
-				"StartJump":      {{`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`}},
+			Answers: map[string][]take.Take{
+				"DockingGranted": {take.Of(`C:\audio\granted.mp3`)},
+				"StartJump":      {take.Of(`C:\audio\a.mp3`, `C:\audio\b.mp3`, `C:\audio\c.mp3`)},
 			},
 		}},
 	}
@@ -250,8 +253,27 @@ func TestAVersionMismatchNamesBothVersions(t *testing.T) {
 	defer set.Close()
 
 	why := set.Refusals[0].Why
-	if !strings.Contains(why, "99") || !strings.Contains(why, "1") {
+	if !strings.Contains(why, "99") || !strings.Contains(why, strconv.Itoa(plugin.ABIVersion)) {
 		t.Errorf("refusal said %q, want the version it stated and the one implemented", why)
+	}
+}
+
+// FR-581: version 2 is the only version implemented, so a plugin built against version 1, whose
+// layouts carry no group and no span, is refused by name rather than read wrongly.
+func TestAPluginBuiltAgainstVersionOneIsRefused(t *testing.T) {
+	t.Parallel()
+	const first = 1
+
+	set := plugin.Load(folder(t, "old.dll"), opening(
+		map[string]plugin.Library{"old.dll": &plugintest.Plugin{ABI: first}}, nil))
+	defer set.Close()
+
+	if len(set.Plugins) != 0 || len(set.Refusals) != 1 {
+		t.Fatalf("loaded %d and refused %+v, want the one plugin refused", len(set.Plugins), set.Refusals)
+	}
+	want := "built against interface version 1; this is " + product.Name + " 2"
+	if refused := set.Refusals[0]; refused.File != "old.dll" || !strings.Contains(refused.Why, want) {
+		t.Errorf("refusal = %+v, want old.dll named with %q", refused, want)
 	}
 }
 

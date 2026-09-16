@@ -226,7 +226,11 @@ export function App() {
           />
         )}
         {pane === 'audition' && (
-          <AuditionPane cast={state?.voice ?? ''} machine={state?.machineVoice ?? false} />
+          <AuditionPane
+            cast={state?.voice ?? ''}
+            machine={state?.machineVoice ?? false}
+            plugin={state?.plugin ?? ''}
+          />
         )}
         {pane === 'takes' && (
           <MissingTakesPane

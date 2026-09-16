@@ -9,7 +9,7 @@ import (
 
 // ABIVersion is the interface version this application implements. A plugin stating any
 // other version is passed over by name (FR-564).
-const ABIVersion = 1
+const ABIVersion = 2
 
 // maxAnswer is the most bytes a plugin may ask this application to set aside for one answer.
 //
@@ -62,6 +62,9 @@ type Voice struct {
 	ID string
 	// Name is what the user sees.
 	Name string
+	// Group is the group the plugin shows the voice in; empty for none (FR-582). It is shown
+	// and never kept, so a plugin may move a voice between groups freely.
+	Group string
 	// Ready says whether the audio this voice needs is present on this machine (FR-570).
 	Ready bool
 	// Reason says why it is not; empty while Ready.

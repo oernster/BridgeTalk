@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
@@ -29,7 +30,7 @@ func (f *fakeTray) Stop() {}
 // asked to do, so a test can assert on the facade's behaviour without a sound card.
 type fakePlayer struct {
 	mu       sync.Mutex
-	played   [][]string
+	played   []take.Take
 	stops    int
 	playing  bool
 	silent   bool
@@ -45,7 +46,7 @@ func newFakePlayer() *fakePlayer {
 	return &fakePlayer{volume: 1, finished: make(chan struct{}, 1)}
 }
 
-func (f *fakePlayer) Play(clips []string, _ time.Duration) error {
+func (f *fakePlayer) Play(clips []take.Part, _ time.Duration) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.failWith != nil {
@@ -57,7 +58,7 @@ func (f *fakePlayer) Play(clips []string, _ time.Duration) error {
 }
 
 // PlayIfIdle starts only when the fake is not already playing, as the real player does.
-func (f *fakePlayer) PlayIfIdle(clips []string, _ time.Duration) (bool, error) {
+func (f *fakePlayer) PlayIfIdle(clips []take.Part, _ time.Duration) (bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.failWith != nil {

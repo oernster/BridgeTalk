@@ -105,9 +105,9 @@ export function MachineVoices({
         </div>
       )}
 
-      <div className="machinegroups">
+      <div className="voicegroups">
         {panelsOf(voices).map((panel) => (
-          <div key={panel.group} className="machinegroup" role="group" aria-label={panel.group}>
+          <div key={panel.group} className="voicegroup" role="group" aria-label={panel.group}>
             <h4>{panel.group}</h4>
             <div className="pills">
               {panel.voices

@@ -19,7 +19,7 @@ func TestADescriptionReadsBackAsItWasWritten(t *testing.T) {
 	t.Parallel()
 
 	written := plugintest.Description("Bridge Crew",
-		plugintest.Voice{ID: "one", Name: "The First Officer", Ready: true},
+		plugintest.Voice{ID: "one", Name: "The First Officer", Group: "Crew", Ready: true},
 		plugintest.Voice{ID: "two", Name: "The Second", Reason: "its recordings are not on this machine"},
 	)
 
@@ -28,10 +28,11 @@ func TestADescriptionReadsBackAsItWasWritten(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading a description: %v", err)
 	}
+	// FR-582: the first voice names a group; the second names none, which reads as empty.
 	want := plugin.Description{
 		Name: "Bridge Crew",
 		Voices: []plugin.VoiceInfo{
-			{ID: "one", Name: "The First Officer", Ready: true},
+			{ID: "one", Name: "The First Officer", Group: "Crew", Ready: true},
 			{ID: "two", Name: "The Second", Reason: "its recordings are not on this machine"},
 		},
 	}
@@ -54,8 +55,8 @@ func TestTakesReadBackWithTheirPartsInOrder(t *testing.T) {
 	t.Parallel()
 
 	written := plugintest.Takes(
-		[]string{`C:\audio\alone.mp3`},
-		[]string{`C:\audio\one.mp3`, `C:\audio\two.mp3`, `C:\audio\three.mp3`},
+		take.Of(`C:\audio\alone.mp3`),
+		take.Of(`C:\audio\one.mp3`, `C:\audio\two.mp3`, `C:\audio\three.mp3`),
 	)
 
 	got, err := plugin.DecodeTakes(written)
@@ -69,6 +70,36 @@ func TestTakesReadBackWithTheirPartsInOrder(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("takes = %v, want %v", got, want)
+	}
+}
+
+// FR-588: a part may be a span of a file, read back with its format, offset and length. The
+// offset sits past what a 32 bit number reaches, so a reader narrowing it would be caught.
+func TestASpanReadsBackWithItsPlaceInTheFile(t *testing.T) {
+	t.Parallel()
+	const beyondThirtyTwoBits = int64(1) << 33
+	written := take.Take{
+		take.SpanOf(`C:\audio\many.bin`, "mp3", beyondThirtyTwoBits, 4000),
+		take.File(`C:\audio\tail.wav`),
+	}
+
+	got, err := plugin.DecodeTakes(plugintest.Takes(written))
+
+	if err != nil || len(got) != 1 || !reflect.DeepEqual(got[0], written) {
+		t.Errorf("takes = %v, %v; want %v", got, err, written)
+	}
+}
+
+// FR-590: a span's numbers are not judged by the reader, since whether a span lies inside its file
+// is a question about the file; a negative one reads back as sent, for the player to pass over.
+func TestANegativeSpanReadsBackForThePlayerToJudge(t *testing.T) {
+	t.Parallel()
+	written := take.Take{take.SpanOf(`C:\audio\many.bin`, "mp3", -1, -1)}
+
+	got, err := plugin.DecodeTakes(plugintest.Takes(written))
+
+	if err != nil || len(got) != 1 || !reflect.DeepEqual(got[0], written) {
+		t.Errorf("takes = %v, %v; want %v", got, err, written)
 	}
 }
 
@@ -127,9 +158,14 @@ func TestMalformedTakesAreRefused(t *testing.T) {
 		{"it promises a take it has no bytes for", counted(1)},
 		{"a take has no parts", append(counted(1), counted(0)...)},
 		{"a part count is negative", append(counted(1), counted(-2)...)},
-		{"a path runs past the end", join(counted(1), counted(1), counted(40))},
-		{"a path is not text", join(counted(1), counted(1), text([]byte{0xc3, 0x28}))},
-		{"bytes follow the takes", append(plugintest.Takes([]string{"a.mp3"}), 0)},
+		{"a path runs past the end", join(counted(1), counted(1), counted(plugintest.PartFile), counted(40))},
+		{"a path is not text", join(counted(1), counted(1), counted(plugintest.PartFile), text([]byte{0xc3, 0x28}))},
+		{"a part is neither a file nor a span", join(counted(1), counted(1), counted(unknownKind), text([]byte("a.mp3")))},
+		{"a span ends before its format", join(counted(1), counted(1), counted(plugintest.PartSpan), text([]byte("a.bin")))},
+		{"a span ends before its length", join(counted(1), counted(1), counted(plugintest.PartSpan),
+			text([]byte("a.bin")), text([]byte("mp3")), position(0))},
+		{"a part runs short of its kind", join(counted(1), counted(1))},
+		{"bytes follow the takes", append(plugintest.Takes(take.Of("a.mp3")), 0)},
 	} {
 		t.Run(each.name, func(t *testing.T) {
 			t.Parallel()
@@ -156,6 +192,7 @@ func TestAnyNonZeroReadyFlagMeansReady(t *testing.T) {
 	w.Text("A")
 	w.Text("id")
 	w.Text("Name")
+	w.Text("")
 	w.Count(2)
 	w.Text("")
 
@@ -188,3 +225,13 @@ func join(pieces ...[]byte) []byte {
 	}
 	return out
 }
+
+// position writes one of a span's 64 bit numbers.
+func position(value int64) []byte {
+	w := &plugintest.Writer{}
+	w.Position(value)
+	return w.Bytes()
+}
+
+// unknownKind is a part kind the layout does not define.
+const unknownKind = 7

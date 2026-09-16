@@ -22,6 +22,19 @@ var ErrMalformed = errors.New("the plugin's answer does not read as it should")
 // of them is what lets a reader step through an answer without a table of field sizes.
 const intSize = 4
 
+// positionSize is the width of a span's offset and length, the two numbers that measure a
+// place in a file rather than in an answer: a file can be larger than a 32 bit number reaches
+// (FR-588).
+const positionSize = 8
+
+// A part's kind, the number ahead of each part saying what follows it.
+const (
+	// partFile is a whole file: its path alone follows.
+	partFile = 0
+	// partSpan is a span of a file: its path, its format, its offset and its length follow.
+	partSpan = 1
+)
+
 // VoiceInfo is one voice a plugin offers, as the plugin describes it.
 type VoiceInfo struct {
 	// ID identifies the voice within its plugin and is kept in the settings beside the
@@ -29,6 +42,8 @@ type VoiceInfo struct {
 	ID string
 	// Name is what the user sees.
 	Name string
+	// Group is the group the voice is shown in; empty for none (FR-582).
+	Group string
 	// Ready says whether the audio this voice needs is present on this machine.
 	Ready bool
 	// Reason says why it is not, in the plugin's own words; empty while Ready.
@@ -71,6 +86,41 @@ func (r *reader) count(what string) int32 {
 	value := int32(binary.LittleEndian.Uint32(r.data[r.at : r.at+intSize]))
 	r.at += intSize
 	return value
+}
+
+// position reads one of a span's two 64 bit numbers. It is not checked here: a span that does
+// not lie inside its file is a part passed over when it is played (FR-590), not an answer that
+// will not read, so one bad span costs one part rather than every take of a cue.
+func (r *reader) position(what string) int64 {
+	if r.err != nil {
+		return 0
+	}
+	if r.at+positionSize > len(r.data) {
+		r.fail("it ends before its %s", what)
+		return 0
+	}
+	value := int64(binary.LittleEndian.Uint64(r.data[r.at : r.at+positionSize]))
+	r.at += positionSize
+	return value
+}
+
+// part reads one part of a take, whose kind says whether it is a whole file or a span.
+func (r *reader) part() take.Part {
+	kind := r.count("part kind")
+	path := r.text("part path")
+	switch {
+	case r.err != nil:
+		return take.Part{}
+	case kind == partFile:
+		return take.File(path)
+	case kind == partSpan:
+		format := r.text("span format")
+		offset := r.position("span offset")
+		length := r.position("span length")
+		return take.SpanOf(path, format, offset, length)
+	}
+	r.fail("one of its parts is of kind %d, which is neither a file nor a span", kind)
+	return take.Part{}
 }
 
 // size reads a number that may not be negative and may not exceed what is left, which is
@@ -137,7 +187,7 @@ func DecodeDescription(data []byte) (Description, error) {
 	voices := r.size("voice count")
 	described := Description{Name: r.text("plugin name")}
 	for index := int32(0); index < voices; index++ {
-		voice := VoiceInfo{ID: r.text("voice id"), Name: r.text("voice name")}
+		voice := VoiceInfo{ID: r.text("voice id"), Name: r.text("voice name"), Group: r.text("group")}
 		voice.Ready = r.count("ready flag") != 0
 		voice.Reason = r.text("reason")
 		if r.err != nil {
@@ -170,7 +220,7 @@ func DecodeTakes(data []byte) ([]take.Take, error) {
 		}
 		one := make(take.Take, 0, parts)
 		for part := int32(0); part < parts; part++ {
-			one = append(one, r.text("part path"))
+			one = append(one, r.part())
 		}
 		if r.err != nil {
 			return nil, r.err

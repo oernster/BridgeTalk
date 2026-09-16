@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
@@ -242,7 +243,7 @@ func TestReleasingTheSessionClosesThePluginThread(t *testing.T) {
 			Name: "Crew",
 			Voices: []plugintest.Voice{{
 				ID: "one", Name: "The First Officer", Ready: true,
-				Answers: map[string][][]string{"Docked": {{`C:\audio\docked.mp3`}}},
+				Answers: map[string][]take.Take{"Docked": {take.Of(`C:\audio\docked.mp3`)}},
 			}},
 		}, nil
 	})

@@ -27,7 +27,7 @@ type EventSource interface {
 // than polling. Implementations run their own output thread, so Play, Stop and
 // Playing are safe to call from another goroutine.
 type AudioPlayer interface {
-	Play(clips []string, gap time.Duration) error
+	Play(clips []take.Part, gap time.Duration) error
 	Stop()
 	Playing() bool
 	Done() <-chan struct{}

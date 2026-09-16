@@ -7,6 +7,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/selection"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 func TestAlertInterruptsWhatIsSpeaking(t *testing.T) {
@@ -25,7 +26,7 @@ func TestAlertInterruptsWhatIsSpeaking(t *testing.T) {
 	}
 	scheduler.Advance()
 	last := player.played[len(player.played)-1]
-	if last[0] != "danger.mp3" {
+	if last.Source() != "danger.mp3" {
 		t.Fatalf("played %v, the alert should have taken over", last)
 	}
 }
@@ -80,7 +81,7 @@ func TestAlertsWaitingTogetherPlayInArrivalOrder(t *testing.T) {
 	scheduler.Advance()
 
 	for index, want := range []string{"one.mp3", "two.mp3", "notice.mp3"} {
-		if len(player.played) != index+1 || player.played[index][0] != want {
+		if len(player.played) != index+1 || player.played[index].Source() != want {
 			t.Fatalf("played %v, want %s next", player.played, want)
 		}
 		player.finish()
@@ -111,7 +112,7 @@ func TestFlavourIsDroppedWhileAnythingIsPending(t *testing.T) {
 	scheduler.Submit(request(t, "flavour", "flavour", "idle.mp3"))
 
 	for _, clips := range player.played {
-		if clips[0] == "idle.mp3" {
+		if clips.Source() == "idle.mp3" {
 			t.Fatal("a flavour cue played while something was speaking")
 		}
 	}
@@ -148,7 +149,7 @@ func TestQueueIsOrderedByPriorityThenArrival(t *testing.T) {
 
 	order := []string{}
 	for _, clips := range player.played {
-		order = append(order, clips[0])
+		order = append(order, clips.Source())
 	}
 	want := []string{"a1.mp3", "n1.mp3", "n2.mp3"}
 	for index := range want {
@@ -182,7 +183,7 @@ func TestEveryCuePlaysExactlyOneTake(t *testing.T) {
 	player.finish()
 	scheduler.Advance()
 	last := player.played[len(player.played)-1]
-	if !reflect.DeepEqual(last, []string{"1.mp3", "2.mp3", "3.mp3"}) {
+	if !reflect.DeepEqual(last, take.Of("1.mp3", "2.mp3", "3.mp3")) {
 		t.Fatalf("a take of three parts played %v, want all three in order", last)
 	}
 	if player.gaps[len(player.gaps)-1] != 0 {
@@ -295,7 +296,7 @@ func TestAFlavourLineIsTakenWhenNothingElseIsPending(t *testing.T) {
 	scheduler.Submit(request(t, "flavour", "flavour", "one.mp3"))
 	scheduler.Advance()
 
-	if len(player.played) != 1 || player.played[0][0] != "one.mp3" {
+	if len(player.played) != 1 || player.played[0].Source() != "one.mp3" {
 		t.Errorf("played %v, want the flavour line taken in the quiet", player.played)
 	}
 }
@@ -315,7 +316,7 @@ func TestAnUnorderedRequestSpeaksOnceHoweverManyTakesTheVoiceHolds(t *testing.T)
 		t.Fatal("the picker declined a folder of eleven takes")
 	}
 
-	scheduler.Submit(request(t, "Undocked", "notice", chosen...))
+	scheduler.Submit(services.Request{Cue: request(t, "Undocked", "notice").Cue, Take: chosen})
 	scheduler.Advance()
 
 	if len(player.played) != 1 {

@@ -146,7 +146,7 @@ func (s *Set) one(path, name string, open Opener) (*Plugin, string) {
 			reason = noReasonGiven
 		}
 		loaded.voices = append(loaded.voices, &Voice{
-			ID: voice.ID, Name: voice.Name, Ready: voice.Ready, Reason: reason,
+			ID: voice.ID, Name: voice.Name, Group: voice.Group, Ready: voice.Ready, Reason: reason,
 			plugin: loaded, index: int32(index),
 		})
 	}

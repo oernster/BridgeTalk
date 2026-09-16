@@ -52,6 +52,25 @@ func play(picker *selection.Picker, id cue.ID, takes []take.Take) (string, bool)
 	return chosen.Key(), ok
 }
 
+// FR-591: takes that are spans of one shared file are different takes, so the take played last is
+// avoided among them as it is among files of their own.
+func TestSpansOfOneFileAreAvoidedOneByOne(t *testing.T) {
+	takes := []take.Take{
+		{take.SpanOf("many.bin", "mp3", 0, 4000)},
+		{take.SpanOf("many.bin", "mp3", 4000, 4000)},
+		{take.SpanOf("many.bin", "mp3", 8000, 4000)},
+	}
+	// A chooser that always asks for index 0 repeats the first take unless the picker avoids it.
+	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
+
+	first, _ := play(picker, "DockingGranted", takes)
+	second, ok := play(picker, "DockingGranted", takes)
+
+	if !ok || second == first {
+		t.Errorf("the second firing played the same span as the first, want a different one")
+	}
+}
+
 // Picking is not playing either: a take picked for a firing that is then let go was never
 // heard, so it is not the take to avoid next time (FR-610).
 func TestPickingRecordsNothing(t *testing.T) {
@@ -60,13 +79,13 @@ func TestPickingRecordsNothing(t *testing.T) {
 
 	for range 2 {
 		if got, _ := picker.Pick("Bounty", takes); got.Key() != "a.mp3" {
-			t.Fatalf("pick = %q, want a.mp3: a take only picked was remembered as played", got)
+			t.Fatalf("pick = %v, want a.mp3: a take only picked was remembered as played", got)
 		}
 	}
 
 	picker.Played("Bounty", take.Of("a.mp3"))
 	if got, _ := picker.Pick("Bounty", takes); got.Key() != "b.mp3" {
-		t.Fatalf("pick = %q, want b.mp3: a take played did not hold back the next pick", got)
+		t.Fatalf("pick = %v, want b.mp3: a take played did not hold back the next pick", got)
 	}
 }
 

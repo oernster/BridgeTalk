@@ -445,7 +445,8 @@ with no C written for it. On Windows that is `windows.LoadDLL` and `syscall.Sysc
 purego's `Dlopen` and `SyscallN`. A plugin on Windows is a DLL; on Linux it is a shared object.
 
 **Three functions; why so few.** The version, one description of the plugin with its voices, then one
-answer per cue. Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
+answer per cue. The interface is at version 2, which added a voice's group and a part that is a span
+of a file; version 1 is refused rather than read, since its layouts would read wrongly (FR-581). Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
 carried more interface surface in exchange for nothing to decode. Every buffer is asked for its size first, then filled, so nothing is allocated on
 one side of the boundary and freed on the other; a negative return is always a refusal rather than a
 size, so the two can never be confused. Strings carry their own length, so no encoding of the answer
@@ -537,7 +538,16 @@ port answers takes of parts for every kind of voice, so no part of the applicati
 came from before deciding what a take is. The player has always played a sequence: `Play` takes a
 list of clips and a gap, with `takeGap` at zero. So the change was small: the scheduler no longer
 keeps only the first clip, while the picker chooses among takes rather than among files, identifying
-the take it last chose by its first part's path (`take.Take.Key`).
+the take it last chose by its first part (`take.Take.Key`).
+
+**A part is a whole file or a span of one.** A plugin may hold many recordings to one file, so a part
+carries its path; a span also carries the format its bytes are decoded as, their offset and their
+length (FR-588, FR-589). The span lives in the domain as data alone; whether it lies inside its file is
+a question about the disk, so the player asks as the part is opened and passes over one that does not
+(FR-590). A decoder reads a span through a section of the open file, so it cannot tell a span from a
+file of its own and nothing is copied. A part's key carries the span, so two spans of one file are two
+takes to the picker (FR-591); a take is shown by the file it begins in (`take.Take.Source`), since the
+key is an identity rather than words.
 
 There is no fallback chain. A voice that recorded nothing for a cue answers it with silence and the
 reaction list records why, because a wrong line delivered confidently is worse than silence. A voice is
@@ -779,11 +789,16 @@ lists share, the part a cast voice plays and the counted figures, live in `front
 where making stands before anything is made lives in `frontend/src/making.ts`, apart from `api.ts`,
 because a test replaces that module whole.
 
-**Plugin voices on the Cast pane.** `frontend/src/pluginVoices.tsx` offers every voice the loaded
-plugins hold as a pill after the machine voices; nothing is drawn while no plugin offers a voice
-(FR-562). A voice whose audio is not on this machine is named with the reason its plugin gave and
-cannot be cast (FR-570). The cast plugin voice stands on a card above them. A name two plugins
-share is shown with the plugin offering it (FR-568).
+**Plugin voices on the Cast pane.** `frontend/src/pluginVoices.tsx` offers the voices the loaded
+plugins hold after the machine voices, in a section for each plugin headed by its name; nothing is drawn
+while no plugin offers a voice (FR-562, FR-583). Inside a section the voices in no group come first,
+then a panel for each group the plugin names, in the order it first names each one; the panels are the
+machine voices' panels, one style for both (FR-584). A voice is shown by its own name inside its
+section, since the heading says which plugin offers it; where two plugins carry one name, the facade
+heads each section with the file it was loaded from. A voice whose audio is not on this machine is
+named in its section with the reason its plugin gave and cannot be cast (FR-570). The cast plugin voice
+stands on a card at the top of its section. The flat lists, the notification area's menu and the
+Audition chooser, still show a name two plugins share with the plugin offering it (FR-568).
 
 Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
 licence, the close choice, the Moments spoken for dialog and the question Chatter asks before changing
@@ -862,6 +877,12 @@ further press is ignored; Stop lets it go, so it is kept once written yet never 
 recordings folder may carry a machine voice's id as its name, so the chooser keeps the two apart and a
 machine voice goes through `MachineAuditionGroups` and `AuditionMachineVoice` rather than the recorded
 voice's pair.
+
+A plugin voice that can speak follows the machine voices in the chooser and goes through
+`PluginAuditionGroups` and `AuditionPluginVoice`, by its plugin and its id (FR-585, FR-586). Its groups
+come from a catalogue built over that voice for the question, which is the same catalogue a recorded
+voice is auditioned from, so a moment the plugin refuses counts no take exactly as it would for the
+cast voice (FR-587). Hearing it casts nothing.
 
 **Volume.** A slider in the nav band, from silence to the clip as recorded, in twenty steps. Perceived
 loudness is roughly logarithmic in gain, so the slider position picks a point up to six halvings below

@@ -102,7 +102,7 @@ func feedToTheEnd(t *testing.T, player *Player) {
 func TestATakeThatFollowsAnotherCloselyWaitsForItsEnd(t *testing.T) {
 	t.Parallel()
 	player, queue, take := fedPlayer(t)
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	feedToTheEnd(t, player)
@@ -111,7 +111,7 @@ func TestATakeThatFollowsAnotherCloselyWaitsForItsEnd(t *testing.T) {
 	}
 
 	before := queue.dropped()
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing the next take: %v", err)
 	}
 	awaitHeld(t, player)
@@ -124,13 +124,13 @@ func TestATakeThatFollowsAnotherCloselyWaitsForItsEnd(t *testing.T) {
 func TestATakeThatInterruptsAnotherDropsWhatIsQueued(t *testing.T) {
 	t.Parallel()
 	player, queue, take := fedPlayer(t)
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	awaitHeld(t, player)
 
 	before := queue.dropped()
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("interrupting: %v", err)
 	}
 	if queue.dropped() == before {
@@ -142,7 +142,7 @@ func TestATakeThatInterruptsAnotherDropsWhatIsQueued(t *testing.T) {
 func TestStopDropsWhatIsQueued(t *testing.T) {
 	t.Parallel()
 	player, queue, take := fedPlayer(t)
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	awaitHeld(t, player)
@@ -161,7 +161,7 @@ func TestStopDropsWhatIsQueued(t *testing.T) {
 func TestATakeThatStartsAfterSilenceDropsTheQueuedSilence(t *testing.T) {
 	t.Parallel()
 	player, queue, take := fedPlayer(t)
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	awaitHeld(t, player)

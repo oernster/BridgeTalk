@@ -69,7 +69,7 @@ func TestPlaybackBeginsWithinTheLatencyBudget(t *testing.T) {
 		player.firstPull = time.Time{}
 		player.mu.Unlock()
 		called := time.Now()
-		if err := player.Play([]string{take}, 0); err != nil {
+		if err := player.Play(whole(take), 0); err != nil {
 			t.Fatalf("playing: %v", err)
 		}
 		at, ahead := awaitFirstPull(t, player)

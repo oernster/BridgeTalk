@@ -9,6 +9,8 @@ import (
 	"fmt"
 
 	"github.com/gopxl/beep/v2"
+
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // deviceFormat is the shape every clip is converted to before it is played: the
@@ -36,8 +38,8 @@ var deviceFormat = beep.Format{
 // The cost is the memory a decoded clip occupies while it plays. At four bytes a
 // frame the longest line in any of these voices is a few megabytes and only one clip
 // is ever loaded at a time, which is a trade worth making against speech breaking up.
-func load(path string) (beep.Streamer, error) {
-	streamer, format, closer, err := decode(path)
+func load(part take.Part) (beep.Streamer, error) {
+	streamer, format, closer, err := decode(part)
 	if err != nil {
 		return nil, err
 	}
@@ -54,17 +56,27 @@ func load(path string) (beep.Streamer, error) {
 	buffer := beep.NewBuffer(deviceFormat)
 	buffer.Append(source)
 	if buffer.Len() == 0 {
-		return nil, fmt.Errorf("%q decoded to no audio", path)
+		return nil, fmt.Errorf("%q decoded to no audio", described(part))
 	}
 	return buffer.Streamer(0, buffer.Len()), nil
 }
 
-// decode opens a clip with the decoder matching its extension, naming the clip in any
-// error it returns.
-func decode(path string) (beep.StreamSeekCloser, beep.Format, func() error, error) {
-	streamer, format, closer, err := open(path)
+// decode opens a part with the decoder its format names, naming the part in any error it
+// returns.
+func decode(part take.Part) (beep.StreamSeekCloser, beep.Format, func() error, error) {
+	streamer, format, closer, err := open(part)
 	if err != nil {
-		return nil, beep.Format{}, closer, fmt.Errorf("%s: %w", path, err)
+		return nil, beep.Format{}, closer, fmt.Errorf("%s: %w", described(part), err)
 	}
 	return streamer, format, closer, nil
+}
+
+// described names a part in words a reader of the log can find it by: its path, with the stretch
+// of the file where it is a span.
+func described(part take.Part) string {
+	if part.Span == nil {
+		return part.Path
+	}
+	return fmt.Sprintf("%s (%d bytes from byte %d, as %s)",
+		part.Path, part.Span.Length, part.Span.Offset, part.Span.Format)
 }

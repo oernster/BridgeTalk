@@ -13,6 +13,7 @@ import (
 
 	"github.com/gopxl/beep/v2"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
 
@@ -21,12 +22,12 @@ import (
 func holdRead(player *Player, held string) (reading, release chan struct{}) {
 	reading, release = make(chan struct{}), make(chan struct{})
 	var once sync.Once
-	player.load = func(path string) (beep.Streamer, error) {
-		if path == held {
+	player.load = func(part take.Part) (beep.Streamer, error) {
+		if part.Path == held {
 			once.Do(func() { close(reading) })
 			<-release
 		}
-		return load(path)
+		return load(part)
 	}
 	return reading, release
 }
@@ -53,7 +54,7 @@ func TestATakeStoppedWhileItsClipIsReadNeverReachesTheSpeaker(t *testing.T) {
 	player, _, take := fedPlayer(t)
 	reading, release := holdRead(player, take)
 
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	within(t, reading, "the read of the take")
@@ -73,11 +74,11 @@ func TestATakeReplacedWhileItsClipIsReadNeverReachesTheSpeaker(t *testing.T) {
 	audiotest.WriteTake(t, slow)
 	reading, release := holdRead(player, slow)
 
-	if err := player.Play([]string{slow}, 0); err != nil {
+	if err := player.Play(whole(slow), 0); err != nil {
 		t.Fatalf("playing: %v", err)
 	}
 	within(t, reading, "the read of the first take")
-	if err := player.Play([]string{take}, 0); err != nil {
+	if err := player.Play(whole(take), 0); err != nil {
 		t.Fatalf("replacing: %v", err)
 	}
 	awaitHeld(t, player)

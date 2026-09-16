@@ -13,6 +13,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/take"
+	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 )
 
 // auditionGap is the pause between the parts of the take a group is auditioned with. It
@@ -46,12 +47,17 @@ func (a *App) AuditionGroups(voice string) []GroupDTO {
 	if !found {
 		return []GroupDTO{}
 	}
-	groups := a.session.catalogueFor(chosen).Groups(a.session.heard())
+	return a.session.groupsShown(a.session.catalogueFor(chosen).Groups(a.session.heard()))
+}
+
+// groupsShown is a catalogue's groups as the pane shows them, in Chatter's category order. A recorded
+// voice and a plugin voice are both auditioned from a catalogue, so both are shown this one way.
+func (s *session) groupsShown(groups []library.Group) []GroupDTO {
 	out := make([]GroupDTO, 0, len(groups))
 	for _, group := range groups {
-		out = append(out, a.session.groupShown(group.Key, len(group.Takes), group.SwitchedOff))
+		out = append(out, s.groupShown(group.Key, len(group.Takes), group.SwitchedOff))
 	}
-	return a.session.inCategoryOrder(out)
+	return s.inCategoryOrder(out)
 }
 
 // groupShown is one group as the pane shows it: its key read as words, its count, whether Chatter has
@@ -114,8 +120,8 @@ func (a *App) play(group string, chosen take.Take) (AuditionDTO, error) {
 		return AuditionDTO{}, nil
 	}
 	a.announcePlayback()
-	// The pane names the take by its first part, which is the take's identity (take.Take.Key).
-	return AuditionDTO{Group: group, Clip: clipName(chosen.Key())}, nil
+	// The pane names the take by the file it begins in (take.Take.Source).
+	return AuditionDTO{Group: group, Clip: clipName(chosen.Source())}, nil
 }
 
 // StopAudition ends whatever is playing, so a long clip can be cut short. A machine voice's

@@ -54,7 +54,7 @@ func TestAMachineVoiceAuditionMakesTheLineDrawnKeepsItAndPlaysIt(t *testing.T) {
 		t.Fatalf("made %d keeping %v, want the line drawn alone", maker.Made(), held)
 	}
 	path := makingtest.PathOf("bf_emma", held[0])
-	if got := playedSoFar(player); len(got) != 1 || len(got[0]) != 1 || got[0][0] != path {
+	if got := playedSoFar(player); len(got) != 1 || len(got[0]) != 1 || got[0][0].Path != path {
 		t.Errorf("played %v, want %q once", got, path)
 	}
 	if played.Group != "Docked" || played.Clip != clipName(path) {

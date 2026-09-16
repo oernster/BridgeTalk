@@ -15,6 +15,7 @@ import (
 
 	"github.com/gopxl/beep/v2"
 
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
@@ -62,7 +63,7 @@ type Player struct {
 	// load reads a clip whole; left nil, the package's own load does. A test sets it to hold a
 	// read part way, which is where a take can be cancelled while nothing of it has reached the
 	// speaker yet.
-	load func(path string) (beep.Streamer, error)
+	load func(part take.Part) (beep.Streamer, error)
 
 	// record notes a part that would not open; left nil, a line on error output does, which is
 	// where the run log keeps it (FR-574, FR-715). A test sets it to read the note back.
@@ -126,7 +127,7 @@ func (p *Player) Playing() bool {
 // has played them; dropping the queue then would cut off the end of a take that has
 // already finished. With nothing to replace, the speaker decides: queued silence goes,
 // the end of a take just sounded is waited for.
-func (p *Player) Play(clips []string, gap time.Duration) error {
+func (p *Player) Play(clips []take.Part, gap time.Duration) error {
 	if len(clips) == 0 {
 		return ErrNoClips
 	}
@@ -152,7 +153,7 @@ func (p *Player) Play(clips []string, gap time.Duration) error {
 // A press on a button must never cut short a clip already sounding (FR-236). Asking
 // Playing and then calling Play leaves a gap in which another caller can start
 // something, so the question and the start are taken under the one lock.
-func (p *Player) PlayIfIdle(clips []string, gap time.Duration) (bool, error) {
+func (p *Player) PlayIfIdle(clips []take.Part, gap time.Duration) (bool, error) {
 	if len(clips) == 0 {
 		return false, ErrNoClips
 	}
@@ -178,7 +179,7 @@ func (p *Player) claim() chan struct{} {
 }
 
 // launch runs a claimed sequence; with no device it completes at once.
-func (p *Player) launch(clips []string, gap time.Duration, cancel chan struct{}) {
+func (p *Player) launch(clips []take.Part, gap time.Duration, cancel chan struct{}) {
 	if p.silent {
 		p.complete(cancel)
 		return
@@ -187,7 +188,7 @@ func (p *Player) launch(clips []string, gap time.Duration, cancel chan struct{})
 }
 
 // run plays each clip in turn, honouring the cancel signal between and during them.
-func (p *Player) run(clips []string, gap time.Duration, cancel chan struct{}) {
+func (p *Player) run(clips []take.Part, gap time.Duration, cancel chan struct{}) {
 	defer p.complete(cancel)
 	for index, clip := range clips {
 		select {
@@ -210,14 +211,14 @@ func (p *Player) run(clips []string, gap time.Duration, cancel chan struct{}) {
 // given anything. That is the point: the decoding and the resampling happen while
 // nothing is waiting on them rather than inside the device's own request for the next
 // buffer, where being slow is heard rather than merely being slow.
-func (p *Player) playOne(path string, cancel chan struct{}) bool {
-	source, err := p.loadClip(path)
+func (p *Player) playOne(part take.Part, cancel chan struct{}) bool {
+	source, err := p.loadClip(part)
 	if err != nil {
 		// One unreadable clip should not abandon the rest of the sequence; the part passed
 		// over is recorded rather than dropped in silence (FR-574). Most of a line is better
 		// than none of it; nothing else would ever say a part is missing, since a take short of
 		// a part still sounds like a take.
-		p.passedOver(path, err)
+		p.passedOver(part, err)
 		return true
 	}
 
@@ -254,8 +255,8 @@ func (p *Player) playOne(path string, cancel chan struct{}) bool {
 // The audio belongs to the user and can be moved or removed at any time without the voice
 // offering it knowing, so this is an ordinary event rather than a fault: it is a note, worded
 // as every other thing passed over is; it stops nothing.
-func (p *Player) passedOver(path string, err error) {
-	line := refusal.PassedOver("the part "+path, refusal.Reason(err).Error())
+func (p *Player) passedOver(part take.Part, err error) {
+	line := refusal.PassedOver("the part "+described(part), refusal.Reason(err).Error())
 	if p.record != nil {
 		p.record(line)
 		return
@@ -264,11 +265,11 @@ func (p *Player) passedOver(path string, err error) {
 }
 
 // loadClip reads a clip whole with the player's load where one is set, else the package's own.
-func (p *Player) loadClip(path string) (beep.Streamer, error) {
+func (p *Player) loadClip(part take.Part) (beep.Streamer, error) {
 	if p.load != nil {
-		return p.load(path)
+		return p.load(part)
 	}
-	return load(path)
+	return load(part)
 }
 
 // sleepOrCancel waits for a gap, returning false when cancelled during it.

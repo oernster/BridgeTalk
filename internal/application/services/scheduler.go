@@ -149,7 +149,7 @@ func (s *Scheduler) report(request Request, outcome string) {
 	if s.reporter == nil {
 		return
 	}
-	clip := request.Take.Key()
+	clip := request.Take.Source()
 	s.reporter.Report(ports.Reaction{
 		At:      s.clock.Now(),
 		Cue:     request.Cue.ID(),

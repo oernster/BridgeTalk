@@ -12,6 +12,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // madeOnCall is FR-514's limit on how long a cue waits for its line.
@@ -70,7 +71,7 @@ func TestACueWithNothingMadeWaitsForItsLineThenSpeaks(t *testing.T) {
 	service.Tick()
 	service.Tick()
 
-	if want := [][]string{{"docked.flac"}}; !slices.EqualFunc(player.played, want, slices.Equal) {
+	if want := []take.Take{take.Of("docked.flac")}; !slices.EqualFunc(player.played, want, slices.Equal) {
 		t.Fatalf("played %v once the line was written, want %v once", player.played, want)
 	}
 

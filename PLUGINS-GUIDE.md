@@ -24,6 +24,8 @@ A plugin supplies audio. It does not supply behaviour (`REQUIREMENTS.md`, FR-502
 | Offer any number of voices | Add a cue, rename one or change the cue table |
 | Answer any number of takes for a cue | Change when, whether or how loudly anything plays |
 | Answer a take made of several files played in order | Draw anything, open a window or show a message |
+| Answer a part as a span of a larger file, read in place | Ask Bridge Talk to extract, copy or cache that span |
+| Show its voices in groups of its own naming | Choose where on the screen they stand |
 | Say that the audio a voice needs is missing, with a reason | Expect Bridge Talk to copy, move or write its audio |
 | Read files anywhere the user can read them | Assume Bridge Talk will free anything it allocates |
 
@@ -79,10 +81,11 @@ int32_t BridgeTalkPluginTakes(int32_t voiceIndex,
 Export them undecorated, with C linkage. From C++ that means `extern "C"`. From Go, build with
 `-buildmode=c-shared` and mark each with `//export`. From Rust, `#[no_mangle] pub extern "C"`.
 
-The current ABI version is **1**. `BridgeTalkPluginABIVersion` is the first function Bridge Talk
-calls. If it answers a version Bridge Talk does not implement, nothing else is called, the plugin is
-passed over and the run log names the file, the version it stated and the version Bridge Talk
-implements (FR-564).
+The current ABI version is **2**, the only one Bridge Talk implements (FR-581). Version 2 added a
+voice's group and a part that is a span of a file; a plugin built against version 1 is refused rather
+than read wrongly. `BridgeTalkPluginABIVersion` is the first function Bridge Talk calls. If it answers a
+version Bridge Talk does not implement, nothing else is called, the plugin is passed over and the run
+log names the file, the version it stated and the version Bridge Talk implements (FR-564).
 
 ### The calling rules, which are the same for every function that fills a buffer
 
@@ -100,8 +103,9 @@ implements (FR-564).
 5. **Never keep the pointer.** A buffer is valid only for the duration of the call.
 6. **Text is UTF-8** with no terminating zero. Every string is preceded by its length in bytes, so a
    zero byte inside one is harmless.
-7. **Integers are signed, 32 bit, little endian.** No floating point crosses the boundary, no struct
-   is passed by value and there are no callbacks.
+7. **Integers are signed, 32 bit, little endian,** except a span's offset and length, which are signed,
+   64 bit, little endian, since a file can be larger than a 32 bit number reaches (FR-588). No floating
+   point crosses the boundary, no struct is passed by value and there are no callbacks.
 8. **An answer is at most 4 MiB.** The size asked for is the one number acted on before anything can
    be read, since the buffer is made to fit before a byte arrives; a size field is 32 bits wide, so a
    plugin answering garbage could ask Bridge Talk to set aside two gigabytes. A size above the limit
@@ -137,6 +141,7 @@ string  pluginName
 repeated voiceCount times:
     string  voiceId       stable, unique within this plugin, never shown to the user
     string  voiceName     what the user sees in the voice list
+    string  group         the group the voice is shown in; empty for none
     int32   ready         1 when the audio this voice needs is present, else 0
     string  readyReason   empty when ready is 1; when 0, why, in words a user can act on
 ```
@@ -149,6 +154,11 @@ since nothing is remembered by it.
 
 A voice whose `ready` is 0 is shown but cannot be cast, with `readyReason` as the explanation
 (FR-570). Use it for the case where the audio a voice needs has been moved or removed.
+
+On the Cast pane your voices stand in a section of their own headed by `pluginName` (FR-583). Inside
+it, the voices with an empty `group` come first, then a panel for each group, in the order your
+description first names each one (FR-584). A group is shown and never kept, so a voice may move
+between groups from one release to the next without anybody losing the voice they cast.
 
 A plugin offering no voice at all is passed over with the reason recorded, as is one offering a voice
 with no name or no id (FR-566).
@@ -164,7 +174,12 @@ int32   takeCount
 repeated takeCount times:
     int32   partCount     at least 1
     repeated partCount times:
-        string  path      an absolute path to an audio file
+        int32   kind      0 for a whole file, 1 for a span of a file
+        string  path      an absolute path to the file
+        when kind is 1:
+            string  format    mp3, wav, flac or ogg, in any case
+            int64   offset    the position of the span's first byte in the file
+            int64   length    the number of bytes in the span
 ```
 
 - **A take is one alternative.** Where a voice has three different recordings for a cue, that is
@@ -177,6 +192,12 @@ repeated takeCount times:
 - **Paths are absolute** and are opened exactly as given. Bridge Talk decodes `.mp3`, `.wav`,
   `.flac` and `.ogg`, matched by extension in any case; a part with any other extension is passed
   over and logged.
+- **A span is a recording held inside a larger file.** Bridge Talk reads those bytes where they
+  stand, decoded as the `format` you name rather than by the file's own extension (FR-588, FR-589).
+  A span whose offset or length is negative, which reaches past the end of its file or which names a
+  format Bridge Talk does not decode is passed over and logged like a part that will not open
+  (FR-590). Two spans of one file are two different takes (FR-591).
+- **A kind other than 0 or 1** makes the whole answer unreadable, so the cue is silent.
 - **A part that will not open is passed over** and the remaining parts are played (FR-574). If no
   part of the chosen take plays, the cue is silent and the log says what was tried (FR-575).
 
@@ -210,6 +231,7 @@ follows the contract above line for line; treat it as a starting point and prove
 
 #define EXPORT __declspec(dllexport)
 #define REFUSED (-1)
+#define PART_FILE 0
 
 static const char *PLUGIN_NAME = "Quartermaster Voices";
 static const char *VOICE_ID = "quartermaster";
@@ -260,7 +282,7 @@ static int audio_present(void) {
     return 1;
 }
 
-EXPORT int32_t BridgeTalkPluginABIVersion(void) { return 1; }
+EXPORT int32_t BridgeTalkPluginABIVersion(void) { return 2; }
 
 EXPORT int32_t BridgeTalkPluginDescribe(uint8_t *buffer, int32_t size) {
     cursor c = {buffer, size, 0, 0};
@@ -269,6 +291,7 @@ EXPORT int32_t BridgeTalkPluginDescribe(uint8_t *buffer, int32_t size) {
     put_text(&c, PLUGIN_NAME);
     put_text(&c, VOICE_ID);
     put_text(&c, VOICE_NAME);
+    put_text(&c, ""); /* in no group */
     put_int(&c, ready);
     put_text(&c, ready ? "" : "its recording is not in C:\\QuartermasterAudio");
     return finish(&c);
@@ -287,6 +310,7 @@ EXPORT int32_t BridgeTalkPluginTakes(int32_t voiceIndex, const uint8_t *cueId, i
     }
     put_int(&c, 1); /* one take */
     put_int(&c, 1); /* of one part */
+    put_int(&c, PART_FILE);
     put_text(&c, DOCKED_PART);
     return finish(&c);
 }
@@ -313,7 +337,7 @@ or no id (FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: th
 its reason and cannot be cast; the log names it with that reason too. A voice that gives an empty
 reason is said to have given none.
 A single answer is passed over when it does not read as its layout (bytes left over after it, text
-that is not UTF-8, a negative count or a take with no parts), when the plugin asks for more than
+that is not UTF-8, a negative count, a take with no parts or a part of an unknown kind), when the plugin asks for more than
 4 MiB or when a Go panic is raised around the call: the call answers nothing and the application
 carries on. A crash inside the plugin's own code is not known to be survived; assume it ends Bridge
 Talk.
@@ -333,16 +357,19 @@ For the person installing one; also for an author proving one works.
    makes the folder on Windows (FR-576); Bridge Talk makes it on Linux (FR-819). Any file name will do.
 2. **Start Bridge Talk; if it is running, quit it and start it again.** Plugins are loaded once, as the application
    starts; one added while it runs is not seen until the next start.
-3. **Look on the Cast pane.** Each voice the plugin offers is listed by the name it gave (FR-565). Two
-   voices sharing a name are each shown with the plugin offering them (FR-568). A voice whose audio is
-   missing is listed with the reason it gave and cannot be cast (FR-570).
-4. **Cast the voice** from the Cast pane or from the Voice menu of the icon in the notification
-   area, which lists every plugin voice that can speak after the machine voices (FR-509). The choice
-   is kept for the next run by the plugin's name and the voice's id (FR-569).
-5. **See what it lacks** on the Missing takes pane, which lists the moments the cast voice has no take
+3. **Look on the Cast pane.** Each plugin's voices stand in a section headed by the plugin's name,
+   in the groups it names, each voice by the name it gave (FR-565, FR-583, FR-584). A voice whose audio
+   is missing is listed in its section with the reason it gave and cannot be cast (FR-570).
+4. **Hear it first** on the Audition pane, which offers every plugin voice that can speak after the
+   machine voices and plays its takes without casting it (FR-585, FR-586).
+5. **Cast the voice** from the Cast pane or from the Voice menu of the icon in the notification
+   area, which lists every plugin voice that can speak after the machine voices (FR-509). Where two
+   plugins offer one voice name, both of those lists show each with the plugin offering it (FR-568).
+   The choice is kept for the next run by the plugin's name and the voice's id (FR-569).
+6. **See what it lacks** on the Missing takes pane, which lists the moments the cast voice has no take
    for. It offers no folder to open for a plugin voice, since the plugin decides where its audio is
    (FR-571).
-6. **Read the run log** at `%LOCALAPPDATA%\BridgeTalk\Log.txt` when something is not as expected.
+7. **Read the run log** at `%LOCALAPPDATA%\BridgeTalk\Log.txt` when something is not as expected.
    Every plugin passed over, every voice passed over and every part of a take that would not open is
    named there with the reason (FR-567, FR-574).
 
@@ -389,12 +416,14 @@ Hold to each of these; they are the contract restated as rules, then the order t
 - **Keep `pluginName` and every `voiceId` stable** across releases; they are how a cast voice is found
   again.
 - **Give absolute UTF-8 paths** to files that exist. Write nothing to the audio the plugin reads.
+- **Write every part's kind ahead of its path.** For a span, write its format after the path, then its
+  offset and length as 64 bit numbers.
 - **Keep `BridgeTalkPluginTakes` cheap:** build the map from cue id to takes once, not on every call.
 - **Build a 64 bit library** with the three functions exported undecorated, with C linkage.
 
 Build in this order, proving each step before the next:
 
-1. `BridgeTalkPluginABIVersion` answering 1.
+1. `BridgeTalkPluginABIVersion` answering 2.
 2. `BridgeTalkPluginDescribe` offering one voice, ready, with a stable id.
 3. `BridgeTalkPluginTakes` answering no takes for every cue.
 4. The map from cue id to takes, one cue first, then the rest.
@@ -407,7 +436,7 @@ handover says so in as many words.
 
 ## A checklist before you publish
 
-- `BridgeTalkPluginABIVersion` returns 1.
+- `BridgeTalkPluginABIVersion` returns 2.
 - All three functions are exported undecorated, with C linkage.
 - Every buffer function answers a size when asked with `size` 0 and a `NULL` buffer.
 - Every failure path returns a negative number rather than writing a partial answer.

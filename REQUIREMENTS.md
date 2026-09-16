@@ -2403,8 +2403,9 @@ If two plugin voices are offered under the same name, then the application shall
 show each with the name of the plugin offering it.
 Rationale: two plugins may honestly choose one name. Dropping one silently loses a voice the user
 installed.
-Amended on 2026-09-16 by FR-583, not yet built: once each plugin's voices stand in a section headed by
-the plugin, the heading names the plugin and the voice is shown by its own name inside it.
+Amended on 2026-09-16 by FR-583, built the same day: on the Cast pane each plugin's voices stand in a
+section headed by the plugin, so a voice is shown by its own name inside it. The notification area's
+menu and the Audition chooser are flat lists and still show a shared name with the plugin offering it.
 Built on 2026-09-16. The name a voice is shown by is worked out over the whole list rather than
 per voice, since whether a name is shared is a fact about the list. Where the two plugins carry
 one name as well, the file each was loaded from tells them apart: that is the one thing about a
@@ -2664,7 +2665,7 @@ Verified by: `TestAPanicOnThePluginThreadEndsThatCallAlone` in
 it took the whole test process down with it.
 
 **Added later on 2026-09-16: version 2 of the interface.** Reviewed and agreed by Oliver the same day;
-nothing below is built. Three abilities a plugin offering many voices needs: its voices shown in named groups, its
+built the same day against the test plugin alone, since no plugin library exists to load. Three abilities a plugin offering many voices needs: its voices shown in named groups, its
 voices heard on Audition before one is cast and a part of a take read from inside a larger file rather
 than from a file of its own. The first and the third change what crosses the boundary, so the
 interface moves to version 2 and version 1 is refused (FR-564). Measured on 2026-09-16 before writing:
@@ -2683,7 +2684,9 @@ against version 1 would be read wrongly rather than refused. No plugin has been 
 version 1 (`PLUGINS-GUIDE.md`, "A worked example"), so nobody's plugin stops working.
 Acceptance: Given a plugin whose `BridgeTalkPluginABIVersion` answers 1, when the application starts,
 then that plugin is passed over and the run log names its file, the version 1 and the version 2.
-Not yet built.
+Built on 2026-09-16: `plugin.ABIVersion` and the test plugin's version are 2.
+Verified by: `TestAPluginBuiltAgainstVersionOneIsRefused` in
+`internal/infrastructure/plugin/load_test.go`, seen to fail with version 1 still implemented.
 
 **FR-582 A plugin voice may name a group**
 Priority: Must.
@@ -2694,7 +2697,10 @@ plugin is the only thing that knows the kinds. A group is shown and never kept: 
 found again by its plugin and id alone (FR-569), so a plugin may move a voice between groups freely.
 Acceptance: Given a plugin describing `quartermaster` in the group `Crew` and `dockmaster` with an empty
 group, then the first is read in `Crew` and the second in no group.
-Not yet built.
+Built on 2026-09-16: the group is read between the voice's name and its ready flag.
+Verified by: `TestADescriptionReadsBackAsItWasWritten` in `internal/infrastructure/plugin/wire_test.go`
+and `TestAGroupAndASpanAreWrittenWhereTheyAreRead` in `plugintest_test.go`, both seen to fail with the
+group read and dropped.
 
 **FR-583 The Cast pane shows each plugin's voices in a section of its own**
 Priority: Must.
@@ -2709,7 +2715,16 @@ that cannot speak stand inside their own plugin's section.
 Acceptance: Given the plugins `Quartermaster Voices` and `Station Voices` each offering one voice, when
 the Cast pane opens, then two sections are shown, headed `Quartermaster Voices` and `Station Voices`,
 each holding its own voice.
-Not yet built.
+Built on 2026-09-16. The facade sends each voice its section's heading; the pane gathers the voices
+under it, so the rule for a shared plugin name has one home in `sectionOf`.
+Verified by: `TestEachPluginVoiceStandsUnderItsPluginAndGroup` and
+`TestTwoPluginsUnderOneNameHeadSectionsToldApartByTheirFiles` in `pluginsections_test.go`; `draws a
+section for each plugin headed by its name`, `shows a shared name plainly inside each plugin section`
+and `keeps the cast card and the voices that cannot speak inside their own section` in
+`frontend/src/pluginVoices.test.tsx`. Each was seen to fail against a planted fault: every voice in one
+section, the file left off a shared heading, the flat list's name shown inside a section and the voices
+that cannot speak listed in the first section. Not verified in a running window: nothing here builds or
+launches the application.
 
 **FR-584 A plugin's groups are sub-sections of its section**
 Priority: Must.
@@ -2720,18 +2735,29 @@ put a plugin's lesser group first on the strength of its spelling.
 Acceptance: Given `Quartermaster Voices` offering, in order, `Ada` in `Crew`, `Bo` in no group, `Cy` in
 `Stations` and `Di` in `Crew`, when the Cast pane opens, then its section shows `Bo`, then `Crew`
 holding `Ada` and `Di`, then `Stations` holding `Cy`.
-Not yet built.
+Built on 2026-09-16. The group panels are the machine voices' panels, renamed `voicegroup` so both
+kinds share one style.
+Verified by: `stands ungrouped voices first then each group in the order it is first named` in
+`frontend/src/pluginVoices.test.tsx`, seen to fail with the groups reversed and with the ungrouped voices
+left out; `TestEachPluginVoiceStandsUnderItsPluginAndGroup` in `pluginsections_test.go`, seen to fail
+with the group dropped by the facade.
 
 **FR-585 The Audition pane offers plugin voices**
 Priority: Should.
 The Audition pane's chooser shall offer every plugin voice that can speak after the machine voices,
-shown by the name the Cast pane shows it by.
+shown by the name the notification area's menu shows it by.
 Rationale: Oliver's ruling on 2026-09-16 (FR-745). Hearing a voice before casting it is the point of
 Audition; a plugin voice is the kind a user is least able to judge from its name. A voice that cannot
 speak is not offered, as it is not offered as a control on the Cast pane (FR-570).
 Acceptance: Given a plugin offering `Ada` (who can speak) and `Bo` (who cannot), when the Audition
 pane opens, then the chooser offers `Ada` after the machine voices and does not offer `Bo`.
-Not yet built.
+Built on 2026-09-16. Amended the same day in building it: the chooser is a flat list, so a voice is
+shown there by the name the notification area's menu shows it by, with its plugin where two plugins
+share the name (FR-568), rather than by the plain name the Cast pane now shows inside a section.
+Verified by: `offers the plugin voices that can speak after the machine voices` in
+`frontend/src/audition.plugin.test.tsx`, seen to fail with a voice that cannot speak offered;
+`TestAPluginVoiceThatCannotSpeakHasNothingToAudition` in `audition_plugin_test.go`, seen to fail with
+such a voice auditioned.
 
 **FR-586 An auditioned plugin voice plays its own takes without being cast**
 Priority: Should.
@@ -2743,7 +2769,14 @@ as it does for every other kind of voice. The group counts follow FR-746 over th
 Acceptance: Given `Ada` cast and `Bo` chosen on the Audition pane, with `Bo` answering one take for
 `DockingGranted`, when the `DockingGranted` group is auditioned, then that take plays and `Ada` is still
 cast.
-Not yet built.
+Built on 2026-09-16: `PluginAuditionGroups` and `AuditionPluginVoice` build a catalogue over the voice
+for the question, the catalogue a recorded voice is auditioned from.
+Verified by: `TestAPluginVoiceIsAuditionedOnItsOwnTakesWithoutBeingCast` and
+`TestAPluginAuditionAsksChatterWhatIsSwitchedOn` in `audition_plugin_test.go`, the first seen to fail
+with the audition casting the voice; `auditions a plugin voice through the plugin voice calls` and
+`opens on the cast plugin voice` in `frontend/src/audition.plugin.test.tsx`, seen to fail with a press
+routed as a recorded voice's, with a plugin name holding a slash sent unencoded and with the cast
+plugin voice not opened.
 
 **FR-587 If a plugin refuses a moment during an audition, then that moment has no take**
 Priority: Should.
@@ -2754,7 +2787,10 @@ refuses a plugin"); a moment that fails on Audition and plays on a cast voice wo
 something untrue.
 Acceptance: Given `Bo` refusing every call for `Docked.Set` and answering one take for `Docked`, with both
 switched on, when the `Docked` group is auditioned, then its count is one and the take of `Docked` plays.
-Not yet built.
+Built on 2026-09-16 with no code of its own: a plugin voice answers a refused call with no take, which
+the catalogue already counts as nothing.
+Verified by: `TestAMomentThePluginRefusesHasNoTakeOnAudition` in `audition_plugin_test.go`, over a test
+plugin refusing that one moment.
 
 **FR-588 A part of a take may be a span of a file**
 Priority: Must.
@@ -2769,7 +2805,13 @@ amending calling rule 7 of `PLUGINS-GUIDE.md` for those two fields alone (Oliver
 Acceptance: Given a file whose bytes 1,000 to 4,999 hold a whole MP3 recording, when a take answers one
 part as that file at offset 1,000 with length 4,000, then that recording is played and the file is
 unchanged.
-Not yet built.
+Built on 2026-09-16: `take.Part` carries the path, with `take.Span` for a span; the player reads a span
+through a section of the open file.
+Verified by: `TestASpanIsReadInPlaceAsTheFormatItNames` in
+`internal/infrastructure/audio/parts_test.go`, seen to fail with the whole file read in place of the
+span; `TestASpanReadsBackWithItsPlaceInTheFile` in `internal/infrastructure/plugin/wire_test.go`, whose
+offset lies beyond 32 bits, seen to fail with the offset narrowed. Not verified: a span played through a
+sound card, which no test here reaches.
 
 **FR-589 A span is decoded as the format the plugin names**
 Priority: Must.
@@ -2778,7 +2820,9 @@ Ogg) and shall decode a whole file by its extension as it does today (FR-203).
 Rationale: the file holding a span carries an extension of its own that says nothing about what is
 inside it. The list of formats keeps its one home beside the decoders.
 Acceptance: Given a span named as MP3 inside a file ending `.bin`, then it is decoded as MP3.
-Not yet built.
+Built on 2026-09-16: the format word is looked up in the one list of decoders, by extension.
+Verified by: `TestASpanIsNotDecodedByItsFilesExtension` in `internal/infrastructure/audio/parts_test.go`,
+seen to fail with a span decoded by its file's extension.
 
 **FR-590 If a span cannot be read as given, then that part is passed over**
 Priority: Must.
@@ -2790,7 +2834,12 @@ file is most often a file changed on disk since the plugin read it, which is a n
 Acceptance: Given a file of 10,000 bytes and a take of two parts, the first a span at offset 9,000 with
 length 4,000 and the second a whole WAV file, then the first is recorded as reaching past the end of its
 file and the second plays.
-Not yet built.
+Built on 2026-09-16. The span is judged against the file's size as it is opened, so a file changed since
+the plugin read it is measured as it stands.
+Verified by: `TestASpanThatCannotBeReadAsGivenIsRefused` and
+`TestASpanOutsideItsFileIsRecordedAndTheTakeCarriesOn` in `internal/infrastructure/audio/parts_test.go`,
+both seen to fail with the check removed; `TestANegativeSpanReadsBackForThePlayerToJudge` in
+`wire_test.go` for the reader leaving the judgement to the player.
 
 **FR-591 Two spans of one file are two different takes**
 Priority: Must.
@@ -2801,7 +2850,10 @@ Rationale: the picker avoids the take it chose last by its identity (FR-610). Me
 one take and the picker could not tell them apart.
 Acceptance: Given three takes of `DockingGranted`, each one span of the same file at a different offset,
 when the moment fires twice, then the second take played is a different span from the first.
-Not yet built.
+Built on 2026-09-16.
+Verified by: `TestTwoSpansOfOneFileAreToldApartByTheirKeys` in `internal/domain/take/take_test.go` and
+`TestSpansOfOneFileAreAvoidedOneByOne` in `internal/domain/selection/record_test.go`, both seen to fail
+with a span's key taken from its path alone.
 
 ---
 
@@ -4172,11 +4224,9 @@ style sheet decides and jsdom does not compute.
 
 **FR-745 An audition draws only on moments switched on**
 Priority: Should.
-**Not yet built for a plugin voice.** The Audition pane's chooser holds the recorded voices the scan
-found and the machine voices alone (`frontend/src/audition.tsx`, `voiceNamed` in `voices.go`), so no
-plugin voice reaches the pane. Offering plugin voices on Audition is a feature Oliver ruled on
-2026-09-16 is to be built, shaped by the primary plugin example he will describe; until then the plugin
-clause below has nothing to act on.
+Built for a plugin voice on 2026-09-16 by FR-585 to FR-587: the chooser offers the plugin voices that
+can speak and a plugin voice is auditioned from a catalogue over it, which applies the switches as it
+does for a recorded voice.
 When a group is auditioned, the application shall draw the take or the line from the moments of that
 group switched on in Chatter alone, for a recorded voice, a plugin voice and a machine voice alike.
 Rationale: Oliver, 2026-09-16. Audition is for hearing what the ship would say; a moment switched off

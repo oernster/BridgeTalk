@@ -14,6 +14,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
 )
 
@@ -83,7 +84,7 @@ func TestAPluginVoicesAudioIsLeftAsItWasFound(t *testing.T) {
 	app.session.reporter = reporter{app: app}
 	app.session.plugins = offering(t, "Bridge Crew", plugintest.Voice{
 		ID: "one", Name: "The First Officer", Ready: true,
-		Answers: map[string][][]string{"Docked": {{docked, second}}},
+		Answers: map[string][]take.Take{"Docked": {take.Of(docked, second)}},
 	})
 
 	if err := app.CastPluginVoice("Bridge Crew", "one"); err != nil {
@@ -97,8 +98,8 @@ func TestAPluginVoicesAudioIsLeftAsItWasFound(t *testing.T) {
 	)}
 	app.pollAndAnnounce()
 
-	if !slices.ContainsFunc(playedSoFar(player), func(take []string) bool {
-		return slices.Equal(take, []string{docked, second})
+	if !slices.ContainsFunc(playedSoFar(player), func(played take.Take) bool {
+		return slices.Equal(played, take.Of(docked, second))
 	}) {
 		t.Fatalf("played %v, want the plugin's take played where it stands", playedSoFar(player))
 	}

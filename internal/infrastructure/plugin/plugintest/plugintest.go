@@ -13,11 +13,16 @@
 // half's own business and is measured there.
 package plugintest
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"slices"
+
+	"github.com/oernster/bridge-talk/internal/domain/take"
+)
 
 // ABIVersion is the interface version this package writes, which is the one the application
 // implements. A test wanting a mismatch sets its own on the Plugin.
-const ABIVersion = 1
+const ABIVersion = 2
 
 // Refused is what every call answers when it cannot, which a reader must never mistake for
 // a size (PLUGINS-GUIDE.md, calling rule 3).
@@ -25,6 +30,17 @@ const Refused = -1
 
 // intSize is the width of every count and length, as on the real wire.
 const intSize = 4
+
+// positionSize is the width of a span's offset and length, as on the real wire.
+const positionSize = 8
+
+// A part's kind, written ahead of it, as on the real wire.
+const (
+	// PartFile is a whole file.
+	PartFile = 0
+	// PartSpan is a span of a file.
+	PartSpan = 1
+)
 
 // Writer builds an answer byte by byte in the layout a plugin writes.
 //
@@ -36,6 +52,13 @@ type Writer struct{ data []byte }
 func (w *Writer) Count(value int32) {
 	var room [intSize]byte
 	binary.LittleEndian.PutUint32(room[:], uint32(value))
+	w.data = append(w.data, room[:]...)
+}
+
+// Position appends one of a span's 64 bit numbers.
+func (w *Writer) Position(value int64) {
+	var room [positionSize]byte
+	binary.LittleEndian.PutUint64(room[:], uint64(value))
 	w.data = append(w.data, room[:]...)
 }
 
@@ -54,13 +77,18 @@ type Voice struct {
 	ID string
 	// Name is what the user would see.
 	Name string
+	// Group is the group it is shown in; empty for none.
+	Group string
 	// Ready says whether the audio it needs is present.
 	Ready bool
 	// Reason says why it is not; empty while Ready.
 	Reason string
 	// Answers maps a cue id to the takes this voice offers for it, each take its parts in
 	// the order they are heard.
-	Answers map[string][][]string
+	Answers map[string][]take.Take
+	// Refuses lists the cue ids whose call this voice refuses, which is how a test reaches one
+	// moment refused among others answered (FR-587).
+	Refuses []string
 }
 
 // Plugin is a whole plugin: what it says it is, what it offers and what it refuses.
@@ -110,7 +138,11 @@ func (p *Plugin) Takes(voiceIndex int32, cueID []byte, buffer []byte) int32 {
 	if p.RefuseTakes || voiceIndex < 0 || int(voiceIndex) >= len(p.Voices) {
 		return Refused
 	}
-	return answer(takesOf(p.Voices[voiceIndex].Answers[string(cueID)]), buffer)
+	voice := p.Voices[voiceIndex]
+	if slices.Contains(voice.Refuses, string(cueID)) {
+		return Refused
+	}
+	return answer(takesOf(voice.Answers[string(cueID)]), buffer)
 }
 
 // description writes the description layout.
@@ -124,6 +156,7 @@ func (p *Plugin) description() []byte {
 	for _, voice := range p.Voices {
 		w.Text(voice.ID)
 		w.Text(voice.Name)
+		w.Text(voice.Group)
 		w.Count(flag(voice.Ready))
 		w.Text(voice.Reason)
 	}
@@ -136,20 +169,35 @@ func Description(name string, voices ...Voice) []byte {
 	return (&Plugin{Name: name, Voices: voices}).description()
 }
 
-// Takes writes a takes answer without a plugin around it, each take given as its parts.
-func Takes(takes ...[]string) []byte { return takesOf(takes) }
+// Takes writes a takes answer without a plugin around it.
+func Takes(takes ...take.Take) []byte { return takesOf(takes) }
 
 // takesOf writes the takes layout.
-func takesOf(takes [][]string) []byte {
+func takesOf(takes []take.Take) []byte {
 	w := &Writer{}
 	w.Count(int32(len(takes)))
 	for _, one := range takes {
 		w.Count(int32(len(one)))
 		for _, part := range one {
-			w.Text(part)
+			w.Part(part)
 		}
 	}
 	return w.Bytes()
+}
+
+// Part appends one part of a take: its kind and its path, then its format, offset and length where
+// it is a span.
+func (w *Writer) Part(part take.Part) {
+	if part.Span == nil {
+		w.Count(PartFile)
+		w.Text(part.Path)
+		return
+	}
+	w.Count(PartSpan)
+	w.Text(part.Path)
+	w.Text(part.Span.Format)
+	w.Position(part.Span.Offset)
+	w.Position(part.Span.Length)
 }
 
 // corrupted is an answer that is no layout: a count promising more voices than there are

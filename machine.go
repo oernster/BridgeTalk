@@ -221,21 +221,13 @@ func keptFrom(flagged string, held ports.Settings) keptCast {
 // A voice whose audio is not on this machine is refused rather than cast, with the reason the
 // plugin gave, since casting it would be casting silence (FR-570).
 func (s *session) castPlugin(plugin, id string) error {
-	if s.plugins == nil {
-		return fmt.Errorf("no plugin offers a voice")
+	voice, err := s.pluginVoice(plugin, id)
+	if err != nil {
+		return err
 	}
-	for _, voice := range s.plugins.Voices() {
-		if voice.Plugin().Name != plugin || voice.ID != id {
-			continue
-		}
-		if !voice.Ready {
-			return fmt.Errorf("%s cannot speak: %s", voice.Name, voice.Reason)
-		}
-		s.making.CastRecorded()
-		s.speakWith(voice, castVoice{Name: voice.ID, Display: voice.Name, Plugin: plugin})
-		return nil
-	}
-	return fmt.Errorf("no plugin named %s offers a voice called %s", plugin, id)
+	s.making.CastRecorded()
+	s.speakWith(voice, castVoice{Name: voice.ID, Display: voice.Name, Plugin: plugin})
+	return nil
 }
 
 // refusedFiles refuses every machine voice, saying why none can be cast.

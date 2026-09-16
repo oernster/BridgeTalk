@@ -101,10 +101,12 @@ type MachineVoiceDTO struct {
 // PluginVoiceDTO is one voice a plugin offers, as the Cast pane shows it.
 //
 // Plugin and ID are what a cast sends back, since an id identifies a voice only within the plugin
-// that offered it (FR-569). Name is the name the plugin gave it; Display is what the screen shows,
-// which is that name unless another plugin offers one like it (FR-568). Ready says whether the
-// audio the voice needs is on this machine and Reason says why it is not, empty while it is
-// (FR-570).
+// that offered it (FR-569). Name is the name the plugin gave it, which is what the Cast pane shows
+// inside the voice's section. Display is what a flat list of voices shows, the notification area's
+// menu and the Audition pane's chooser, which is that name unless another plugin offers one like it
+// (FR-568). Section heads the voice's plugin on the Cast pane and Group the group inside it, empty
+// for none (FR-583, FR-584). Ready says whether the audio the voice needs is on this machine and
+// Reason says why it is not, empty while it is (FR-570).
 //
 // No completeness figures travel with it. A recorded voice's figures are read off a folder this
 // application owns; a plugin's audio is the plugin's own business and is never counted here.
@@ -113,6 +115,8 @@ type PluginVoiceDTO struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Display string `json:"display"`
+	Section string `json:"section"`
+	Group   string `json:"group"`
 	Ready   bool   `json:"ready"`
 	Reason  string `json:"reason"`
 }

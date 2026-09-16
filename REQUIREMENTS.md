@@ -2965,8 +2965,9 @@ every moment at once and what a switched off moment does elsewhere. Oliver took 
 recommendation on each; the requirements below record the answers. OQ-19 then asked what answers station
 traffic while it is switched on; Oliver took Claude's recommendation of a moment of its own (FR-637).
 Claude added FR-625, FR-626, FR-632 and FR-733 with searching Chatter's list left out of scope
-unasked; Oliver accepted each the same day. OQ-20 remains open in section 11, as does OQ-24,
-reaching a category without scrolling the list.
+unasked; Oliver accepted each the same day. OQ-20 remains open in section 11. OQ-24 asked how to
+reach a category without scrolling the list; Oliver took Claude's recommendation on 2026-09-16, which
+FR-743 and FR-744 record.
 
 **What the journals hold.** Measured on 2026-09-15 over the 101 journal files on Oliver's machine,
 beside the figures in section 7.1:
@@ -3918,6 +3919,34 @@ Verified by: "keeps each moment inside its category's group" in `frontend/src/ch
 Not verified by a test: the rule down each group's side and the heading staying in view, which the
 style sheet decides and jsdom does not compute.
 
+**FR-743 Moving the list to a category**
+Priority: Should.
+The Chatter pane's header shall show each category's name beside its switch as a button of its own.
+When a name is pressed, the list shall move so that category's heading is at the top of the list,
+opening the category where it is collapsed (FR-744). Pressing a name shall change no moment.
+Rationale: Oliver, 2026-09-16 (OQ-24). The list holds 262 moments; Session, the last category, was
+reached only by scrolling past every other.
+Acceptance: Given the list scrolled to the top, when Session is pressed in the header, then Session's
+heading is at the top of the list and every switch reads as it did.
+Verified by: "moves the list to a category named in the header, opening it" in
+`frontend/src/chatter.test.tsx`, which gives the list and the group their places on the page and reads
+the list moved by the distance between them; seen to fail with the category left shut and with the
+list not moved. Not verified by a test: the move as drawn in the web view, since jsdom lays nothing out.
+
+**FR-744 Collapsing a category in the list**
+Priority: Should.
+Each category's heading in the Chatter list shall be a button that collapses its group, hiding its
+moments while still counting what is on (FR-728), then opens it again when pressed again. Every
+category shall be open when the pane opens; nothing about a collapsed category is kept. Collapsing
+shall change no moment.
+Rationale: Oliver, 2026-09-16 (OQ-24). A category left collapsed between runs would hide moments the
+player chose without saying so.
+Acceptance: Given the pane open, when the heading of Combat and danger is pressed, then none of its 39
+moments is shown and the heading still counts them; pressed again, all 39 are shown.
+Verified by: "collapses a category from its heading and opens it again" in
+`frontend/src/chatter.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
+either control wears, which the style sheet draws and jsdom does not compute.
+
 **FR-742 A fault in the loop watching the game ends the loop alone**
 Priority: Must.
 If the loop that watches the game raises a fault, then the application shall end that loop, shall
@@ -4152,7 +4181,6 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
-| OQ-24 | Reaching a category on Chatter is slow: the list is scrolled to find it. Oliver asked on 2026-09-16 for two things, as a discussion before anything is specified. First, pressing a category in the header (FR-740), beside its switch, moves the list to that category. Second, a category in the list can be collapsed. Should both be built or one? Is a collapsed category kept between runs? Does moving to a category open it where it is collapsed? | Oliver | Before any requirement for it is written | Measured on 2026-09-16: the list holds 262 moments in the twelve categories of FR-635, from Flight and travel with 41 to Session with 6, which is last, so reaching it passes every other category. The header already stays in place (FR-740) and each heading stays at the top while its moments pass (FR-741), so a category moved to lands with its heading showing. Recommended, for Oliver to react to: build both. Make each category's name in the header a button of its own after its switch, moving the list so that category's heading is at the top of the list; the switch stays the only thing that switches, so a press on the name changes no moment. Make each heading in the list a button that collapses or opens its group, still counting what is on (FR-728), with every group open when the pane opens rather than kept between runs, since a category left collapsed and forgotten hides moments the player chose. Moving to a collapsed category opens it. Both are ring stops answering Space and Enter (FR-713, FR-737). Section 1.3 leaves searching or filtering the list out of scope; moving and collapsing hide no moment for good, so neither reopens that. |
 | OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
 | OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
@@ -4164,7 +4192,7 @@ headless test is how it gets tested.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-809, FR-810, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

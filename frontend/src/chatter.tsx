@@ -1,11 +1,11 @@
 // The Chatter pane: every moment the game raises, under its category, each with a switch saying
-// whether it is spoken for (section 8, FR-725 to FR-741).
+// whether it is spoken for (section 8, FR-725 to FR-741, FR-743, FR-744).
 //
 // The switches live in the application rather than here, because the engine needs them before any
 // page loads. So a press never changes the pane itself: it asks, then shows the pane the answer
 // describes, which keeps the window from showing a switch the application does not hold.
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, type Chatter, type ChatterCategory, type ChatterMoment, type Refused } from './api'
 import { Dialog, ReadingBody } from './dialogs'
 
@@ -53,6 +53,38 @@ export function ChatterPane() {
   const [chatter, setChatter] = useState<Chatter | null>(null)
   const [problem, setProblem] = useState('')
   const [asking, setAsking] = useState<Change | null>(null)
+  // FR-744: the categories collapsed. Every one is open when the pane opens and none is kept, since a
+  // category left collapsed would hide moments the player chose without saying so.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
+  // FR-743: the category the list is to move to once it has been drawn open.
+  const [movingTo, setMovingTo] = useState<string | null>(null)
+  const list = useRef<HTMLDivElement>(null)
+  const groups = useRef(new Map<string, HTMLElement>())
+
+  // The move waits for the render that opened the category, so its moments are there to move past.
+  useEffect(() => {
+    if (movingTo === null) return
+    const group = groups.current.get(movingTo)
+    const scroller = list.current
+    if (group !== undefined && scroller !== null) {
+      scroller.scrollTop += group.getBoundingClientRect().top - scroller.getBoundingClientRect().top
+    }
+    setMovingTo(null)
+  }, [movingTo])
+
+  /** opened answers the collapsed categories with name open or shut as wanted. */
+  const opened = (was: ReadonlySet<string>, name: string, open: boolean) => {
+    if (was.has(name) !== open) return was
+    const next = new Set(was)
+    if (open) next.delete(name)
+    else next.add(name)
+    return next
+  }
+  const toggle = (name: string) => setCollapsed((was) => opened(was, name, was.has(name)))
+  const moveTo = (name: string) => {
+    setCollapsed((was) => opened(was, name, true))
+    setMovingTo(name)
+  }
 
   useEffect(() => {
     void api
@@ -132,7 +164,15 @@ export function ChatterPane() {
                 on={switchedOn(category.moments) > 0}
                 onPress={() => pressCategory(category)}
               />
-              <span>{category.name}</span>
+              <button
+                className="chatter-name"
+                data-stop
+                type="button"
+                aria-label={`Move to ${category.name}`}
+                onClick={() => moveTo(category.name)}
+              >
+                {category.name}
+              </button>
             </div>
           ))}
         </div>
@@ -144,11 +184,29 @@ export function ChatterPane() {
         )}
       </div>
 
-      <div className="chatter-list">
+      <div className="chatter-list" ref={list}>
         {categories.map((category) => (
-          <section className="chatter-group" key={category.name} aria-label={category.name}>
-            <h3>{`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}</h3>
-            {category.moments.map((moment) => (
+          <section
+            className="chatter-group"
+            key={category.name}
+            aria-label={category.name}
+            ref={(element) => {
+              if (element === null) groups.current.delete(category.name)
+              else groups.current.set(category.name, element)
+            }}
+          >
+            <h3>
+              <button
+                className="chatter-toggle"
+                data-stop
+                type="button"
+                aria-expanded={!collapsed.has(category.name)}
+                onClick={() => toggle(category.name)}
+              >
+                {`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}
+              </button>
+            </h3>
+            {!collapsed.has(category.name) && category.moments.map((moment) => (
               <div className="row" key={moment.cue.id}>
                 <span className="grow">
                   {moment.cue.title}

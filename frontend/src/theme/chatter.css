@@ -81,6 +81,27 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* A category's name in the header (FR-743) and its heading in the list (FR-744) are buttons drawn as
+   the words they are, wearing the ring every stop wears on hover and focus. */
+.chatter-name,
+.chatter-toggle {
+  padding: 2px 6px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chatter-name:enabled:hover,
+.chatter-name:enabled:focus,
+.chatter-toggle:enabled:hover,
+.chatter-toggle:enabled:focus {
+  border-color: var(--ring);
+}
+
 .chatter-group .row:first-of-type {
   border-top: none;
 }

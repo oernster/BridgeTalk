@@ -65,6 +65,8 @@ describe('with no window bridge at all', () => {
     expect(await api.stopAudition()).toBeUndefined()
     expect(await api.machineAuditionGroups()).toEqual([])
     expect(await api.auditionMachineVoice('bf_emma', 'Docked', said)).toBeNull()
+    expect(await api.pluginAuditionGroups('Bridge Crew', 'one')).toEqual([])
+    expect(await api.auditionPluginVoice('Bridge Crew', 'one', 'Docked', said)).toBeNull()
     expect(await api.takeKeyboard()).toBeUndefined()
     expect(await api.quit()).toBeUndefined()
     expect(await api.reactions()).toEqual([])

@@ -15,47 +15,7 @@ import { useEffect, useState } from 'react'
 import { api, type PluginVoice } from './api'
 import { castLabel } from './castWords'
 import type { Outcome } from './chooser'
-
-/** Section is one plugin's voices as the pane draws them. */
-interface Section {
-  heading: string
-  ungrouped: PluginVoice[]
-  groups: { name: string; voices: PluginVoice[] }[]
-  unavailable: PluginVoice[]
-  cast: PluginVoice | undefined
-}
-
-/**
- * sectionsOf gathers the voices into their plugins' sections, each in the order its plugin first
- * appears, with the groups in the order the plugin first names each one (FR-584).
- */
-function sectionsOf(voices: PluginVoice[], isCast: (voice: PluginVoice) => boolean): Section[] {
-  const sections: Section[] = []
-  for (const voice of voices) {
-    let section = sections.find((each) => each.heading === voice.section)
-    if (section === undefined) {
-      section = { heading: voice.section, ungrouped: [], groups: [], unavailable: [], cast: undefined }
-      sections.push(section)
-    }
-    if (isCast(voice)) {
-      // The cast voice stands on the card and keeps its pill in its group too (FR-593).
-      section.cast = voice
-    }
-    if (!voice.ready) {
-      section.unavailable.push(voice)
-    } else if (voice.group === '') {
-      section.ungrouped.push(voice)
-    } else {
-      let group = section.groups.find((each) => each.name === voice.group)
-      if (group === undefined) {
-        group = { name: voice.group, voices: [] }
-        section.groups.push(group)
-      }
-      group.voices.push(voice)
-    }
-  }
-  return sections
-}
+import { sectionsOf } from './pluginSections'
 
 /**
  * PluginVoices offers every voice the loaded plugins hold and casts the one chosen.

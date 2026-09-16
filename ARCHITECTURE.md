@@ -888,7 +888,9 @@ recordings folder may carry a machine voice's id as its name, so the chooser kee
 machine voice goes through `MachineAuditionGroups` and `AuditionMachineVoice` rather than the recorded
 voice's pair.
 
-A plugin voice that can speak follows the machine voices in the chooser and goes through
+A plugin voice that can speak stands above the machine voices in the chooser, in the Cast pane's order
+(`speakingInSectionOrder` in `frontend/src/pluginSections.ts`, which also builds the Cast pane's
+sections). It goes through
 `PluginAuditionGroups` and `AuditionPluginVoice`, by its plugin and its id (FR-585, FR-586). Its groups
 come from a catalogue built over that voice for the question, which is the same catalogue a recorded
 voice is auditioned from, so a moment the plugin refuses counts no take exactly as it would for the

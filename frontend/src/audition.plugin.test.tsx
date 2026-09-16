@@ -41,8 +41,9 @@ async function options(count: number): Promise<HTMLSelectElement> {
 }
 
 describe('the audition pane with plugin voices', () => {
-  // FR-585: plugin voices that can speak follow the machine voices; one that cannot is not offered.
-  it('offers the plugin voices that can speak after the machine voices', async () => {
+  // FR-585: plugin voices that can speak stand after the recorded voices and above the machine voices;
+  // one that cannot is not offered.
+  it('offers the plugin voices that can speak above the machine voices', async () => {
     machineVoices.mockResolvedValue([emma])
     pluginVoices.mockResolvedValue([ada, bo])
     await shown(<AuditionPane cast="Grace" />)
@@ -51,8 +52,32 @@ describe('the audition pane with plugin voices', () => {
     expect(Array.from(chooser.options).map((option) => option.text)).toEqual([
       'Grace (cast)',
       'Kate',
-      'Emma (British, female)',
       'Ada (Crew / Deck)',
+      'Emma (British, female)',
+    ])
+  })
+
+  // FR-585: the plugin voices stand as the Cast pane stands them: each plugin's voices in no group
+  // first, then each group in the order the plugin first names it, whatever order they arrive in.
+  it('lists the plugin voices in the order of their sections and groups', async () => {
+    const grouped = (id: string, group: string): PluginVoice => ({ ...supplied('Crew', id, id), group })
+    machineVoices.mockResolvedValue([])
+    pluginVoices.mockResolvedValue([
+      grouped('Aster', 'Officers'),
+      grouped('Burr', 'Engineers'),
+      grouped('Cole', 'Officers'),
+      grouped('Dune', ''),
+    ])
+    await shown(<AuditionPane cast="Grace" />)
+
+    const chooser = await options(6)
+    expect(Array.from(chooser.options).map((option) => option.text)).toEqual([
+      'Grace (cast)',
+      'Kate',
+      'Dune',
+      'Aster',
+      'Cole',
+      'Burr',
     ])
   })
 

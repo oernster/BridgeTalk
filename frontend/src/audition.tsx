@@ -14,6 +14,7 @@ import {
   type Voice,
 } from './api'
 import { PlayIcon } from './icons'
+import { speakingInSectionOrder } from './pluginSections'
 
 /**
  * machinePrefix marks a machine voice's value in the chooser. A recordings folder may carry
@@ -80,7 +81,8 @@ function chosenFor(name: string, machine: boolean, plugin: string): string {
  * The voice being auditioned starts as the one that is cast but is not tied to it,
  * because hearing a voice before committing to it is the entire point of an
  * audition. Casting stays a separate act on the cast pane. The recorded voices come
- * first, then every machine voice (FR-545), then every plugin voice that can speak (FR-585);
+ * first, then every plugin voice that can speak in the Cast pane's order (FR-585), then every
+ * machine voice (FR-545);
  * `machine` says the cast voice is a machine voice and `plugin` names the plugin it came from.
  */
 export function AuditionPane({
@@ -113,8 +115,9 @@ export function AuditionPane({
       ([found, offered, supplied]) => {
         setVoices(found)
         setMachines(offered)
-        // A voice that cannot speak is not offered, as it is not a control on the Cast pane (FR-585).
-        setPlugins(supplied.filter((each) => each.ready))
+        // A voice that cannot speak is not offered, as it is not a control on the Cast pane; the rest
+        // stand in the Cast pane's order (FR-585).
+        setPlugins(speakingInSectionOrder(supplied))
         setLoaded(true)
       },
     )
@@ -223,18 +226,18 @@ export function AuditionPane({
                 {!machine && !plugin && item.name === cast ? ' (cast)' : ''}
               </option>
             ))}
-            {machines.map((item) => (
-              <option key={machinePrefix + item.id} value={machinePrefix + item.id}>
-                {item.name}
-                {machine && item.id === cast ? ' (cast)' : ''}
-              </option>
-            ))}
             {/* A flat list says which plugin offers a shared name, as the notification area's menu
                 does (FR-568). */}
             {plugins.map((item) => (
               <option key={pluginValue(item.plugin, item.id)} value={pluginValue(item.plugin, item.id)}>
                 {item.display}
                 {item.plugin === plugin && item.id === cast ? ' (cast)' : ''}
+              </option>
+            ))}
+            {machines.map((item) => (
+              <option key={machinePrefix + item.id} value={machinePrefix + item.id}>
+                {item.name}
+                {machine && item.id === cast ? ' (cast)' : ''}
               </option>
             ))}
           </select>

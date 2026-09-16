@@ -42,6 +42,8 @@ describe('with the window bridge present', () => {
     await api.stopAudition()
     await api.machineAuditionGroups()
     await api.auditionMachineVoice('bf_emma', 'Docked', said)
+    await api.pluginAuditionGroups('Bridge Crew', 'one')
+    await api.auditionPluginVoice('Bridge Crew', 'one', 'Docked', said)
     await api.takeKeyboard()
     await api.quit()
     await api.reactions()
@@ -82,6 +84,8 @@ describe('with the window bridge present', () => {
       'StopAudition',
       'MachineAuditionGroups',
       'AuditionMachineVoice',
+      'PluginAuditionGroups',
+      'AuditionPluginVoice',
       'TakeKeyboard',
       'Quit',
       'Reactions',
@@ -117,6 +121,8 @@ describe('with the window bridge present', () => {
     await api.auditionGroups('Beta')
     await api.audition('Beta', 'combat', said)
     await api.auditionMachineVoice('am_michael', 'combat', said)
+    await api.pluginAuditionGroups('Crew', 'two')
+    await api.auditionPluginVoice('Crew', 'two', 'combat', said)
     await api.cueBreakdown('Beta')
     await api.makeVoiceFolders('Beta', said)
     await api.checklist('Beta', said)
@@ -131,6 +137,8 @@ describe('with the window bridge present', () => {
       ['Beta'],
       ['Beta', 'combat'],
       ['am_michael', 'combat'],
+      ['Crew', 'two'],
+      ['Crew', 'two', 'combat'],
       ['Beta'],
       ['Beta'],
       ['Beta'],

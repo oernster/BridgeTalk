@@ -157,7 +157,9 @@ A voice whose `ready` is 0 is shown but cannot be cast, with `readyReason` as th
 
 On the Cast pane your voices stand in a section of their own headed by `pluginName` (FR-583). Inside
 it, the voices with an empty `group` come first, then a panel for each group, in the order your
-description first names each one (FR-584). A group is shown and never kept, so a voice may move
+description first names each one (FR-584). Within each group, as among the voices in no group, your
+voices stand in the order your description gives them; Bridge Talk sorts nothing. A group is shown
+and never kept, so a voice may move
 between groups from one release to the next without anybody losing the voice they cast.
 
 A plugin offering no voice at all is passed over with the reason recorded, as is one offering a voice
@@ -360,8 +362,9 @@ For the person installing one; also for an author proving one works.
 3. **Look on the Cast pane.** Each plugin's voices stand in a section headed by the plugin's name,
    in the groups it names, each voice by the name it gave (FR-565, FR-583, FR-584). A voice whose audio
    is missing is listed in its section with the reason it gave and cannot be cast (FR-570).
-4. **Hear it first** on the Audition pane, which offers every plugin voice that can speak after the
-   machine voices and plays its takes without casting it (FR-585, FR-586).
+4. **Hear it first** on the Audition pane, which offers every plugin voice that can speak above the
+   machine voices (in the order the Cast pane stands them) and plays its takes without casting it
+   (FR-585, FR-586).
 5. **Cast the voice** from the Cast pane or from the Voice menu of the icon in the notification
    area, which lists every plugin voice that can speak after the machine voices (FR-509). Where two
    plugins offer one voice name, both of those lists show each with the plugin offering it (FR-568).

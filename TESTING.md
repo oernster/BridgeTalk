@@ -103,6 +103,7 @@ where it goes with no other setup write called and the flatpak granted what it u
 
 | File | Statements | Branches |
 |---|---|---|
+| `api.ts` | 100% | 100% |
 | `audition.tsx` | 100% | 100% |
 | `autoscroll.ts` | 100% | 100% |
 | `cast.tsx` | 100% | 100% |
@@ -115,7 +116,9 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `making.ts` | 100% | 100% |
 | `menubar.tsx` | 100% | 100% |
 | `missingTakes.tsx` | 100% | 100% |
+| `missingTakesFixtures.ts` | 100% | 100% |
 | `moments.tsx` | 100% | 100% |
+| `pluginSections.ts` | 100% | 100% |
 | `pluginVoices.tsx` | 100% | 100% |
 | `preferences.ts` | 100% | 100% |
 | `productName.ts` | 100% | 100% |
@@ -135,12 +138,11 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `guide.tsx` | 100% | 86.7% |
 | `setupPage.ts` | 100% | 80.6% |
 | `dialogs.tsx` | 99.3% | 69.4% |
-| `api.ts` | 93.4% | 100% |
 | `main.tsx` | 0% | 0% |
 | `wire.ts` | 0% | 0% |
-| **all files** | **99.3%** | **96.3%** |
+| **all files** | **99.5%** | **96.3%** |
 
-320 tests across 30 files, run under Vitest with jsdom.
+321 tests across 30 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -369,10 +371,6 @@ rather than excused. Four of them, in code that still exists:
   the setup suites. What is not run is its own failure branches, a page with no body and a
   button or element that is not there, plus the empty fallbacks beside them. Each fires only
   when a test asks for something the page lacks, which no passing run does.
-- **`api.ts` (93.4% of statements).** The two plugin audition calls, `pluginAuditionGroups` and
-  `auditionPluginVoice`, are not run by `api.test.ts` or `api.refusals.test.ts`, which run the
-  machine voice's two beside them. Nothing stops a test reaching them, so this is a gap to close
-  rather than a limit of the harness.
 - **`wire.ts` (0%).** Interfaces alone, which compile to nothing;
   `tests/structural/wire_test.go` holds them to the facade.
 

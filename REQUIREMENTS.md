@@ -2418,7 +2418,7 @@ Verified by: `TestTwoVoicesUnderOneNameAreShownWithTheirPlugins` and
 `TestTwoPluginsUnderOneNameAreToldApartByTheirFiles` in `pluginvoices_test.go`;
 `shows a shared name plainly inside each plugin section` in `frontend/src/pluginVoices.test.tsx`
 for the Cast pane showing the plain name inside a section; `offers the plugin voices that can speak
-after the machine voices` in `frontend/src/audition.plugin.test.tsx` for the chooser showing the name
+above the machine voices` in `frontend/src/audition.plugin.test.tsx` for the chooser showing the name
 worked out.
 
 **FR-569 A plugin voice is cast as a kind of its own**
@@ -2750,18 +2750,30 @@ with the group dropped by the facade.
 
 **FR-585 The Audition pane offers plugin voices**
 Priority: Should.
-The Audition pane's chooser shall offer every plugin voice that can speak after the machine voices,
-shown by the name the notification area's menu shows it by.
+The Audition pane's chooser shall offer every plugin voice that can speak after the recorded voices
+and above the machine voices, in the order the Cast pane stands them: each plugin in the order it
+first appears, its voices in no group first, then each group in the order the plugin first names
+it, each voice in the order the plugin describes it. Each is shown by the name the notification
+area's menu shows it by.
 Rationale: Oliver's ruling on 2026-09-16 (FR-745). Hearing a voice before casting it is the point of
 Audition; a plugin voice is the kind a user is least able to judge from its name. A voice that cannot
 speak is not offered, as it is not offered as a control on the Cast pane (FR-570).
 Acceptance: Given a plugin offering `Ada` (who can speak) and `Bo` (who cannot), when the Audition
-pane opens, then the chooser offers `Ada` after the machine voices and does not offer `Bo`.
+pane opens, then the chooser offers `Ada` after the recorded voices and above the machine voices and
+does not offer `Bo`. Given a plugin offering `Aster` and `Cole` in `Officers`, `Burr` in `Engineers`
+and `Dune` in no group, described in that order, then the chooser lists `Dune`, `Aster`, `Cole`,
+`Burr`.
 Built on 2026-09-16. Amended the same day in building it: the chooser is a flat list, so a voice is
 shown there by the name the notification area's menu shows it by, with its plugin where two plugins
 share the name (FR-568), rather than by the plain name the Cast pane now shows inside a section.
-Verified by: `offers the plugin voices that can speak after the machine voices` in
-`frontend/src/audition.plugin.test.tsx`, seen to fail with a voice that cannot speak offered;
+Amended again on 2026-09-16 (Oliver): the plugin voices moved from after the machine voices to above
+them, in the Cast pane's order, so a voice stands in the same place on both panes. The order comes
+from `speakingInSectionOrder` in `frontend/src/pluginSections.ts`, the one home the Cast pane's
+sections are also built by.
+Verified by: `offers the plugin voices that can speak above the machine voices` and `lists the
+plugin voices in the order of their sections and groups` in `frontend/src/audition.plugin.test.tsx`,
+both seen to fail on 2026-09-16 against the chooser listing plugin voices after the machine voices
+in the order they arrived, the first also seen to fail with a voice that cannot speak offered;
 `TestAPluginVoiceThatCannotSpeakHasNothingToAudition` in `audition_plugin_test.go`, seen to fail with
 such a voice auditioned.
 
@@ -2867,8 +2879,8 @@ While at least one plugin offers a voice, the Cast pane shall show every plugin'
 machine voices, every group in them alike.
 Rationale: Oliver, 2026-09-16. A user who installed a plugin chose its voices on purpose, while the
 machine voices are always there; the voices chosen belong nearer the top. It amends only where the
-sections stand on the Cast pane: the notification area's menu (FR-509) and the Audition chooser (FR-585)
-keep plugin voices after the machine voices.
+sections stand on the Cast pane: the notification area's menu (FR-509) keeps plugin voices after the
+machine voices. The Audition chooser follows the Cast pane (FR-585).
 Acceptance: Given a plugin offering `Ada` in `Crew`, when the Cast pane opens, then the heading of that
 plugin's section stands before the heading Machine voices.
 Built on 2026-09-16.

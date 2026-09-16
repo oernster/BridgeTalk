@@ -33,6 +33,8 @@ export function installBridge(overrides: Record<string, unknown> = {}) {
     StopAudition: record('StopAudition', undefined),
     MachineAuditionGroups: record('MachineAuditionGroups', [{ key: 'Docked' }]),
     AuditionMachineVoice: record('AuditionMachineVoice', { group: 'Docked', clip: 'k.flac' }),
+    PluginAuditionGroups: record('PluginAuditionGroups', [{ key: 'Docked' }]),
+    AuditionPluginVoice: record('AuditionPluginVoice', { group: 'Docked', clip: 'p.mp3' }),
     TakeKeyboard: record('TakeKeyboard', undefined),
     Quit: record('Quit', undefined),
     Reactions: record('Reactions', [{ cue: 'ShieldState.ShieldsUp.false' }]),

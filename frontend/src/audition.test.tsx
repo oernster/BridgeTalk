@@ -267,6 +267,25 @@ describe('the audition pane', () => {
     expect(auditionGroups).toHaveBeenCalledTimes(2)
   })
 
+  // FR-750: the groups sit under their category headings in the order they came, a group in no category
+  // under This application.
+  it('lists the groups under their categories in order', async () => {
+    auditionGroups.mockResolvedValue([
+      { key: 'Docked', label: 'Docked', clips: 3, switchedOff: false, category: 'Docking and stations' },
+      { key: 'ReceiveText', label: 'Receive text', clips: 2, switchedOff: false, category: 'Comms' },
+      { key: 'Cast', label: 'Cast', clips: 1, switchedOff: false, category: '' },
+    ])
+    render(<AuditionPane cast="Grace" />)
+    await screen.findByRole('button', { name: /Docked/ })
+
+    const headings = screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+    expect(headings).toEqual(['Docking and stations', 'Comms', 'This application'])
+    const underComms = screen.getByRole('region', { name: 'Comms' })
+    expect(underComms.textContent).toContain('Receive text')
+    expect(underComms.textContent).not.toContain('Docked')
+    expect(screen.getByRole('region', { name: 'This application' }).textContent).toContain('Cast')
+  })
+
   // FR-748: a voice whose every group Chatter has switched off says so, rather than suggesting the
   // recordings are missing.
   it('says Chatter has switched off everything the voice could be heard on', async () => {

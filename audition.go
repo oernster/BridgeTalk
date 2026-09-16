@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
@@ -20,12 +21,14 @@ const auditionGap = 0
 
 // GroupDTO is one auditionable group as the pane shows it. Clips counts the takes or lines of its
 // moments switched on in Chatter (FR-746); SwitchedOff says the voice has something for the group yet
-// every one of its moments is switched off, which the pane leaves out (FR-747, FR-748).
+// every one of its moments is switched off, which the pane leaves out (FR-747, FR-748). Category is the
+// Chatter category the group is listed under, empty for none (FR-749, FR-750).
 type GroupDTO struct {
 	Key         string `json:"key"`
 	Label       string `json:"label"`
 	Clips       int    `json:"clips"`
 	SwitchedOff bool   `json:"switchedOff"`
+	Category    string `json:"category"`
 }
 
 // AuditionDTO reports what an audition played, so the pane can name the clip rather
@@ -46,14 +49,32 @@ func (a *App) AuditionGroups(voice string) []GroupDTO {
 	groups := a.session.catalogueFor(chosen).Groups(a.session.heard())
 	out := make([]GroupDTO, 0, len(groups))
 	for _, group := range groups {
-		out = append(out, GroupDTO{
-			Key:         group.Key,
-			Label:       label(group.Key),
-			Clips:       len(group.Takes),
-			SwitchedOff: group.SwitchedOff,
-		})
+		out = append(out, a.session.groupShown(group.Key, len(group.Takes), group.SwitchedOff))
 	}
-	return out
+	return a.session.inCategoryOrder(out)
+}
+
+// groupShown is one group as the pane shows it: its key read as words, its count, whether Chatter has
+// switched it off and the category it is listed under (FR-749).
+func (s *session) groupShown(key string, clips int, switchedOff bool) GroupDTO {
+	return GroupDTO{
+		Key: key, Label: label(key), Clips: clips, SwitchedOff: switchedOff,
+		Category: s.table.GroupCategory(key),
+	}
+}
+
+// inCategoryOrder answers groups in Chatter's category order, a group in no category last; within a
+// category they keep the order they came in, which is their keys' (FR-216, FR-750).
+func (s *session) inCategoryOrder(groups []GroupDTO) []GroupDTO {
+	categories := s.table.Categories()
+	place := func(group GroupDTO) int {
+		if at := slices.Index(categories, group.Category); at >= 0 {
+			return at
+		}
+		return len(categories)
+	}
+	slices.SortStableFunc(groups, func(first, second GroupDTO) int { return place(first) - place(second) })
+	return groups
 }
 
 // Audition plays one clip drawn at random from a group's moments switched on in Chatter (FR-745).

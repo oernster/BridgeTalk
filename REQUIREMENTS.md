@@ -4011,6 +4011,55 @@ Chatter has all switched off" and "asks for the groups again each time it opens"
 taken out. That the pane asks again on opening is held by the test yet was not seen to fail on its
 own, since nothing short of caching the answer across openings would break it.
 
+**FR-749 An audition group belongs to the category holding most of its moments**
+Priority: Should.
+The application shall place each audition group in the Chatter category holding the most of that
+group's moments, the earlier category in Chatter's order where two hold as many; a group none of whose
+moments Chatter lists shall belong to no category.
+Rationale: Oliver, 2026-09-16. A group is every moment sharing the first segment of its id (FR-216)
+while Chatter categorises one moment at a time, so a group's moments could in principle fall in more
+than one category. Measured over the shipped table that day, 149 of the 151 groups sit wholly in one
+category; ReceiveText has 9 moments in Comms and 1, station traffic, in Docking and stations; Cast,
+the cue from the application, is in none. Oliver chose one place for ReceiveText, under Comms, over
+showing it under both.
+Acceptance: Given the shipped table, when the Audition pane lists a voice's groups, then ReceiveText
+belongs to Comms, Docked to Docking and stations and Cast to no category.
+Verified by: `TestAGroupBelongsToTheCategoryHoldingMostOfItsMoments` in
+`internal/domain/cue/groupcategory_test.go`, seen to fail on 2026-09-16 with a tie going to the later category.
+
+**FR-750 The Audition pane lists its groups under their categories**
+Priority: Should.
+The Audition pane shall list the groups it offers under a heading for each category, the categories in
+Chatter's order, each heading followed by its groups in the order of FR-216, then the groups belonging
+to no category under the heading "This application"; a category offering no group shall have no
+heading.
+Rationale: Oliver, 2026-09-16: among 151 buttons in one grid it was hard to see what was relevant. The
+headings are plain rather than collapsing (Oliver, the same day); smaller buttons (FR-751) already cut
+the scrolling.
+Acceptance: Given a voice with groups for Docked, Receive text and Cast, when the Audition pane opens,
+then it shows Docking and stations with Docked, then Comms with Receive text, then This application
+with Cast, in that order.
+Verified by: `TestTheAuditionGroupsComeInCategoryOrder` in `audition_heard_test.go` for the order and
+the category each group carries; "lists the groups under their categories in order" in
+`frontend/src/audition.test.tsx` for the headings. Both seen to fail on 2026-09-16, the first with the
+sort taken out, the second with every group put under one heading.
+
+**FR-751 The Audition pane's group buttons are half their earlier height**
+Priority: Should.
+Each group button on the Audition pane shall draw its play mark at 48 px, its name at 14 px and its
+count at 13 px, in columns at least 220 px wide.
+Rationale: Oliver, 2026-09-16, asking for buttons about half the size. Measured in the browser pane
+that day over all 151 group labels at the shipped type: a button had been 137 px tall with a 113 px
+mark in columns at least 260 px wide. At the sizes above, 144 buttons are 69 px tall, half the earlier
+height; the 7 longest labels, "Shared bookmark to squadron" among them, take a second line and stand
+95 px tall. Halving the width as well was measured and turned down: at 130 px a label keeps about
+46 px beside the mark, where the median label needs 100 px at 17 px, so most labels would break over
+several lines.
+Acceptance: Given the pane open on a voice, when its buttons are measured, then the play mark is 48 px
+square, the name is 14 px, the count is 13 px and the grid's columns are at least 220 px.
+Verified by: inspection of `frontend/src/theme/audition.css` and a measurement in the browser pane on
+2026-09-16; jsdom computes no layout, so no test measures it.
+
 **FR-748 If Chatter has switched off everything a voice has, then say so**
 Priority: Should.
 If every group a voice has something for has every moment switched off in Chatter, then the Audition
@@ -4458,7 +4507,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-748, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-751, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

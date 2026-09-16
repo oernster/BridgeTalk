@@ -13,6 +13,31 @@ import { PlayIcon } from './icons'
  */
 const machinePrefix = 'machine/'
 
+/** applicationHeading heads the groups Chatter lists under no category, the cue from the application's (FR-750). */
+const applicationHeading = 'This application'
+
+/** Section is one category heading with the groups listed under it. */
+interface Section {
+  heading: string
+  groups: Group[]
+}
+
+/**
+ * sectionsOf gathers the groups offered under their category headings. The backend sends them in
+ * Chatter's category order, a group in no category last, so each run of one category is one section
+ * (FR-750).
+ */
+function sectionsOf(offered: Group[]): Section[] {
+  const sections: Section[] = []
+  for (const group of offered) {
+    const heading = group.category || applicationHeading
+    const last = sections[sections.length - 1]
+    if (last?.heading === heading) last.groups.push(group)
+    else sections.push({ heading, groups: [group] })
+  }
+  return sections
+}
+
 /** chosenFor is the chooser's value for a voice: a folder's name as it is; a machine voice's id marked. */
 function chosenFor(name: string, machine: boolean): string {
   if (!name) return ''
@@ -178,30 +203,35 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
           <p className="meta">
             {offered.length} groups, {total.toLocaleString()} samples between them.
           </p>
-          <div className="groups">
-            {offered.map((group) => (
-              <button
-                className="group"
-                key={group.key}
-                data-stop
-                type="button"
-                disabled={busy}
-                aria-current={playing === group.key}
-                title={`Play a random ${group.label} sample`}
-                onClick={() => play(group)}
-              >
-                <PlayIcon />
-                <span>
-                  <span className="name">{group.label}</span>
-                  <br />
-                  <span className="meta">
-                    {group.clips.toLocaleString()}{' '}
-                    {group.clips === 1 ? 'sample' : 'samples'}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
+          {sectionsOf(offered).map((section) => (
+            <section key={section.heading} aria-label={section.heading}>
+              <h3>{section.heading}</h3>
+              <div className="groups">
+                {section.groups.map((group) => (
+                  <button
+                    className="group"
+                    key={group.key}
+                    data-stop
+                    type="button"
+                    disabled={busy}
+                    aria-current={playing === group.key}
+                    title={`Play a random ${group.label} sample`}
+                    onClick={() => play(group)}
+                  >
+                    <PlayIcon />
+                    <span>
+                      <span className="name">{group.label}</span>
+                      <br />
+                      <span className="meta">
+                        {group.clips.toLocaleString()}{' '}
+                        {group.clips === 1 ? 'sample' : 'samples'}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
         </>
       )}
 

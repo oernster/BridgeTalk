@@ -70,9 +70,9 @@ func (a *App) MachineAuditionGroups() []GroupDTO {
 	groups := a.session.making.AuditionGroups(a.session.heard())
 	out := make([]GroupDTO, 0, len(groups))
 	for _, group := range groups {
-		out = append(out, GroupDTO{Key: group.Key, Label: label(group.Key), Clips: group.Lines, SwitchedOff: group.SwitchedOff})
+		out = append(out, a.session.groupShown(group.Key, group.Lines, group.SwitchedOff))
 	}
-	return out
+	return a.session.inCategoryOrder(out)
 }
 
 // AuditionMachineVoice plays one line of a group, drawn at random, for the machine voice with the id

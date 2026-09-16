@@ -4,6 +4,7 @@ package main
 // they stand, for a recorded voice and a machine voice alike.
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/application/services"
@@ -58,6 +59,45 @@ func TestTheAuditionPaneAsksChatterWhatIsSwitchedOn(t *testing.T) {
 	}
 	if _, err := app.Audition("Alpha", "Docked"); err == nil {
 		t.Error("a group with every moment switched off was auditioned")
+	}
+}
+
+// FR-749, FR-750: the groups come in Chatter's category order, each carrying its category, a group in
+// no category last; recorded and machine voices alike.
+func TestTheAuditionGroupsComeInCategoryOrder(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	var cues []cue.Cue
+	for _, each := range []cue.Definition{
+		{ID: "ShieldState.ShieldsUp.false", Source: "journal", Event: "ShieldState", Purpose: "When the shields fail.", Category: "Combat and danger"},
+		{ID: "Docked", Source: "journal", Event: "Docked", Purpose: "When the ship docks.", Category: "Docking and stations"},
+		{ID: "Cast.Confirmed", Source: "application", Event: "cast", Purpose: "When this voice is cast."},
+	} {
+		built, err := cue.New(each)
+		if err != nil {
+			t.Fatalf("building %s: %v", each.ID, err)
+		}
+		cues = append(cues, built)
+	}
+	table, err := cue.NewCategorisedTable([]string{"Combat and danger", "Docking and stations"}, cues)
+	if err != nil {
+		t.Fatalf("building the table: %v", err)
+	}
+	app.session.table = table
+
+	shown := func(groups []GroupDTO) []string {
+		out := make([]string, 0, len(groups))
+		for _, group := range groups {
+			out = append(out, group.Key+"/"+group.Category)
+		}
+		return out
+	}
+	recorded := []string{"ShieldState/Combat and danger", "Docked/Docking and stations", "Cast/"}
+	if got := shown(app.AuditionGroups("Alpha")); !slices.Equal(got, recorded) {
+		t.Errorf("recorded groups = %v, want %v", got, recorded)
+	}
+	machine := []string{"Docked/Docking and stations", "Cast/"}
+	if got := shown(app.MachineAuditionGroups()); !slices.Equal(got, machine) {
+		t.Errorf("machine groups = %v, want %v", got, machine)
 	}
 }
 

@@ -125,6 +125,8 @@ export interface Group {
   clips: number
   /** The voice has something for the group yet every one of its moments is switched off (FR-747). */
   switchedOff: boolean
+  /** The Chatter category the group is listed under; empty for none (FR-749). */
+  category: string
 }
 
 /** Playback reports whether the output device is sounding anything. */

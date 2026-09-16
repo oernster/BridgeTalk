@@ -2244,9 +2244,9 @@ The interface is specified here in the application's own terms alone: cue ids an
 plugin's audio is, where it came from and how it is arranged are the plugin's own business and are
 named nowhere in this repository (CON-9).
 
-**Assumed, not ruled on:** the setup program creates the plugins folder; the application treats
-its absence as no plugins rather than as a fault (FR-560, FR-562). Owner Oliver, to confirm before
-FR-560 is built.
+Oliver ruled on 2026-09-16 that the setup program creates the plugins folder, which answers OQ-22.
+The application never creates it: it treats an absent folder as no plugins rather than as a fault
+(FR-562), so it writes nothing inside its own install directory.
 
 **FR-560 Plugins are loaded from one folder**
 Priority: Must.
@@ -2381,11 +2381,12 @@ judgement the catalogue already makes for a cue no voice serves.
 Verified by: nothing yet.
 
 **FR-576 The setup program creates the plugins folder**
-Priority: Should.
+Priority: Must.
 When the setup program installs or updates the application, it shall create the plugins folder inside
 the install directory if it is not already there.
-Rationale: a folder the user has to create by name is a step to get wrong. Creating it costs nothing
-and says where a plugin goes.
+Rationale: Oliver's ruling on 2026-09-16. A folder the user has to create by name in the right place
+is a step to get wrong silently. Setup already writes that directory tree, so creating one more
+folder costs nothing; the application is then left writing nothing inside its own install directory.
 Verified by: nothing yet.
 
 **FR-577 An update and a repair leave the plugins folder alone**
@@ -3850,7 +3851,6 @@ headless test is how it gets tested.
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
 | OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
-| OQ-22 | Is the plugins folder created by the setup program as FR-576 assumes? The alternative is the application creating it at startup. | Oliver | Before FR-560 is built | The setup program, since it already makes the install directory and the application then has one less thing to write. The application treats an absent folder as no plugins either way (FR-562). |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---
@@ -3859,8 +3859,8 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-575, FR-577, FR-578, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-576, FR-809, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-578, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-809, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

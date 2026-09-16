@@ -2261,21 +2261,28 @@ When the application starts, the application shall load every plugin file in the
 inside its own install directory, which is the only place it loads a plugin from.
 Rationale: one place to look means a user can see what is loaded by opening a folder. A path the user
 can set is a way to load code from anywhere, which is a larger promise than this needs.
-Verified by: nothing yet.
+Built on 2026-09-16 in `internal/infrastructure/plugin`, which is not wired at the composition
+root yet, so nothing calls it while the application runs.
+Verified by: `TestEveryPluginInTheFolderIsLoadedInNameOrder` and
+`TestADirectoryInsideTheFolderIsIgnored` in `internal/infrastructure/plugin/load_test.go`.
 
 **FR-561 Each plugin is loaded on its own account**
 Priority: Must.
 If a plugin file cannot be loaded, then the application shall pass over that file alone and shall
 load the rest.
 Rationale: one bad file leaving the user with no voices at all would be a poor trade for simplicity.
-Verified by: nothing yet.
+Verified by: `TestOnePluginFailingDoesNotStopAnother` in
+`internal/infrastructure/plugin/load_test.go`, seen to fail with one refusal stopping the walk.
 
 **FR-562 No folder and no plugin are not faults**
 Priority: Must.
 While the plugins folder is absent or holds no plugin, the application shall start as it does today
 and shall report nothing.
 Rationale: almost every user has no plugin. Nothing about the ordinary case should mention them.
-Verified by: nothing yet.
+Verified by: `TestAnAbsentFolderIsNotAFault` and `TestAFolderHoldingNothingLoadsNothing` in
+`internal/infrastructure/plugin/load_test.go`. A folder that exists and cannot be read is the
+other case and is named rather than passed over, held by
+`TestAFolderThatCannotBeReadIsNamedWithTheReason`.
 
 **FR-563 A plugin states the interface version it was built against**
 Priority: Must.
@@ -2283,7 +2290,8 @@ When the application loads a plugin, the application shall ask the plugin which 
 interface it was built against.
 Rationale: the handshake is what lets the interface change later without a plugin failing in a way
 nobody can read.
-Verified by: nothing yet.
+Verified by: `TestAPluginThatMisbehavesIsRefusedWithAReason` in
+`internal/infrastructure/plugin/load_test.go`, seen to fail with the handshake skipped.
 
 **FR-564 If the interface version does not match, then refuse the plugin by name**
 Priority: Must.
@@ -2292,7 +2300,8 @@ that plugin and shall record its file name, the version it stated and the versio
 implements.
 Rationale: the house rule for a refusal is that it names what was refused in words of its own
 (FR-237). "A plugin failed to load" sends the user nowhere.
-Verified by: nothing yet.
+Verified by: `TestAVersionMismatchNamesBothVersions` in
+`internal/infrastructure/plugin/load_test.go`.
 
 **FR-565 A plugin states its own name and the voices it offers**
 Priority: Must.
@@ -2300,14 +2309,20 @@ When the application has loaded a plugin, the application shall ask it for its n
 voices it offers, each with the name it is shown by.
 Rationale: the file name is not a contract, since the user may rename the file. The plugin is the
 only thing that knows what it is.
-Verified by: nothing yet.
+Verified by: `TestEveryPluginInTheFolderIsLoadedInNameOrder` in
+`internal/infrastructure/plugin/load_test.go`, which pins that the name shown is the one the
+plugin gave rather than the file it came from.
 
-**FR-566 If a plugin offers no voice, then refuse it with a reason**
+**FR-566 If a plugin offers no usable voice, then refuse it with a reason**
 Priority: Must.
-If a plugin offers no voice or offers a voice with no name, then the application shall pass over
-that plugin and shall record why.
+If a plugin offers no voice at all or offers one voice lacking either a name or an id, then the
+application shall pass over that plugin and shall record why.
 Rationale: a plugin present and silent is the case a user cannot diagnose without being told.
-Verified by: nothing yet.
+Amended on 2026-09-16 to cover a voice with no id. It read "a voice with no name" alone, which
+left a voice that could be shown and could never be found again: FR-569 keeps a cast plugin voice
+by its id, so a voice without one cannot be cast in any way that survives a restart.
+Verified by: `TestAPluginThatMisbehavesIsRefusedWithAReason` in
+`internal/infrastructure/plugin/load_test.go`, over all four shapes.
 
 **FR-567 Every plugin refusal reaches the log**
 Priority: Must.

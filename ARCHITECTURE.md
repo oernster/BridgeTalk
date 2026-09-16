@@ -449,11 +449,27 @@ Runtime is never unloaded: whether it can be unloaded safely while its own threa
 not been measured.
 
 **Where the code sits.** `internal/infrastructure/plugin` is the adapter. Its portable half owns the
-byte layouts, the version check and the buffer protocol in plain Go with unit tests over hand-built
-answers; its Windows half sits behind a build tag with no-op stubs beside it, so the package builds
-and vets on every platform. That is the split `internal/infrastructure/setup` already uses. The
-composition root wires loaded voices in as audio sources; nothing in the Application layer learns
-that a plugin exists.
+byte layouts, the version check, the buffer protocol and the walk of the plugins folder, all in
+plain Go with unit tests over hand-built answers; its Windows half sits behind a build tag with a
+no-op stub beside it, so the package builds and vets on every platform. That is the split
+`internal/infrastructure/setup` already uses. The composition root wires loaded voices in as audio
+sources; nothing in the Application layer learns that a plugin exists.
+
+The seam between the two halves is `Library`, one plugin's three functions. `Load` takes an
+`Opener` rather than reaching for the real one, so every refusal a loader can reach is exercised
+with no library file in existence. The directory read is handed in for the same reason the voice
+scanner takes a lister: a folder that exists and cannot be read is a case Windows will not let a
+test produce, since reading a file as a directory answers that the path is not there, measured on
+2026-09-16.
+
+**What is measured about the Windows half.** Not the three calls themselves, which need a plugin
+file that cannot be built here. What is measured is everything they rest on, against libraries
+Windows itself ships: that a library loads by path, that a real library exporting none of the three
+functions is refused by the function it lacks rather than called, that a file which is no library is
+refused, then that a call through `syscall.SyscallN` fills a Go buffer and answers a size the way the
+plugin protocol does. The thread is measured too: every call arrives on one thread id that is not
+the caller's. The three `dllLibrary` methods are the package's only uncovered statements, which is
+why its floor is the measured 91 percent rather than 100.
 
 **Proved without a plugin; the limit of that.** A real plugin cannot be built here: a library
 file exporting C functions needs cgo and a C toolchain; this machine has neither, measured on

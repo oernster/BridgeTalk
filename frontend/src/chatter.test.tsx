@@ -134,6 +134,23 @@ describe('the chatter pane', () => {
     }
   })
 
+  // FR-752 in the markup: the moments stand together in one grid after the heading, in order. The three
+  // columns are the style sheet's, which jsdom does not compute.
+  it("holds each category's moments together beneath its heading", async () => {
+    await shown()
+
+    for (const category of categories) {
+      const group = screen.getByRole('region', { name: category.name })
+      const grid = group.querySelector(':scope > .chatter-moments') as HTMLElement
+      expect(grid).not.toBeNull()
+      expect(group.querySelector(':scope > h3')?.nextElementSibling).toBe(grid)
+      const named = Array.from(grid.children).map((row) =>
+        within(row as HTMLElement).getByRole('switch').getAttribute('aria-label'),
+      )
+      expect(named).toEqual(category.moments.map((cue) => cue.title))
+    }
+  })
+
   // FR-728.
   it('counts the moments switched on under each heading', async () => {
     off = new Set(['Docked'])

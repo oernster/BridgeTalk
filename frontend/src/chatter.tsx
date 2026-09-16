@@ -1,5 +1,5 @@
 // The Chatter pane: every moment the game raises, under its category, each with a switch saying
-// whether it is spoken for (section 8, FR-725 to FR-741, FR-743, FR-744).
+// whether it is spoken for (section 8, FR-725 to FR-741, FR-743, FR-744, FR-752).
 //
 // The switches live in the application rather than here, because the engine needs them before any
 // page loads. So a press never changes the pane itself: it asks, then shows the pane the answer
@@ -206,22 +206,27 @@ export function ChatterPane() {
                 {`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}
               </button>
             </h3>
-            {!collapsed.has(category.name) && category.moments.map((moment) => (
-              <div className="row" key={moment.cue.id}>
-                <span className="grow">
-                  {moment.cue.title}
-                  <br />
-                  <span className="purpose">{moment.cue.purpose}</span>
-                </span>
-                <Switch
-                  name={moment.cue.title}
-                  on={moment.on}
-                  onPress={() =>
-                    settle((refused) => api.setMoment(moment.cue.id, !moment.on, refused))
-                  }
-                />
+            {!collapsed.has(category.name) && (
+              // FR-752: the moments stand in three columns beneath the heading.
+              <div className="chatter-moments">
+                {category.moments.map((moment) => (
+                  <div className="row" key={moment.cue.id}>
+                    <span className="grow">
+                      {moment.cue.title}
+                      <br />
+                      <span className="purpose">{moment.cue.purpose}</span>
+                    </span>
+                    <Switch
+                      name={moment.cue.title}
+                      on={moment.on}
+                      onPress={() =>
+                        settle((refused) => api.setMoment(moment.cue.id, !moment.on, refused))
+                      }
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </section>
         ))}
       </div>

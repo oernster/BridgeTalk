@@ -3763,15 +3763,17 @@ Audition standing second in Audio; the Audio menu reading Unmute while muted; a 
 item is chosen or when the pointer leaves the bar.
 Note: Chatter joined the Audio menu on 2026-09-15 (section 7.2).
 
-**FR-725 The Chatter button stands between Missing takes and Settings**
+**FR-725 The Chatter button stands between Audition and Missing takes**
 Priority: Must.
-The band shall hold a button named Chatter, showing the Chatter artwork, between Missing takes and
-Settings.
+The band shall hold a button named Chatter, showing the Chatter artwork, between Audition and Missing
+takes; Status then Settings shall follow Missing takes.
 Note: the artwork's master is `assets/chatter.png`, supplied by Oliver on 2026-09-15; the band's copy
-is made from it by `tools/genicons.py`.
+is made from it by `tools/genicons.py`. Chatter stood between Missing takes and Settings, with Status
+before Missing takes, until Oliver reordered the band on 2026-09-16.
 Acceptance: Given the window open, then the band's buttons before its stretch read Cast, Audition,
-Status, Missing takes, Chatter and Settings in that order.
-Verified by: "holds Chatter between Missing takes and Settings" in `frontend/src/App.menus.test.tsx`.
+Chatter, Missing takes, Status and Settings in that order.
+Verified by: "holds Chatter after Audition and a rule before Status and Settings" in
+`frontend/src/App.menus.test.tsx`.
 
 **FR-726 The Chatter button opens the Chatter pane**
 Priority: Must.
@@ -3959,6 +3961,45 @@ moments is shown and the heading still counts them; pressed again, all 39 are sh
 Verified by: "collapses a category from its heading and opens it again" in
 `frontend/src/chatter.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
 either control wears, which the style sheet draws and jsdom does not compute.
+
+**FR-752 A category's moments stand in three columns**
+Priority: Should.
+The Chatter list shall draw each open category's moments in three columns of equal width beneath its
+heading, a moment's row read left to right then down in the order of FR-727, whatever the width of
+the window, each title at 14 px and each purpose at 13 px. The heading shall stay across every column.
+Rationale: Oliver, 2026-09-16: every row ran the width of the list with its switch at the far edge,
+leaving the middle of the list empty. Columns within each category keep every group, its heading
+held in view (FR-741), moving to a category (FR-743) and collapsing one (FR-744) as they were; Oliver
+chose that over splitting the categories between columns, which would have given the list several
+headings in view and several places to move to. He chose a fixed count over as many as the width
+allows, then asked for three where they fit the window as it opens. Measured in the browser pane that
+day over all 262 moments open with the shipped style sheets, in a viewport of 1328 px standing for
+the window's default 1344 px less its frame: one column at the minimum window was 19,829 px tall;
+two columns at the earlier 17 px title and 15 px purpose were 10,179 px with no title broken; three
+at those sizes were 8,320 px with 2 titles broken; three at 14 px and 13 px, the Audition pane's sizes
+(FR-751), were 6,882 px with 1 title broken ("Commit crime: crime type collided at speed in no fire
+zone"). At the minimum window, three at 14 px and 13 px were 7,945 px with 11 titles broken.
+Acceptance: Given Docking and stations open holding four moments, when the pane opens, then the first
+three stand left to right on the first line and the fourth alone at the left of the second, all
+beneath the one heading.
+Verified by: "holds each category's moments together beneath its heading" in
+`frontend/src/chatter.test.tsx`, for the moments standing in one grid after the heading in order. Not
+verified by a test: the three columns as drawn, which the style sheet decides and jsdom does not compute.
+
+**FR-753 A rule sets Status and Settings apart on the band**
+Priority: Should.
+The band shall draw a vertical rule between Missing takes and Status, as tall as a button's artwork in
+the border colour. The rule shall be no stop and shall not be announced.
+Rationale: Oliver, 2026-09-16: Cast, Audition, Chatter and Missing takes are the voice and what it
+says; Status and Settings are about the application. The rule widens the band by the band's gap and
+its own width, 9 px by `frontend/src/theme/navband.css`, against the 23 px the minimum window leaves
+beyond the 1022 px `window.go` records the band needing.
+Acceptance: Given the window open, then a rule stands between Missing takes and Status, hidden from
+the reader and not reached by Tab.
+Verified by: "holds Chatter after Audition and a rule before Status and Settings" in
+`frontend/src/App.menus.test.tsx`, for its place and its being hidden; it is a span without
+`data-stop`, so the ring passes it. Not verified by a test: the rule as drawn, which the style sheet
+decides and jsdom does not compute.
 
 **FR-745 An audition draws only on moments switched on**
 Priority: Should.
@@ -4507,7 +4548,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-751, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-753, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

@@ -32,6 +32,17 @@
   flex: 1 1 auto;
 }
 
+/* The rule setting Status and Settings apart from the panes before them (FR-753): as thick as the
+   rule beneath the band and as tall as a button's artwork, standing off its neighbours by the band's
+   own gap alone, so it widens the band by that gap and itself. */
+.navband .band-divider {
+  flex: 0 0 auto;
+  align-self: center;
+  width: var(--band-rule);
+  height: var(--band-icon);
+  background: var(--border);
+}
+
 /* The band's buttons carry the artwork alone. A label beside each one at this icon
    size would push the row past the window's minimum width; the name is only wanted
    at the moment of asking, which is what the tooltip below is for. */

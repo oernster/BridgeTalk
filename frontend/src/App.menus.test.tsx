@@ -163,16 +163,19 @@ describe('the menu bar', () => {
     expect(await screen.findByRole('heading', { name: 'Chatter' })).toBeTruthy()
   })
 
-  // FR-725: the buttons before the band's stretch, in order.
-  it('holds Chatter between Missing takes and Settings', async () => {
+  // FR-725 and FR-753: what stands before the band's stretch, in order, the rule among the buttons.
+  it('holds Chatter after Audition and a rule before Status and Settings', async () => {
     await show()
 
     const before: string[] = []
     for (const child of Array.from(document.querySelector('.navband')?.children ?? [])) {
       if (child.classList.contains('spacer')) break
-      before.push(child.getAttribute('aria-label') ?? '')
+      if (child.classList.contains('band-divider')) {
+        expect(child.getAttribute('aria-hidden')).toBe('true')
+        before.push('|')
+      } else before.push(child.getAttribute('aria-label') ?? '')
     }
-    expect(before).toEqual(['Cast', 'Audition', 'Status', 'Missing takes', 'Chatter', 'Settings'])
+    expect(before).toEqual(['Cast', 'Audition', 'Chatter', 'Missing takes', '|', 'Status', 'Settings'])
   })
 
   // The icon is the state and the name is the action: a muted application shows a

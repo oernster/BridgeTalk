@@ -61,6 +61,8 @@
 /* Each category is a group with a rule down its side, so a moment scrolled far from its heading is
    still drawn inside its group (FR-741). */
 .chatter-group {
+  --heading-rule: 1px;
+
   margin-top: 14px;
   padding-left: 14px;
   border-left: 3px solid var(--border);
@@ -78,7 +80,30 @@
   display: flex;
   align-items: center;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--heading-rule) solid var(--border);
+}
+
+/* A category's moments stand in three columns of equal width, read left to right then down, the
+   title at 14 px and the purpose at 13 px so a title fits its column (FR-752). Every row but the first
+   draws the rule above it, so the other rows on the first line would lay a rule of their own beneath
+   the heading's. The grid is drawn up by the heading's rule so they fall on one line, the heading
+   painted over it since it stands above the rows (FR-741). --moment-gap keeps a switch clear of the
+   title in the column beside it. */
+.chatter-moments {
+  --moment-columns: 3;
+  --moment-gap: 32px;
+  --moment-title: 14px;
+  --moment-purpose: 13px;
+
+  display: grid;
+  grid-template-columns: repeat(var(--moment-columns), minmax(0, 1fr));
+  column-gap: var(--moment-gap);
+  margin-top: calc(-1 * var(--heading-rule));
+  font-size: var(--moment-title);
+}
+
+.chatter-moments .row .purpose {
+  font-size: var(--moment-purpose);
 }
 
 /* A category's name in the header (FR-743) and its heading in the list (FR-744) are buttons drawn as
@@ -100,10 +125,6 @@
 .chatter-toggle:enabled:hover,
 .chatter-toggle:enabled:focus {
   border-color: var(--ring);
-}
-
-.chatter-group .row:first-of-type {
-  border-top: none;
 }
 
 /* A switch is a rounded track holding a round thumb (FR-735). --track-width and --track-height are

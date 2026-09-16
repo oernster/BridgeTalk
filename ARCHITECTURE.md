@@ -727,7 +727,8 @@ summon it.
 ```
 
 The nav band is one flat row with the two groups separated by a stretch, so layout order is reading
-order. The main pane switches between Cast, Audition, Status, Missing takes, Chatter, Settings and Guide;
+order; a drawn rule, no stop, sets Status and Settings apart within the first group. The main pane
+switches between Cast, Audition, Chatter, Missing takes, Status, Settings and Guide;
 it opens on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition, Missing
 takes, Chatter and Mute; Settings holds the
 pane and the theme; Help holds the guide, the licence and About.

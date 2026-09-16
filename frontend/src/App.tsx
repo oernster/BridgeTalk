@@ -149,11 +149,11 @@ export function App() {
           <AuditionIcon />
         </NavButton>
         <NavButton
-          label="Status"
-          current={pane === 'home'}
-          onClick={() => setPane('home')}
+          label="Chatter"
+          current={pane === 'chatter'}
+          onClick={() => setPane('chatter')}
         >
-          <StatusIcon />
+          <ChatterIcon />
         </NavButton>
         <NavButton
           label="Missing takes"
@@ -162,12 +162,17 @@ export function App() {
         >
           <MissingTakesIcon />
         </NavButton>
+
+        {/* FR-753: a rule sets Status and Settings apart from the panes before it. It is
+            drawn rather than read, so it is hidden from the reader and is no stop. */}
+        <span className="band-divider" aria-hidden="true" />
+
         <NavButton
-          label="Chatter"
-          current={pane === 'chatter'}
-          onClick={() => setPane('chatter')}
+          label="Status"
+          current={pane === 'home'}
+          onClick={() => setPane('home')}
         >
-          <ChatterIcon />
+          <StatusIcon />
         </NavButton>
         <NavButton
           label="Settings"

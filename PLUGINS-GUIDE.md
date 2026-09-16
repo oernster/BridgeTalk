@@ -118,8 +118,10 @@ repeated voiceCount times:
 ```
 
 `voiceId` is how Bridge Talk remembers a cast voice between runs, alongside the name of the plugin
-that offered it (FR-569), so keep it stable across releases of your plugin. `voiceName` may change
-freely.
+that offered it (FR-569), so keep both `voiceId` and `pluginName` stable across releases of your
+plugin. A user who renames your file loses nothing, since the file's name means nothing; a user
+whose plugin changes its own name loses the voice they had cast. `voiceName` may change freely,
+since nothing is remembered by it.
 
 A voice whose `ready` is 0 is shown but cannot be cast, with `readyReason` as the explanation
 (FR-570). Use it for the case where the audio a voice needs has been moved or removed.

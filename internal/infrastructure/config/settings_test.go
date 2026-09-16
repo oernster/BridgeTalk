@@ -36,8 +36,11 @@ func TestChoicesSurviveASave(t *testing.T) {
 		LibraryRoot: filepath.Join("D:", "Recordings"),
 		JournalDir:  filepath.Join("E:", "Journals"),
 		Voice:       "Hugo",
-		// FR-540: both kinds of voice survive a save, though casting keeps only one of them.
+		// FR-540 and FR-569: every kind of voice survives a save, though casting keeps only one of
+		// them. A plugin voice takes two fields, since an id is unique only within its plugin.
 		MachineVoice: "bf_emma",
+		Plugin:       "Bridge Crew",
+		PluginVoice:  "one",
 	}
 
 	if err := store.Save(want); err != nil {

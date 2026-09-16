@@ -315,7 +315,7 @@ func run() error {
 	// built before the first useVoice call so the very first cue is already logged.
 	app := newApp(current, watched, root, settings)
 	current.reporter = reporter{app}
-	current.castAtStart(keptMachineVoice(*voice, stored.MachineVoice), chosen, os.Stderr)
+	current.castAtStart(keptFrom(*voice, stored), chosen, os.Stderr)
 
 	// Hidden with no tray would leave nothing on screen and no way to summon it, so
 	// the window is shown rather than starting a program the user cannot reach. The

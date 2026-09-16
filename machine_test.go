@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
@@ -135,7 +136,7 @@ func TestAKeptMachineVoiceIsCastAtStart(t *testing.T) {
 	current, _ := fixtureSession(t, newFakePlayer())
 	var warnings strings.Builder
 
-	current.castAtStart("bf_emma", current.available[0], &warnings)
+	current.castAtStart(keptCast{machine: "bf_emma"}, current.available[0], &warnings)
 
 	if current.active.Name != "bf_emma" || current.making.Progress().Voice != "bf_emma" || warnings.Len() != 0 {
 		t.Errorf("cast %q warning %q; want bf_emma cast in silence", current.active.Name, warnings.String())
@@ -166,7 +167,7 @@ func TestAKeptMachineVoiceThatCannotBeCastFallsBackToARecordedVoice(t *testing.T
 			}
 			var warnings strings.Builder
 
-			current.castAtStart(each.id, recorded, &warnings)
+			current.castAtStart(keptCast{machine: each.id}, recorded, &warnings)
 
 			if current.active.Name != each.cast || current.hasVoice() != each.recorded {
 				t.Errorf("cast %q, a voice cast %v; want %q", current.active.Name, current.hasVoice(), each.cast)
@@ -178,14 +179,19 @@ func TestAKeptMachineVoiceThatCannotBeCastFallsBackToARecordedVoice(t *testing.T
 	}
 }
 
-// FR-540 and FR-701: a voice given by -voice outranks a kept machine voice for the run.
+// FR-540, FR-569 and FR-701: a voice given by -voice outranks every kept voice for the run,
+// whichever kind was kept. The flag names a recorded voice, so honouring it and then casting
+// something else would be neither.
 func TestAVoiceGivenForTheRunOutranksAKeptMachineVoice(t *testing.T) {
 	t.Parallel()
-	if got := keptMachineVoice("Alpha", "bf_emma"); got != "" {
-		t.Errorf("with -voice given the machine voice is %q, want none", got)
+
+	held := ports.Settings{MachineVoice: "bf_emma", Plugin: "Crew", PluginVoice: "one"}
+
+	if got := keptFrom("Alpha", held); got != (keptCast{}) {
+		t.Errorf("with -voice given the kept voice is %+v, want none", got)
 	}
-	if got := keptMachineVoice("", "bf_emma"); got != "bf_emma" {
-		t.Errorf("with no -voice the machine voice is %q, want bf_emma", got)
+	if got := keptFrom("", held); got.machine != "bf_emma" || got.plugin != "Crew" || got.pluginVoice != "one" {
+		t.Errorf("with no -voice the kept voice is %+v, want what was stored", got)
 	}
 }
 

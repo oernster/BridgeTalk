@@ -2356,7 +2356,16 @@ the plugin it came from and the voice's own id within that plugin.
 Rationale: FR-540 keeps a machine voice apart from a recorded voice for the same reason: one name
 could not say which kind was cast. A third kind needs the same treatment; a voice's id within a
 plugin is unique only within that plugin.
-Verified by: nothing yet.
+Built on 2026-09-16 as far as reading reaches: the settings carry `plugin` and `pluginVoice`,
+both absent from a file an older build wrote; a kept plugin voice is cast at startup ahead
+of a kept machine voice. A voice named on the command line still sets every kept voice aside,
+whichever kind it is. Writing the pair when a voice is cast from the window is not built, since
+nothing casts one from the window yet.
+A plugin is identified by its own name rather than by its file, since the user may rename the
+file; PLUGINS-GUIDE.md asks a plugin author to keep that name stable for this reason.
+Verified by: `TestAKeptPluginVoiceIsCastAtStart`, `TestACastPluginVoiceAnswersTheCatalogue` and
+`TestAKeptPluginVoiceThatCannotBeCastFallsBackToARecordedVoice` in `plugincast_test.go`;
+`TestChoicesSurviveASave` in `internal/infrastructure/config/settings_test.go` for the file.
 
 **FR-570 A plugin says whether the audio a voice needs is present**
 Priority: Must.
@@ -2365,7 +2374,11 @@ it needs is present on this machine, then take a voice that says it is not as un
 cast, with the reason it gave.
 Rationale: the audio belongs to the user and can be moved or removed at any time. A voice offered
 and then silent is worse than a voice shown as unavailable with a reason.
-Verified by: nothing yet.
+Built on 2026-09-16 as far as casting reaches: a voice that says its audio is absent is refused
+rather than cast, naming the voice and the reason it gave; it is never asked for a take.
+Showing it in the window as unavailable is not built yet.
+Verified by: `TestAPluginVoiceWithNoAudioIsRefusedWithItsReason` in `plugincast_test.go` and
+`TestAVoiceThatIsNotReadyIsNeverAsked` in `internal/infrastructure/plugin/lookup_test.go`.
 
 **FR-571 The checklist offers no folder for a plugin voice**
 Priority: Should.

@@ -22,6 +22,9 @@ type castVoice struct {
 	Name    string
 	Display string
 	Machine bool
+	// Plugin names the plugin a voice came from; empty for every other kind. With Name, which
+	// holds the voice's id within that plugin, it is what the settings keep (FR-569).
+	Plugin string
 }
 
 // releaser is the model's hold on memory, let go when the application closes.
@@ -145,9 +148,16 @@ func (s *session) castMachine(id string) error {
 // A machine voice that cannot be cast is warned about rather than stopping the start; the recorded
 // voice is then cast as though none were kept (FR-541). With no recorded voice found nothing is cast,
 // which the window already copes with.
-func (s *session) castAtStart(machineID string, recorded library.Voice, warnings io.Writer) {
-	if machineID != "" {
-		err := s.castMachine(machineID)
+func (s *session) castAtStart(kept keptCast, recorded library.Voice, warnings io.Writer) {
+	if kept.plugin != "" {
+		err := s.castPlugin(kept.plugin, kept.pluginVoice)
+		if err == nil {
+			return
+		}
+		fmt.Fprintf(warnings, "warning: %v (casting no plugin voice)\n", err)
+	}
+	if kept.machine != "" {
+		err := s.castMachine(kept.machine)
 		if err == nil {
 			return
 		}
@@ -165,6 +175,50 @@ func keptMachineVoice(flagged, kept string) string {
 		return ""
 	}
 	return kept
+}
+
+// keptCast is the voice the settings kept, of whichever kind. At most one of them holds a
+// voice (FR-540, FR-569).
+type keptCast struct {
+	machine     string
+	plugin      string
+	pluginVoice string
+}
+
+// keptFrom answers what was kept, unless a voice was named on the command line.
+//
+// A flag is this run's instruction and it names a recorded voice, so it sets aside every kept
+// voice of another kind rather than only the machine one: honouring the flag and then casting
+// something else would be neither.
+func keptFrom(flagged string, held ports.Settings) keptCast {
+	return keptCast{
+		machine:     keptMachineVoice(flagged, held.MachineVoice),
+		plugin:      keptMachineVoice(flagged, held.Plugin),
+		pluginVoice: keptMachineVoice(flagged, held.PluginVoice),
+	}
+}
+
+// castPlugin casts the voice a plugin offers, by the plugin's own name and the voice's id
+// within it (FR-569).
+//
+// A voice whose audio is not on this machine is refused rather than cast, with the reason the
+// plugin gave, since casting it would be casting silence (FR-570).
+func (s *session) castPlugin(plugin, id string) error {
+	if s.plugins == nil {
+		return fmt.Errorf("no plugin offers a voice")
+	}
+	for _, voice := range s.plugins.Voices() {
+		if voice.Plugin().Name != plugin || voice.ID != id {
+			continue
+		}
+		if !voice.Ready {
+			return fmt.Errorf("%s cannot speak: %s", voice.Name, voice.Reason)
+		}
+		s.making.CastRecorded()
+		s.speakWith(voice, castVoice{Name: voice.ID, Display: voice.Name, Plugin: plugin})
+		return nil
+	}
+	return fmt.Errorf("no plugin named %s offers a voice called %s", plugin, id)
 }
 
 // refusedFiles refuses every machine voice, saying why none can be cast.

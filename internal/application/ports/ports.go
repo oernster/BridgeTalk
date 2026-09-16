@@ -89,8 +89,15 @@ type Settings struct {
 
 	// MachineVoice is the machine voice the reader cast, by id. It is kept apart from Voice
 	// because a recordings folder may carry a machine voice's id as its name; at most one of
-	// the two holds a voice (FR-540).
+	// the three kinds holds a voice (FR-540, FR-569).
 	MachineVoice string
+
+	// Plugin and PluginVoice are the plugin voice the reader cast: the plugin by its own name
+	// and the voice by its id within that plugin. Two fields because neither identifies a voice
+	// alone: an id is unique only within the plugin that offered it (FR-569). Both are set or
+	// neither is.
+	Plugin      string
+	PluginVoice string
 
 	// SwitchedOff is the ids of the moments switched off on Chatter, in id order (FR-629). Every
 	// moment not named is switched on, so a file that names none, an older one included, has

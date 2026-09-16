@@ -39,6 +39,10 @@ type stored struct {
 	Voice       string `json:"voice"`
 	// MachineVoice is absent from a file an older build wrote, which reads as no machine voice kept.
 	MachineVoice string `json:"machineVoice"`
+	// Plugin and PluginVoice are absent from a file an older build wrote, which reads as no plugin
+	// voice kept.
+	Plugin      string `json:"plugin"`
+	PluginVoice string `json:"pluginVoice"`
 	// SwitchedOff is absent from a file an older build wrote, which reads as every moment on (FR-628).
 	SwitchedOff []string `json:"switchedOff"`
 }
@@ -87,6 +91,8 @@ func (s *Settings) Load() ports.Settings {
 		JournalDir:   held.JournalDir,
 		Voice:        held.Voice,
 		MachineVoice: held.MachineVoice,
+		Plugin:       held.Plugin,
+		PluginVoice:  held.PluginVoice,
 		SwitchedOff:  held.SwitchedOff,
 	}
 }
@@ -109,6 +115,8 @@ func (s *Settings) Save(chosen ports.Settings) error {
 		JournalDir:   chosen.JournalDir,
 		Voice:        chosen.Voice,
 		MachineVoice: chosen.MachineVoice,
+		Plugin:       chosen.Plugin,
+		PluginVoice:  chosen.PluginVoice,
 		SwitchedOff:  chosen.SwitchedOff,
 	}, "", "  ")
 

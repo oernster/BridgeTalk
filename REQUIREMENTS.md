@@ -2447,7 +2447,19 @@ The application shall play a plugin's audio where it stands and shall never copy
 delete it.
 Rationale: the promise made to recordings (CON-7, NFR-S-2) is the same promise; the audio here is
 more likely still to belong to somebody else.
-Verified by: nothing yet.
+Measured on 2026-09-16 by reading every place the application writes, moves or deletes a file: the
+settings, the run log, the model files, the library's own folders and the made lines of FR-523. None
+is handed a path a plugin gave. The one store that deletes audio, the made lines, takes a machine voice
+by its type, so a plugin voice cannot reach it. The player opens a part for reading alone.
+Verified by: `TestAPluginVoicesAudioIsLeftAsItWasFound` in `pluginaudio_test.go`, which casts a plugin
+voice whose audio sits in a folder of its own, lists it, reads its checklist and the state, then fires
+the cue its take answers and proves that take was played; every file there is then as it was in
+content and in the time it was last written, with nothing added. A folder is compared by being there
+alone: its own time moved with nothing run against it in one of five tries. Seen to fail with a part
+rewritten on being looked up with its bytes unchanged and with a file added beside a part.
+`TestAPartMarkedReadOnlyIsReadAndLeftAsItWas` in `internal/infrastructure/audio/parts_test.go`, seen
+to fail with the part opened for writing. Not verified by a test: something created and removed again
+inside the audio's folder while the voice is used, which leaves nothing to compare.
 
 **FR-573 A take may be several parts played in order**
 Priority: Must.
@@ -2484,7 +2496,7 @@ The player takes the recorder as a field left nil in production, as it already t
 read, so a test reads the note back without a sound card: the read fails before the device is
 reached.
 Verified by: `TestAPartThatWillNotOpenIsRecordedAndTheTakeCarriesOn` in
-`internal/infrastructure/audio/sequence_test.go`, which reads back the part named with its reason
+`internal/infrastructure/audio/parts_test.go`, which reads back the part named with its reason
 and holds that the take carries on; seen to fail with the recording deleted.
 
 **FR-575 If no part of a chosen take plays, then the cue is silent**
@@ -2498,7 +2510,7 @@ not open is recorded and passed over, so a take none of whose parts open reaches
 nothing, leaves one note per part in the order they were tried, then ends as any sequence ends so its
 cue is let go.
 Verified by: `TestATakeWhosePartsWillNotOpenPlaysNothingAndRecordsEachOne` in
-`internal/infrastructure/audio/sequence_test.go`, which plays a take of three parts that will not
+`internal/infrastructure/audio/parts_test.go`, which plays a take of three parts that will not
 open through a player with no device, so a part handed to the device would end the test. Seen to
 fail twice: with a part that will not open played anyway, which ended in a nil pointer; with the take
 abandoned at the first such part, which recorded one of the three.
@@ -2931,7 +2943,8 @@ every moment at once and what a switched off moment does elsewhere. Oliver took 
 recommendation on each; the requirements below record the answers. OQ-19 then asked what answers station
 traffic while it is switched on; Oliver took Claude's recommendation of a moment of its own (FR-637).
 Claude added FR-625, FR-626, FR-632 and FR-733 with searching Chatter's list left out of scope
-unasked; Oliver accepted each the same day. OQ-20 remains open in section 11.
+unasked; Oliver accepted each the same day. OQ-20 remains open in section 11, as does OQ-24,
+reaching a category without scrolling the list.
 
 **What the journals hold.** Measured on 2026-09-15 over the 101 journal files on Oliver's machine,
 beside the figures in section 7.1:
@@ -3998,7 +4011,15 @@ verified by a test: the offer; closing the program; the 5 seconds.
 Priority: Must.
 If a step setup checks fails, then setup shall show "Something went wrong" with the reason and a
 Close button.
-Verified by: nothing. Not verified by a test: the message, its reason or the Close button.
+Verified by: "a failure says why (FR-807)" in `frontend/src/setupScreens.test.ts`, over the page as it
+ships: an install, an update, a repair and an uninstall the setup program refuses each show the
+heading, the refusal word for word and Close alone, which closes setup; so does a running copy that
+will not close. Seen to fail with Close left off the screen, with the reason left off it, with a
+refusal swallowed where the step ran and with a copy that would not close sending the reader back
+instead. Not verified by a test: the words the setup program itself refuses with, which are held by
+the refusal tests of `internal/infrastructure/setup`. Measured on 2026-09-16 and left for Oliver: when
+the page cannot reach the setup program at all it shows the error screen with no Close, since Close
+would ask the program it cannot reach; the window's own cross is then the only way out.
 
 **FR-808 Setup answers the keyboard**
 Priority: Must.
@@ -4109,6 +4130,7 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
+| OQ-24 | Reaching a category on Chatter is slow: the list is scrolled to find it. Oliver asked on 2026-09-16 for two things, as a discussion before anything is specified. First, pressing a category in the header (FR-740), beside its switch, moves the list to that category. Second, a category in the list can be collapsed. Should both be built or one? Is a collapsed category kept between runs? Does moving to a category open it where it is collapsed? | Oliver | Before any requirement for it is written | Measured on 2026-09-16: the list holds 262 moments in the twelve categories of FR-635, from Flight and travel with 41 to Session with 6, which is last, so reaching it passes every other category. The header already stays in place (FR-740) and each heading stays at the top while its moments pass (FR-741), so a category moved to lands with its heading showing. Recommended, for Oliver to react to: build both. Make each category's name in the header a button of its own after its switch, moving the list so that category's heading is at the top of the list; the switch stays the only thing that switches, so a press on the name changes no moment. Make each heading in the list a button that collapses or opens its group, still counting what is on (FR-728), with every group open when the pane opens rather than kept between runs, since a category left collapsed and forgotten hides moments the player chose. Moving to a collapsed category opens it. Both are ring stops answering Space and Enter (FR-713, FR-737). Section 1.3 leaves searching or filtering the list out of scope; moving and collapsing hide no moment for good, so neither reopens that. |
 | OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
 | OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |

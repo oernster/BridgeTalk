@@ -1,5 +1,6 @@
-// Where each setup screen puts focus as it opens (FR-808) and what Cancel does on the Uninstall
-// screen (FR-805).
+// Where each setup screen puts focus as it opens (FR-808), what Cancel does on the Uninstall screen
+// (FR-805), where the install goes (FR-809), what the Uninstall screen offers about the plugins
+// folder (FR-578) and what a refused step shows (FR-807).
 //
 // The setup page has no build step and no test runner of its own, so the page is laid out here
 // from the very file it ships and its scripts are run the way the page runs them. The setup
@@ -45,6 +46,10 @@ interface InstallLocation {
 class FakeSetup {
   running = false
   quits = 0
+  /** refusal is what every call that changes the machine answers with in place of doing it. */
+  refusal = ''
+  /** answer resolves; else it rejects with the refusal as the setup program's bound methods reject. */
+  answer = (): Promise<void> => (this.refusal === '' ? Promise.resolve() : Promise.reject(this.refusal))
   /** uninstalls records each removal as whether to forget the settings, then the plugins. */
   uninstalls: [boolean, boolean][] = []
   installs: Options[] = []
@@ -59,18 +64,19 @@ class FakeSetup {
   }
   Uninstall = (forget: boolean, removePlugins: boolean): Promise<void> => {
     this.uninstalls.push([forget, removePlugins])
-    return Promise.resolve()
+    return this.answer()
   }
-  Repair = (): Promise<void> => Promise.resolve()
+  Repair = (): Promise<void> => this.answer()
   Install = (choices: Options): Promise<void> => {
     this.installs.push(choices)
-    return Promise.resolve()
+    return this.answer()
   }
   ChooseInstallLocation = (current: string): Promise<InstallLocation> => {
     this.pickedFrom.push(current)
     return Promise.resolve(this.picks.shift() ?? { dir: '', refusal: '' })
   }
   LaunchApp = (): Promise<void> => Promise.resolve()
+  CloseRunningApp = (): Promise<void> => this.answer()
   TakeKeyboard = (): Promise<void> => Promise.resolve()
   SetShortcuts = (): Promise<void> => Promise.resolve()
   SetLaunchOnBoot = (): Promise<void> => Promise.resolve()
@@ -309,5 +315,45 @@ describe('the plugins folder on the Uninstall screen (FR-578)', () => {
     await settle()
     expect(setup.uninstalls).toEqual([[false, true]])
     expect(document.getElementById('done-msg')?.textContent).not.toContain(plugins)
+  })
+})
+
+describe('a failure says why (FR-807)', () => {
+  const refusal = 'extract files: writing C:\\Programs\\Product\\Product.exe: the disk is full'
+
+  /** failures names each screen, the machine it opens on and the go-ahead pressed while every change is refused. */
+  const failures: [string, State, string][] = [
+    ['an install', { ...installed, mode: 'install', installed: false }, 'Install'],
+    ['an update', { ...installed, relation: 'newer' }, 'Update'],
+    ['a repair', installed, 'Repair'],
+    ['an uninstall', { ...installed, mode: 'uninstall' }, 'Uninstall'],
+  ]
+  it.each(failures)('%s that is refused shows the reason and Close alone', async (_name, state, press) => {
+    setup.refusal = refusal
+    setupPage.route(state)
+    footerButton(press).click()
+    await settle()
+    await settle()
+    expect(activeScreen()).toBe('screen-error')
+    expect(pageElement('screen-error').querySelector('h1')?.textContent).toBe('Something went wrong')
+    expect(pageElement('error-msg').textContent).toBe(refusal)
+    const actions = Array.from(document.querySelectorAll('#footer .btn')).map((button) => button.textContent)
+    expect(actions).toEqual(['Close'])
+    footerButton('Close').click()
+    expect(setup.quits).toBe(1)
+  })
+
+  it('a running copy that cannot be closed shows the reason and Close alone', async () => {
+    setup.running = true
+    setup.refusal = 'the application is still running after 5 seconds; close it by hand'
+    setupPage.route(installed)
+    footerButton('Repair').click()
+    await settle()
+    footerButton('Close it and continue').click()
+    await settle()
+    expect(activeScreen()).toBe('screen-error')
+    expect(pageElement('error-msg').textContent).toBe(setup.refusal)
+    footerButton('Close').click()
+    expect(setup.quits).toBe(1)
   })
 })

@@ -1,7 +1,9 @@
 package modelfiles
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/wholefile"
 	"github.com/oernster/bridge-talk/internal/refusal"
@@ -106,9 +109,15 @@ func get(ctx context.Context, client *http.Client, address string, into io.Write
 	return written, nil
 }
 
+// tarSuffix ends the address of a release archive packed as gzip over tar, as Linux's are.
+const tarSuffix = ".tgz"
+
 // extract writes the listed member of the archive at archive into into, answering with how many
 // bytes it wrote.
 func extract(archive string, file File, into io.Writer) (int64, error) {
+	if strings.HasSuffix(file.Address, tarSuffix) {
+		return extractTar(archive, file, into)
+	}
 	reader, err := zip.OpenReader(archive)
 	if err != nil {
 		return 0, fmt.Errorf("%w: %s answered with no archive for %s: %w", ErrDownload, file.Address, file.Name, err)
@@ -120,4 +129,33 @@ func extract(archive string, file File, into io.Writer) (int64, error) {
 	}
 	defer member.Close()
 	return io.Copy(into, member)
+}
+
+// extractTar writes the listed member of the gzip over tar archive at archive into into. Only a
+// regular file answers: a link of the same name is passed over, so what is written is the bytes
+// the list's size and SHA-256 describe.
+func extractTar(archive string, file File, into io.Writer) (int64, error) {
+	opened, err := os.Open(archive)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s: %w", ErrDownload, file.Address, err)
+	}
+	defer opened.Close()
+	unzipped, err := gzip.NewReader(opened)
+	if err != nil {
+		return 0, fmt.Errorf("%w: %s answered with no archive for %s: %w", ErrDownload, file.Address, file.Name, err)
+	}
+	defer unzipped.Close()
+	reader := tar.NewReader(unzipped)
+	for {
+		header, err := reader.Next()
+		if errors.Is(err, io.EOF) {
+			return 0, fmt.Errorf("%s: %s at %s: %w", file.Name, file.Inside, file.Address, ErrNotInArchive)
+		}
+		if err != nil {
+			return 0, fmt.Errorf("%w: %s answered with no archive for %s: %w", ErrDownload, file.Address, file.Name, err)
+		}
+		if header.Name == file.Inside && header.Typeflag == tar.TypeReg {
+			return io.Copy(into, reader)
+		}
+	}
 }

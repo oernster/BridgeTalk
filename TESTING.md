@@ -52,7 +52,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
+| `internal/infrastructure/modelfiles` | 98.6% | 98% | `test.ps1` |
 | `internal/infrastructure/plugin` | 91.5% | 91% | `test.ps1` |
 | `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
@@ -222,7 +222,10 @@ release is for.
   application. Each is reached through a field on the facade, so the behaviour AROUND
   the call is fully tested and only the call itself is not: the tests substitute the
   field and assert what the facade decided.
-- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (99.1%).** Only a walk from outside
+- **`modelfiles.extractTar` failing to open the archive it was just given (98.6%, with the next
+  entry).** Fetch writes the archive and hands its path straight over, so no test can make the open
+  fail between the two.
+- **`modelfiles.Dir` refusing where no folder above holds `go.mod` (98.6%).** Only a walk from outside
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.

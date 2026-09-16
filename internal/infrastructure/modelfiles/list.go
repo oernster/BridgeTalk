@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/tomlfile"
@@ -12,6 +13,9 @@ import (
 
 //go:embed models.toml
 var embeddedList []byte
+
+// EmbeddedList answers the shipped list as it is written, for a test reading another platform's files.
+func EmbeddedList() []byte { return embeddedList }
 
 // digestDigits is how many hexadecimal digits a SHA-256 is written with.
 const digestDigits = sha256.Size * 2
@@ -31,16 +35,32 @@ type listFile struct {
 
 // listEntry is one file as models.toml gives it.
 type listEntry struct {
-	Name   string `toml:"name"`
-	Source string `toml:"source"`
-	Path   string `toml:"path"`
-	Inside string `toml:"inside"`
-	Size   int64  `toml:"size"`
-	SHA256 string `toml:"sha256"`
+	Name     string `toml:"name"`
+	Platform string `toml:"platform"`
+	Source   string `toml:"source"`
+	Path     string `toml:"path"`
+	Inside   string `toml:"inside"`
+	Size     int64  `toml:"size"`
+	SHA256   string `toml:"sha256"`
 }
 
-// Listed reads the shipped list (FR-535).
-func Listed() ([]File, error) { return Parse(embeddedList) }
+// Listed reads the shipped list (FR-535), answering the files this platform is made from.
+func Listed() ([]File, error) {
+	files, err := Parse(embeddedList)
+	return For(files, runtime.GOOS), err
+}
+
+// For answers the files a platform is made from: every file naming no platform, with those naming
+// that one.
+func For(files []File, platform string) []File {
+	var out []File
+	for _, file := range files {
+		if file.Platform == "" || file.Platform == platform {
+			out = append(out, file)
+		}
+	}
+	return out
+}
 
 // Parse reads a list, refusing an entry that could fetch the wrong thing or put it in the wrong
 // place; a name listed twice is refused too.
@@ -83,7 +103,7 @@ func (e listEntry) file(sources map[string]string) (File, error) {
 	case len(e.SHA256) != digestDigits || strings.Trim(e.SHA256, lowerHex) != "":
 		why = "gives no SHA-256 in lowercase hexadecimal"
 	default:
-		return File{Name: e.Name, Address: source + e.Path, Inside: e.Inside, Size: e.Size, SHA256: e.SHA256}, nil
+		return File{Name: e.Name, Platform: e.Platform, Address: source + e.Path, Inside: e.Inside, Size: e.Size, SHA256: e.SHA256}, nil
 	}
 	return File{}, fmt.Errorf("the entry %q %s: %w", e.Name, why, ErrMisshapenEntry)
 }

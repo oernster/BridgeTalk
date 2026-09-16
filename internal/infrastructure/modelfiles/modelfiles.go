@@ -39,6 +39,9 @@ func Installed(files []File) []string {
 type File struct {
 	// Name is what the file is kept under in the folder, which is the name the application reads.
 	Name string
+	// Platform is the one platform the file is fetched on, as runtime.GOOS names it; empty where
+	// every platform needs it.
+	Platform string
 	// Address is where the file is downloaded from.
 	Address string
 	// Inside is the file's path in the archive Address answers with; empty where Address answers

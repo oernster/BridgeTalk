@@ -24,13 +24,10 @@ import (
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
-// The names setup gives the shared files in the folder.
-const (
-	// ModelFile is the model every machine voice is made with.
-	ModelFile = "model.onnx"
-	// RuntimeFile is ONNX Runtime, which runs the model.
-	RuntimeFile = "onnxruntime.dll"
-)
+// ModelFile is the model every machine voice is made with, under the name setup gives it in the
+// folder. ONNX Runtime, which runs it, is named per platform in runtime_windows.go and
+// runtime_other.go.
+const ModelFile = "model.onnx"
 
 // Folder names the folder the files are kept in: beside the application once installed (FR-539) and
 // at the repository root on the machine that builds the setup program (FR-536).

@@ -4,7 +4,9 @@
 # `go run ./tools/models -check` downloads nothing (FR-538). Every address is pinned: the
 # model repository at one revision, ONNX Runtime at one release. Each SHA-256 is the one
 # published for the file; ONNX Runtime's is that of the file inside the release archive,
-# whose own published digest was checked on 2026-09-14.
+# whose own published digest was checked on 2026-09-14. An entry naming a platform is fetched only on
+# that platform; the rest are fetched everywhere. The Linux runtime's size and SHA-256 were measured
+# over the file inside its release archive on 2026-09-16; no published digest was checked for it.
 
 [sources]
 kokoro = "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/1939ad2a8e416c0acfeecc08a694d14ef25f2231/"
@@ -19,11 +21,21 @@ sha256 = "8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb"
 
 [[files]]
 name = "onnxruntime.dll"
+platform = "windows"
 source = "onnxruntime"
 path = "onnxruntime-win-x64-1.23.2.zip"
 inside = "onnxruntime-win-x64-1.23.2/lib/onnxruntime.dll"
 size = 14186016
 sha256 = "dec964ab1ee36cc9b0ae247d13b376627992fc57dec0454354017ab8fd84f1ea"
+
+[[files]]
+name = "libonnxruntime.so"
+platform = "linux"
+source = "onnxruntime"
+path = "onnxruntime-linux-x64-1.23.2.tgz"
+inside = "onnxruntime-linux-x64-1.23.2/lib/libonnxruntime.so.1.23.2"
+size = 22326072
+sha256 = "13ab8084954fa4a47c777880180b90810d6020f021441395712b48a75b74c68b"
 
 [[files]]
 name = "tokenizer.json"

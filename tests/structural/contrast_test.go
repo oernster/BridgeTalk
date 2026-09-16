@@ -168,22 +168,23 @@ func TestTheSecondaryLinesContrastInBothThemes(t *testing.T) {
 	holdsContrast(t, root, secondaryToken(t, root), "the secondary lines", minimumSecondaryContrast, "FR-318")
 }
 
-// fillToken reads the token the one rule naming selector in the switches' style part fills with.
-func fillToken(t *testing.T, root, selector string) string {
+// ruleToken reads the token that declaration, ruleColour or ruleFill, reads in the one rule naming
+// selector in the style part at path; what names the declaration for the failure.
+func ruleToken(t *testing.T, root, path, selector string, declaration *regexp.Regexp, what string) string {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(root, switchRules))
+	raw, err := os.ReadFile(filepath.Join(root, path))
 	if err != nil {
-		t.Fatalf("reading %s: %v", filepath.ToSlash(switchRules), err)
+		t.Fatalf("reading %s: %v", filepath.ToSlash(path), err)
 	}
-	for _, rule := range parseRules(filepath.Base(switchRules), raw) {
+	for _, rule := range parseRules(filepath.Base(path), raw) {
 		if !slices.Contains(rule.selectors, selector) {
 			continue
 		}
-		if found := ruleFill.FindStringSubmatch(rule.body); found != nil {
+		if found := declaration.FindStringSubmatch(rule.body); found != nil {
 			return found[1]
 		}
 	}
-	t.Fatalf("%s has no rule for %s that fills from a token", filepath.ToSlash(switchRules), selector)
+	t.Fatalf("%s has no rule for %s that %s from a token", filepath.ToSlash(path), selector, what)
 	return ""
 }
 
@@ -194,13 +195,41 @@ func fillToken(t *testing.T, root, selector string) string {
 func TestTheChatterSwitchesContrastInBothThemes(t *testing.T) {
 	root := repoRoot(t)
 	for _, part := range switchParts {
-		holdsContrast(t, root, fillToken(t, root, part), part, minimumSwitchContrast, "FR-736")
+		fill := ruleToken(t, root, switchRules, part, ruleFill, "fills")
+		holdsContrast(t, root, fill, part, minimumSwitchContrast, "FR-736")
 	}
+}
+
+// headingPillRules is the style part drawing a category heading's pill on Chatter and Audition;
+// headingPill is its selector.
+var (
+	headingPillRules = filepath.Join("frontend", "src", "theme", "panes.css")
+	headingPill      = ".pane .heading-pill"
+)
+
+// minimumHeadingContrast is the ratio FR-754 requires: WCAG 2 contrast for normal text at level AA.
+const minimumHeadingContrast = 4.5
+
+// TestTheHeadingPillsContrastInBothThemes holds FR-754: a heading's words read at 4.5 to 1 or
+// better against the pill they stand in, in each theme. Both tokens are read from the rule, so
+// recolouring the pill is measured rather than trusted.
+func TestTheHeadingPillsContrastInBothThemes(t *testing.T) {
+	root := repoRoot(t)
+	words := ruleToken(t, root, headingPillRules, headingPill, ruleColour, "colours")
+	fill := ruleToken(t, root, headingPillRules, headingPill, ruleFill, "fills")
+	holdsContrastOn(t, root, words, []string{fill}, "a heading pill", minimumHeadingContrast, "FR-754")
 }
 
 // holdsContrast measures one token, drawn for what, against every ground a row stands on in each
 // theme, failing wherever it reads under minimum, the ratio the requirement named asks for.
 func holdsContrast(t *testing.T, root, token, what string, minimum float64, requirement string) {
+	t.Helper()
+	holdsContrastOn(t, root, token, backgroundTokens, what, minimum, requirement)
+}
+
+// holdsContrastOn measures one token, drawn for what, against each of grounds in each theme,
+// failing wherever it reads under minimum, the ratio the requirement named asks for.
+func holdsContrastOn(t *testing.T, root, token string, grounds []string, what string, minimum float64, requirement string) {
 	t.Helper()
 	themes := palettes(t, root)
 	for _, selector := range themeSelectors {
@@ -214,7 +243,7 @@ func holdsContrast(t *testing.T, root, token, what string, minimum float64, requ
 			t.Errorf("%s defines no --%s for %s", selector, token, what)
 			continue
 		}
-		for _, ground := range backgroundTokens {
+		for _, ground := range grounds {
 			back, ok := tokens[ground]
 			if !ok {
 				t.Errorf("%s defines no --%s", selector, ground)
@@ -222,7 +251,7 @@ func holdsContrast(t *testing.T, root, token, what string, minimum float64, requ
 			}
 			if ratio := contrast(t, fore, back); ratio < minimum {
 				t.Errorf(
-					"%s: %s, --%s on --%s, measures %.2f to 1, under the %.0f to 1 %s requires",
+					"%s: %s, --%s on --%s, measures %.2f to 1, under the %g to 1 %s requires",
 					selector, what, token, ground, ratio, minimum, requirement,
 				)
 			}

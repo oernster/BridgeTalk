@@ -286,6 +286,21 @@ describe('the audition pane', () => {
     expect(screen.getByRole('region', { name: 'This application' }).textContent).toContain('Cast')
   })
 
+  // FR-754 in the markup: each heading's words stand in a pill. How the pill is drawn is the style
+  // sheet's, which jsdom does not compute.
+  it('draws each category heading as a pill', async () => {
+    auditionGroups.mockResolvedValue([
+      { key: 'Docked', label: 'Docked', clips: 3, switchedOff: false, category: 'Docking and stations' },
+      { key: 'Cast', label: 'Cast', clips: 1, switchedOff: false, category: '' },
+    ])
+    render(<AuditionPane cast="Grace" />)
+    await screen.findByRole('button', { name: /Docked/ })
+
+    for (const heading of screen.getAllByRole('heading', { level: 3 })) {
+      expect(heading.querySelector('.heading-pill')?.textContent).toBe(heading.textContent)
+    }
+  })
+
   // FR-748: a voice whose every group Chatter has switched off says so, rather than suggesting the
   // recordings are missing.
   it('says Chatter has switched off everything the voice could be heard on', async () => {

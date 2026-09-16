@@ -151,6 +151,18 @@ describe('the chatter pane', () => {
     }
   })
 
+  // FR-754 in the markup: each heading's button is its pill. How the pill is drawn is the style
+  // sheet's, which jsdom does not compute.
+  it('draws each category heading as a pill', async () => {
+    await shown()
+
+    for (const category of categories) {
+      const group = within(screen.getByRole('region', { name: category.name }))
+      const heading = group.getByRole('heading', { name: new RegExp(`^${category.name} \\(`) })
+      expect(within(heading).getByRole('button').classList.contains('heading-pill')).toBe(true)
+    }
+  })
+
   // FR-728.
   it('counts the moments switched on under each heading', async () => {
     off = new Set(['Docked'])

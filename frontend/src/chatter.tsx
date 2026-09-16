@@ -197,7 +197,7 @@ export function ChatterPane() {
           >
             <h3>
               <button
-                className="chatter-toggle"
+                className="chatter-toggle heading-pill"
                 data-stop
                 type="button"
                 aria-expanded={!collapsed.has(category.name)}

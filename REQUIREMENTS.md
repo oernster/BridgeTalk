@@ -4001,6 +4001,24 @@ Verified by: "holds Chatter after Audition and a rule before Status and Settings
 `data-stop`, so the ring passes it. Not verified by a test: the rule as drawn, which the style sheet
 decides and jsdom does not compute.
 
+**FR-754 A category heading stands in a pill on Chatter and on Audition**
+Priority: Should.
+Each category heading on the Chatter list and on the Audition pane shall draw its words in the
+secondary colour inside a fully rounded pill filled with the soft secondary colour, the words reading
+at a contrast of at least 4.5 to 1 against the pill in the light theme and the dark one. On Chatter
+the pill shall be the heading's button (FR-744), wearing the ring as before.
+Rationale: Oliver, 2026-09-16: a heading drawn in the text colour among many rows of text in the same
+colour did not catch the eye while scrolling. Lavender rather than the accent: orange already means
+something speaking. Measured that day, the orange pair reads 3.88 to 1 in the light theme while the
+lavender pair reads 6.13 to 1 in the light theme and 8.42 to 1 in the dark one. 4.5 to 1 is WCAG 2
+success criterion 1.4.3 at level AA for normal text.
+Acceptance: Given Chatter open, then the heading "Docking and stations (2 of 2 on)" is drawn in
+lavender inside a lavender pill; given Audition open on a voice, then the heading "Comms" is too.
+Verified by: `TestTheHeadingPillsContrastInBothThemes` in `tests/structural/contrast_test.go` for the
+contrast; "draws each category heading as a pill" in `frontend/src/chatter.test.tsx` and in
+`frontend/src/audition.test.tsx` for the markup. Not verified by a test: the pill as drawn, which the
+style sheet decides and jsdom does not compute.
+
 **FR-745 An audition draws only on moments switched on**
 Priority: Should.
 When a group is auditioned, the application shall draw the take or the line from the moments of that
@@ -4548,7 +4566,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-753, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

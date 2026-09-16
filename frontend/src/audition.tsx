@@ -205,7 +205,9 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
           </p>
           {sectionsOf(offered).map((section) => (
             <section key={section.heading} aria-label={section.heading}>
-              <h3>{section.heading}</h3>
+              <h3>
+                <span className="heading-pill">{section.heading}</span>
+              </h3>
               <div className="groups">
                 {section.groups.map((group) => (
                   <button

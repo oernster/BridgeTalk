@@ -102,3 +102,21 @@
   font-size: 17px;
   font-weight: 600;
 }
+
+/* --pill-round rounds a box's ends fully whatever its height: any radius at least half the
+   tallest pill does; this one is past any line of text. */
+:root {
+  --pill-round: 999px;
+}
+
+/* A category's name on Chatter and on Audition stands in a lavender pill (FR-754), so a heading
+   still catches the eye among the rows of plain text around it as the list scrolls. Lavender
+   rather than the accent: orange already means something speaking; the lavender pair reads
+   at more than 4.5 to 1 in each theme where the orange pair does not in the light one. */
+.pane .heading-pill {
+  display: inline-block;
+  padding: 2px 12px;
+  border-radius: var(--pill-round);
+  background: var(--secondary-soft);
+  color: var(--secondary);
+}

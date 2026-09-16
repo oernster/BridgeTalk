@@ -14,6 +14,30 @@ function backend() {
     return window.go && window.go.main && window.go.main.App
 }
 
+// quitMessage is what Wails' own dispatcher reads as "quit" when it arrives on the
+// webview's message channel (dispatcher.go in wails v2.12.0, case 'Q'); its runtime
+// Quit sends exactly this.
+const quitMessage = 'Q'
+
+// closer answers how this page can close its window; null when it has no way to.
+// The setup program's Quit comes first. Without it, the Wails runtime and then the
+// webview's own channel still reach the dispatcher that closes the window, since
+// neither goes through the setup program's bound methods; that is how a page that
+// never reached the setup program still offers Close (FR-807).
+function closer() {
+    if (backend()) return () => backend().Quit()
+    if (window.runtime && window.runtime.Quit) return () => window.runtime.Quit()
+    const webview = window.chrome && window.chrome.webview
+    if (webview) return () => webview.postMessage(quitMessage)
+    return null
+}
+
+// closeSetup closes the window by the first way closer finds.
+function closeSetup() {
+    const close = closer()
+    if (close) close()
+}
+
 /* ------------------------------------------------------------------ theme */
 
 // applyTheme sets the theme and points the button at the theme it would switch to,
@@ -170,7 +194,7 @@ async function run(work, title, doneTitle, doneMsg) {
         $('done-title').textContent = doneTitle
         $('done-msg').textContent = doneMsg
         showScreen('done')
-        setFooter([{label: 'Close', kind: 'primary', onClick: () => backend().Quit()}])
+        setFooter([{label: 'Close', kind: 'primary', onClick: closeSetup}])
     } catch (e) {
         showError(String(e))
     }
@@ -182,16 +206,18 @@ async function run(work, title, doneTitle, doneMsg) {
 function finish(work, wanted, title, doneTitle, doneMsg) {
     return withAppClosed(() => run(
         () => work().then(() => {
-            if (wanted) return backend().LaunchApp().then(() => backend().Quit())
+            if (wanted) return backend().LaunchApp().then(closeSetup)
         }),
         title, doneTitle, doneMsg + (wanted ? ' It is starting now.' : ''),
     ))
 }
 
+// showError offers Close wherever the page has a way to close; a Close that could
+// do nothing is left off rather than drawn.
 function showError(message) {
     $('error-msg').textContent = message
     showScreen('error')
-    setFooter([{label: 'Close', kind: 'primary', onClick: () => backend().Quit()}])
+    setFooter(closer() ? [{label: 'Close', kind: 'primary', onClick: closeSetup}] : [])
 }
 
 // withAppClosed runs the work once the application is not running. If it is, the
@@ -234,7 +260,7 @@ function install(read, title, doneTitle, doneMsg, installDir = '') {
     }
     return withAppClosed(() => run(
         () => backend().Install(choices).then(() => {
-            if (launchAfter) return backend().LaunchApp().then(() => backend().Quit())
+            if (launchAfter) return backend().LaunchApp().then(closeSetup)
         }),
         title, doneTitle,
         doneMsg + (launchAfter ? ' It is starting now.' : ''),

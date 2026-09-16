@@ -2,153 +2,30 @@
 // (FR-805), where the install goes (FR-809), what the Uninstall screen offers about the plugins
 // folder (FR-578) and what a refused step shows (FR-807).
 //
-// The setup page has no build step and no test runner of its own, so the page is laid out here
-// from the very file it ships and its scripts are run the way the page runs them. The setup
-// program behind the page is a hand-written fake that answers the calls the screens make. What is
-// asserted is the screen shown, the button holding focus and the calls made.
+// The page is laid out from the very file it ships, with a hand-written fake setup program behind it
+// (setupPage.ts). What is asserted is the screen shown, the button holding focus and the calls made.
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import page from '../../installer/frontend/dist/index.html?raw'
-import shell from '../../installer/frontend/dist/setup-shell.js?raw'
-import routes from '../../installer/frontend/dist/setup-routes.js?raw'
-
-/** State is the reading of the machine the setup program hands the page. */
-interface State {
-  appName: string
-  mode: string
-  relation: string
-  installed: boolean
-  installedVersion: string
-  thisVersion: string
-  installDir: string
-  launchOnBoot: boolean
-  startMenu: boolean
-  desktop: boolean
-  prefersDark: boolean
-  keepablePlugins: string
-}
-
-/** Options are the choices the page hands an install. */
-interface Options {
-  installDir?: string
-  startMenu: boolean
-  desktop: boolean
-  launchOnBoot: boolean
-}
-
-/** InstallLocation answers a pick of the install folder. */
-interface InstallLocation {
-  dir: string
-  refusal: string
-}
-
-/** FakeSetup stands in for the setup program, recording the calls that change anything. */
-class FakeSetup {
-  running = false
-  quits = 0
-  /** refusal is what every call that changes the machine answers with in place of doing it. */
-  refusal = ''
-  /** answer resolves; else it rejects with the refusal as the setup program's bound methods reject. */
-  answer = (): Promise<void> => (this.refusal === '' ? Promise.resolve() : Promise.reject(this.refusal))
-  /** uninstalls records each removal as whether to forget the settings, then the plugins. */
-  uninstalls: [boolean, boolean][] = []
-  installs: Options[] = []
-  /** picks are the answers the folder picker gives, one per press of Change. */
-  picks: InstallLocation[] = []
-  /** pickedFrom records the folder each pick was opened from. */
-  pickedFrom: string[] = []
-
-  AppRunning = (): Promise<boolean> => Promise.resolve(this.running)
-  Quit = (): void => {
-    this.quits++
-  }
-  Uninstall = (forget: boolean, removePlugins: boolean): Promise<void> => {
-    this.uninstalls.push([forget, removePlugins])
-    return this.answer()
-  }
-  Repair = (): Promise<void> => this.answer()
-  Install = (choices: Options): Promise<void> => {
-    this.installs.push(choices)
-    return this.answer()
-  }
-  ChooseInstallLocation = (current: string): Promise<InstallLocation> => {
-    this.pickedFrom.push(current)
-    return Promise.resolve(this.picks.shift() ?? { dir: '', refusal: '' })
-  }
-  LaunchApp = (): Promise<void> => Promise.resolve()
-  CloseRunningApp = (): Promise<void> => this.answer()
-  TakeKeyboard = (): Promise<void> => Promise.resolve()
-  SetShortcuts = (): Promise<void> => Promise.resolve()
-  SetLaunchOnBoot = (): Promise<void> => Promise.resolve()
-}
-
-/** The page's own names, as its scripts leave them on the global scope. */
-interface SetupPage {
-  route: (state: State) => void
-}
-
-const bodyOfPage = /<body>([\s\S]*)<\/body>/
-
-/** installed is a machine with this version already on it, opened as a double-click opens it. */
-const installed: State = {
-  appName: 'Product',
-  mode: 'manage',
-  relation: 'same',
-  installed: true,
-  installedVersion: '1.0.0',
-  thisVersion: '1.0.0',
-  installDir: 'C:\\Programs\\Product',
-  launchOnBoot: false,
-  startMenu: true,
-  desktop: true,
-  prefersDark: false,
-  keepablePlugins: '',
-}
+import {
+  activeScreen,
+  FakeSetup,
+  focusedLabel,
+  footerButton,
+  footerLabels,
+  installed,
+  layPage,
+  pageElement,
+  settle,
+  type SetupPage,
+  type State,
+} from './setupPage'
 
 let setup: FakeSetup
-
-/** layPage puts the shipped page on the document and runs its scripts once, as the page does. */
-function layPage(): SetupPage {
-  const body = bodyOfPage.exec(page)
-  if (body === null) throw new Error('the setup page has no body')
-  document.body.innerHTML = body[1]
-  setup = new FakeSetup()
-  ;(window as unknown as { go: unknown }).go = { main: { App: setup } }
-  // An indirect eval runs the scripts in the global scope, as script tags do. They go in as one
-  // because the routes read names the shell declares.
-  const evaluate = eval
-  evaluate(shell + '\n' + routes)
-  return window as unknown as SetupPage
-}
-
-/** focusedLabel names the button holding focus. */
-function focusedLabel(): string {
-  return document.activeElement?.textContent ?? ''
-}
-
-/** activeScreen names the screen on show. */
-function activeScreen(): string {
-  return document.querySelector('.screen.active')?.id ?? ''
-}
-
-/** footerButton finds a footer button by its label, failing loudly rather than handing back null. */
-function footerButton(label: string): HTMLButtonElement {
-  const found = Array.from(document.querySelectorAll<HTMLButtonElement>('#footer .btn')).find(
-    (button) => button.textContent === label,
-  )
-  if (found === undefined) throw new Error(`no ${label} button in the footer`)
-  return found
-}
-
-/** settle lets the page's awaited calls to the fake answer. */
-function settle(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0))
-}
-
 let setupPage: SetupPage
 
 beforeEach(() => {
-  setupPage = layPage()
+  setup = new FakeSetup()
+  setupPage = layPage(setup)
 })
 
 describe('each setup screen opens on the action it leads with', () => {
@@ -189,13 +66,6 @@ describe('each setup screen opens on the action it leads with', () => {
     expect(focusedLabel()).toBe('Close')
   })
 })
-
-/** pageElement finds one element of the page by id, failing loudly rather than handing back null. */
-function pageElement(id: string): HTMLElement {
-  const found = document.getElementById(id)
-  if (found === null) throw new Error(`no #${id} on the page`)
-  return found
-}
 
 describe('the install location (FR-809)', () => {
   const nothingInstalled: State = { ...installed, mode: 'install', installed: false }
@@ -337,8 +207,7 @@ describe('a failure says why (FR-807)', () => {
     expect(activeScreen()).toBe('screen-error')
     expect(pageElement('screen-error').querySelector('h1')?.textContent).toBe('Something went wrong')
     expect(pageElement('error-msg').textContent).toBe(refusal)
-    const actions = Array.from(document.querySelectorAll('#footer .btn')).map((button) => button.textContent)
-    expect(actions).toEqual(['Close'])
+    expect(footerLabels()).toEqual(['Close'])
     footerButton('Close').click()
     expect(setup.quits).toBe(1)
   })

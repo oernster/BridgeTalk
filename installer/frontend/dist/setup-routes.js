@@ -25,7 +25,7 @@ function routeInstall(state) {
     ]))
     showScreen('install')
     setFooter([
-        {label: 'Cancel', onClick: () => backend().Quit()},
+        {label: 'Cancel', onClick: closeSetup},
         {
             label: 'Install', kind: 'primary',
             onClick: () => install(read, `Installing ${appName}`,
@@ -52,7 +52,7 @@ function routeChange(state) {
     showScreen('update')
     setFooter([
         {label: 'Uninstall', kind: 'danger', onClick: () => routeUninstall(state)},
-        {label: 'Close', onClick: () => backend().Quit()},
+        {label: 'Close', onClick: closeSetup},
         {
             label: goingBack ? 'Go back' : 'Update', kind: 'primary',
             onClick: () => install(read,
@@ -94,7 +94,7 @@ function routeManage(state) {
     showScreen('manage')
     setFooter([
         {label: 'Uninstall', kind: 'danger', onClick: () => routeUninstall(state)},
-        {label: 'Close', onClick: () => backend().Quit()},
+        {label: 'Close', onClick: closeSetup},
         {
             // FR-235: the boxes as they stand, never a set of choices of its own.
             label: 'Reinstall', onClick: () => finish(
@@ -143,7 +143,7 @@ function routeUninstall(state) {
     // screen is this one, so there is nothing to go back to: setup closes and leaves the
     // reader on the list they came from (FR-805).
     setFooter([
-        {label: 'Cancel', onClick: () => state.mode === 'manage' ? route(state) : backend().Quit()},
+        {label: 'Cancel', onClick: () => state.mode === 'manage' ? route(state) : closeSetup()},
         {
             label: 'Uninstall', kind: 'danger', lead: true,
             onClick: () => withAppClosed(() => run(
@@ -175,8 +175,7 @@ async function init() {
         tries++
     }
     if (!backend()) {
-        $('error-msg').textContent = 'Could not reach the setup program.'
-        showScreen('error')
+        showError('Could not reach the setup program.')
         return
     }
     window.runtime.EventsOn('progress', onProgress)

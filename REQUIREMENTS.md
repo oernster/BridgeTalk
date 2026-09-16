@@ -163,7 +163,7 @@ leaves unmeasured is OQ-23.
 **The reference machine** for the performance requirements is the development machine they were
 measured on, read on 2026-09-16: an AMD Ryzen 9 9900X with 12 cores and 24 threads, 61.6 GB of
 memory and the temporary folder on an NVMe solid state drive, running Windows 11 Pro. Named by
-Claude so NFR-P-201 had a machine to be measured on; Oliver may name another.
+Claude so NFR-P-201 had a machine to be measured on; Oliver kept it on 2026-09-16.
 
 ### 2.4 Constraints
 
@@ -988,7 +988,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to three names in the setup package, so of setup's writes only the sign-in entry is reached. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `windows.LoadDLL` by its whole path and nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
-| NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. The limit is a proposal for Oliver to react to rather than a measurement; nothing has been built to measure |
+| NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. Claude proposed the limit rather than measuring it; Oliver accepted it as proposed on 2026-09-16. Measuring it waits on a built plugin, which needs a C toolchain the development machine does not have |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
 **Non claims, stated deliberately:**
@@ -2491,8 +2491,9 @@ Rationale: a moment's line is sometimes recorded in pieces. Offering the pieces 
 would let the picker choose the middle of a line and speak it alone. Every kind of voice answers the
 same shape, so the catalogue, the picker and the player learn nothing about where a take came from
 (Oliver, 2026-09-16). A natural join between parts is enough; nothing here asks for gapless playback.
-Note: a scanned recorded voice and a machine voice answer takes of one part each today. Whether the
-scanner ever groups files into one take is OQ-21.
+Note: a scanned recorded voice and a machine voice answer takes of one part each today. Oliver ruled on
+2026-09-16 (OQ-21) that the scanner groups no files into one take until that is asked for: a recorded
+voice would need a convention invented for it, which is a feature of its own with its own reporting.
 Built on 2026-09-16 as far as the port reaches: `ports.AudioSource` answers takes, the domain owns
 `take.Take` with the key that identifies one, the picker chooses whole takes and the scheduler hands
 a take's parts to the player, which has always played a sequence.
@@ -2584,7 +2585,8 @@ Rationale: uninstall hands the whole install directory to a shell that removes i
 2026-09-16 in `dirDeletion`), so a plugin the user installed separately would go without being
 mentioned.
 Amended on 2026-09-16 from "at least one file" to "anything": a plugin may keep what it needs in a
-folder beside itself; a folder the user put there would be lost as silently as a file.
+folder beside itself; a folder the user put there would be lost as silently as a file. Claude made the
+amendment; Oliver accepted it the same day.
 Built on 2026-09-16. The offer is "Also remove my plugins", unticked, beside "Also forget my
 settings", so the plugins are kept unless asked otherwise, as the settings are. Its hint names the
 folder; so does the verdict where it was kept. The delete then removes everything directly
@@ -4068,9 +4070,14 @@ heading, the refusal word for word and Close alone, which closes setup; so does 
 will not close. Seen to fail with Close left off the screen, with the reason left off it, with a
 refusal swallowed where the step ran and with a copy that would not close sending the reader back
 instead. Not verified by a test: the words the setup program itself refuses with, which are held by
-the refusal tests of `internal/infrastructure/setup`. Measured on 2026-09-16 and left for Oliver: when
-the page cannot reach the setup program at all it shows the error screen with no Close, since Close
-would ask the program it cannot reach; the window's own cross is then the only way out.
+the refusal tests of `internal/infrastructure/setup`.
+A page that cannot reach the setup program at all offers Close as well (Oliver, 2026-09-16). It closes
+the window through the Wails runtime, else through the web view's own message channel; neither goes
+through the setup program. Where neither is there it draws no Close rather than one that does nothing.
+Verified by `frontend/src/setupUnreachable.test.ts`, seen to fail on 2026-09-16 with Close left off
+that screen, with the web view's channel taken away and with Close drawn where nothing could close.
+Not verified by a test: that Wails closes the window on that message, which is read from its source
+(`dispatcher.go` in wails v2.12.0) and has not been seen on screen.
 
 **FR-808 Setup answers the keyboard**
 Priority: Must.
@@ -4182,7 +4189,6 @@ headless test is how it gets tested.
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
 | OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
-| OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---

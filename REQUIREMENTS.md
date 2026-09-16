@@ -2404,7 +2404,18 @@ While a plugin voice is cast, the checklist shall name the moments that voice ha
 shall not offer to open or create a folder for any of them.
 Rationale: the checklist opens the folder a recording belongs in. A plugin voice has no such folder,
 since the application does not know where its audio lives and may not write there.
-Verified by: nothing yet.
+Built on 2026-09-16. The list is read off the catalogue rather than off a directory, on Oliver's
+ruling that day; it carries an empty folder. The empty folder is what says so on the wire: the
+pane shows neither the path nor the way to open it for a list that carries none, so it keeps no
+rule of its own about which kinds of voice have folders. Only the cast voice has a catalogue, so
+only the cast plugin voice has a list; every other state answers an empty one rather than an
+error.
+Verified by: `TestTheCastPluginVoiceHasAChecklistWithNoFolder` and
+`TestNoPluginVoiceCastHasNothingToCheck` in `checklist_test.go`, the first seen to fail with a
+folder planted on the answer; `lists the moments it has no take for`, `offers no folder for any of
+them` and `leaves the recorded voices their folders` in
+`frontend/src/missingTakes.plugin.test.tsx`, the second seen to fail with the button drawn
+whatever the list carried.
 
 **FR-572 The application never writes a plugin's audio**
 Priority: Must.

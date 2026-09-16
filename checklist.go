@@ -45,6 +45,31 @@ func (a *App) Checklist(voice string) (ChecklistDTO, error) {
 	}, nil
 }
 
+// PluginChecklist answers what the cast plugin voice has no take for, with how many moments it
+// does have one for and no folder at all (FR-571).
+//
+// It is read off the catalogue rather than off a directory, because a plugin voice has no
+// directory this application owns: where its audio lives is the plugin's business and may not be
+// written to (FR-572). The empty folder is what says so on the wire: the pane offers no way to
+// open or create one for a list that carries none, rather than keeping a rule of its own about
+// which kinds of voice have folders.
+//
+// Only the cast voice has a catalogue, so only the cast plugin voice has a list here. Any other
+// state answers an empty list rather than an error: the pane behind it is a thing to read, so it
+// has nothing to report.
+func (a *App) PluginChecklist() ChecklistDTO {
+	if a.session.active.Plugin == "" || a.session.catalogue == nil {
+		return ChecklistDTO{Missing: []CueDTO{}}
+	}
+	recorded, total := a.session.catalogue.Coverage()
+	return ChecklistDTO{
+		Voice:    a.session.active.Display,
+		Recorded: recorded,
+		Total:    total,
+		Missing:  cueLines(a.session.catalogue.Unbound()),
+	}
+}
+
 // OpenMomentFolder opens the folder a take for one moment belongs in, making it where it
 // is missing (FR-314). Nothing is opened for a moment that cannot be reached (FR-315).
 func (a *App) OpenMomentFolder(voice, id string) error {

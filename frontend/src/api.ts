@@ -79,6 +79,7 @@ interface Bridge {
   Rescan(): Promise<number>
   VoiceDirectories(): Promise<string[]>
   Checklist(voice: string): Promise<Checklist>
+  PluginChecklist(): Promise<Checklist>
   OpenMomentFolder(voice: string, id: string): Promise<void>
   OpenDonation(): Promise<void>
   SetLaunchOnBoot(enabled: boolean): Promise<void>
@@ -178,6 +179,15 @@ export const api = {
   checklist: (voice: string): Promise<Checklist> =>
     bridge()?.Checklist(voice) ??
     Promise.resolve({ voice, recorded: 0, total: 0, missing: [], folder: '' }),
+
+  /**
+   * What the cast plugin voice has no take for, with no folder at all: a plugin's audio is the
+   * plugin's own and there is nothing here to open or create (FR-571). It is empty where the cast
+   * voice is of any other kind.
+   */
+  pluginChecklist: (): Promise<Checklist> =>
+    bridge()?.PluginChecklist() ??
+    Promise.resolve({ voice: '', recorded: 0, total: 0, missing: [], folder: '' }),
 
   /**
    * Opens the folder a take for one moment belongs in, making it where it is missing. It

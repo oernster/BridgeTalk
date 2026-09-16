@@ -346,7 +346,11 @@ export function App() {
           <AuditionPane cast={state?.voice ?? ''} machine={state?.machineVoice ?? false} />
         )}
         {pane === 'takes' && (
-          <MissingTakesPane cast={state?.voice ?? ''} libraryRoot={state?.libraryRoot} />
+          <MissingTakesPane
+            cast={state?.voice ?? ''}
+            plugin={state?.plugin ?? ''}
+            libraryRoot={state?.libraryRoot}
+          />
         )}
         {pane === 'chatter' && <ChatterPane />}
         {pane === 'guide' && <GuidePane />}

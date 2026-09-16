@@ -4,6 +4,12 @@
 // Recording itself happens in a program built for it. What only this application knows
 // is which moments a voice is missing and exactly which folder each take belongs in, so
 // that is the whole of this pane.
+//
+// A cast plugin voice is offered here too, listing the moments it has no take for. Its list
+// carries no folder, since a plugin's audio is the plugin's own and this application may not
+// write to it: a list with no folder is shown without the path and without the way to open it
+// (FR-571). The pane keeps no rule about which kinds of voice have folders; it reads the one
+// each list came with.
 
 import { useEffect, useState } from 'react'
 import { api, type Checklist } from './api'
@@ -24,9 +30,12 @@ const stillMissing = (lists: Checklist[]) => lists.filter((list) => list.missing
  */
 export function MissingTakesPane({
   cast,
+  plugin,
   libraryRoot,
 }: {
   cast: string
+  /** The plugin the cast voice came from, empty for every other kind (FR-569). */
+  plugin: string
   // Undefined until the state arrives; empty where no recordings directory is chosen.
   libraryRoot?: string
 }) {
@@ -41,6 +50,11 @@ export function MissingTakesPane({
     void api
       .voiceDirectories()
       .then((found) => Promise.all(found.map((name) => api.checklist(name))))
+      // The cast plugin voice's list comes first, since it is the voice speaking. Nothing is
+      // asked for where no plugin voice is cast, which is almost every run.
+      .then(async (folders) =>
+        plugin === '' ? folders : [await api.pluginChecklist(), ...folders],
+      )
       .then((read) => {
         setLists(read)
         const offered = stillMissing(read).map((list) => list.voice)
@@ -51,7 +65,7 @@ export function MissingTakesPane({
         )
       })
       .catch((reason: unknown) => setProblem(String(reason)))
-  }, [cast, looks])
+  }, [cast, plugin, looks])
 
   // A look reads the recordings directory again for the whole window, so a voice filled
   // here appears on the Cast pane too. The lists are read again whatever that finds.
@@ -150,10 +164,14 @@ export function MissingTakesPane({
       {list !== null && (
         <>
           <p className="meta">
-            {`${list.voice} has recordings for ${list.recorded} of ${list.total} moments.`}
+            {list.folder === ''
+              ? `${list.voice} has takes for ${list.recorded} of ${list.total} moments.`
+              : `${list.voice} has recordings for ${list.recorded} of ${list.total} moments.`}
           </p>
           <p className="lede">
-            Each moment below says when it is heard, then the folder its audio file is saved in.
+            {list.folder === ''
+              ? 'These are the moments this voice has no take for. Its audio belongs to the plugin that offers it, so there is no folder here to open or fill.'
+              : 'Each moment below says when it is heard, then the folder its audio file is saved in.'}
           </p>
           {/* FR-233: each moment under its full title alone, so no words are shown twice. */}
           {list.missing.map((item) => (
@@ -163,18 +181,26 @@ export function MissingTakesPane({
                 <br />
                 {/* FR-318: when the take will be heard, between the title and its folder. */}
                 <span className="purpose">{item.purpose}</span>
-                <br />
-                <span className="hint">{`${list.folder}${item.folder}`}</span>
+                {/* A list with no folder shows neither the path nor the way to open it: there is
+                    no folder to name and nothing this application may write to (FR-571). */}
+                {list.folder !== '' && (
+                  <>
+                    <br />
+                    <span className="hint">{`${list.folder}${item.folder}`}</span>
+                  </>
+                )}
               </span>
-              <button
-                className="btn"
-                data-stop
-                type="button"
-                aria-label={`Open the folder for ${item.title}`}
-                onClick={() => open(item.id)}
-              >
-                Open folder
-              </button>
+              {list.folder !== '' && (
+                <button
+                  className="btn"
+                  data-stop
+                  type="button"
+                  aria-label={`Open the folder for ${item.title}`}
+                  onClick={() => open(item.id)}
+                >
+                  Open folder
+                </button>
+              )}
             </div>
           ))}
         </>

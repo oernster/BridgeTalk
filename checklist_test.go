@@ -105,3 +105,48 @@ func TestAMomentFolderThatCannotBeOpenedIsReported(t *testing.T) {
 		t.Fatalf("got %v, want the refusal carried", err)
 	}
 }
+
+// FR-571: a cast plugin voice's list is read off the catalogue and carries no folder, since a
+// plugin's audio is the plugin's own and nothing here may write to it.
+func TestTheCastPluginVoiceHasAChecklistWithNoFolder(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	app.session.plugins = offering(t, "Bridge Crew", officer())
+	if err := app.CastPluginVoice("Bridge Crew", "one"); err != nil {
+		t.Fatalf("casting: %v", err)
+	}
+
+	list := app.PluginChecklist()
+
+	if list.Voice != "The First Officer" {
+		t.Errorf("the list is for %q, want the name the plugin gave", list.Voice)
+	}
+	if list.Folder != "" {
+		t.Errorf("the list carries the folder %q, want none at all", list.Folder)
+	}
+	if list.Total != app.session.table.Len() {
+		t.Errorf("the list counts %d moments, want every one in the table", list.Total)
+	}
+	// The voice answers the fixture's docking cue alone, so every other moment is missing and
+	// the one it holds is not.
+	if list.Recorded != 1 || len(list.Missing) != list.Total-1 {
+		t.Fatalf("the list holds %d recorded and %d missing, want one take and the rest missing",
+			list.Recorded, len(list.Missing))
+	}
+	for _, each := range list.Missing {
+		if each.ID == "Docked" {
+			t.Error("the moment the plugin holds a take for is listed as missing")
+		}
+	}
+}
+
+// Every other state answers an empty list rather than an error: the pane behind it is a thing to
+// read, so it has nothing to report.
+func TestNoPluginVoiceCastHasNothingToCheck(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+
+	list := app.PluginChecklist()
+
+	if list.Voice != "" || list.Missing == nil || len(list.Missing) != 0 {
+		t.Errorf("the list is %+v, want an empty one", list)
+	}
+}

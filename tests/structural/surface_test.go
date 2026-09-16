@@ -22,7 +22,7 @@ var boundSurface = []string{
 	"About", "Audition", "AuditionGroups", "AuditionMachineVoice", "CastMachineVoice", "CastPluginVoice", "Chatter", "Checklist", "ChooseJournalDir", "ChooseLibraryRoot",
 	"SetAllMoments", "SetCategory", "SetMoment",
 	"CueBreakdown", "Licence", "MachineAuditionGroups", "MachineVoices", "MakeVoiceFolders", "Making", "MinimiseToTray", "Muted", "OpenDonation", "OpenMomentFolder", "Playing",
-	"PluginVoices", "Quit", "Reactions", "RequestQuit", "Rescan", "SelectVoice", "SetLaunchOnBoot",
+	"PluginChecklist", "PluginVoices", "Quit", "Reactions", "RequestQuit", "Rescan", "SelectVoice", "SetLaunchOnBoot",
 	"VoiceDirectories",
 	"SetMuted",
 	"SetVolume", "State", "StopAudition", "TakeKeyboard", "Voices", "Volume",

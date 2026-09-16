@@ -8,17 +8,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { Checklist, CueEntry } from './api'
+import { chooser, docked, hyperspace, progress, undocked } from './missingTakesFixtures'
 
 const voiceDirectories = vi.fn<() => Promise<string[]>>()
 const checklist = vi.fn<(voice: string) => Promise<Checklist>>()
 const openMomentFolder = vi.fn<(voice: string, id: string) => Promise<void>>()
 const rescan = vi.fn<() => Promise<number>>()
 const chooseLibraryRoot = vi.fn<() => Promise<string>>()
+const pluginChecklist = vi.fn<() => Promise<Checklist>>()
 
 vi.mock('./api', () => ({
   api: {
     voiceDirectories: () => voiceDirectories(),
     checklist: (voice: string) => checklist(voice),
+    pluginChecklist: () => pluginChecklist(),
     openMomentFolder: (voice: string, id: string) => openMomentFolder(voice, id),
     rescan: () => rescan(),
     chooseLibraryRoot: () => chooseLibraryRoot(),
@@ -27,39 +30,11 @@ vi.mock('./api', () => ({
 
 const { MissingTakesPane } = await import('./missingTakes')
 
-const docked: CueEntry = {
-  id: 'Docked',
-  title: 'Docked',
-  folder: 'Docked',
-  purpose: 'When the ship docks.',
-}
-const undocked: CueEntry = {
-  id: 'Undocked',
-  title: 'Undocked',
-  folder: 'Undocked',
-  purpose: 'When the ship leaves its pad.',
-}
-const hyperspace: CueEntry = {
-  id: 'StartJump.JumpType.Hyperspace',
-  title: 'Start jump: jump type hyperspace',
-  folder: 'StartJump_JumpType_Hyperspace',
-  purpose: 'When a hyperspace jump to another system begins.',
-}
-
 /** renderedPurpose opens the pane on Oliver and returns the hyperspace moment's purpose. */
 const renderedPurpose = async () => {
-  render(<MissingTakesPane cast="Oliver" />)
+  render(<MissingTakesPane cast="Oliver" plugin="" />)
   return screen.findByText(hyperspace.purpose)
 }
-
-/** progress builds a voice's checklist over a vocabulary of three moments. */
-const progress = (voice: string, missing: CueEntry[]): Checklist => ({
-  voice,
-  recorded: 3 - missing.length,
-  total: 3,
-  missing,
-  folder: `D:\\Recordings\\${voice}\\`,
-})
 
 // What each voice misses. Built afresh before every test, so a test that changes it for a
 // look cannot leave the change behind for the next one even where it fails part way.
@@ -68,7 +43,14 @@ let fixture: Record<string, CueEntry[]> = {}
 beforeEach(() => {
   // Grace is complete, Hugo is an empty folder and Oliver holds one take of three.
   fixture = { Grace: [], Hugo: [docked, hyperspace, undocked], Oliver: [docked, hyperspace] }
-  for (const spy of [voiceDirectories, checklist, openMomentFolder, rescan, chooseLibraryRoot]) {
+  for (const spy of [
+    voiceDirectories,
+    checklist,
+    pluginChecklist,
+    openMomentFolder,
+    rescan,
+    chooseLibraryRoot,
+  ]) {
     spy.mockReset()
   }
   voiceDirectories.mockResolvedValue(['Grace', 'Hugo', 'Oliver'])
@@ -76,16 +58,9 @@ beforeEach(() => {
   openMomentFolder.mockResolvedValue(undefined)
   rescan.mockResolvedValue(1)
   chooseLibraryRoot.mockResolvedValue('')
+  // Nothing is offered from a plugin unless a test casts one, which is the ordinary run.
+  pluginChecklist.mockResolvedValue({ voice: '', recorded: 0, total: 0, missing: [], folder: '' })
 })
-
-/**
- * chooser finds the voice chooser once the lists have landed. findAll rather than find,
- * because the complete state names itself twice: in the chooser and in the pane.
- */
-async function chooser(): Promise<HTMLSelectElement> {
-  await screen.findAllByText(/has recordings for|No voices yet|Every voice is complete/)
-  return screen.getByRole('combobox') as HTMLSelectElement
-}
 
 /** browse presses the recordings row's Browse button. */
 function browse() {
@@ -97,26 +72,26 @@ describe('the recordings directory on the missing takes pane', () => {
   // Each waits for the lists to land before it ends, so no update arrives after the test
   // and the run stays free of the warning that hides real ordering faults.
   it('shows the directory it reads from', async () => {
-    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
 
     expect(screen.getByText('D:/Recordings')).toBeTruthy()
     await chooser()
   })
 
   it('says when no directory is chosen and waits while the state is on its way', async () => {
-    const { unmount } = render(<MissingTakesPane cast="Oliver" libraryRoot="" />)
+    const { unmount } = render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="" />)
     expect(screen.getByText('None chosen yet')).toBeTruthy()
     await chooser()
     unmount()
 
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     expect(screen.getByText('...')).toBeTruthy()
     await chooser()
   })
 
   it('confirms the directory it took, then reads its folders at once', async () => {
     chooseLibraryRoot.mockResolvedValue('D:/Takes')
-    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
     await waitFor(() => expect(voiceDirectories).toHaveBeenCalledTimes(1))
 
     browse()
@@ -132,7 +107,7 @@ describe('the recordings directory on the missing takes pane', () => {
   // colour read as a button that did nothing.
   it('says why a directory was refused, as a refusal under its own row', async () => {
     chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
-    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
 
     browse()
 
@@ -143,7 +118,7 @@ describe('the recordings directory on the missing takes pane', () => {
   })
 
   it('says nothing at all when the dialog is cancelled', async () => {
-    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
 
     browse()
@@ -157,7 +132,7 @@ describe('the recordings directory on the missing takes pane', () => {
 
   it('clears what the last press said before the next one answers', async () => {
     chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
-    render(<MissingTakesPane cast="Oliver" libraryRoot="D:/Recordings" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
     browse()
     await screen.findByRole('alert')
 
@@ -171,7 +146,7 @@ describe('the recordings directory on the missing takes pane', () => {
 describe('the missing takes pane', () => {
   // FR-316: a complete voice has nothing to record; an empty folder has everything.
   it('offers only the voices still missing takes, each with what it misses', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     const select = await chooser()
 
     expect(Array.from(select.options).map((option) => option.textContent)).toEqual([
@@ -182,7 +157,7 @@ describe('the missing takes pane', () => {
   })
 
   it('opens on the first voice still missing a take when the cast voice is complete', async () => {
-    render(<MissingTakesPane cast="Grace" />)
+    render(<MissingTakesPane cast="Grace" plugin="" />)
 
     expect((await chooser()).value).toBe('Hugo')
   })
@@ -190,7 +165,7 @@ describe('the missing takes pane', () => {
   // FR-311 and FR-313: each missing moment says where its audio file goes. FR-233: under its
   // full title alone, with no heading repeating the start of that title.
   it('lists each missing moment under its full title with the folder its file belongs in', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     expect(await screen.findByText('Oliver has recordings for 1 of 3 moments.')).toBeTruthy()
     expect(screen.getByText(hyperspace.title)).toBeTruthy()
@@ -215,7 +190,7 @@ describe('the missing takes pane', () => {
   // FR-314. The button pressed is the second moment's, so one wired to whichever moment
   // happens to be missing first is caught rather than passing by coincidence.
   it('opens the folder for the moment whose button was pressed', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     fireEvent.click(
       await screen.findByRole('button', {
@@ -229,7 +204,7 @@ describe('the missing takes pane', () => {
   // FR-315.
   it('draws a folder that could not be opened as a refusal', async () => {
     openMomentFolder.mockRejectedValue('that folder could not be made')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Open the folder for Docked' }))
 
@@ -237,7 +212,7 @@ describe('the missing takes pane', () => {
   })
 
   it('switches the list to the voice chosen', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     fireEvent.change(await chooser(), { target: { value: 'Hugo' } })
 
@@ -249,7 +224,7 @@ describe('the missing takes pane', () => {
   // while that voice still misses something. Hugo's count changes on the look, so the
   // assertion can only pass once the look has landed.
   it('keeps the voice chosen across a look', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     fireEvent.change(await chooser(), { target: { value: 'Hugo' } })
     await screen.findByText('Hugo has recordings for 0 of 3 moments.')
     fixture.Hugo = [docked, hyperspace]
@@ -262,7 +237,7 @@ describe('the missing takes pane', () => {
 
   // FR-316 over time: a voice finished between looks leaves the chooser.
   it('drops a voice from the chooser once a look finds it complete', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = []
 
@@ -275,7 +250,7 @@ describe('the missing takes pane', () => {
   // FR-317: the chooser stays and says why it has nothing to offer.
   it('keeps the chooser, saying there are no voices yet, when there is no voice folder', async () => {
     voiceDirectories.mockResolvedValue([])
-    render(<MissingTakesPane cast="" />)
+    render(<MissingTakesPane cast="" plugin="" />)
     const select = await chooser()
 
     expect(select.disabled).toBe(true)
@@ -286,7 +261,7 @@ describe('the missing takes pane', () => {
 
   it('keeps the chooser, saying every voice is complete, when none misses a take', async () => {
     checklist.mockImplementation((voice) => Promise.resolve(progress(voice, [])))
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     const select = await chooser()
 
     expect(select.disabled).toBe(true)
@@ -301,14 +276,14 @@ describe('the missing takes pane', () => {
 
   it('draws voice folders that could not be read as a refusal', async () => {
     voiceDirectories.mockRejectedValue('the recordings directory could not be read')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/directory could not be read/)
   })
 
   it('draws a checklist that could not be read as a refusal', async () => {
     checklist.mockRejectedValue('that voice folder could not be read')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/folder could not be read/)
   })
@@ -317,7 +292,7 @@ describe('the missing takes pane', () => {
   // rather than leaving an old reason on screen beside a list that has since loaded.
   it('takes a refusal down when the next look begins', async () => {
     checklist.mockRejectedValueOnce('that voice folder could not be read')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByRole('alert')
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
@@ -328,7 +303,7 @@ describe('the missing takes pane', () => {
 
   it('takes a refusal down when the next open begins', async () => {
     openMomentFolder.mockRejectedValueOnce('that folder could not be made')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     const button = await screen.findByRole('button', { name: 'Open the folder for Docked' })
     fireEvent.click(button)
     await screen.findByRole('alert')
@@ -341,7 +316,7 @@ describe('the missing takes pane', () => {
 
   // FR-214 from here: a look rescans for the whole window, then reads the lists again.
   it('looks again and reads the lists again', async () => {
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = [hyperspace]
 
@@ -354,7 +329,7 @@ describe('the missing takes pane', () => {
   // A rescan refused for want of a voice is no reason to leave a stale list on screen.
   it('reads the lists again even when the rescan is refused', async () => {
     rescan.mockRejectedValue('no voice was found')
-    render(<MissingTakesPane cast="Oliver" />)
+    render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = [hyperspace]
 

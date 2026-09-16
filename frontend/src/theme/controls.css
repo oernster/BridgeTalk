@@ -30,14 +30,14 @@
 }
 
 /* A cue's purpose on the Missing takes pane: when the take will be heard, standing between
-   the title and the folder path. The secondary colour sets it apart from both. A Status
-   card's tagline (FR-716) is the same kind of line, saying what the figure above it means,
-   so the two share this rule; a structural test holds its colour to 7 to 1 against every
-   ground in each theme (FR-318). */
+   the title and the folder path. The note colour sets it apart from both. A Status card's
+   tagline (FR-716) is the same kind of line, saying what the figure above it means, so the
+   two share this rule; a structural test holds its colour to 7 to 1 against every ground in
+   each theme (FR-318). */
 .row .purpose,
 .card .tagline {
   font-size: 15px;
-  color: var(--secondary);
+  color: var(--note);
 }
 
 /* A box standing on a row, sized against the row's own control height rather than

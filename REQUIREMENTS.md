@@ -912,14 +912,18 @@ in `checklist_test.go` at the repository root; `frontend/src/missingTakes.test.t
 **FR-318 Show when each missing take will be heard**
 Priority: Must.
 When the Missing takes pane lists a cue, it shall show the cue's purpose (FR-231) on the line
-beneath its title and above its folder path, in the theme's secondary text colour, so the
+beneath its title and above its folder path, in the theme's note colour, so the
 purpose reads apart from both. That colour shall measure a contrast of at least 7 to 1 against
 the page and panel backgrounds in both the light theme and the dark one.
 Rationale: the list is useful to someone recording only if it says when each take will be heard
 (Oliver, 2026-09-13).
 Acceptance: Given `Oliver/` with no take for `Cast.Confirmed`, when Oliver is chosen, then the
 row reads "Cast: confirmed", then the purpose of `Cast.Confirmed`, then
-`<library root>\Oliver\Cast_Confirmed`, the purpose drawn in the secondary colour.
+`<library root>\Oliver\Cast_Confirmed`, the purpose drawn in the note colour.
+Note: the line was drawn in the secondary colour, lavender, until Oliver asked on 2026-09-16 for
+one that stood apart from the lavender heading pills of FR-754. The note colour is cyan, measured
+that day at 7.67 to 1 on the page and 8.42 to 1 on the panel in the light theme, 11.23 to 1 and
+10.37 to 1 in the dark one.
 Verified by: `frontend/src/missingTakes.test.tsx` for the line and its place in the row;
 `TestTheChecklistCountsWhatIsRecorded` for the purpose reaching the page;
 `TestTheSecondaryLinesContrastInBothThemes` in `tests/structural/contrast_test.go` for the colour.
@@ -3512,7 +3516,7 @@ Priority: Should.
 The Status pane shall lay its cards across the pane's whole width, the cards widening to share the row
 rather than leaving an empty stretch beside them and dropping to fewer a row only where the pane is too
 narrow. Under each card's value the pane shall show a tagline, smaller than the value and in the
-theme's secondary text colour (FR-318), saying what the card means:
+theme's note colour (FR-318), saying what the card means:
 
 | Card | Tagline |
 |---|---|
@@ -3785,7 +3789,7 @@ Verified by: "opens the Chatter pane from the band" in `frontend/src/App.test.ts
 Priority: Must.
 The Chatter pane shall list the categories in the order of FR-635, each heading followed by every
 moment in that category, a moment standing under its full title (FR-233) with its purpose (FR-231)
-beneath in the secondary text colour (FR-318) and its switch beside it.
+beneath in the note colour (FR-318) and its switch beside it.
 Acceptance: Given the shipped table, when the pane opens, then `Docked` is listed under Docking and
 stations as "Docked" with the purpose "When the ship finishes docking, as the journal records it." and
 a switch.

@@ -17,7 +17,7 @@ import {
 
 /**
  * Card renders one labelled figure with the lines saying what it means beneath it, drawn
- * smaller than the figure in the secondary text colour (FR-716). A shortfall that is
+ * smaller than the figure in the note colour (FR-716). A shortfall that is
  * expected has to say so where it is shown; sending the reader to another pane to find
  * out is what a defect feels like.
  */

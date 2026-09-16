@@ -307,7 +307,7 @@ that writes one is refused by name, as is a table writing any other key the load
 **The exception is the purpose (FR-231).** A title can only restate its id, which does not tell someone
 recording a take when it will be heard. Each cue therefore carries one sentence saying so, written in the
 table by hand; `cue.Cue.Purpose` returns it unchanged. The Missing takes pane shows it beneath each title
-in the secondary colour (FR-318), which `tests/structural/contrast_test.go` holds to 7 to 1 against
+in the note colour (FR-318), which `tests/structural/contrast_test.go` holds to 7 to 1 against
 the surface and panel grounds in both themes.
 
 **The shipped set.** The journal cues leave out the snapshots the game writes at login or when a screen
@@ -755,7 +755,7 @@ for the same reason: Enter straight after the press keeps the choice made for ea
 and the terms the source carries cannot differ; About names the licence in a sentence.
 
 **Status.** Four cards widen to share their row: the cast voice, Moments covered, the journal directory
-and the status file. Beneath each figure a tagline in the secondary text colour, the colour the purpose
+and the status file. Beneath each figure a tagline in the note colour, the colour the purpose
 line on Missing takes is drawn in, says what the card means; a tagline naming the product waits for
 About to name it. Moments covered adds the line for the cast voice's situation, so a figure short of the
 whole reads as a gap in the recordings or a machine voice still making its lines rather than as a fault

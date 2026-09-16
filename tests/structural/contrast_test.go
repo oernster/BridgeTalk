@@ -18,7 +18,7 @@ var (
 	themeTokens   = filepath.Join("frontend", "src", tokenFile)
 )
 
-// secondaryLines are the lines drawn in the theme's secondary text colour: the Missing
+// secondaryLines are the lines drawn in the theme's note colour: the Missing
 // takes purpose line (FR-318) and the Status cards' taglines (FR-716). They share one rule,
 // so the one token measured here is the colour every one of them is drawn in.
 var secondaryLines = []string{".row .purpose", ".card .tagline"}
@@ -156,7 +156,7 @@ func namesEvery(selectors, wanted []string) bool {
 }
 
 // TestTheSecondaryLinesContrastInBothThemes holds FR-318 for every line drawn in the
-// secondary text colour, the Status cards' taglines of FR-716 among them: whatever token
+// note colour, the Status cards' taglines of FR-716 among them: whatever token
 // their shared rule draws in reads at 7 to 1 or better against every ground a row stands
 // on, in each theme. The token is read from the rule rather than named here, so recolouring
 // the lines is measured rather than trusted.

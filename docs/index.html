@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bridge Talk: a ship's voice for Elite Dangerous</title>
-<meta name="description" content="Give your ship a voice in Elite Dangerous. Pick one of 28 ready-made voices or record your own; your ship answers docking, jumps, fuel, heat and danger as they happen. Free for Windows.">
+<meta name="description" content="Give your ship a voice in Elite Dangerous. Pick one of 28 ready-made voices or record your own; your ship answers docking, jumps, fuel, heat and danger as they happen. Free for Windows and Linux.">
 <meta name="author" content="Oliver Ernster">
 <meta name="application-name" content="Bridge Talk">
 <meta name="robots" content="index, follow">
@@ -34,7 +34,7 @@
       "name": "Bridge Talk",
       "applicationCategory": "GameApplication",
       "applicationSubCategory": "Elite Dangerous companion",
-      "operatingSystem": "Windows",
+      "operatingSystem": "Windows, Linux",
       "downloadUrl": "https://github.com/oernster/BridgeTalk/releases/latest",
       "inLanguage": "en-GB",
       "description": "A ship's voice for Elite Dangerous. Pick one of 28 ready-made voices or record your own and your ship answers the game as you play.",
@@ -65,7 +65,7 @@
         {"@type": "Question", "name": "Will it talk over itself?", "acceptedAnswer": {"@type": "Answer", "text": "Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like."}},
         {"@type": "Question", "name": "Can I stop it saying some things?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken."}},
         {"@type": "Question", "name": "What happens to my recordings if I uninstall?", "acceptedAnswer": {"@type": "Answer", "text": "Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not."}},
-        {"@type": "Question", "name": "Which computers does it run on?", "acceptedAnswer": {"@type": "Answer", "text": "Windows. It installs just for your own account, so it never asks for administrator permission."}},
+        {"@type": "Question", "name": "Which computers does it run on?", "acceptedAnswer": {"@type": "Answer", "text": "Windows and Linux. On Windows it installs just for your own account, so it never asks for administrator permission. On Linux it comes as a flatpak, installed for your own account and given no network access."}},
         {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation."}}
       ]
     }
@@ -90,7 +90,7 @@
         <a class="btn ghost" href="#voices">Meet the voices</a>
         <a class="btn ghost" href="#record">Record your own</a>
       </div>
-      <p class="platform-note fade d3">Free for Windows &middot; waits quietly out of the way &middot; talks, never listens</p>
+      <p class="platform-note fade d3">Free for Windows and Linux &middot; waits quietly out of the way &middot; talks, never listens</p>
       <figure class="shot hero-shot fade d4">
         <img src="images/cast.png" alt="The Cast pane, where a voice is chosen to speak for the ship" decoding="async" fetchpriority="high">
         <figcaption>Choose a voice on the Cast pane and it speaks for your ship.</figcaption>
@@ -304,7 +304,7 @@
           <figcaption>Start it when you sign in, if you like.</figcaption>
         </figure>
         <figure class="shot">
-          <img src="images/audition.png" loading="lazy" decoding="async" alt="The Audition pane, with one play button for each part of the game">
+          <img src="images/audition.png" loading="lazy" decoding="async" alt="The Audition pane, with a play button for each part of the game under a heading for each category">
           <figcaption>Hear a voice one part of the game at a time.</figcaption>
         </figure>
         <figure class="shot">
@@ -316,7 +316,7 @@
           <figcaption>Find the lines still to record.</figcaption>
         </figure>
         <figure class="shot">
-          <img src="images/chatter.png" loading="lazy" decoding="async" alt="The Chatter pane, with Switch all on, Switch all off and a switch for each category above a list of moments, each with a switch of its own">
+          <img src="images/chatter.png" loading="lazy" decoding="async" alt="The Chatter pane, with Switch all on, Switch all off and a switch for each category above the moments of a category in three columns, each with a switch of its own">
           <figcaption>Choose which moments it speaks for.</figcaption>
         </figure>
       </div>
@@ -332,7 +332,7 @@
         <div class="card"><h3>Will it talk over itself?</h3><p>Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like.</p></div>
         <div class="card"><h3>Can I stop it saying some things?</h3><p>Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken.</p></div>
         <div class="card"><h3>What happens to my recordings if I uninstall?</h3><p>Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not.</p></div>
-        <div class="card"><h3>Which computers does it run on?</h3><p>Windows. It installs just for your own account, so it never asks for administrator permission.</p></div>
+        <div class="card"><h3>Which computers does it run on?</h3><p>Windows and Linux. On Windows it installs just for your own account, so it never asks for administrator permission. On Linux it comes as a flatpak, installed for your own account and given no network access.</p></div>
         <div class="card"><h3>Is it free?</h3><p>Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation.</p></div>
       </div>
     </section>
@@ -340,8 +340,8 @@
     <section id="download">
       <div class="eyebrow">Get Bridge Talk</div>
       <h2 class="section-title">Download Bridge Talk</h2>
-      <p class="section-sub">One setup program installs everything, the ready-made voices included.</p>
-      <span class="dl-version" id="dl-version">Version <!--VERSION-->1.2.0<!--/VERSION--></span>
+      <p class="section-sub">One download installs everything, the ready-made voices included.</p>
+      <span class="dl-version" id="dl-version">Version <!--VERSION-->1.3.0<!--/VERSION--></span>
       <div class="downloads">
         <div class="dl-card">
           <div class="ico">&#129695;</div>
@@ -351,6 +351,14 @@
           <p class="meta" data-asset="BridgeTalkSetup.exe">Setup program</p>
           <p class="meta">Windows may show a SmartScreen warning when you run it: <a href="https://ernster.dev/windows-smartscreen.html">here's why</a>.</p>
           <p class="how">Run it and choose a Start Menu entry, a Desktop shortcut or starting when you sign in. It installs under your own account unless you pick another folder. A newer one updates it; the same one repairs or uninstalls it.</p>
+        </div>
+        <div class="dl-card">
+          <div class="ico">&#128039;</div>
+          <h3>Linux</h3>
+          <p class="req">A flatpak for your own account</p>
+          <a class="btn primary" href="https://github.com/oernster/BridgeTalk/releases/latest/download/BridgeTalk.flatpak">Download for Linux</a>
+          <p class="meta" data-asset="BridgeTalk.flatpak">Flatpak bundle</p>
+          <p class="how">Install it with <code>flatpak install --user BridgeTalk.flatpak</code>, then start Bridge Talk from your applications menu. It finds the game's journal inside its Proton or Wine prefix and is given no network access.</p>
         </div>
       </div>
       <p class="dl-links">

@@ -346,7 +346,7 @@ h2.section-title {
   border-radius: 999px;
   padding: 4px 14px;
 }
-.downloads { display: grid; grid-template-columns: minmax(0, 420px); justify-content: center; margin-top: 28px; }
+.downloads { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 420px)); gap: 20px; justify-content: center; margin-top: 28px; }
 .dl-card {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -363,6 +363,7 @@ h2.section-title {
 .dl-card .btn { margin: 14px auto 4px; }
 .dl-card .meta { color: var(--muted); font-size: 12.5px; min-height: 1.2em; margin: 0; }
 .dl-card .how { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.dl-card .how code { font-family: var(--mono); color: var(--text); overflow-wrap: anywhere; }
 .dl-links { color: var(--muted); font-size: 14px; margin: 18px 0 0; }
 
 footer {

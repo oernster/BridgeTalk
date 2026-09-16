@@ -1,6 +1,6 @@
 # Bridge Talk: Requirements Specification
 
-Section 11 records open questions; it holds one at present.
+Section 11 records open questions; it holds none at present.
 
 ---
 
@@ -41,8 +41,8 @@ project.
   and machine voices both reach the catalogue through it.
 - Plugins: voices supplied by native libraries the user installs into the application's own plugins
   folder, reaching the catalogue through that same port (section 6.3).
-- Windows and Linux, decided by Oliver on 2026-09-13. Linux work comes after
-  everything else.
+- Windows and Linux, decided by Oliver on 2026-09-13. Linux ships as a flatpak offering recorded
+  voices, machine voices and plugins (section 9.1).
 
 **Out of scope:**
 
@@ -74,7 +74,7 @@ project.
 | Checking a plugin's signature or its author | A plugin is trusted because the user put it in the folder (Oliver, 2026-09-16); stated as a non claim in section 5 |
 | Finding, downloading, installing or updating a plugin from the application | A plugin is installed by its own means; the application loads what is in the folder and nothing more |
 | A plugin adding cues, altering the cue table or changing playback | FR-502; a plugin supplies audio alone |
-| Loading a plugin from a path the user chooses | FR-560; one folder inside the install directory, so what is loaded can be seen by opening it |
+| Loading a plugin from a path the user chooses | FR-560; one folder, inside the install directory on Windows and inside the user's data folder on Linux, so what is loaded can be seen by opening it |
 
 ### 1.4 Definitions
 
@@ -82,7 +82,7 @@ project.
 |---|---|
 | **Cue** | One thing the application can play, plus the game condition that triggers it. Identified by a stable id spelled in the game's own words, such as `StartJump.JumpType.Hyperspace`. Defined in `cues.toml`. |
 | **Cue vocabulary** | The complete set of cue ids in `cues.toml`. Currently 263. |
-| **Voice** | A recorded voice or a machine voice, selectable as a whole. |
+| **Voice** | A recorded voice, a machine voice or a plugin voice, selectable as a whole. |
 | **Recorded voice** | One person's recordings: a directory under the library root that yields at least one take. Sections 3 and 4 say voice for a recorded voice. |
 | **Machine voice** | One of the 28 English voices of the Kokoro model shipped with the application, identified by the model's own id, such as `bf_emma`. Its takes are made lines (section 6.1). |
 | **Script** | `script.toml`: the words each cue is spoken with, shared by every machine voice. |
@@ -148,11 +148,13 @@ A single person is usually both.
 
 ### 2.3 Operating environment
 
-Windows. Go with Wails hosting a React and TypeScript front end. No CGO: `build.ps1`
-sets `CGO_ENABLED` to `0`. Elite Dangerous journal files in their standard location
+Windows and Linux. Go with Wails hosting a React and TypeScript front end. On Windows no CGO:
+`build.ps1` sets `CGO_ENABLED` to `0`; the flatpak build sets it to `1` for webkit2gtk and the audio
+output (FR-810). Elite Dangerous journal files in their standard location
 unless another directory is chosen in Settings or passed with `-journal`. No network
 dependency at runtime: the application makes no outbound request. Machine voices run on the
-processor alone through one native library loaded with cgo disabled, ONNX Runtime (CON-8).
+processor alone through one native library, ONNX Runtime, loaded with no C bindings written for it
+(CON-8).
 
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. The library
 schema in section 3 is already portable, so nothing there changes either way. It is delivered as a
@@ -178,7 +180,7 @@ Claude so NFR-P-201 had a machine to be measured on; Oliver kept it on 2026-09-1
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
 | CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. Amended on 2026-09-16 for Linux: ONNX Runtime is loaded and called through purego there, with no C bindings written for it, while the flatpak build of the application itself has cgo on for webkit2gtk and the audio output (FR-810); purego then loads the library through the C runtime rather than its own loader. |
 | CON-9 | No file in this repository, tracked or ignored, names the audio a plugin reads, the folders it sits in, the way it is arranged or the words it is described by. The interface speaks the application's own cue ids and file paths alone. That mapping lives in the plugin's own repository. Added on 2026-09-16. |
-| CON-10 | A plugin is a native library loaded from the application's own install directory, so loading one asks for no administrator rights (CON-6) and writes nothing outside it. Added on 2026-09-16. |
+| CON-10 | A plugin is a native library loaded from the plugins folder of FR-560: inside the application's own install directory on Windows, so loading one asks for no administrator rights (CON-6); inside the user's own data folder on Linux (FR-818). Loading a plugin writes nothing; on Linux the application makes the folder itself (FR-819). Added on 2026-09-16. |
 
 ### 2.5 Assumptions
 
@@ -1278,9 +1280,9 @@ confirmation taken from the first cue whatever its source; each failed its test.
 `TestWithNothingMadeEveryLineIsToMakeInTheVoicesAccent` and
 `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in `internal/domain/making/making_test.go` for
 the lines still to make, with
-`TestAShippedLineIsMadeByTheRealModel` in `internal/infrastructure/speechmodel/maker_windows_test.go`
+`TestAShippedLineIsMadeByTheRealModel` in `internal/infrastructure/speechmodel/maker_native_test.go`
 for the real model making a shipped line, with `TestLinesSurviveTheirStackMovingWhileTheModelIsCalled`
-in `internal/infrastructure/speechmodel/stress_windows_test.go` for lines made while goroutine stacks
+in `internal/infrastructure/speechmodel/stress_test.go` for lines made while goroutine stacks
 move (6 of 150 lines broke before the fix on 2026-09-14, none after) and
 `TestAddressesAreConvertedOnlyWhereTheCallIsMade` in `tests/structural/syscall_test.go` (it named 17
 addresses and the wrapper that carried them before the fix), with
@@ -2290,8 +2292,9 @@ plugin's audio is, where it came from and how it is arranged are the plugin's ow
 named nowhere in this repository (CON-9).
 
 Oliver ruled on 2026-09-16 that the setup program creates the plugins folder, which answers OQ-22.
-The application never creates it: it treats an absent folder as no plugins rather than as a fault
-(FR-562), so it writes nothing inside its own install directory.
+On Windows the application never creates it: it treats an absent folder as no plugins rather than
+as a fault (FR-562), so it writes nothing inside its own install directory. Linux has no setup
+program, so there the application makes the folder in its data folder (FR-819).
 
 **FR-560 Plugins are loaded from one folder**
 Priority: Must.
@@ -2844,7 +2847,7 @@ Priority: Must.
 The application shall ask the journal, then the status file, for new events every 250 milliseconds.
 If asking one fails, then it shall print the reason to standard error and ask the other as usual.
 While no voice is cast, events are read and let go.
-Verified by: `TestAFailingSourceDoesNotStopTheOthers` in `facade_test.go`;
+Verified by: `TestAFailingSourceDoesNotStopTheOthers` in `loop_test.go`;
 `TestEventsReachTheReactionServiceOnlyOnceAVoiceIsCast` in `session_test.go`. Not verified by a
 test: the 250 milliseconds.
 
@@ -3295,8 +3298,8 @@ When the user mutes from the band, the Audio menu or the tray, the application s
 sounding, play no reaction until unmuted (FR-611) and mark Mute in the tray menu. Each run starts
 unmuted.
 Note: an audition plays while muted (FR-216); a cast confirmation does not (FR-232).
-Verified by: `TestMutingSilencesTheDeviceAndUnmutingDoesNot` and
-`TestEachTrayChoiceActsThroughTheControlItMirrors` in `facade_test.go`;
+Verified by: `TestMutingSilencesTheDeviceAndUnmutingDoesNot` in `facade_test.go`;
+`TestEachTrayChoiceActsThroughTheControlItMirrors` in `loop_test.go`;
 `TestTheFacadeAnswersWithNoVoiceCast` in `app_test.go`; `TestTheTrayIsKeptInStepWithTheSession` in
 `session_test.go`; "offers the mute as the act rather than as the state" in
 `frontend/src/App.menus.test.tsx`. Not verified by a test: starting unmuted; the mark in the tray
@@ -3309,11 +3312,13 @@ The application shall keep the level chosen for the next run. It shall start at 
 first run; so it shall where what is kept is not a level between silence and full. With no audio
 device the control shall still answer.
 Verified by: `TestTheVolumeIsReadFromAndWrittenToTheDevice` and
-`TestTheVolumeControlsAnswerWithNoDevice` in `facade_test.go`; `TestSetVolumeClampsOutOfRange` in
-`internal/infrastructure/audio/player_test.go`; "starts at full volume on a first run rather than at
-silence", "restores the level that was chosen last time and pushes it to the player", "ignores a
-stored level outside the range the slider offers" and "remembers a level the slider was moved to" in
-`frontend/src/App.storage.test.tsx`.
+`TestTheVolumeControlsReadAndWriteTheDeviceLevel` in `facade_test.go`, for reading and writing the
+level; `TestSetVolumeClampsOutOfRange` in `internal/infrastructure/audio/player_test.go`; "starts at
+full volume on a first run rather than at silence", "restores the level that was chosen last time and
+pushes it to the player", "ignores a stored level outside the range the slider offers" and "remembers
+a level the slider was moved to" in `frontend/src/App.storage.test.tsx`. Not verified by a test: the
+control answering with no audio device, since both facade tests run over a fake player that always
+answers and none builds the application over a device that will not open.
 
 **FR-707 Light and dark**
 Priority: Should.
@@ -4025,6 +4030,11 @@ style sheet decides and jsdom does not compute.
 
 **FR-745 An audition draws only on moments switched on**
 Priority: Should.
+**Not yet built for a plugin voice.** The Audition pane's chooser holds the recorded voices the scan
+found and the machine voices alone (`frontend/src/audition.tsx`, `voiceNamed` in `voices.go`), so no
+plugin voice reaches the pane. Offering plugin voices on Audition is a feature Oliver ruled on
+2026-09-16 is to be built, shaped by the primary plugin example he will describe; until then the plugin
+clause below has nothing to act on.
 When a group is auditioned, the application shall draw the take or the line from the moments of that
 group switched on in Chatter alone, for a recorded voice, a plugin voice and a machine voice alike.
 Rationale: Oliver, 2026-09-16. Audition is for hearing what the ship would say; a moment switched off
@@ -4036,7 +4046,7 @@ does not list, the cue from the application (FR-634), is always switched on.
 Acceptance: Given `bf_emma` with `Docked.Cleared` switched off and `Docked` and `Docked.Set` on, when
 Docked is auditioned, then the line played is one of the lines of `Docked` or `Docked.Set`.
 Verified by: `TestAnAuditionDrawsOnlyOnMomentsSwitchedOn` in
-`internal/infrastructure/library/heard_test.go` for a recorded or plugin voice;
+`internal/infrastructure/library/heard_test.go` for a recorded voice;
 `TestAGroupGivesOnlyTheLinesOfItsCuesHeard` in `internal/domain/making/group_test.go` and
 `TestAMachineAuditionDrawsOnlyOnMomentsSwitchedOn` in
 `internal/application/services/making_audition_test.go` for a machine voice;
@@ -4139,7 +4149,7 @@ backend's marking of each group is FR-747's.
 **FR-742 A fault in the loop watching the game ends the loop alone**
 Priority: Must.
 If the loop that watches the game raises a fault, then the application shall end that loop, shall
-write the fault and where it was raised to the run log (FR-715) and shall say on the Home pane that
+write the fault and where it was raised to the run log (FR-715) and shall say on the Status pane that
 it has stopped reacting, in the words the fault was raised with.
 Rationale: on 2026-09-15 a nil pointer in one of the loop's arms ended the whole run (b4e0065). The
 window went; the only account of why reached a log nobody had been asked to open. The fix that
@@ -4154,7 +4164,7 @@ A recovered fault that reaches no surface is worse than the application ending, 
 looks alive and answers nothing tells the reader nothing at all. That is why the saying is part of
 the requirement rather than a courtesy.
 Acceptance: Given a run watching a journal, when the source raises a fault while being polled, then
-the Home pane says Bridge Talk has stopped reacting to the game in the fault's own words, the run
+the Status pane says Bridge Talk has stopped reacting to the game in the fault's own words, the run
 log holds the fault with its stack and the source is never polled again.
 Verified by: `TestAFaultInTheLoopIsSaidRatherThanEndingTheRun` in `app_test.go`, seen to fail with
 the guard removed, where the fault took the whole test process down; "says the application has
@@ -4347,13 +4357,12 @@ VERSION the one home for the version on this path as on the others. The applicat
 house form, `uk.codecrafter.BridgeTalk`. Section 9.1 says what the application does differently
 on Linux.
 Verified by: `bash -n` over `build_flatpak.sh` and `cleanup_flatpak.sh` on 2026-09-16; the grants the
-manifest is written from are held by FR-813's test. Not verified: either script run, since no machine
-here has flatpak or flatpak-builder. Two things only that run settles: whether the golang extension's
-Go satisfies `go.mod` or fetches the toolchain it names over the build's network; whether the
-GNOME SDK carries the ALSA headers the audio output's cgo build needs. The icons are written by
-`tools/linuxicons` from the committed `.ico`; `TestEveryPictureIsInstalledAtItsSize` holds that.
-Oliver installed and ran the first step's bundle on 2026-09-16. The model files are fetched inside the
-sandbox for the second step (FR-817), so the bundle carries the model of about 310 MB. Oliver installed
+manifest is written from are held by FR-813's test. `build_flatpak.sh` built the bundles Oliver
+installed and ran on Linux on 2026-09-16, so the golang extension's Go and the GNOME SDK's headers
+served that build. Not verified: `cleanup_flatpak.sh`, which has not been seen run. The icons are
+written by `tools/linuxicons` from the committed `.ico`; `TestEveryPictureIsInstalledAtItsSize` holds
+that. Oliver installed and ran the first step's bundle on 2026-09-16. The model files are fetched
+inside the sandbox for the second step (FR-817), so the bundle carries the model of 325.5 MB. Oliver installed
 that bundle on his Linux machine on 2026-09-16 and heard the machine voices speak.
 
 ### 9.1 Linux
@@ -4407,7 +4416,8 @@ Rationale: a Linux machine has several places the game may be; a reader told onl
 tell whether the right one was tried.
 Acceptance: Given a home where none of the directories exists, when the application starts, then
 the window opens and the Status pane lists each directory of FR-811 that was built, in order.
-Verified by: `TestOnLinuxNoPrefixNamesEveryPlaceLooked` in the same file, seen to fail on 2026-09-16
+Verified by: `TestOnLinuxNoPrefixNamesEveryPlaceLooked` in
+`internal/infrastructure/journal/location_test.go`, seen to fail on 2026-09-16
 with only the first place named. That the reason reaches the Status pane is FR-238's path, read from
 `openJournal` in `journaldir.go` rather than tested again here.
 
@@ -4558,9 +4568,6 @@ headless test is how it gets tested.
 
 ## 11. Open questions
 
-| ID | Question | Owner | Confirm by | Recommendation |
-|---|---|---|---|---|
-
 There are no open questions.
 
 ---
@@ -4570,7 +4577,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

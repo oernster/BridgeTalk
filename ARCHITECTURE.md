@@ -8,7 +8,9 @@ application talks to the commander and never listens.
 It ships no recordings. The application makes no request of its own. The Go source that imports a
 network package is the model files download alone: `internal/infrastructure/modelfiles`, its test
 support `modelfilestest` and the `tools/models` command. The application imports none of them;
-`net/http` reaches it through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request.
+`net/http` reaches it through Wails alone, which `TestTheApplicationImportsNoNetworkPackage` holds
+over every package of this module the application links. The front end makes no request, which
+`TestTheFrontEndMakesNoRequest` holds.
 
 ## Invariant
 
@@ -25,13 +27,19 @@ exactly like one that holds.
 | Domain is pure: no network, filesystem, process or database package; no wall clock or global random source | `TestDomainIsPure` | `boundary_test.go` |
 | Application never imports infrastructure or wails | `TestApplicationDoesNotImportInfrastructure` | `boundary_test.go` |
 | Only the composition root wires the application services to infrastructure | `TestCompositionRootIsWhitelisted` | `boundary_test.go` |
+| No package of this module the application links imports a network package | `TestTheApplicationImportsNoNetworkPackage` | `network_test.go` |
+| The front end's own source neither makes a request nor names an address to make one to | `TestTheFrontEndMakesNoRequest` | `network_test.go` |
+| The request pattern catches every form a page makes a request with and passes ordinary words | `TestTheRequestPatternCatchesEachWayARequestIsMade` | `network_test.go` |
+| Every write in a package the application links is listed with where it goes; nothing listed has gone | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` | `writes_test.go` |
+| The application reaches the setup package for the sign-in entry and the plugins folder alone | `TestTheApplicationCallsNoOtherSetupWrite` | `writes_test.go` |
 | No source file exceeds the 400-line limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
 | No source file sits in the danger band of 381 to 400 lines | `TestNoFileInDangerBand` | `boundary_test.go` |
 | A file's lines are counted as an editor numbers them, so the newline ending a file adds none | `TestLineCountCountsTheLinesAnEditorShows` | `linecount_test.go` |
 | Every exported type carries a doc comment | `TestEveryExportedTypeIsDocumented` | `boundary_test.go` |
 | No colour value appears in `frontend/src` outside the theme token file | `TestColoursOnlyInTokens` | `colours_test.go` |
-| The secondary lines, the Missing takes purpose line and the Status cards' taglines, share one rule whose colour reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestTheSecondaryLinesContrastInBothThemes` | `contrast_test.go` |
+| The purpose lines on Missing takes and Chatter and the Status cards' taglines share one rule whose colour, the cyan note, reads at 7 to 1 or better against the surface and panel grounds in both themes | `TestTheSecondaryLinesContrastInBothThemes` | `contrast_test.go` |
 | The thumb of every Chatter switch and the track of a switch while on read at 3 to 1 or better against the surface and panel grounds in both themes | `TestTheChatterSwitchesContrastInBothThemes` | `contrast_test.go` |
+| A category heading's words read at 4.5 to 1 or better against its pill in both themes | `TestTheHeadingPillsContrastInBothThemes` | `contrast_test.go` |
 | The product is named in one Go file; no Go string literal, front-end source or setup page file spells it | `TestTheProductIsNamedOnce` | `identity_test.go` |
 | Both forms of the identity survive being a file name | `TestTheIdentityCanBeAFileName` | `identity_test.go` |
 | Every disabled control wears the danger ring at all times | `TestEveryDisabledControlWearsTheDangerRing` | `rings_test.go` |
@@ -56,6 +64,8 @@ exactly like one that holds.
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | The setup page, the scripts beside it and `setupScripts` stay in step: the page loads every script and every script has a place in the list | `TestTheSetupPageLoadsEveryScript` | `setupring_test.go` |
 | The setup page's body, a keyboard stop because it scrolls, wears a focus ring | `TestTheSetupBodyRingsForTheKeyboard` | `setupring_test.go` |
+| The flatpak is granted exactly the grants FR-813 lists, none of them network, under the product's own id | `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` | `flatpak_test.go` |
+| The flatpak installs the model files in the folder the application reads them from | `TestTheFlatpakInstallsTheModelFilesWhereTheyAreRead` | `flatpak_test.go` |
 | The Status cards widen to share their row: their grid fits its columns to the cards | `TestTheStatusCardsWidenToShareTheRow` | `strip_test.go` |
 | The strip is three quarters of the band's height, derived from the sizes the band's own rules draw it with | `TestTheStripIsAShareOfTheBandDrawnFromItsOwnSizes` | `strip_test.go` |
 | The strip's labels open above their controls, the left-most from its own left edge | `TestTheStripsLabelsOpenAboveTheirControls` | `strip_test.go` |
@@ -69,11 +79,11 @@ exactly like one that holds.
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
 | No cue id ends in a dot or a space, which Windows strips from a name | `TestNoCueIdEndsInADotOrASpace` | `vocabulary_test.go` |
 | No cue id holds an underscore, which a cue folder writes for a dot | `TestNoCueIdHoldsAnUnderscore` | `vocabulary_test.go` |
-| The wire is stated identically in the DTOs and in `api.ts` | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
+| The wire is stated identically in the DTOs and in `wire.ts` | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
 
 ## Layers
 
-- **Domain** (`internal/domain`: `cue`, `ending`, `event`, `machinevoice`, `making`, `measured`, `pause`, `script`, `selection`, `speech`): pure Go. Values are validated on
+- **Domain** (`internal/domain`: `cue`, `ending`, `event`, `machinevoice`, `making`, `measured`, `pause`, `script`, `selection`, `speech`, `take`): pure Go. Values are validated on
   construction. No IO and no wall-clock reads: time arrives as a parameter, as the `now` taken by
   `CooldownGate.Open` and `DedupeWindow.Fresh`, while randomness arrives through the injected
   `selection.Chooser`. Cue matching, take selection and the cooldown and dedupe arithmetic live here,
@@ -96,7 +106,8 @@ exactly like one that holds.
   the shipped entries are not stale, each worded by its kind. `pause` holds the pause before a final
   commander: the digest tying a pause to the samples it was found in, inserting its silence and the
   rule that finds a break doubtful (FR-551 to FR-554). `ending` holds the hiss the model adds after a
-  final nasal: where each line fades and the fade itself (FR-555 to FR-557).
+  final nasal: where each line fades and the fade itself (FR-555 to FR-557). `take` holds a take as
+  one or more parts played in order, identified by its first part (FR-573).
 - **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling, making and Chatter services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
   `Reporter`, `Switchboard`). `Switchboard` answers whether a moment is switched off, which the
@@ -120,8 +131,9 @@ exactly like one that holds.
   (`voicefiles`), the made lines kept as 16-bit FLAC (`madelines`), the product's local data folder
   both it and the default recordings directory sit in (`appdata`), the log each run leaves in that
   folder with the `RunLog` written to the run's error output (`runlog`),
-  the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
-  (`window`), the model run through ONNX Runtime's C API with cgo disabled (`speechmodel`), loading a
+  the notification-area icon on Windows and Linux (`taskbar`), keyboard focus for the web view on
+  Windows plus opening a folder in the platform's file manager (`window`), the plugin adapter
+  (`plugin`), reading the pictures out of the committed `.ico` for Linux (`iconfile`), the model run through ONNX Runtime's C API with no binding written for it (`speechmodel`), loading a
   native library and calling into it on Windows and Linux for both of those (`nativelib`), the one rule
   for putting a file in place whole or not at all, which the made lines, the stored settings, the model
   files and the payload archive are written through (`wholefile`) and the per-user install work behind
@@ -159,6 +171,9 @@ exactly like one that holds.
 - **The payload tool** (`tools/payload`): run by `build.ps1`. It checks `models/` against the list,
   then packs the built application with every model file setup installs into `installer/payload.zip`
   (see The setup program).
+- **The Linux icons tool** (`tools/linuxicons`): run by `build_flatpak.sh` inside the sandbox. It
+  installs every picture in the committed `.ico` under the hicolor theme, each at its own size and
+  named for the application id (see The Linux build).
 - **The scripts beside them**: `tools/genicons.py` writes the icons (see Icons under UI);
   `tools/gensocialcard.py` writes the site's link card, `docs/social-card.png`, reading its words from
   the page, its colours from the site's stylesheet and its picture from the icon's master; it is not
@@ -178,7 +193,9 @@ failing to load stops the run, then hands the service `runlog.Lines` over the ru
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`,
-`chatter.go`, `donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go` and `window_life.go`, each a slice of the surface it would otherwise outgrow the size limit
+`chatter.go`, `donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
+`loop.go` (the loop watching the game), `plugins.go` and `pluginvoices.go` (the plugin surface)
+plus `icon_windows.go` and `icon_other.go` (the icon a Linux tray is handed), each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`. `window.go` holds the window `run` launches: its assets,
 its geometry and `launch`.
 
@@ -203,7 +220,8 @@ its geometry and `launch`.
                        | voicefiles, madelines,      |
                        | speechmodel, appdata,       |
                        | runlog, wholefile, taskbar, |
-                       | window, setup, nativelib    |
+                       | window, setup, nativelib,   |
+                       | plugin, iconfile            |
                        +-----------------------------+
 ```
 
@@ -454,6 +472,13 @@ measurement both stated.
 Runtime is never unloaded: whether it can be unloaded safely while its own threads may still run has
 not been measured.
 
+**A plugin that goes wrong costs only itself.** Each job recovers a panic on the plugin thread and
+answers the zero value, which is what a refusal means. An answer larger than `maxAnswer` is refused,
+as is one whose written size differs from the size asked for. A voice that cannot speak and gave no
+reason is shown as having given none. A plugin's audio is played where it stands and never copied,
+moved, rewritten or deleted (FR-572), which `pluginaudio_test.go` holds by watching the audio's own
+folder.
+
 **Where the code sits.** `internal/infrastructure/plugin` is the adapter. Its portable half owns the
 byte layouts, the version check, the buffer protocol and the walk of the plugins folder, all in
 plain Go with unit tests over hand-built answers; its native half, over `nativelib`, sits behind a
@@ -647,6 +672,12 @@ whole: a reader always has a complete set without taking a lock, while changes a
 The service is built once at start and handed to each reaction service and scheduler a cast builds,
 so casting another voice leaves every switch as it stands (FR-630).
 
+**A fault in the loop ends the loop alone (FR-742).** `loop.go` guards the loop: the fault and its
+stack reach the run's error output, which is the run log for a run started without a terminal; the
+Status pane says the application has stopped reacting to the game,
+through `StateDTO.StoppedReacting`. The window, its panes and Quit still work. The loop stays ended
+rather than running into the same fault on every tick.
+
 ## Choosing where to read from
 
 **Recordings.** At startup, two sources in order: the `-library` flag, then the stored directory. There
@@ -656,7 +687,8 @@ each directory the scan passed over. Either way the application runs with nothin
 names where it looked.
 
 **Journal.** The `-journal` flag, then the stored directory, then the game's saved-games directory under
-the user's profile. Where that directory cannot be found, cannot be read, holds no journal file or has no
+the user's profile; on Linux, that directory inside the game's Proton prefix, looked for under each
+Steam root in turn (FR-811, FR-812). Where that directory cannot be found, cannot be read, holds no journal file or has no
 `Status.json`, the window opens anyway and says why on the Status pane and the Settings pane (FR-238);
 nothing is watched until Browse takes a directory that can be.
 
@@ -716,7 +748,7 @@ summon it.
 +-----------------------------------------------------------------------------------------------------+
 | File   Audio   Settings   Help                                                                      |
 +-----------------------------------------------------------------------------------------------------+
-| [Cast] [Audition] [Status] [Missing takes] [Chatter] [Settings]   [Volume] [Mute] [Theme] [Guide]   |
+| [Cast] [Audition] [Chatter] [Missing takes] | [Status] [Settings]   [Volume] [Mute] [Theme] [Guide] |
 +-----------------------------------------------------------------------------------------------------+
 |                                                                                                     |
 |   main pane: a switched view, not a stack of modal dialogs                                          |
@@ -747,6 +779,12 @@ lists share, the part a cast voice plays and the counted figures, live in `front
 where making stands before anything is made lives in `frontend/src/making.ts`, apart from `api.ts`,
 because a test replaces that module whole.
 
+**Plugin voices on the Cast pane.** `frontend/src/pluginVoices.tsx` offers every voice the loaded
+plugins hold as a pill after the machine voices; nothing is drawn while no plugin offers a voice
+(FR-562). A voice whose audio is not on this machine is named with the reason its plugin gave and
+cannot be cast (FR-570). The cast plugin voice stands on a card above them. A name two plugins
+share is shown with the plugin offering it (FR-568).
+
 Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
 licence, the close choice, the Moments spoken for dialog and the question Chatter asks before changing
 more than one moment. Each opens focused on its first control; the close choice lists Minimise first,
@@ -774,7 +812,8 @@ opens the Moments spoken for dialog. Beneath the rows, Make a voice holds a name
 folder still missing a recording, empty folders included, since a voice made with Make folders holds
 nothing until its first take (FR-316). It opens on the voice already chosen, else the cast voice, else the
 first. For the voice chosen it lists each missing moment by title, its purpose beneath and the folder its
-take belongs in, with Open folder beside it.
+take belongs in, with Open folder beside it. A cast plugin voice is offered too, listing what it has
+no take for with no folder and no Open folder, since its audio is the plugin's own (FR-571).
 
 **Chatter.** The pane lists every cue the game raises; the application's own `Cast.Confirmed` answers
 the player's act rather than the game, so it has no switch (`cue.Cue.Switchable`, FR-621). A header
@@ -791,6 +830,12 @@ answered with the pane as the application then holds it, with the reason beside 
 applied without being kept (FR-633). The pane is `frontend/src/chatter.tsx`; its style part is
 `theme/chatter.css`.
 
+A category's name in the header is a button that opens that category and moves the list to it
+(FR-743). Its heading in the list is a button that collapses or opens it; every category is open
+when the pane opens and none is kept (FR-744). A category's moments stand in three columns (FR-752).
+Category headings on Chatter and Audition stand in a lavender pill whose words read at 4.5 to 1
+against it (FR-754).
+
 **Audition.** The cast pane says what a voice covers; the audition pane lets it be heard. Groups come
 from the cue vocabulary's own first segment, the moment in the game's own words, so the audition keeps no
 grouping of its own in step with the cue table; a group with no takes is not offered. Each group button plays one clip
@@ -800,6 +845,13 @@ to the game included. The voice being auditioned starts as the cast one but is n
 voice before committing to it is what an audition is for. An audition ignores the mute, which silences
 reactions to the game rather than the application, because answering a deliberate press with silence
 would read as a fault.
+
+An audition draws only on the moments Chatter has switched on; each count covers only those. A
+group whose moments are all switched off is not offered. Where that leaves nothing, the pane says
+Chatter has switched everything off (FR-745 to FR-748). Groups stand under Chatter's category
+headings in its order. A group sits under the category holding most of its cues, the earlier listed
+on a tie (`cue.Table.GroupCategory`). Groups in no category come last under This application
+(FR-749, FR-750).
 
 A machine voice is auditioned on the script's groups instead, each counting its lines (FR-546). A press
 draws one line; one not yet made is made on the model's next turn, ahead of the cast voice's next line,
@@ -939,12 +991,12 @@ wanted to touch, which is a failure mode this design removes rather than manages
 The left button asks for the window on a single click and on a double; the right button opens the menu:
 a Voice submenu, Open, Mute and Quit. The tooltip names the cast voice and says when it is muted. The
 Voice submenu lists the voices found at startup; it is not rebuilt when a new recordings directory is
-chosen or Refresh finds more. The machine voices follow them under a separator. A choice carries whether
-it is a machine voice, since a recordings folder may carry a machine voice's id: the check mark matches
-a voice by name and kind, the kind pushed beside the name through an atomic of its own. The tooltip
-shows the voice by the label pushed with it, so a voice found after startup is still shown by the name
-its manifest gives (FR-210). A machine voice chosen there reaches `CastMachineVoice` rather than
-`SelectVoice`.
+chosen or Refresh finds more. The machine voices follow them, then the plugin voices whose audio is on
+this machine, each kind under a separator. A choice carries its kind, since a name identifies a voice
+only within its kind: the check mark matches a voice by name and kind, the kind pushed beside the name
+through an atomic of its own. The tooltip shows the voice by the label pushed with it, so a voice found
+after startup is still shown by the name its manifest gives (FR-210). A machine voice chosen there
+reaches `CastMachineVoice`, a plugin voice `CastPluginVoice` and a recorded voice `SelectVoice`.
 
 The window comes back centred and on the cast pane, whatever pane it was left on. Centred, because a
 window put away for hours may return to a different arrangement of screens and the middle is the one
@@ -954,7 +1006,10 @@ from an ordinary raise. Showing it precedes taking focus: `SetForegroundWindow` 
 already visible.
 
 A tray that cannot be created is not fatal: the application still watches the journal and still speaks.
-Non-Windows builds compile a no-op tray rather than taking on a desktop toolkit dependency for one icon.
+On Linux the icon is published over D-Bus as a StatusNotifierItem for the desktop's watcher to draw;
+it is offered once a watcher answers within 15 seconds, since a sign-in start comes up before the
+panel. Where none answers the tray says so on its command channel; the cross then closes the window
+and a window started hidden is shown (FR-814). Builds for other platforms compile a no-op tray.
 
 ## The setup program
 
@@ -966,7 +1021,8 @@ nothing, then packs the built application with every model file the application 
 through `-ldflags`, then puts the empty placeholder zip back whether or not that build succeeded, so a full
 payload never reaches a commit. A setup program built without that flag reports its version as `dev`. The
 payload is embedded as a string rather than a byte slice, which a stand-in program measured at 12.8 MB of
-private memory at start against 323.6 MB (FR-524).
+private memory at start against 323.6 MB (FR-524). Install makes the plugins folder in the install
+directory (FR-576); the payload never carries one, whatever the built application's folder holds.
 
 It is split the way the application is. `internal/infrastructure/setup` holds the machine work: the
 paths, the payload extraction with its fence against an archive entry that climbs out of the install
@@ -1034,8 +1090,10 @@ Uninstall removes the shortcuts, the login entry and the install record, then th
 are kept in and the run log whatever is ticked (FR-525, FR-715), leaving the product's data folder around it, which can hold the
 default recordings directory. It then hands the install directory to a detached shell that deletes it once
 setup has exited. `setup.RemoveLeftovers` holds the rule for what goes outside the install directory, so
-the facade only finds the folders and passes the box on. Its one box, Also forget my settings, is
-unticked by default; ticked, it also removes the web view's folder under `%APPDATA%`, which holds the
+the facade only finds the folders and passes the boxes on. Its boxes are Also forget my settings
+plus Also remove my plugins where the plugins folder holds anything; both are unticked by default.
+With Also remove my plugins unticked, the plugins folder is read again at uninstall and left standing with everything in it
+(FR-578). Also forget my settings, ticked, also removes the web view's folder under `%APPDATA%`, which holds the
 theme and the volume, plus the settings file and its working file, then the settings directory where
 that leaves it empty. The recordings are never touched, the default recordings directory included.
 
@@ -1049,14 +1107,27 @@ to for applications, with a toggle in its header. The window's background colour
 page loads so setup never flashes the wrong ground. Its own web view data is kept under the temporary
 directory, so running setup leaves no folder beside the application's.
 
+## The Linux build
+
+Linux has no setup program. `build_flatpak.sh` builds a flatpak on the GNOME runtime, since Wails
+renders there through webkit2gtk, with cgo on for that link and for the audio output. It writes the
+sandbox's grants from one GRANTS list with no network among them (FR-813). Inside the sandbox it
+fetches the model files through `tools/models`, ONNX Runtime for Linux among them, then installs
+them in `models` beside the executable (FR-817). `tools/linuxicons` installs every picture in the
+committed `.ico` under the hicolor theme (FR-810). `cleanup_flatpak.sh` removes the install and what
+the build made, never the user's recordings, settings or log. Open folder goes through xdg-open,
+which reaches the file manager through the desktop portal (FR-816). The plugins folder sits in the
+product's data folder, made by the application as it starts (FR-818); the sign-in entry is an
+autostart file (FR-815).
+
 ## Data locations
 
 | What | Where |
 |---|---|
-| Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile |
+| Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile; on Linux, that directory inside the game's Proton prefix, looked for under each Steam root in turn (FR-811, FR-812) |
 | Recordings | `-library`, else the stored choice; at startup nothing is detected |
 | Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
-| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories, the cast voice (a recorded voice's name or a machine voice's id, the other forgotten) and the ids of the moments switched off on Chatter. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice; a switch writes the switches |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories, the cast voice (a recorded voice's name, a machine voice's id or a plugin's name with its voice's id; at most one kind is kept) and the ids of the moments switched off on Chatter. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice; a switch writes the switches |
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
@@ -1071,10 +1142,13 @@ directory, so running setup leaves no folder beside the application's.
 | Shortcuts | `%APPDATA%\Microsoft\Windows\Start Menu\Programs` and the user's Desktop |
 | Login entry | `HKCU\...\CurrentVersion\Run`, written by setup or by Settings, one entry either way |
 | Login entry value | the quoted path plus `-hidden`, so a sign-in start waits in the tray |
+| Login entry on Linux | `uk.codecrafter.BridgeTalk.desktop` in `~/.config/autostart`, even inside the flatpak (FR-815) |
 | Install record | `HKCU\...\Uninstall\BridgeTalk`, per user |
 
 Nothing is written to the game's directories. Under the recordings directory the application writes only
-the empty folders described in Making folders; it never changes or removes a file there. The game is the
+the empty folders described in Making folders; it never changes or removes a file there.
+`TestEveryWriteTheApplicationLinksSaysWhereItGoes` holds every write the application links to a
+stated place. The game is the
 single writer of the journal; this application is one of several readers.
 
 ## Errors
@@ -1092,6 +1166,8 @@ journal reader tests a read error's text against `"EOF"`.
 - **A warning on standard error, then carry on:** no audio device, which runs silent and says so on the
   status pane; no tray; a recordings root that is missing or unreadable; a voice name that is not
   found; the scan report.
+- **Said on the Status pane, the window still working:** a fault raised in the loop watching the
+  game, which ends that loop alone and writes the fault with its stack to standard error (FR-742).
 - **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
   tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a clip that
   fails to decode is skipped after being logged as played; a made line whose samples differ from those
@@ -1129,8 +1205,8 @@ the fix: `Reason` keeps only the system's reason, which the site that names the 
 `Check` is the one statement of the rule, which the refusal tests of the facade and of `config`,
 `setup`, `madelines`, `modelfiles`, `runlog`, `speechmodel`, `voicefiles` and `wholefile` hold their
 refusals to. It sits under `internal` beside `product` for the same reason: the facade, `tools/pauses`
-and the `audio`, `config`, `journal`, `library`, `madelines`, `modelfiles`, `runlog`, `setup`, `status`,
-`voicefiles` and `wholefile` packages all read it, so it belongs to no layer. A refusal the window
+and the `audio`, `config`, `journal`, `library`, `madelines`, `modelfiles`, `plugin`, `runlog`, `setup`,
+`status`, `voicefiles` and `wholefile` packages all read it, so it belongs to no layer. A refusal the window
 shows writes its path with `%s` rather than `%q`, which doubles every Windows separator.
 
 ## Quality enforcement
@@ -1144,10 +1220,12 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
   uintptr only where the call into it is made; another fails where `pauses.toml` or `endings.toml` is stale against the
   script, the machine voices or the listed model files, with four more for each proving that check names
-  what it should. The invariant table above lists every one of them with
+  what it should. Others hold the application off the network, every write it makes to a stated
+  place, the flatpak's grants and model folder and the heading pills' contrast. The invariant table
+  above lists every one of them with
   the test that enforces it.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
-  `frontend/src/api.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
+  `frontend/src/wire.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
   output is gitignored and imported by nothing, so it is not the contract and it goes stale silently.
   The hand-written file is the one the application compiles against; a structural test compares it to
   the DTOs so a rename on one side alone cannot pass.
@@ -1160,9 +1238,10 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   differs (FR-538). It then checks formatting, vets and runs the whole Go suite, leaving out the Go package an npm
   dependency ships inside `frontend/node_modules`. It holds `internal/domain` and `internal/application`
   to a combined 100% coverage, then holds each other measured package to a floor of its own, set from
-  what that package measured rather than from a target. `internal/infrastructure/window` and
-  `installer` carry no floor, since neither has anything a test can reach without the platform behind
-  it; `modelfilestest` is test support with no tests of its own; `internal/product` holds constants
+  what that package measured rather than from a target. `installer` carries no floor, since it has
+  nothing a test can reach without the platform behind it; `internal/infrastructure/window` is held at
+  what its Linux folder opener reaches; `modelfilestest` and `nativelibtest` are test support with no
+  tests of their own; `internal/product` holds constants
   alone and is not measured. TESTING.md tabulates every figure beside its floor and names what each
   shortfall is, so the numbers are stated there once.
 - `build.ps1` first stamps the version into the site through `stamp_version.py`, then runs

@@ -1,9 +1,10 @@
 # Development
 
 How to build and run Bridge Talk on Windows, from a machine with nothing
-installed to a setup program.
+installed to a setup program, plus the Linux flatpak.
 
-Every command here is PowerShell, one command per block, meant to be pasted as it is.
+Every Windows command here is PowerShell and every Linux command is bash, one command per block,
+meant to be pasted as it is.
 `README.md` is for somebody using the application; this is for somebody building it.
 Testing has a document of its own, [TESTING.md](TESTING.md).
 
@@ -15,7 +16,7 @@ Testing has a document of its own, [TESTING.md](TESTING.md).
 | Desktop shell | Wails v2 over WebView2 |
 | Front end | React and TypeScript, built with Vite |
 | Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
-| Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with cgo disabled |
+| Machine voices | the Kokoro-82M model, run through ONNX Runtime called from Go with no binding written: with cgo disabled on Windows; through purego with cgo on inside the Linux flatpak |
 | Cue table | TOML, embedded in the executable |
 
 ## What the machine needs
@@ -35,6 +36,9 @@ the start.
 The build needs nothing from Python beyond `stamp_version.py` itself. Python 3 also regenerates
 files that are committed already: the icons and the site's social card with Pillow; the saved
 speech sounds, the pauses and the endings, through two tools each with a venv of its own.
+
+The gate also runs staticcheck, at the version pinned in `test.ps1`, through `go run`; the first
+run on a machine fetches it, so that run needs the network.
 
 Beyond the tools, the build needs the model files in `models/`, which are downloaded once after
 cloning; see [The model files](#the-model-files).
@@ -125,8 +129,8 @@ npm --prefix frontend install
 ```
 
 `wails build` runs `npm install` itself through the `frontend:install` hook in
-`wails.json`, so the second command is only needed before running the front-end
-tools directly.
+`wails.json`. The gate runs before that hook and refuses to start without
+`frontend/node_modules`, so run the second command once before `test.ps1` or `build.ps1`.
 
 ### The model files
 
@@ -170,8 +174,8 @@ It does six things in order and stops at the first failure:
 4. Refuses to go on without `assets/application-icon.png` and its `.ico`, then copies
    both into the application's and the setup program's build trees.
 5. Runs `wails build` for the application. That runs the front end's `npm run build`,
-   which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type error
-   stops the build here.
+   which runs `eslint` and `tsc --noEmit` before bundling, so the lint and type check run a
+   second time here; the gate in step 3 has already run them with the component tests.
 6. Packs the result with every model file the application reads as the setup program's
    payload through `go run ./tools/payload`, which checks `models/` against the list
    first and downloads nothing. It then builds the setup program with the version
@@ -209,9 +213,37 @@ through an embed rather than a flag.
 ### A note on cgo
 
 `build.ps1` sets `CGO_ENABLED=0` before it runs either the gate or the build, so the
-tests exercise the configuration that ships. Nothing here needs a C toolchain: the
-audio path decodes and plays in pure Go. The pin is there so that a machine which does
-have one cannot quietly produce a different binary.
+tests exercise the configuration that ships. Nothing in the Windows build needs a C
+toolchain: the audio path decodes and plays in pure Go. The pin is there so that a machine
+which does have one cannot quietly produce a different binary. The Linux flatpak is the
+exception; it builds with cgo on inside the GNOME SDK, which carries the toolchain.
+
+## Building for Linux
+
+From the repository root on Linux:
+
+```bash
+bash build_flatpak.sh
+```
+
+It installs `flatpak` and `flatpak-builder` through apt, dnf, pacman or zypper where they are
+missing, which asks for sudo. It adds flathub for the current user, then installs the GNOME 50
+runtime and SDK with the golang and node22 SDK extensions. Inside the sandbox, with network access
+during the build and cgo on, it builds the front end and the application, fetches the model files
+with `tools/models` (Linux's ONNX Runtime among them) and installs the icons with
+`tools/linuxicons`. The output is a user install of `uk.codecrafter.BridgeTalk` plus
+`BridgeTalk.flatpak`. The flatpak build runs no gate. Run what it installed with:
+
+```bash
+flatpak run uk.codecrafter.BridgeTalk
+```
+
+To uninstall the flatpak and remove what the build made, leaving recordings, settings and the log
+alone:
+
+```bash
+bash cleanup_flatpak.sh
+```
 
 ## Running it while working
 
@@ -246,20 +278,25 @@ run only.
 |---|---|
 | `-library <dir>` | the recordings directory |
 | `-journal <dir>` | the journal directory |
-| `-voice <name>` | the voice to cast; a name that is not installed falls back to the first voice with a warning |
-| `-list` | prints the voices found with their takes and moment coverage, then exits |
+| `-voice <name>` | the recorded voice to cast; a name that is not installed falls back to the first recorded voice with a warning |
+| `-list` | prints the recorded voices found with their takes and moment coverage, then exits |
 | `-unbound` | prints the moments the chosen voice cannot serve, then exits |
 | `-no-tray` | runs without a notification-area icon, so closing the window quits |
 | `-hidden` | starts in the notification area with no window, as the login entry does; ignored with `-no-tray` |
 
 `-list` and `-unbound` open no window and refuse when no voice is found. A windowed
 build started from a terminal prints them in that terminal. With
-`-unbound`, a `-voice` that is not installed is refused rather than replaced.
+`-unbound`, a `-voice` that is not installed is refused rather than replaced. Machine voices and
+plugin voices are cast from the window or the tray; the reporting flags cover recordings alone.
+
+Plugins are looked for in a `plugins` folder beside the executable on Windows, so a `go build` run
+from the repository root reads `plugins` there. On Linux the folder is inside the data folder and
+the application makes it. [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) has the rest.
 
 ## Testing
 
-`build.ps1` runs the backend gate before it builds, together with the tests that need the real
-model. [TESTING.md](TESTING.md) holds every test command, from that gate to the front end's
+`build.ps1` runs the whole gate before it builds (the Go checks, staticcheck and the front end's
+lint, type check and component tests) together with the tests that need the real model. [TESTING.md](TESTING.md) holds every test command, from that gate to the front end's
 suites, with what each figure is and what is deliberately not tested.
 
 ## Installing what you built
@@ -278,6 +315,9 @@ them it also writes the Start Menu entry under `%APPDATA%`, the Desktop shortcut
 own Desktop and the login entry under `HKEY_CURRENT_USER`. With nothing installed it offers an install. Over an
 older or a newer version it offers the change on one screen. Over the same version it
 opens a manage screen with Repair, Reinstall and Uninstall.
+
+It also makes an empty `plugins` folder in the install folder. An update or a repair leaves that
+folder alone. Uninstall offers **Also remove my plugins** when it holds anything.
 
 Neither executable is signed: `build.ps1` has no signing step.
 
@@ -385,18 +425,19 @@ go run ./tools/pauses -endings-only
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `audition_machine.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `journaldir.go`, `machine.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `icon_other.go`, `icon_windows.go`, `journaldir.go`, `loop.go`, `machine.go`, `plugins.go`, `pluginvoices.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
 | `internal/domain` | the cue model, events, selection with the Chatter switches, the machine voices, the script, speech sounds, making, pauses, endings and the measured books they share; no I/O at all |
 | `internal/application` | the reaction, scheduling, making, audition and Chatter services, over ports |
-| `internal/infrastructure` | appdata, audio, config, journal, library, madelines, modelfiles, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
+| `internal/infrastructure` | appdata, audio, config, iconfile, journal, library, madelines, modelfiles, nativelib, plugin, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
 | `internal/refusal` | the wording of a file-system refusal, so each one names its path once |
 | `frontend/src` | the React front end |
 | `installer/` | the setup program, a Wails application of its own |
 | `tests/structural` | the tests that hold the architecture in place |
 | `tests/machinevoice` | the tests that time a cast and a complete script with the real model, run only with `-Benchmarks` |
-| `tools/` | icon and social card generation, the model files, the payload, the saved speech sounds with the pauses and endings; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload` and the rest are run by hand |
+| `tools/` | icon and social card generation, the Linux icons, the model files, the payload, the saved speech sounds with the pauses and endings plus `internal/pyvenv`, which finds a tool's venv; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload`, `build_flatpak.sh` runs `tools/models` and `tools/linuxicons`; the rest are run by hand |
+| `build_flatpak.sh`, `cleanup_flatpak.sh` | the Linux flatpak build and its cleanup |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

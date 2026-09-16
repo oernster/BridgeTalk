@@ -9,8 +9,8 @@ lines it makes on your own machine; record a voice of your own whenever you like
 
 ## Who it is for
 
-- Commanders playing Elite Dangerous on Windows who want their ship to talk straight away: cast a
-  machine voice and it speaks, with nothing to record first.
+- Commanders playing Elite Dangerous on Windows or Linux who want their ship to talk straight away:
+  cast a machine voice and it speaks, with nothing to record first.
 - Commanders who hold recordings they may use and want them spoken in answer to the game.
 - Anyone recording a voice for a ship who wants to see exactly which moments a set of recordings
   covers, then hear it before choosing it.
@@ -21,9 +21,9 @@ lines it makes on your own machine; record a voice of your own whenever you like
   recognition and no command and control.
 - Anyone wanting a machine voice in another language. The 28 machine voices speak British and
   American English only.
-- Anyone not on Windows. The only build and the only setup program are for Windows.
+- Anyone on macOS. It is built for Windows as a setup program and for Linux as a flatpak.
 - Anyone wanting a separate output device for it. There is no device choice: it speaks through
-  whichever device Windows is set to use.
+  whichever output device the system is set to use.
 
 ## What it does
 
@@ -37,6 +37,12 @@ lines it makes on your own machine; record a voice of your own whenever you like
   notification-area icon and it becomes the ship's voice. Where it holds a recording for
   `Cast.Confirmed` and mute is off, it plays that as it takes the part. The choice is remembered
   for the next run.
+- **Takes voices from plugins.** A plugin is a library file placed in the plugins folder, offering
+  voices whose audio already sits on your machine. Its voices are cast from the Cast pane or the
+  notification-area menu like any other and remembered for the next run; a voice whose audio is
+  missing is listed with the reason its plugin gave. The Missing takes pane lists what the cast plugin
+  voice has no take for. A plugin that will not load is named in the run log with the reason and
+  never stops the application starting.
 - **Plays one recording per moment.** Where a voice holds several takes for a moment, one is chosen
   at random, never the one that moment played last time.
 - **Answers pirates.** When a pirate makes itself known, scans your cargo, loses interest, finds
@@ -53,7 +59,8 @@ lines it makes on your own machine; record a voice of your own whenever you like
   a take already playing is not cut short. Switch all on, Switch all off and a switch for each
   category sit above the list and change many moments at once, asking first. Station traffic
   (docking answers, welcomes and the no fire zone) has a switch of its own, apart from the other
-  messages non-player characters send. The switches are kept between runs.
+  messages non-player characters send. A category's name above the list moves the list to it; its
+  heading in the list collapses it. The switches are kept between runs.
 - **Explains every decision.** For every moment the game raises that has a cue, the Status pane
   logs what became of it (played, queued, making, dropped, cooldown, duplicate, off or unbound), including the
   ones that produced no sound. It keeps the latest 200. The same pane names the journal directory
@@ -64,13 +71,14 @@ lines it makes on your own machine; record a voice of your own whenever you like
   a recording. For the one chosen it lists each missing moment with a line saying when it is heard,
   then the folder its take belongs in.
 - **Auditions a voice** before it is cast. Each button plays one take drawn at random from a part of
-  the game, such as docking or combat. The
-  buttons are held while anything is playing, the ship's own reactions included, so a press never
+  the game, such as docking or combat, drawn only from moments switched on in Chatter; the buttons
+  stand under Chatter's categories. The buttons are held while anything is playing, the ship's own reactions included, so a press never
   cuts a clip short; Stop ends what is playing. An audition ignores the mute.
 - **Stays out of the way.** Closing the window asks whether to put it away or quit. Put away, it
   keeps listening from the notification area, whose menu opens the window, mutes, switches voice
-  or quits. It can start when you sign in to Windows, waiting in the notification area; turn that
-  on in Settings or in the setup program.
+  or quits. It can start when you sign in, waiting in the notification area; turn that on in
+  Settings; on Windows the setup program offers it too. On a Linux desktop that offers no notification
+  area, closing the window quits.
 - **Remembers how you like it.** The volume slider and the light or dark theme on the band are kept
   between runs.
 - **Leaves your recordings alone.** It never changes or removes a file in your recordings
@@ -88,17 +96,31 @@ lines it makes on your own machine; record a voice of your own whenever you like
 | Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
 | Machine voices | the Kokoro-82M model, run through ONNX Runtime |
 | Cue table | TOML, embedded in the executable |
+| Linux package | a flatpak on the GNOME runtime |
 
 ## Getting it
 
-Download the setup program from [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/) and run
-it. Everything it writes is for your own Windows account, so it never asks for administrator rights.
-It installs under your own application data unless you choose another folder on its first screen.
+Both downloads are on [ernster.dev/BridgeTalk](https://ernster.dev/BridgeTalk/).
+
+On Windows, download the setup program and run it. Everything it writes is for your own Windows
+account, so it never asks for administrator rights. It installs under your own application data
+unless you choose another folder on its first screen.
+
+On Linux, download `BridgeTalk.flatpak` and install it for your own account:
+
+```bash
+flatpak install --user BridgeTalk.flatpak
+```
+
+Then start Bridge Talk from your applications menu. The sandbox is granted no network access.
+
 Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
 choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.
 
 The journal directory is `Saved Games\Frontier Developments\Elite Dangerous` under your own profile
-until you choose another on the Settings pane. When the journal directory in use cannot be read,
+on Windows. On Linux it is looked for in that same place inside the game's Proton or Wine prefix,
+with every place looked named where none holds it. Either way, choose another on the Settings pane
+to override it. When the journal directory in use cannot be read,
 the window opens anyway: the Status pane and the Settings pane say why until you choose one that
 can be.
 
@@ -108,7 +130,8 @@ The quickest way is to let it name them. On the Cast pane, type a voice's name a
 folders: that voice gets a folder for every moment, each already named. Put each recording in the
 folder for its moment (any file name will do), then press Refresh. Where no recordings directory
 is chosen yet, it makes them in its own `Recordings` folder (`%LOCALAPPDATA%\BridgeTalk\Recordings`
-on Windows) and uses that folder from then on; uninstalling never removes it.
+on Windows, `~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/Recordings` in the Linux flatpak)
+and uses that folder from then on; uninstalling never removes it.
 
 Record each take in any program you like, such as Audacity, saving it as WAV, MP3, FLAC or Ogg
 Vorbis. On the Missing takes pane, Open folder beside a missing moment makes that moment's folder
@@ -152,8 +175,8 @@ aside and the voice is found by its names alone.
 
 ## Testing
 
-The gate checks the model files, formatting and vet, runs the Go suite then holds each package to
-its coverage floor:
+The gate checks the model files, formatting, vet and staticcheck, runs the Go suite and the front
+end's lint, type check and tests, then holds each package to its coverage floor:
 
 ```powershell
 ./test.ps1
@@ -175,7 +198,8 @@ untested.
 ```
 
 It runs the gate, then writes the application to `build/bin/BridgeTalk.exe` and the setup program
-to `dist-installer/BridgeTalkSetup.exe`. [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine from
+to `dist-installer/BridgeTalkSetup.exe`. On Linux, `bash build_flatpak.sh` builds and installs the
+flatpak and writes `BridgeTalk.flatpak`. [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine from
 nothing, fetches the model files the build needs and lists the command-line options.
 [ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
 [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) is the contract for writing a plugin: a library file offering

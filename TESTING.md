@@ -74,19 +74,21 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,040 test functions, which expand to 1,146 runs once their subtests are counted (measured on
-2026-09-16 on Windows: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of
-an uncached `go test -count=1 -json ./...`, which are 1,034 top-level runs plus 112 subtests; the
+1,041 test functions, which expand to 1,147 runs once their subtests are counted (measured on
+Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
+uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
+which are 1,035 top-level runs plus 112 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
-Fifty-six of them are the structural tests in `tests/structural`, which scan the source
+Fifty-seven of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band (counting lines as an
 editor shows them), a doc comment on every exported type and the rule that the product is
 named in exactly one place under an identity that is also a valid file name. They also hold
 the surface the facade binds, the wire contract on both sides of it, colours confined to the
 tokens with a token for every indicator tone, the contrast of the secondary lines (the
-purpose line and the Status cards' taglines) and of Chatter's switches in both themes, every
+purpose line and the Status cards' taglines), of Chatter's switches and of the heading pills in
+both themes, every
 style part being read, the strip and the Status cards keeping their layout rules, every
 disabled control wearing the danger ring, every scrolling region ringed for the keyboard but
 never under the pointer, no list or container wearing a ring, nothing on the ring that cannot
@@ -96,7 +98,9 @@ keyboard, game vocabulary kept in its home, the shape of every cue id, the shipp
 holding no problem with lines for every cue, the speech sound table held to the model's
 tokenizer file, `pauses.toml` and `endings.toml` kept from going stale, every address
 handed to a native library converted only where the call into it is made and the flatpak
-installing the model files where they are read.
+installing the model files where they are read. They also hold the application importing no
+network package with the front end making no request, every write the application links saying
+where it goes with no other setup write called and the flatpak granted what it uses and no more.
 
 ### The front end
 
@@ -113,29 +117,33 @@ installing the model files where they are read.
 | `indicator.ts` | 100% | 100% |
 | `machineVoices.tsx` | 100% | 100% |
 | `making.ts` | 100% | 100% |
+| `menubar.tsx` | 100% | 100% |
 | `missingTakes.tsx` | 100% | 100% |
 | `moments.tsx` | 100% | 100% |
+| `pluginVoices.tsx` | 100% | 100% |
 | `preferences.ts` | 100% | 100% |
 | `productName.ts` | 100% | 100% |
 | `statusWords.ts` | 100% | 100% |
 | `strip.tsx` | 100% | 100% |
 | `testAudition.ts` | 100% | 100% |
+| `testBridge.ts` | 100% | 100% |
 | `testHome.ts` | 100% | 100% |
 | `testLayout.ts` | 100% | 100% |
+| `testRefusal.ts` | 100% | 100% |
 | `testState.ts` | 100% | 100% |
-| `chatter.tsx` | 100% | 97.4% |
-| `App.tsx` | 100% | 96.4% |
+| `chatter.tsx` | 100% | 96.5% |
 | `hooks.ts` | 100% | 96.3% |
-| `panes.tsx` | 100% | 95.9% |
-| `chrome.tsx` | 100% | 94.3% |
-| `guide.tsx` | 100% | 86.7% |
 | `panes.tsx` | 100% | 94.7% |
-| `chatter.tsx` | 100% | 97.6% |
+| `chrome.tsx` | 100% | 94.3% |
+| `App.tsx` | 100% | 93.7% |
+| `guide.tsx` | 100% | 86.7% |
+| `setupPage.ts` | 100% | 80.6% |
 | `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
-| **all files** | **99.5%** | **96.8%** |
+| `wire.ts` | 0% | 0% |
+| **all files** | **99.5%** | **96.2%** |
 
-310 tests across 28 files, run under Vitest with jsdom (counted on 2026-09-16).
+313 tests across 28 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -181,15 +189,14 @@ release is for.
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not. The Linux
   opener's rule is tested on every platform (FR-816); the 7% is that rule.
-- **`internal/infrastructure/taskbar` (67.0%).** The tray icon runs its own Win32
+- **`internal/infrastructure/taskbar` (69.6%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
-  menu as drawn is not. The figure fell from 68.1% on 2026-09-16 with the plugin voices:
-  what the menu was given grew by statements that only the Windows shell can run, the
-  separator between one kind of voice and the next among them, while everything a test
-  can reach in the package is still reached.
+  menu as drawn is not. The plugin voices added statements to what the menu is given that
+  only the Windows shell can run, the separator between one kind of voice and the next among
+  them; everything a test can reach in the package is still reached.
 - **`internal/infrastructure/audio` (95.8%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
@@ -250,7 +257,7 @@ release is for.
 - **A plugin's three calls in `internal/infrastructure/plugin` (94.3%).** `Version`, `Describe` and
   `Takes` in `native.go`, with the line of `OpenLibrary` that keeps a function it found, need a
   library exporting the three functions, which cannot be built here.
-- **`main`, `run`, `startTray` and `newMaking` in `main.go`, `launch` in `window.go`
+- **`main`, `run` and `newMaking` in `main.go`, `startTray` in `voices.go`, `launch` in `window.go`
   and `keepLog`, `runLog` and `reportToTerminal` in `runlog.go`.** The composition root. It keeps the run's
   log, opens a device, scans the disk, builds a tray and the speech model and hands the
   assembled application to Wails. Running it in a test would be running the application.
@@ -271,7 +278,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (79.7% overall).**
+- **The registry writes in `internal/infrastructure/setup` (80.7% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -349,10 +356,18 @@ rather than excused. Four of them, in code that still exists:
   layout: whether a region overflows, where a ref points before the node arrives. jsdom
   performs no layout, so what geometry the tests do assert is stated explicitly rather
   than inferred; the remainder is left rather than faked.
-- **The residual branch in `chatter.tsx`** is neither. Pressing a category's switch while
+- **The residual branches in `chatter.tsx`** are neither. Pressing a category's switch while
   every moment in it is off, which counts all of its moments as the changes to ask about, is
-  never run: every test that presses a category does so while something in it is on. Nothing
-  stops a test reaching it, so it is a gap to close rather than a limit of the harness.
+  never run: every test that presses a category does so while something in it is on. The other
+  is in `opened`, which answers the collapsed categories unchanged where a category already
+  stands as asked; one arm of that test is never run. Nothing stops a test reaching either, so
+  each is a gap to close rather than a limit of the harness.
+- **`setupPage.ts` (80.6% of branches).** Test support: it lays out the shipped setup page for
+  the setup suites. What is not run is its own failure branches, a page with no body and a
+  button or element that is not there, plus the empty fallbacks beside them. Each fires only
+  when a test asks for something the page lacks, which no passing run does.
+- **`wire.ts` (0%).** Interfaces alone, which compile to nothing;
+  `tests/structural/wire_test.go` holds them to the facade.
 
 ## Working with jsdom
 
@@ -392,7 +407,7 @@ to skip:
 
 It checks `models/` against the model files list first and stops where a file is
 missing or differs, saying to run the tool above. It then checks formatting, runs
-`go vet`, runs every test, runs the front end's own three checks, holds the domain and
+`go vet`, runs `staticcheck` at the version it pins, runs every test, runs the front end's own three checks, holds the domain and
 the application layers at 100%, then holds each other gated package at its floor. Read
 the exit code rather than the last line of output.
 
@@ -429,7 +444,8 @@ over NFR-C-502's 60 MB, skipping while the script lacks lines for any cue. One m
 fails or comes back empty. Its source records 13 lines in 300 breaking before every
 address handed to ONNX Runtime was converted where the call is made.
 
-The stricter Go analysis, which `test.ps1` does not run:
+The stricter Go analysis, which `test.ps1` runs at the version it pins; to try the latest release
+by hand:
 
 ```powershell
 go run honnef.co/go/tools/cmd/staticcheck@latest (go list ./... | Where-Object { $_ -notmatch '/node_modules/' })
@@ -439,7 +455,7 @@ The package list is narrowed rather than written as `./...`, which reaches into
 `frontend/node_modules`, where an npm dependency ships a Go package of its own. It is
 nobody here's code and nothing this repository produces contains it, so a future
 release of it failing an analyser would break a build over something unowned.
-`test.ps1` narrows the same way for `go vet` and `go test`; the formatting check
+`test.ps1` narrows the same way for `go vet`, `staticcheck` and `go test`; the formatting check
 filters by path instead, because gofmt walks directories rather than packages.
 
 The front end, from the `frontend` directory. `test.ps1` and the application's build both

@@ -55,6 +55,9 @@ Bridge Talk makes that folder itself when it starts on Linux (FR-819). Bridge Ta
 plugin from nowhere else (FR-560). The file may be named anything; the name means nothing, because a
 plugin states its own name through the interface (FR-565).
 
+Subfolders are ignored; every other file is tried as a plugin in name order, so a file the plugin
+needs beside it is refused and logged. Keep such files in a subfolder.
+
 Bridge Talk does not check a signature or a publisher. A plugin runs inside Bridge Talk with the
 rights of the person who put it there, which is stated plainly as a non claim in `REQUIREMENTS.md`
 section 5. Publish your plugin where your users can see who wrote it.
@@ -84,9 +87,11 @@ implements (FR-564).
 ### The calling rules, which are the same for every function that fills a buffer
 
 1. **Ask for the size first.** Called with `size` of 0 and `buffer` of `NULL`, the function writes
-   nothing and returns the number of bytes the answer needs.
-2. **Then ask for the answer.** Called with a buffer at least that large, it fills the buffer and
-   returns the number of bytes written.
+   nothing and returns the number of bytes the answer needs. An answer of 0 bytes reads as an empty
+   answer, which neither layout allows; the smallest answer is 4 bytes.
+2. **Then ask for the answer.** Called with a buffer of exactly that size, it fills the buffer and
+   returns the number of bytes written, which must equal the size it gave. An answer of any other
+   length is refused as malformed.
 3. **A negative return is always a refusal**, never a size. `-1` means the plugin cannot answer this
    call. Bridge Talk records it and carries on. Because negatives are refusals and nothing else, a
    size can never be mistaken for an error.
@@ -146,7 +151,7 @@ A voice whose `ready` is 0 is shown but cannot be cast, with `readyReason` as th
 (FR-570). Use it for the case where the audio a voice needs has been moved or removed.
 
 A plugin offering no voice at all is passed over with the reason recorded, as is one offering a voice
-with no name (FR-566).
+with no name or no id (FR-566).
 
 ### BridgeTalkPluginTakes
 
@@ -170,7 +175,8 @@ repeated takeCount times:
 - **A cue this voice cannot serve** answers a `takeCount` of 0. That is an ordinary answer rather
   than a refusal: a cue no voice serves is silence, which Bridge Talk prefers to a wrong line.
 - **Paths are absolute** and are opened exactly as given. Bridge Talk decodes `.mp3`, `.wav`,
-  `.flac` and `.ogg`.
+  `.flac` and `.ogg`, matched by extension in any case; a part with any other extension is passed
+  over and logged.
 - **A part that will not open is passed over** and the remaining parts are played (FR-574). If no
   part of the chosen take plays, the cue is silent and the log says what was tried (FR-575).
 
@@ -193,8 +199,7 @@ A plugin in C offering one voice, The Quartermaster, whose one recording answers
 Every other cue is answered with no takes. The same code path answers the size and then the answer,
 so the two can never disagree: a cursor with no buffer only counts, a cursor with one writes.
 
-**Not yet built.** No C toolchain was on the development machine when this was written
-(2026-09-16), so this file has not been compiled and no plugin has yet been loaded by Bridge Talk. It
+**Not yet built.** No C toolchain was on the development machine when this was written, so this file has not been compiled and no plugin has yet been loaded by Bridge Talk. It
 follows the contract above line for line; treat it as a starting point and prove it by the steps in
 [Using a plugin](#using-a-plugin).
 
@@ -295,6 +300,10 @@ from an x64 developer prompt: `cl /LD /O2 quartermaster.c`. Neither command has 
 The example keeps its answers as constants. A real plugin reads where its audio is once, at its first
 call, builds its map from cue id to takes then and answers every later call from that map.
 
+The example checks the disk on both the size call and the fill call. If the file appears or vanishes
+between the two, the reason changes length and Bridge Talk refuses the answer. A real plugin decides
+`ready` once.
+
 ## When Bridge Talk refuses a plugin
 
 Every refusal names what was refused and why, in the run log at `%LOCALAPPDATA%\BridgeTalk\Log.txt`
@@ -303,12 +312,18 @@ when the ABI version does not match, when it offers no voice or when it offers a
 or no id (FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: the voice is shown with
 its reason and cannot be cast; the log names it with that reason too. A voice that gives an empty
 reason is said to have given none.
-A single answer is passed over when it does not read as its layout, when the plugin asks for more
-than 4 MiB or when a call into it panics: the call answers nothing and the application carries on.
+A single answer is passed over when it does not read as its layout (bytes left over after it, text
+that is not UTF-8, a negative count or a take with no parts), when the plugin asks for more than
+4 MiB or when a Go panic is raised around the call: the call answers nothing and the application
+carries on. A crash inside the plugin's own code is not known to be survived; assume it ends Bridge
+Talk.
+A refused or unreadable `BridgeTalkPluginTakes` answer is not written to the run log: the cue is
+silent and the moment appears on the Missing takes pane. Check a Takes layout with a test of your own.
 One plugin being passed over never stops another loading (FR-561).
 
 If two plugins offer voices under the same name, both are kept and each is shown with the name of the
-plugin offering it (FR-568).
+plugin offering it; where the plugins share a name as well, with the file each was loaded from
+(FR-568).
 
 ## Using a plugin
 
@@ -332,8 +347,9 @@ For the person installing one; also for an author proving one works.
    named there with the reason (FR-567, FR-574).
 
 Updating Bridge Talk leaves the plugins folder as it was; the setup program never carries a plugin
-of its own (FR-577). Uninstalling offers **Also remove my plugins**, unticked, so the folder is kept
-unless asked otherwise (FR-578).
+of its own (FR-577). Where the plugins folder holds anything, uninstalling offers
+**Also remove my plugins**, unticked, so the folder is kept unless asked otherwise (FR-578); an empty folder goes
+with the rest.
 
 Bridge Talk does not check who wrote a plugin or whether it has been altered. A plugin runs with
 the rights of the person who put it there (NFR-S-3). Install only a plugin whose author you trust.
@@ -342,8 +358,13 @@ the rights of the person who put it there (NFR-S-3). Install only a plugin whose
 
 Bridge Talk loads plugins on Linux too. The contract is unchanged there: the same three functions
 with the same rules, in a shared object built from your own repository, placed in the folder
-[Where a plugin goes](#where-a-plugin-goes) gives for Linux. Nothing else in this document is
-Windows specific except the paths it gives as examples. No plugin has yet been loaded on Linux; the
+[Where a plugin goes](#where-a-plugin-goes) gives for Linux. The worked example, its build
+commands, the log path and everything said about the setup program are Windows specific. On Linux,
+export the functions with `__attribute__((visibility("default")))` in place of
+`__declspec(dllexport)`. This build command has not been run:
+`gcc -shared -fPIC -O2 -o quartermaster.so quartermaster.c`. Read the run log at
+`~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/Log.txt`. No setup program runs there, so the
+folder is kept or removed by hand. No plugin has yet been loaded on Linux; the
 loader's refusals have been tested there, a real plugin's calls have not.
 
 ## Checking your layouts against ours

@@ -81,14 +81,16 @@ it('casts a voice by its plugin and its id within it', async () => {
   expect(castPluginVoice).toHaveBeenCalledWith('Flight Deck', 'two', expect.any(Function))
 })
 
-// The cast voice stands on a card rather than among the pills, so pressing it again is not
-// something the page offers (FR-721).
-it('stands the cast voice apart from the rest', async () => {
+// The cast voice stands on a card and keeps its pill among the rest, disabled, so it is seen where
+// it belongs and pressing it again is not something the page offers (FR-593).
+it('keeps the cast voice among the pills, disabled', async () => {
   await show([officer, pilot], 'one', 'Bridge Crew')
 
-  expect(screen.queryByRole('button', { name: /The First Officer/ })).toBeNull()
-  expect(screen.getByText(/The First Officer/)).toBeTruthy()
-  expect(screen.getByRole('button', { name: /The Pilot/ })).toBeTruthy()
+  const cast = screen.getByRole('button', { name: "The First Officer is cast as your ship's voice" })
+  expect((cast as HTMLButtonElement).disabled).toBe(true)
+  fireEvent.click(cast)
+  expect(castPluginVoice).not.toHaveBeenCalled()
+  expect((screen.getByRole('button', { name: /The Pilot/ }) as HTMLButtonElement).disabled).toBe(false)
 })
 
 // A voice cast from a plugin and a recorded voice may carry one id. The plugin named in the state
@@ -169,8 +171,8 @@ it('keeps the cast card and the voices that cannot speak inside their own sectio
 
   const deck = screen.getByRole('region', { name: 'Flight Deck' })
   const crew = screen.getByRole('region', { name: 'Bridge Crew' })
-  expect(within(deck).getByText(/The Pilot/)).toBeTruthy()
-  expect(within(deck).queryByRole('button')).toBeNull()
+  expect(within(deck).getAllByText(/The Pilot/)).toHaveLength(2)
+  expect((within(deck).getByRole('button') as HTMLButtonElement).disabled).toBe(true)
   expect(within(crew).getByText('The Engineer: its recordings are not on this machine')).toBeTruthy()
   expect(within(deck).queryByText(/cannot speak/)).toBeNull()
 })

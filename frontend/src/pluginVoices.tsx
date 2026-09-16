@@ -38,8 +38,10 @@ function sectionsOf(voices: PluginVoice[], isCast: (voice: PluginVoice) => boole
       sections.push(section)
     }
     if (isCast(voice)) {
+      // The cast voice stands on the card and keeps its pill in its group too (FR-593).
       section.cast = voice
-    } else if (!voice.ready) {
+    }
+    if (!voice.ready) {
       section.unavailable.push(voice)
     } else if (voice.group === '') {
       section.ungrouped.push(voice)
@@ -86,7 +88,8 @@ export function PluginVoices({ active, plugin }: { active: string; plugin: strin
 
   /* A voice is shown by its own name inside its section, since the heading already says which
      plugin offers it (FR-583). The plugin and the id together key a pill, since an id is unique
-     within its own plugin alone and two plugins may offer one (FR-569). */
+     within its own plugin alone and two plugins may offer one (FR-569). The cast voice's pill is
+     disabled: seen where it belongs, never cast twice (FR-593). */
   const pills = (offered: PluginVoice[]) => (
     <div className="pills">
       {offered.map((voice) => (
@@ -95,7 +98,8 @@ export function PluginVoices({ active, plugin }: { active: string; plugin: strin
           className="pill"
           data-stop
           type="button"
-          aria-label={castLabel(voice.name, false)}
+          disabled={isCast(voice)}
+          aria-label={castLabel(voice.name, isCast(voice))}
           onClick={() => cast(voice)}
         >
           {voice.name}

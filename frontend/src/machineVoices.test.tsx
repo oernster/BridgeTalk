@@ -73,6 +73,14 @@ function pills(group: string): string[] {
     .map((pill) => pill.textContent ?? '')
 }
 
+/** disabledPills reads the names on a panel's disabled pills, which is the cast voice alone (FR-593). */
+function disabledPills(group: string): string[] {
+  return within(screen.getByRole('group', { name: group }))
+    .getAllByRole('button')
+    .filter((pill) => (pill as HTMLButtonElement).disabled)
+    .map((pill) => pill.textContent ?? '')
+}
+
 describe('the machine voices', () => {
   // FR-508, FR-528 and FR-720: a panel for each accent and sex in the order offered, each headed by
   // it and holding its voices by name alone, sorted.
@@ -101,21 +109,22 @@ describe('the machine voices', () => {
     expect(castMachineVoice).toHaveBeenCalledWith('bf_emma', expect.any(Function))
   })
 
-  // FR-721: the cast voice leaves its panel for a card above them all, which is not a control; a
-  // voice cast after it takes the card and puts it back in its panel.
-  it('puts the cast machine voice on a card above the panels, out of its own', async () => {
+  // FR-721, FR-593: the cast voice stands on a card above the panels (not a control) and keeps its pill
+  // in its panel, disabled; a voice cast after it takes the card and frees its pill.
+  it('puts the cast machine voice on a card above the panels and disables its pill', async () => {
     const shown = await show('bf_emma', true)
 
     const card = screen.getByText(castLine)
     expect(card.textContent).toBe("Emma (British, female) is cast as your ship's voice")
     expect(card.closest('button, [data-stop]')).toBeNull()
-    expect(pills('British, female')).toEqual(['Alice', 'Isabella'])
+    expect(pills('British, female')).toEqual(['Alice', 'Emma', 'Isabella'])
+    expect(disabledPills('British, female')).toEqual(['Emma'])
 
     shown.rerender(<MachineVoices active="bm_george" machine={true} total={moments} />)
 
-    expect((await screen.findByText(/^George/)).textContent).toBe("George (British, male) is cast as your ship's voice")
-    expect(pills('British, female')).toEqual(['Alice', 'Emma', 'Isabella'])
-    expect(pills('British, male')).toEqual(['Daniel'])
+    expect((await screen.findByText(/^George \(British, male\) is cast/)).textContent).toBe("George (British, male) is cast as your ship's voice")
+    expect(disabledPills('British, female')).toEqual([])
+    expect(disabledPills('British, male')).toEqual(['George'])
   })
 
   // FR-540 and FR-722: a recorded voice cast, even one whose folder carries a machine voice's id,

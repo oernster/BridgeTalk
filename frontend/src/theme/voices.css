@@ -118,6 +118,14 @@
   border-color: var(--ring);
 }
 
+/* The cast voice keeps its pill in its group, disabled: it cannot be cast again. It wears the ring
+   every disabled control wears, so it reads as not pressable rather than as missing (FR-593). */
+.pill:disabled {
+  border-color: var(--danger);
+  color: var(--muted);
+  cursor: default;
+}
+
 /* The right-hand column of a voice row. It holds the control that shows the working.
    It held a figure once and was set in a monospace face so that column of digits would
    line up down the list; there are no digits here now, so it reads in the face

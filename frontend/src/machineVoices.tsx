@@ -110,22 +110,22 @@ export function MachineVoices({
           <div key={panel.group} className="voicegroup" role="group" aria-label={panel.group}>
             <h4>{panel.group}</h4>
             <div className="pills">
-              {panel.voices
-                .filter((voice) => voice.id !== castVoice?.id)
-                .map((voice) => (
-                  /* The pill shows the name alone beneath the group's heading; the whole name
-                     reaches a reader through the label (FR-528). */
-                  <button
-                    key={voice.id}
-                    className="pill"
-                    data-stop
-                    type="button"
-                    aria-label={castLabel(voice.name, false)}
-                    onClick={() => cast(voice.id)}
-                  >
-                    {voice.given}
-                  </button>
-                ))}
+              {panel.voices.map((voice) => (
+                /* The pill shows the name alone beneath the group's heading; the whole name
+                   reaches a reader through the label (FR-528). The cast voice keeps its pill,
+                   disabled, so it is seen where it belongs yet cannot be cast twice (FR-593). */
+                <button
+                  key={voice.id}
+                  className="pill"
+                  data-stop
+                  type="button"
+                  disabled={voice.id === castVoice?.id}
+                  aria-label={castLabel(voice.name, voice.id === castVoice?.id)}
+                  onClick={() => cast(voice.id)}
+                >
+                  {voice.given}
+                </button>
+              ))}
             </div>
           </div>
         ))}

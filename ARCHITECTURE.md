@@ -779,8 +779,9 @@ pane and the theme; Help holds the guide, the licence and About.
 after the recorded voices, as pills in a panel for each accent and sex, the panels sharing the row
 (FR-720). The panels keep the group order the facade offers, which is FR-508's; each sorts its pills
 by name. `machinevoice.Voice` gives each voice's name alone and its group beside the full name, so the
-id's format keeps one home. The cast machine voice leaves its panel for a card above them, which is not a
-control, since pressing it would cast it again (FR-721); a recorded voice cast leaves no card, even one
+id's format keeps one home. The cast machine voice stands on a card above them (not a control) and
+keeps its pill in its panel disabled with the danger ring, since pressing it would cast it again (FR-721,
+FR-593); a recorded voice cast leaves no card, even one
 whose folder carries a machine voice's id (FR-722). The card reads how far making has got: it asks `Making` once, then follows the `making` event, which the poll loop
 sends only when the answer has moved, so an idle tick says nothing. Failed lines, a stopped making,
 undeleted lines and a refused cast each get a callout beneath the list. `StateDTO.MachineVoice` says
@@ -797,7 +798,7 @@ machine voices' panels, one style for both (FR-584). A voice is shown by its own
 section, since the heading says which plugin offers it; where two plugins carry one name, the facade
 heads each section with the file it was loaded from. A voice whose audio is not on this machine is
 named in its section with the reason its plugin gave and cannot be cast (FR-570). The cast plugin voice
-stands on a card at the top of its section. The flat lists, the notification area's menu and the
+stands on a card at the top of its section and keeps its pill in its group, disabled (FR-593). The flat lists, the notification area's menu and the
 Audition chooser, still show a name two plugins share with the plugin offering it (FR-568).
 
 Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the

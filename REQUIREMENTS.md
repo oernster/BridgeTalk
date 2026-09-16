@@ -2869,6 +2869,27 @@ Built on 2026-09-16.
 Verified by: `stands the plugin voices above the machine voices` in `frontend/src/cast.order.test.tsx`,
 seen to fail with the sections below the machine voices. Not verified in a running window.
 
+**FR-593 The cast voice keeps its pill, disabled with the danger ring**
+Priority: Should.
+While a machine voice or a plugin voice is cast, the Cast pane shall show that voice's pill in its own
+group, disabled and wearing the danger ring, as well as on the card above the groups.
+Rationale: Oliver, 2026-09-16. A plugin voice cast before a restart was taken to be missing: its pill had
+left its group for the card at the top of the section, so the group looked one voice short. A disabled
+pill keeps the voice where the reader looks for it while saying it cannot be pressed; the danger ring is
+what every disabled control already wears, which `TestEveryDisabledControlWearsTheDangerRing` holds. The
+card stays, since for a machine voice it carries how far making has got. Amends FR-721 and the card
+placement ruled under FR-583.
+Acceptance: Given the group `Crew` holding `Ada`, `Bo` and `Cy` with `Cy` cast, when the Cast pane opens,
+then the group shows all three pills with `Cy` disabled and ringed in the danger colour, while the card
+above the groups names `Cy` as cast.
+Built on 2026-09-16.
+Verified by: "keeps the cast voice among the pills, disabled" and "keeps the cast card and the voices
+that cannot speak inside their own section" in `frontend/src/pluginVoices.test.tsx`, seen to fail with
+the pill enabled and with the pill dropped; "puts the cast machine voice on a card above the panels and
+disables its pill" in `frontend/src/machineVoices.test.tsx`, seen to fail with the pill enabled;
+`TestEveryDisabledControlWearsTheDangerRing` in `tests/structural/rings_test.go`, seen to fail with the
+pill's danger ring taken out. Not verified in a running window.
+
 ---
 
 ## 7. The cue engine
@@ -3910,9 +3931,9 @@ then the card reads "Emma (British, female) is cast as your ship's voice" above 
 40 of 256 moments spoken" while British, female holds Alice, Isabella, Lily. Given `bm_george` then
 cast, then the card reads "George (British, male) is cast as your ship's voice", British, female holds
 Alice, Emma, Isabella, Lily while British, male holds Daniel, Fable, Lewis.
-Verified by: "puts the cast machine voice on a card above the panels, out of its own" and "reads how far
-making has got for the cast voice and follows it" in `frontend/src/machineVoices.test.tsx`. Proved by
-planting the cast voice kept in its panel; its test failed. Not verified by a test: the card's ground as
+Amended on 2026-09-16 by FR-593: the cast voice's pill now stays in its panel, disabled, beside the card.
+Verified by: "puts the cast machine voice on a card above the panels and disables its pill" and "reads
+how far making has got for the cast voice and follows it" in `frontend/src/machineVoices.test.tsx`. Not verified by a test: the card's ground as
 drawn in the window.
 
 **FR-722 A recorded voice cast leaves the groups whole**
@@ -4783,7 +4804,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

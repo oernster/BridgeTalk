@@ -47,6 +47,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
+| `internal/infrastructure/plugin` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
@@ -63,9 +65,9 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-903 test functions, which expand to 974 runs once their subtests are counted (measured on
+919 test functions, which expand to 1,008 runs once their subtests are counted (measured on
 2026-09-16: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of an
-uncached `go test -count=1 -json ./...`, which are 900 top-level runs plus 74 subtests; the
+uncached `go test -count=1 -json ./...`, which are 916 top-level runs plus 92 subtests; the
 three build-tagged benchmarks are counted as functions but do not run).
 Forty-nine of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the

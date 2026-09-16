@@ -182,6 +182,13 @@ Linux is in scope for Bridge Talk after everything else. The contract is unchang
 three functions with the same rules, in a shared object built from your own repository. Nothing in
 this document is Windows specific except the paths it gives as examples.
 
+## Checking your layouts against ours
+
+`internal/infrastructure/plugin/plugintest` in this repository writes these layouts in Go and is
+held to the same rules your plugin is: the size before the answer, a refusal that is never a size,
+then nothing written into a buffer too small to hold the whole answer. It is test support rather
+than a library to depend on, so read it as a worked example and write your own.
+
 ## A checklist before you publish
 
 - `BridgeTalkPluginABIVersion` returns 1.

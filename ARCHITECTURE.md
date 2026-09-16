@@ -455,8 +455,17 @@ and vets on every platform. That is the split `internal/infrastructure/setup` al
 composition root wires loaded voices in as audio sources; nothing in the Application layer learns
 that a plugin exists.
 
-**Proved without a plugin.** A test plugin built in this repository answers invented voices and
-invented paths, so no test, fixture or document needs any real content to exist.
+**Proved without a plugin; the limit of that.** A real plugin cannot be built here: a library
+file exporting C functions needs cgo and a C toolchain; this machine has neither, measured on
+2026-09-16. Requiring one would put a C compiler on every build machine, which is exactly what was
+turned down when ONNX Runtime was called through its C API instead of through cgo. So the contract
+is stood up in Go: `internal/infrastructure/plugin/plugintest` answers in the real layouts, obeying
+every rule the guide states, with invented voices and invented paths, so no test, fixture or
+document needs any real content to exist.
+
+That proves the layouts, the protocol and everything read back from them. It does not prove the
+call into a library file. That belongs to the Windows half and is measured there, against a library
+every Windows machine already has rather than one this repository cannot build.
 
 ## Resolving a cue
 

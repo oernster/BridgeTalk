@@ -65,12 +65,12 @@ func (g *auditionGate) busy() bool {
 }
 
 // MachineAuditionGroups lists what a machine voice is auditioned on: the script's groups, each counting
-// its lines (FR-546). Every machine voice speaks the one script, so the list holds for each of them.
+// the lines of its moments switched on in Chatter (FR-546, FR-746). Every machine voice speaks the one script, so the list holds for each of them.
 func (a *App) MachineAuditionGroups() []GroupDTO {
-	groups := a.session.making.AuditionGroups()
+	groups := a.session.making.AuditionGroups(a.session.heard())
 	out := make([]GroupDTO, 0, len(groups))
 	for _, group := range groups {
-		out = append(out, GroupDTO{Key: group.Key, Label: label(group.Key), Clips: group.Lines})
+		out = append(out, GroupDTO{Key: group.Key, Label: label(group.Key), Clips: group.Lines, SwitchedOff: group.SwitchedOff})
 	}
 	return out
 }
@@ -89,7 +89,7 @@ func (a *App) AuditionMachineVoice(id, group string) (AuditionDTO, error) {
 		return AuditionDTO{}, nil
 	}
 	a.announcePlayback()
-	clip, err := a.session.making.Audition(voice, group, a.session.chooser)
+	clip, err := a.session.making.Audition(voice, group, a.session.heard(), a.session.chooser)
 	playable := a.session.auditions.end(stops)
 	if err != nil {
 		a.announcePlayback()

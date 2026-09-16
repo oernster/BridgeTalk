@@ -44,8 +44,10 @@ export const kate: Voice = { name: 'Kate', display: 'Kate', credit: '', cues: 10
 export const emma: MachineVoice = { id: 'bf_emma', name: 'Emma (British, female)', given: 'Emma', group: 'British, female' }
 export const michael: MachineVoice = { id: 'am_michael', name: 'Michael (American, male)', given: 'Michael', group: 'American, male' }
 
-const shields: Group = { key: 'shields', label: 'Shields', clips: 4 }
-const combat: Group = { key: 'combat', label: 'Combat', clips: 1 }
+const shields: Group = { key: 'shields', label: 'Shields', clips: 4, switchedOff: false }
+const combat: Group = { key: 'combat', label: 'Combat', clips: 1, switchedOff: false }
+/** docked is a group whose moments Chatter has all switched off (FR-747). */
+export const docked: Group = { key: 'docked', label: 'Docked', clips: 0, switchedOff: true }
 
 /**
  * resetAudition clears every spy and subscription. Grace and Kate are then the recorded voices with

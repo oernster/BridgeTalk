@@ -14,6 +14,7 @@ import type { Voice } from './api'
 import {
   audition,
   auditionGroups,
+  docked,
   grace,
   groupButton,
   handlers,
@@ -240,6 +241,43 @@ describe('the audition pane', () => {
 
     expect(await screen.findByText(/No voices found/)).toBeTruthy()
     expect(screen.queryByText('This voice has nothing to audition.')).toBeNull()
+  })
+
+  // FR-747: a group Chatter has switched off entirely is not offered and not counted.
+  it('leaves out a group whose moments Chatter has all switched off', async () => {
+    auditionGroups.mockResolvedValue([docked, ...(await auditionGroups('Grace'))])
+    await show()
+
+    expect(screen.queryByRole('button', { name: /Docked/ })).toBeNull()
+    expect(screen.getByText('2 groups, 5 samples between them.')).toBeTruthy()
+  })
+
+  // FR-747: the pane asks for its groups each time it opens, so a group switched back on in Chatter
+  // is offered the next time Audition is opened.
+  it('asks for the groups again each time it opens', async () => {
+    auditionGroups.mockResolvedValue([docked])
+    const first = render(<AuditionPane cast="Grace" />)
+    await screen.findByText(/Chatter has switched off/)
+    first.unmount()
+
+    auditionGroups.mockResolvedValue([{ ...docked, clips: 2, switchedOff: false }])
+    render(<AuditionPane cast="Grace" />)
+
+    expect(await screen.findByRole('button', { name: /Docked/ })).toBeTruthy()
+    expect(auditionGroups).toHaveBeenCalledTimes(2)
+  })
+
+  // FR-748: a voice whose every group Chatter has switched off says so, rather than suggesting the
+  // recordings are missing.
+  it('says Chatter has switched off everything the voice could be heard on', async () => {
+    auditionGroups.mockResolvedValue([docked])
+    render(<AuditionPane cast="Grace" />)
+
+    expect(
+      await screen.findByText('Chatter has switched off everything this voice could be heard on.'),
+    ).toBeTruthy()
+    expect(screen.queryByText('This voice has nothing to audition.')).toBeNull()
+    expect(screen.queryByText(/groups,/)).toBeNull()
   })
 
   // Until the list arrives the chooser offers nothing it would have to take back.

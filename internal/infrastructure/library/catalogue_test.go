@@ -179,7 +179,7 @@ func TestGroupsGatherDistinctTakesUnderTheFirstSegment(t *testing.T) {
 	table := journalTable(t,
 		"DockingDenied.Reason.NoSpace", "DockingDenied.Reason.Distance", "HullDamage", "zz.silent")
 
-	got := catalogueOver(voice, table, fixedChooser{}).Groups()
+	got := catalogueOver(voice, table, fixedChooser{}).Groups(cue.HeardAll)
 
 	want := []Group{
 		{Key: "DockingDenied", Takes: takesOf("no.wav", "yes.wav")},
@@ -201,10 +201,10 @@ func TestAnAuditionDrawsFromTheNamedGroup(t *testing.T) {
 	table := journalTable(t, "DockingDenied.Reason.NoSpace", "DockingDenied.Reason.Distance", "HullDamage")
 	catalogue := catalogueOver(voice, table, fixedChooser{at: 1})
 
-	if clip, ok := catalogue.Audition("DockingDenied"); !ok || clip.Key() != "yes.wav" {
+	if clip, ok := catalogue.Audition("DockingDenied", cue.HeardAll); !ok || clip.Key() != "yes.wav" {
 		t.Errorf("audition = %q, %v; want the take the chooser picked", clip, ok)
 	}
-	if _, ok := catalogue.Audition("UnderAttack"); ok {
+	if _, ok := catalogue.Audition("UnderAttack", cue.HeardAll); ok {
 		t.Error("a group the voice has nothing for was auditioned")
 	}
 }

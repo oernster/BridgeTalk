@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/domain/script/scripttest"
 )
@@ -31,7 +32,42 @@ func TestGroupsGatherCuesByTheirFirstSegmentCountingTheirLines(t *testing.T) {
 	}
 
 	want := []script.Group{{Key: "Docked", Lines: 3}, {Key: "ShieldState", Lines: 6}}
-	if got := voiced.Groups(); !slices.Equal(got, want) {
+	if got := voiced.Groups(cue.HeardAll); !slices.Equal(got, want) {
 		t.Errorf("groups = %v, want %v sorted by key", got, want)
+	}
+}
+
+// shieldsAndDocked is a script with two ShieldState cues and Docked, three lines each.
+func shieldsAndDocked(t *testing.T) script.Voiced {
+	t.Helper()
+	voiced, err := scripttest.Build(map[string]script.Saved{
+		"ShieldState.ShieldsUp.false": threeSaved(),
+		"ShieldState.ShieldsUp.true":  threeSaved(),
+		"Docked":                      threeSaved(),
+	})
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	return voiced
+}
+
+// FR-746: a group counts the lines of its cues heard alone.
+func TestAMachineGroupCountsOnlyItsMomentsSwitchedOn(t *testing.T) {
+	heard := func(id cue.ID) bool { return id != "ShieldState.ShieldsUp.false" }
+
+	want := []script.Group{{Key: "Docked", Lines: 3}, {Key: "ShieldState", Lines: 3}}
+	if got := shieldsAndDocked(t).Groups(heard); !slices.Equal(got, want) {
+		t.Errorf("groups = %v, want %v", got, want)
+	}
+}
+
+// FR-747: a group none of whose cues is heard is still answered, counting nothing and marked switched
+// off, so it is told apart from a group the script does not hold.
+func TestAMachineGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff(t *testing.T) {
+	heard := func(id cue.ID) bool { return id.Group() != "ShieldState" }
+
+	want := []script.Group{{Key: "Docked", Lines: 3}, {Key: "ShieldState", SwitchedOff: true}}
+	if got := shieldsAndDocked(t).Groups(heard); !slices.Equal(got, want) {
+		t.Errorf("groups = %v, want %v", got, want)
 	}
 }

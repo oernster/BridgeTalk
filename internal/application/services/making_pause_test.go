@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
@@ -154,7 +155,7 @@ func TestAnAuditionWritesTheLineWithItsPauseOrAsMadeLoggingWhereItsSamplesDiffer
 			entry.Digest = each.digest
 			key := making.PausedKey("bə", makingtest.MadeFrom, entry, pauseSilence)
 
-			path, err := pausedMaking(t, entry, store, log).Audition(voiceNamed(t, "bf_emma"), "Docked", lineAt(0))
+			path, err := pausedMaking(t, entry, store, log).Audition(voiceNamed(t, "bf_emma"), "Docked", cue.HeardAll, lineAt(0))
 
 			if err != nil || path != makingtest.PathOf("bf_emma", key) {
 				t.Fatalf("Audition = %q, %v; want the paused line's path", path, err)
@@ -175,7 +176,7 @@ func TestAnAuditionWhosePauseCannotBeInsertedAnswersWhyKeepingNothing(t *testing
 	entry := dockedPause()
 	entry.Sample = len(modelAnswer) + 1
 
-	_, err := pausedMaking(t, entry, store, &makingtest.Log{}).Audition(voiceNamed(t, "bf_emma"), "Docked", lineAt(0))
+	_, err := pausedMaking(t, entry, store, &makingtest.Log{}).Audition(voiceNamed(t, "bf_emma"), "Docked", cue.HeardAll, lineAt(0))
 
 	if !errors.Is(err, pause.ErrOutOfRange) {
 		t.Errorf("Audition = %v, want ErrOutOfRange", err)

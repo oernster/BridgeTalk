@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/script"
@@ -15,24 +16,26 @@ import (
 // ErrNothingToAudition is returned for a group the script holds no lines for.
 var ErrNothingToAudition = errors.New("the script holds no lines for that group")
 
-// AuditionGroups returns the groups a machine voice is auditioned on: the script's, each counting its
-// lines (FR-546). Every machine voice speaks the one script, so the answer holds for each of them.
-func (m *MakingService) AuditionGroups() []script.Group { return m.voiced.Groups() }
+// AuditionGroups returns the groups a machine voice is auditioned on: the script's, each counting the
+// lines of its cues heard, a group with none heard marked switched off (FR-546, FR-746, FR-747). Every
+// machine voice speaks the one script, so the answer holds for each of them.
+func (m *MakingService) AuditionGroups(heard cue.Heard) []script.Group { return m.voiced.Groups(heard) }
 
-// Audition answers where to play one line of a group, drawn at random, for a machine voice cast or not
-// (FR-546). A line with no current made line is made first, next after the line under way, then kept
-// (FR-527). Files that cannot be read, a line the model refuses and a line that cannot be written each
+// Audition answers where to play one line of a group, drawn at random from the lines of its cues heard,
+// for a machine voice cast or not (FR-546, FR-745). A group with no line heard is refused as one the
+// script holds nothing for. A line with no current made line is made first, next after the line under
+// way, then kept (FR-527). Files that cannot be read, a line the model refuses and a line that cannot be written each
 // answer why, keeping nothing (FR-548).
 //
 // The voice's files are read on every audition as a cast reads them, so a line made from files that
 // have changed since is never taken for current (FR-513).
-func (m *MakingService) Audition(voice machinevoice.Voice, group string, chooser selection.Chooser) (string, error) {
+func (m *MakingService) Audition(voice machinevoice.Voice, group string, heard cue.Heard, chooser selection.Chooser) (string, error) {
 	material, err := m.files.Open(voice)
 	if err != nil {
 		return "", err
 	}
 	plan := making.New(m.voiced, voice, material.Files, m.pauses, m.endings, m.store.Keys(voice))
-	lines := plan.Group(group)
+	lines := plan.Group(group, heard)
 	if len(lines) == 0 {
 		return "", fmt.Errorf("%w: %s", ErrNothingToAudition, group)
 	}

@@ -62,7 +62,6 @@ func main() {
 	}
 }
 
-// session holds everything that has to be rebuilt when the voice changes.
 // audioPlayer is everything the session and the facade ask of the output device.
 //
 // It is declared here, where it is consumed, rather than in ports: the application
@@ -92,6 +91,7 @@ type trayIcon interface {
 	Stop()
 }
 
+// session holds everything that has to be rebuilt when the voice changes.
 type session struct {
 	table     cue.Table
 	available []library.Voice
@@ -179,33 +179,6 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 	if s.tray != nil {
 		s.tray.SetActiveVoice(cast.chosen(), cast.Display)
 	}
-}
-
-// catalogueFor builds a catalogue over any voice, cast or not. The cast pane reports
-// on voices the user has not chosen and the audition pane plays from them, so the
-// catalogue cannot be tied to the active one.
-func (s *session) catalogueFor(voice library.Voice) *library.Catalogue {
-	return catalogueOf(voice, s.table, s.chooser)
-}
-
-// voiceNamed finds a voice by exact name among those found at startup.
-func (s *session) voiceNamed(name string) (library.Voice, bool) {
-	for _, candidate := range s.available {
-		if candidate.Name == name {
-			return candidate, true
-		}
-	}
-	return library.Voice{}, false
-}
-
-// coverageOf reports what a voice that is not the cast one could serve: the cues it has
-// recorded, the files it uses and the recordings present in its directory. All three are
-// what the cast pane shows before the user commits to casting it (FR-215).
-func (s *session) coverageOf(voice library.Voice) (int, int, int) {
-	catalogue := s.catalogueFor(voice)
-	covered, _ := catalogue.Coverage()
-	used, present := voice.Files()
-	return covered, used, present
 }
 
 // run wires everything together and hands the assembled facade to Wails.
@@ -329,22 +302,6 @@ func run() error {
 	// the window is shown rather than starting a program the user cannot reach. The
 	// login entry never asks for that pair; only a hand-typed command can.
 	return launch(app, *hidden && current.tray != nil)
-}
-
-// startTray builds and shows the tray, returning nil when it cannot appear.
-//
-// A tray that fails to start is not fatal. The application still watches the journal
-// and still speaks, which is the whole point of it. The nil it answers then is the
-// interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
-func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
-	tray := taskbar.New(taskbar.Options{
-		Title: appTitle, Voices: trayChoices(found, offered), Active: active, Icon: applicationIcon,
-	})
-	if err := tray.Start(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)
-		return nil
-	}
-	return tray
 }
 
 // newMaking builds what a machine voice is made through: the model files beside the application

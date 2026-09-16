@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/ending"
 	"github.com/oernster/bridge-talk/internal/domain/making"
 	"github.com/oernster/bridge-talk/internal/domain/pause"
@@ -160,7 +161,7 @@ func TestAnAuditionWritesTheLineFadedOrAsMadeLoggingWhereItsSamplesDiffer(t *tes
 			entry.Digest = each.digest
 			m := endedMaking(t, nil, []ending.Entry{entry}, store, log)
 
-			path, err := m.service.Audition(voiceNamed(t, "bf_emma"), "Docked", lineAt(0))
+			path, err := m.service.Audition(voiceNamed(t, "bf_emma"), "Docked", cue.HeardAll, lineAt(0))
 
 			if err != nil || path != makingtest.PathOf("bf_emma", m.key) {
 				t.Fatalf("Audition = %q, %v; want the faded line's path", path, err)

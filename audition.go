@@ -18,11 +18,14 @@ import (
 // is zero for the reason takeGap is: a take recorded in pieces is one utterance (FR-573).
 const auditionGap = 0
 
-// GroupDTO is one auditionable group as the pane shows it.
+// GroupDTO is one auditionable group as the pane shows it. Clips counts the takes or lines of its
+// moments switched on in Chatter (FR-746); SwitchedOff says the voice has something for the group yet
+// every one of its moments is switched off, which the pane leaves out (FR-747, FR-748).
 type GroupDTO struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
-	Clips int    `json:"clips"`
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Clips       int    `json:"clips"`
+	SwitchedOff bool   `json:"switchedOff"`
 }
 
 // AuditionDTO reports what an audition played, so the pane can name the clip rather
@@ -33,25 +36,27 @@ type AuditionDTO struct {
 }
 
 // AuditionGroups lists what can be auditioned for a voice, which need not be the cast
-// one: the point of an audition is to hear a voice before committing to it.
+// one: the point of an audition is to hear a voice before committing to it. Only the
+// moments switched on in Chatter are counted (FR-746).
 func (a *App) AuditionGroups(voice string) []GroupDTO {
 	chosen, found := a.session.voiceNamed(voice)
 	if !found {
 		return []GroupDTO{}
 	}
-	groups := a.session.catalogueFor(chosen).Groups()
+	groups := a.session.catalogueFor(chosen).Groups(a.session.heard())
 	out := make([]GroupDTO, 0, len(groups))
 	for _, group := range groups {
 		out = append(out, GroupDTO{
-			Key:   group.Key,
-			Label: label(group.Key),
-			Clips: len(group.Takes),
+			Key:         group.Key,
+			Label:       label(group.Key),
+			Clips:       len(group.Takes),
+			SwitchedOff: group.SwitchedOff,
 		})
 	}
 	return out
 }
 
-// Audition plays one clip drawn at random from a group.
+// Audition plays one clip drawn at random from a group's moments switched on in Chatter (FR-745).
 //
 // It ignores the mute, which silences the application's reactions to the game rather
 // than the application. Pressing an audition button is an explicit request to hear
@@ -61,7 +66,7 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	if !found {
 		return AuditionDTO{}, fmt.Errorf("no voice named %q", voice)
 	}
-	drawn, ok := a.session.catalogueFor(chosen).Audition(group)
+	drawn, ok := a.session.catalogueFor(chosen).Audition(group, a.session.heard())
 	if !ok {
 		return AuditionDTO{}, nothingFor(voice, group)
 	}

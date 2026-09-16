@@ -13,6 +13,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
+	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/domain/take"
 )
@@ -39,7 +40,7 @@ func TestTheGroupsAuditionedAreTheScriptsCountingTheirLines(t *testing.T) {
 	service := makingWith(t, "di", makingtest.Files{}, makingtest.NewMaker(), makingtest.NewStore())
 
 	want := []script.Group{{Key: "Docked", Lines: 3}, {Key: "Undocked", Lines: 3}}
-	if got := service.AuditionGroups(); !slices.Equal(got, want) {
+	if got := service.AuditionGroups(cue.HeardAll); !slices.Equal(got, want) {
 		t.Errorf("groups = %v, want %v", got, want)
 	}
 }
@@ -50,7 +51,7 @@ func TestAnAuditionMakesTheLineDrawnKeepsItAndAnswersWhereItPlays(t *testing.T) 
 	store, maker := makingtest.NewStore(), makingtest.NewMaker()
 	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
-	path, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", lineAt(1))
+	path, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", cue.HeardAll, lineAt(1))
 
 	if err != nil {
 		t.Fatalf("Audition: %v", err)
@@ -71,7 +72,7 @@ func TestAnAuditionOfALineAlreadyMadeMakesNothing(t *testing.T) {
 	store.Hold("am_michael", key)
 	service := makingWith(t, "di", makingtest.Files{}, maker, store)
 
-	path, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", lineAt(0))
+	path, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", cue.HeardAll, lineAt(0))
 
 	if err != nil || path != makingtest.PathOf("am_michael", key) || maker.Made() != 0 {
 		t.Errorf("answered %q, %v after making %d; want the made line with nothing made", path, err, maker.Made())
@@ -90,7 +91,7 @@ func TestALineAuditionedForTheCastVoiceCountsAsMade(t *testing.T) {
 	}
 	service.Wait()
 
-	if _, err := service.Audition(emma, "Undocked", lineAt(1)); err != nil {
+	if _, err := service.Audition(emma, "Undocked", cue.HeardAll, lineAt(1)); err != nil {
 		t.Fatalf("Audition: %v", err)
 	}
 
@@ -117,7 +118,7 @@ func TestAnAuditionIsMadeNextAfterTheLineUnderWay(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		_, _ = service.Audition(voiceNamed(t, "am_michael"), "Undocked", lineAt(0))
+		_, _ = service.Audition(voiceNamed(t, "am_michael"), "Undocked", cue.HeardAll, lineAt(0))
 	}()
 	awaitWaiting(t, service)
 	close(maker.Resume)
@@ -147,7 +148,7 @@ func TestAnAuditionThatCannotBeMadeAnswersWhyKeepingNothing(t *testing.T) {
 			maker.FailOn, store.FailWrite = each.failOn, each.failWrite
 			service := makingWith(t, "di", each.files, maker, store)
 
-			_, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", lineAt(0))
+			_, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", cue.HeardAll, lineAt(0))
 
 			if !errors.Is(err, each.want) {
 				t.Errorf("Audition = %v, want %v", err, each.want)
@@ -164,9 +165,30 @@ func TestAnAuditionOfAGroupTheScriptLacksIsRefused(t *testing.T) {
 	maker := makingtest.NewMaker()
 	service := makingWith(t, "di", makingtest.Files{}, maker, makingtest.NewStore())
 
-	_, err := service.Audition(voiceNamed(t, "am_michael"), "ShieldState", lineAt(0))
+	_, err := service.Audition(voiceNamed(t, "am_michael"), "ShieldState", cue.HeardAll, lineAt(0))
 
 	if !errors.Is(err, services.ErrNothingToAudition) || maker.Made() != 0 {
 		t.Errorf("Audition = %v after making %d, want ErrNothingToAudition with nothing made", err, maker.Made())
+	}
+}
+
+// FR-745 and FR-747: a machine voice is auditioned on the lines of its moments switched on alone. A
+// group whose moments are all off is counted as nothing, marked switched off and refused before
+// anything is made; the other groups are as they were.
+func TestAMachineAuditionDrawsOnlyOnMomentsSwitchedOn(t *testing.T) {
+	maker := makingtest.NewMaker()
+	service := makingWith(t, "di", makingtest.Files{}, maker, makingtest.NewStore())
+	heard := func(id cue.ID) bool { return id != "Undocked" }
+
+	want := []script.Group{{Key: "Docked", Lines: 3}, {Key: "Undocked", SwitchedOff: true}}
+	if got := service.AuditionGroups(heard); !slices.Equal(got, want) {
+		t.Errorf("groups = %v, want %v", got, want)
+	}
+	_, err := service.Audition(voiceNamed(t, "am_michael"), "Undocked", heard, lineAt(0))
+	if !errors.Is(err, services.ErrNothingToAudition) || maker.Made() != 0 {
+		t.Errorf("Audition = %v after making %d, want ErrNothingToAudition with nothing made", err, maker.Made())
+	}
+	if _, err := service.Audition(voiceNamed(t, "am_michael"), "Docked", heard, lineAt(0)); err != nil {
+		t.Errorf("a group switched on was refused: %v", err)
 	}
 }

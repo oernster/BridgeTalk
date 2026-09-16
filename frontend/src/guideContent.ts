@@ -107,7 +107,7 @@ export const guideSections: GuideSection[] = [
       {
         icons: [artwork.play],
         name: 'Play',
-        text: "one button for each part of the game. A press plays one of that voice's recordings or lines for it at random, so pressing again can give a different take. A machine voice makes a line it has not made yet first, which takes a moment. The buttons wait while anything is already playing, the ship's own lines included. An audition ignores the mute, which silences answers to the game rather than the window.",
+        text: "one button for each part of the game. A press plays one of that voice's recordings or lines for it at random, so pressing again can give a different take. A machine voice makes a line it has not made yet first, which takes a moment. Only moments switched on in Chatter are played or counted; a part of the game whose moments are all switched off has no button until one is switched on again. The buttons wait while anything is already playing, the ship's own lines included. An audition ignores the mute, which silences answers to the game rather than the window.",
       },
     ],
   },

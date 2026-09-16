@@ -3960,6 +3960,70 @@ Verified by: "collapses a category from its heading and opens it again" in
 `frontend/src/chatter.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
 either control wears, which the style sheet draws and jsdom does not compute.
 
+**FR-745 An audition draws only on moments switched on**
+Priority: Should.
+When a group is auditioned, the application shall draw the take or the line from the moments of that
+group switched on in Chatter alone, for a recorded voice, a plugin voice and a machine voice alike.
+Rationale: Oliver, 2026-09-16. Audition is for hearing what the ship would say; a moment switched off
+is never said (FR-622), so hearing it on Audition misleads. An audition group is every moment sharing
+the first segment of its id (FR-216) while Chatter switches one moment at a time, so a group is
+filtered within rather than dropped whole: Oliver chose that over hiding a group once any one of its
+moments is off, which would have taken all 12 GuiFocus moments away with one switch. A moment Chatter
+does not list, the cue from the application (FR-634), is always switched on.
+Acceptance: Given `bf_emma` with `Docked.Cleared` switched off and `Docked` and `Docked.Set` on, when
+Docked is auditioned, then the line played is one of the lines of `Docked` or `Docked.Set`.
+Verified by: `TestAnAuditionDrawsOnlyOnMomentsSwitchedOn` in
+`internal/infrastructure/library/heard_test.go` for a recorded or plugin voice;
+`TestAGroupGivesOnlyTheLinesOfItsCuesHeard` in `internal/domain/making/group_test.go` and
+`TestAMachineAuditionDrawsOnlyOnMomentsSwitchedOn` in
+`internal/application/services/making_audition_test.go` for a machine voice;
+`TestTheAuditionPaneAsksChatterWhatIsSwitchedOn` and `TestAMachineAuditionAsksChatterWhatIsSwitchedOn`
+in `audition_heard_test.go` for the facade reading the switches. Each layer's tests were seen to fail
+on 2026-09-16 with that layer's filter taken out.
+
+**FR-746 A group's count covers its moments switched on**
+Priority: Should.
+The Audition pane shall count on each group's button the takes or lines of that group's moments
+switched on in Chatter alone.
+Rationale: a count including moments that cannot be drawn promises more than a press can play.
+Acceptance: Given `bf_emma` with `Docked.Cleared` switched off, when the Audition pane opens, then the
+Docked button counts the lines of `Docked` and `Docked.Set` and not those of `Docked.Cleared`.
+Verified by: `TestAGroupCountsOnlyItsMomentsSwitchedOn` in
+`internal/infrastructure/library/heard_test.go`; `TestAMachineGroupCountsOnlyItsMomentsSwitchedOn`
+in `internal/domain/script/groups_test.go`; both seen to fail on 2026-09-16 with the filter taken out.
+
+**FR-747 A group with every moment switched off is not offered**
+Priority: Should.
+While every moment of a group is switched off in Chatter, the Audition pane shall not offer that
+group.
+Rationale: a button that can play nothing is a fault to the reader. The pane asks for its groups each
+time it opens, so a group comes back the next time the pane is opened after any of its moments is
+switched on again; Chatter and Audition are never open at once.
+Acceptance: Given `bf_emma` with `Docked`, `Docked.Set` and `Docked.Cleared` all switched off, when the
+Audition pane opens, then no Docked button is offered; given `Docked.Set` then switched on, when the
+pane opens again, then the Docked button is offered, counting the lines of `Docked.Set`.
+Verified by: `TestAGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
+`internal/infrastructure/library/heard_test.go` and
+`TestAMachineGroupWithEveryMomentSwitchedOffIsMarkedSwitchedOff` in
+`internal/domain/script/groups_test.go` for the group being marked; "leaves out a group whose moments
+Chatter has all switched off" and "asks for the groups again each time it opens" in
+`frontend/src/audition.test.tsx` for the pane. Each was seen to fail on 2026-09-16 with its filter
+taken out. That the pane asks again on opening is held by the test yet was not seen to fail on its
+own, since nothing short of caching the answer across openings would break it.
+
+**FR-748 If Chatter has switched off everything a voice has, then say so**
+Priority: Should.
+If every group a voice has something for has every moment switched off in Chatter, then the Audition
+pane shall say that Chatter has switched off everything that voice could be heard on.
+Rationale: the pane's usual "This voice has nothing to audition." would send the reader looking for
+missing recordings when the recordings are there.
+Acceptance: Given a recorded voice with takes for Docked alone and every Docked moment switched off,
+when the Audition pane opens on that voice, then it reads "Chatter has switched off everything this
+voice could be heard on." and offers no group.
+Verified by: "says Chatter has switched off everything the voice could be heard on" in
+`frontend/src/audition.test.tsx`, seen to fail on 2026-09-16 with the pane's filter taken out; the
+backend's marking of each group is FR-747's.
+
 **FR-742 A fault in the loop watching the game ends the loop alone**
 Priority: Must.
 If the loop that watches the game raises a fault, then the application shall end that loop, shall
@@ -4177,8 +4241,8 @@ Go satisfies `go.mod` or fetches the toolchain it names over the build's network
 GNOME SDK carries the ALSA headers the audio output's cgo build needs. The icons are written by
 `tools/linuxicons` from the committed `.ico`; `TestEveryPictureIsInstalledAtItsSize` holds that.
 Oliver installed and ran the first step's bundle on 2026-09-16. The model files are fetched inside the
-sandbox for the second step (FR-817), so the bundle carries the model of about 310 MB; that build has
-not been run.
+sandbox for the second step (FR-817), so the bundle carries the model of about 310 MB. Oliver installed
+that bundle on his Linux machine on 2026-09-16 and heard the machine voices speak.
 
 ### 9.1 Linux
 
@@ -4322,9 +4386,9 @@ and `TestLinesSurviveTheirStackMovingWhileTheModelIsCalled` in `internal/infrast
 run on 2026-09-16 as a Linux test binary built with cgo disabled under WSL Ubuntu on the development
 machine, every one passing. `TestTheFlatpakInstallsTheModelFilesWhereTheyAreRead` in
 `tests/structural/flatpak_test.go` holds the flatpak fetching the files and installing them beside
-the executable, seen to fail with the folder renamed and the fetch taken out. Not verified: the
-flatpak's build with cgo on, whose library load goes through the C runtime instead; a machine voice
-heard on a Linux desktop.
+the executable, seen to fail with the folder renamed and the fetch taken out. Oliver installed the
+flatpak, built with cgo on, on his Linux machine on 2026-09-16 and heard the machine voices speak
+there; that is an observation rather than a test, so nothing repeats it.
 
 **FR-818 On Linux plugins are loaded from the user's own data folder**
 Priority: Should.
@@ -4394,7 +4458,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-748, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

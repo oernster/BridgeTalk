@@ -59,7 +59,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 85.1% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 85.2% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 69.6% | 67% | `test.ps1` |
@@ -74,9 +74,9 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,028 test functions, which expand to 1,134 runs once their subtests are counted (measured on
+1,038 test functions, which expand to 1,144 runs once their subtests are counted (measured on
 2026-09-16 on Windows: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of
-an uncached `go test -count=1 -json ./...`, which are 1,022 top-level runs plus 112 subtests; the
+an uncached `go test -count=1 -json ./...`, which are 1,032 top-level runs plus 112 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
 Fifty-six of them are the structural tests in `tests/structural`, which scan the source
@@ -135,7 +135,7 @@ installing the model files where they are read.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.5%** | **96.8%** |
 
-306 tests across 28 files, run under Vitest with jsdom (counted on 2026-09-16).
+309 tests across 28 files, run under Vitest with jsdom (counted on 2026-09-16).
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit

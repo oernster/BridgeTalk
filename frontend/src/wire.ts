@@ -121,7 +121,10 @@ export interface Voice {
 export interface Group {
   key: string
   label: string
+  /** The takes or lines of the group's moments switched on in Chatter (FR-746). */
   clips: number
+  /** The voice has something for the group yet every one of its moments is switched off (FR-747). */
+  switchedOff: boolean
 }
 
 /** Playback reports whether the output device is sounding anything. */

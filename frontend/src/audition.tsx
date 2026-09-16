@@ -107,7 +107,13 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
     [voice, machineId],
   )
 
-  const total = groups.reduce((sum, group) => sum + group.clips, 0)
+  // A group whose moments Chatter has all switched off is not offered (FR-747). The pane asks for its
+  // groups each time it opens, so switching one back on shows the group next time.
+  const offered = groups.filter((group) => !group.switchedOff)
+  // Everything the voice has is switched off, which reads differently from a voice with nothing
+  // (FR-748).
+  const allSwitchedOff = offered.length === 0 && groups.length > 0
+  const total = offered.reduce((sum, group) => sum + group.clips, 0)
   // No voice exists to choose. The chooser still stands at its full width holding
   // None, because an empty control shrunk to its arrow reads as a rendering fault
   // rather than as an answer.
@@ -163,15 +169,17 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
           No voices found, so there is nothing to audition yet. Choose the directory
           holding your recordings on the Missing takes pane.
         </p>
-      ) : groups.length === 0 ? (
+      ) : allSwitchedOff ? (
+        <p className="lede">Chatter has switched off everything this voice could be heard on.</p>
+      ) : offered.length === 0 ? (
         <p className="lede">This voice has nothing to audition.</p>
       ) : (
         <>
           <p className="meta">
-            {groups.length} groups, {total.toLocaleString()} samples between them.
+            {offered.length} groups, {total.toLocaleString()} samples between them.
           </p>
           <div className="groups">
-            {groups.map((group) => (
+            {offered.map((group) => (
               <button
                 className="group"
                 key={group.key}

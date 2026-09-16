@@ -181,12 +181,12 @@ func (p Plan) WithMade(key string) Plan {
 	return Plan{lines: p.lines, current: current, onDisk: p.onDisk}
 }
 
-// Group returns the lines of every cue in a group, made or not, in the plan's order: what a machine
-// voice is auditioned on for that group (FR-546).
-func (p Plan) Group(key string) []Line {
+// Group returns the lines of every cue in a group that is heard, made or not, in the plan's order:
+// what a machine voice is auditioned on for that group (FR-546, FR-745).
+func (p Plan) Group(key string, heard cue.Heard) []Line {
 	var lines []Line
 	for _, line := range p.lines {
-		if line.Cue.Group() == key {
+		if line.Cue.Group() == key && heard(line.Cue) {
 			lines = append(lines, line)
 		}
 	}

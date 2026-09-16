@@ -180,3 +180,56 @@ func listing(found []library.Voice, table cue.Table, chooser randomChooser) erro
 	}
 	return nil
 }
+
+// catalogueFor builds a catalogue over any voice, cast or not. The cast pane reports
+// on voices the user has not chosen and the audition pane plays from them, so the
+// catalogue cannot be tied to the active one.
+func (s *session) catalogueFor(voice library.Voice) *library.Catalogue {
+	return catalogueOf(voice, s.table, s.chooser)
+}
+
+// heard answers whether a moment is switched on in Chatter as it stands, for an audition to draw on
+// (FR-745). A session built without the switches, as a test may build one, hears every moment.
+func (s *session) heard() cue.Heard {
+	if s.chatter == nil {
+		return cue.HeardAll
+	}
+	chatter := s.chatter
+	return func(id cue.ID) bool { return !chatter.Off(id) }
+}
+
+// voiceNamed finds a voice by exact name among those found at startup.
+func (s *session) voiceNamed(name string) (library.Voice, bool) {
+	for _, candidate := range s.available {
+		if candidate.Name == name {
+			return candidate, true
+		}
+	}
+	return library.Voice{}, false
+}
+
+// coverageOf reports what a voice that is not the cast one could serve: the cues it has
+// recorded, the files it uses and the recordings present in its directory. All three are
+// what the cast pane shows before the user commits to casting it (FR-215).
+func (s *session) coverageOf(voice library.Voice) (int, int, int) {
+	catalogue := s.catalogueFor(voice)
+	covered, _ := catalogue.Coverage()
+	used, present := voice.Files()
+	return covered, used, present
+}
+
+// startTray builds and shows the tray, returning nil when it cannot appear.
+//
+// A tray that fails to start is not fatal. The application still watches the journal
+// and still speaks, which is the whole point of it. The nil it answers then is the
+// interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
+func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
+	tray := taskbar.New(taskbar.Options{
+		Title: appTitle, Voices: trayChoices(found, offered), Active: active, Icon: applicationIcon,
+	})
+	if err := tray.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)
+		return nil
+	}
+	return tray
+}

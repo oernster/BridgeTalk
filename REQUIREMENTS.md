@@ -154,12 +154,11 @@ unless another directory is chosen in Settings or passed with `-journal`. No net
 dependency at runtime: the application makes no outbound request. Machine voices run on the
 processor alone through one native library loaded with cgo disabled, ONNX Runtime (CON-8).
 
-**Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
-built yet and comes after all other work. The library
+**Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. The library
 schema in section 3 is already portable, so nothing there changes either way. It is delivered as a
 flatpak built by one script in the house pattern (FR-810), decided by Oliver on 2026-09-16. Section
-9.1 says what differs there: the first Linux release delivers recorded voices; machine voices and
-plugins follow.
+9.1 says what differs there: recorded voices, machine voices and plugins are all offered, the plugins
+folder sitting in the user's own data folder.
 
 **The reference machine** for the performance requirements is the development machine they were
 measured on, read on 2026-09-16: an AMD Ryzen 9 9900X with 12 cores and 24 threads, 61.6 GB of
@@ -177,7 +176,7 @@ Claude so NFR-P-201 had a machine to be measured on; Oliver kept it on 2026-09-1
 | CON-5 | No recording ships inside the application or its setup program. The files a machine voice is made from do (FR-524); amended on 2026-09-14. |
 | CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
-| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. |
+| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. Amended on 2026-09-16 for Linux: ONNX Runtime is loaded and called through purego there, with no C bindings written for it, while the flatpak build of the application itself has cgo on for webkit2gtk and the audio output (FR-810); purego then loads the library through the C runtime rather than its own loader. |
 | CON-9 | No file in this repository, tracked or ignored, names the audio a plugin reads, the folders it sits in, the way it is arranged or the words it is described by. The interface speaks the application's own cue ids and file paths alone. That mapping lives in the plugin's own repository. Added on 2026-09-16. |
 | CON-10 | A plugin is a native library loaded from the application's own install directory, so loading one asks for no administrator rights (CON-6) and writes nothing outside it. Added on 2026-09-16. |
 
@@ -990,8 +989,8 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned at v0.8.1 in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that version on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
-| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to three names in the setup package, so of setup's writes only the sign-in entry is reached. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
-| NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `windows.LoadDLL` by its whole path and nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to four names in the setup package, so of setup's writes only the sign-in entry and the plugins folder are reached; the plugins folder is made by the application on Linux alone (FR-819). The fourth name was seen to fail on 2026-09-16 when taken off the list. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; on Linux the plugins folder in its data folder (FR-819, added 2026-09-16); the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
+| NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory on Windows and the data folder on Linux, each per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `nativelib.Open` by its whole path, which is `windows.LoadDLL` on Windows and `dlopen` through purego on Linux; nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
 | NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. Claude proposed the limit rather than measuring it; Oliver accepted it as proposed on 2026-09-16. Measuring it waits on a built plugin, which needs a C toolchain the development machine does not have |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
@@ -1653,11 +1652,13 @@ Rationale: the code is written against one exact model. A different or damaged c
 while the speech comes out wrong with no error; the list turns that into a refusal naming the file. Where
 the files are kept on the build machine is found by Go rather than set by an environment variable
 (Oliver, 2026-09-14).
-Acceptance: Given the list, when the tests run, then it names `model.onnx`, `onnxruntime.dll`,
-`tokenizer.json` and one style file for each of the 28 voices; it names nothing else.
+Acceptance: Given the list, when the tests run, then it names `model.onnx`, the ONNX Runtime library
+for the platform (`onnxruntime.dll` on Windows, `libonnxruntime.so` on Linux), `tokenizer.json` and
+one style file for each of the 28 voices; it names nothing else.
 Verified by: `TestTheListNamesEveryFileAVoiceIsMadeFrom` and `TestAListThatCannotBeTrustedIsRefused` in
 `internal/infrastructure/modelfiles/list_test.go`, proved by planting a name no voice reads and a source
-reached over plain HTTP. On 2026-09-14 `go run ./tools/models -check` over the model, ONNX Runtime, the
+reached over plain HTTP; `TestEachPlatformIsListedItsOwnRuntime` and
+`TestTheShippedListGivesLinuxItsRuntime` in `platform_test.go` beside them for the runtime per platform. On 2026-09-14 `go run ./tools/models -check` over the model, ONNX Runtime, the
 tokenizer file and two style files, copied in from files checked against their published digests,
 found none of them different.
 
@@ -1727,7 +1728,8 @@ refused naming it (FR-519).
 Verified by: `TestTheFilesAreReadFromTheFolderBesideTheApplication` in
 `internal/infrastructure/voicefiles/beside_test.go` for the folder. Not verified by a test: `newMaking`
 in `main.go` reading the executable's path; setup filling the folder is held by
-`TestPackedModelFilesAreExtractedIntoTheFolderBesideTheApplication` (FR-524).
+`TestPackedModelFilesAreExtractedIntoTheFolderBesideTheApplication` (FR-524). On Linux the flatpak
+installs the files in `/app/bin/models`, beside `/app/bin/BridgeTalk` (FR-817).
 
 **FR-540 The cast machine voice is kept for the next run**
 Priority: Must.
@@ -2289,8 +2291,9 @@ The application never creates it: it treats an absent folder as no plugins rathe
 
 **FR-560 Plugins are loaded from one folder**
 Priority: Must.
-When the application starts, the application shall load every plugin file in the plugins folder
-inside its own install directory, which is the only place it loads a plugin from.
+When the application starts, the application shall load every plugin file in the plugins folder,
+which is the only place it loads a plugin from: on Windows inside its own install directory, on Linux
+inside its own data folder (FR-818).
 Rationale: one place to look means a user can see what is loaded by opening a folder. A path the user
 can set is a way to load code from anywhere, which is a larger promise than this needs.
 Built and wired on 2026-09-16. The folder is found beside the running executable, which for an
@@ -2299,7 +2302,9 @@ executable. Reading the recorded install location instead would have a build run
 else look in a folder it is not in; the model files are found the same way (FR-539).
 Verified by: `TestEveryPluginInTheFolderIsLoadedInNameOrder` and
 `TestADirectoryInsideTheFolderIsIgnored` in `internal/infrastructure/plugin/load_test.go`;
-`TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` for where it looks.
+`TestPluginsAreLookedForBesideTheApplication` and `TestOffWindowsPluginsAreLookedForInTheDataFolder`
+in `plugins_test.go` for where it looks, both seen to fail on 2026-09-16 with the platforms' rules
+swapped.
 
 **FR-561 Each plugin is loaded on its own account**
 Priority: Must.
@@ -4171,6 +4176,9 @@ here has flatpak or flatpak-builder. Two things only that run settles: whether t
 Go satisfies `go.mod` or fetches the toolchain it names over the build's network; whether the
 GNOME SDK carries the ALSA headers the audio output's cgo build needs. The icons are written by
 `tools/linuxicons` from the committed `.ico`; `TestEveryPictureIsInstalledAtItsSize` holds that.
+Oliver installed and ran the first step's bundle on 2026-09-16. The model files are fetched inside the
+sandbox for the second step (FR-817), so the bundle carries the model of about 310 MB; that build has
+not been run.
 
 ### 9.1 Linux
 
@@ -4183,8 +4191,11 @@ requirement below says what is still to be seen in this application. o7 Debrief 
 is expected rather than measured.
 
 Linux arrives in two steps. The first delivers recorded voices; machine voices and plugins follow
-in a second step, since both load a native library, which on Linux is one mechanism yet to be built
-and measured (OQ-23 is closed by this ruling).
+in a second step, since both load a native library (OQ-23 is closed by this ruling). The second step
+was built on 2026-09-16: one package, `nativelib`, loads a library and calls into it on both
+platforms, so ONNX Runtime and a plugin are each loaded by one piece of code. The first step's
+"not available on Linux yet" was deleted outright rather than kept for another platform (Oliver,
+2026-09-16), which is why FR-817 and FR-818 now state what Linux offers.
 
 **FR-811 On Linux the game's journal directory is looked for inside its prefix**
 Priority: Should.
@@ -4296,31 +4307,62 @@ Verified by: `TestAFolderIsHandedToXdgOpen` and
 `internal/infrastructure/window/opener_test.go`, the second seen to fail on 2026-09-16 with the folder
 named twice. Not verified: `xdg-open` reaching a file manager through the portal.
 
-**FR-817 On Linux no machine voice is offered in the first step**
+**FR-817 On Linux machine voices are made through the Linux ONNX Runtime**
 Priority: Should.
-While the application runs on Linux, the application shall offer no machine voice: where the Cast
-pane offers machine voices it shall say they are not available on Linux yet. Neither the tray
-menu nor Auditioning shall list one.
-Rationale: a machine voice loads ONNX Runtime, a native library not yet loaded on Linux. Offering
-voices that each fail when cast reads as a broken feature rather than one still to come.
-Verified by: `TestWhereMachineVoicesAreMissingNoneIsOfferedAndThePlatformIsNamed` and
-`TestWhereMachineVoicesAreMissingTheTrayOffersRecordedVoicesAlone` in `native_test.go`; "says machine
-voices are not available on the platform named and offers none" in
-`frontend/src/machineVoices.test.tsx`. Each was seen to fail on 2026-09-16 with its guard taken out.
-Auditioning lists the machine voices the facade offers, so it offers none either; that is read from
-`audition.tsx` rather than tested. The platform is named by `native_other.go`, which only a Linux build
-compiles.
+While the application runs on Linux, the application shall make a machine voice's lines through
+`libonnxruntime.so` read from the folder of FR-539, offering the machine voices of FR-508 as on
+Windows.
+Rationale: Oliver on 2026-09-16, after the first step's flatpak installed and ran with no voice to
+hear on a machine holding no recordings. Amended the same day: the first step offered no machine voice
+on Linux and said so; that is withdrawn.
+Acceptance: Given the Linux runtime, the model and `bf_emma.bin` in the folder, when the shipped line
+for Docked is made for `bf_emma`, then samples come back that are all numbers and not all silence.
+Verified by: `TestAShippedLineIsMadeByTheRealModel`, `TestAModelMissingOrDamagedIsRefusedNamingItOnce`
+and `TestLinesSurviveTheirStackMovingWhileTheModelIsCalled` in `internal/infrastructure/speechmodel`,
+run on 2026-09-16 as a Linux test binary built with cgo disabled under WSL Ubuntu on the development
+machine, every one passing. `TestTheFlatpakInstallsTheModelFilesWhereTheyAreRead` in
+`tests/structural/flatpak_test.go` holds the flatpak fetching the files and installing them beside
+the executable, seen to fail with the folder renamed and the fetch taken out. Not verified: the
+flatpak's build with cgo on, whose library load goes through the C runtime instead; a machine voice
+heard on a Linux desktop.
 
-**FR-818 On Linux no plugin is loaded in the first step**
+**FR-818 On Linux plugins are loaded from the user's own data folder**
 Priority: Should.
-While the application runs on Linux, the application shall load no plugin: where the Cast pane
-offers plugin voices it shall say plugins are not available on Linux yet.
-Rationale: a plugin is a native library, loaded by the same mechanism as FR-817. The flatpak's
-install directory is read only, so the second step also moves the plugins folder into the user's own
-data folder.
-Verified by: `TestWherePluginsAreMissingTheFolderIsNotLookedIn` in `native_test.go`; "says plugins are
-not available on the platform named and offers no voice" in `frontend/src/pluginVoices.test.tsx`.
-Each was seen to fail on 2026-09-16 with its guard taken out.
+While the application runs on Linux, the application shall look for plugins in the plugins folder
+inside the product's data folder, `$XDG_DATA_HOME/BridgeTalk`, else `~/.local/share/BridgeTalk`.
+Rationale: a flatpak's install directory, `/app`, is read only, so a folder beside the application is
+one nobody could put a plugin in. A plugin on Linux is a shared object exporting the same three
+functions. Amended on 2026-09-16: the first step loaded no plugin on Linux and said so; that is
+withdrawn. Inside the flatpak `XDG_DATA_HOME` is the application's own data folder under
+`~/.var/app/uk.codecrafter.BridgeTalk`, by flatpak's documentation rather than by a measurement here.
+Acceptance: Given a Linux run whose data folder is `/home/commander/.local/share/BridgeTalk`, when
+the application starts, then it looks for plugins in `/home/commander/.local/share/BridgeTalk/plugins`
+and nowhere beside the executable.
+Verified by: `TestOffWindowsPluginsAreLookedForInTheDataFolder` in `plugins_test.go`, seen to fail with
+the platforms' rules swapped. The package's refusals of a library that is no plugin, a file that is no
+library and a file that is not there passed as a Linux test binary under WSL Ubuntu on 2026-09-16. Not
+verified: a real plugin loaded on Linux, since none can be built here.
+
+**FR-819 On Linux the application makes the plugins folder**
+Priority: Should.
+While the application runs on Linux, when it starts, the application shall make the plugins folder of
+FR-818 where it is not already there, leaving a folder already there exactly as it is.
+Rationale: Oliver on 2026-09-16. FR-576 has setup make the folder on Windows, since a folder the user
+has to create by name in the right place is a step to get wrong silently; Linux has no setup program,
+so the application does it. The folder is made by setup's own `MakePluginsFolder`, so it is made one
+way wherever it is made. It is a write inside the application's own data folder, which NFR-S-2
+allows.
+Acceptance: Given a Linux run whose data folder holds no `plugins` folder, when the application
+starts, then the folder is there and the log says nothing about it. Given a file standing where the
+data folder should be, when the application starts, then the log names the folder with why it could
+not be made and the application runs on with no plugin.
+Verified by: `TestTheApplicationMakesThePluginsFolderOffWindowsAlone`,
+`TestAPluginsFolderTheApplicationMakesIsThereAfterLoading` and
+`TestAPluginsFolderThatCannotBeMadeIsNamedInTheLog` in `plugins_test.go`, each seen to fail on
+2026-09-16: the first with the platform rule inverted, the other two with the folder never made.
+`TestThePluginsFolderIsMadeAndWhatIsInItIsLeftAlone` in `internal/infrastructure/setup/plugins_test.go`
+holds a folder already there being left as it is. Not verified: the folder made inside a real
+flatpak's data folder.
 
 ---
 
@@ -4352,7 +4394,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-818, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

@@ -1,8 +1,8 @@
 package main
 
 // Loading plugins where the application actually runs, through the real loader rather than
-// a stand-in. Nothing here needs a plugin to exist: what is proved is that the folder beside
-// the application is the one looked in, that nothing there is silence, then that anything
+// a stand-in. Nothing here needs a plugin to exist: what is proved is that each platform
+// looks in its own folder, that nothing there is silence, then that anything
 // there which is no plugin is named in the log rather than passed over quietly.
 
 import (
@@ -31,11 +31,50 @@ func TestPluginsAreLookedForBesideTheApplication(t *testing.T) {
 	// install directory (FR-560).
 	installed := filepath.Join("C:", "Programs", product.Slug)
 
-	got := pluginsBeside(filepath.Join(installed, product.Slug+".exe"))
+	got, err := pluginsFolder(windowsOS, finding(filepath.Join(installed, product.Slug+".exe")), notAsked(t))
 
 	want := filepath.Join(installed, product.PluginsFolder)
-	if got != want {
-		t.Errorf("looked in %q, want %q", got, want)
+	if err != nil || got != want {
+		t.Errorf("looked in %q, %v; want %q", got, err, want)
+	}
+}
+
+// FR-818: off Windows the folder is inside the product's data folder, whatever the executable is.
+func TestOffWindowsPluginsAreLookedForInTheDataFolder(t *testing.T) {
+	t.Parallel()
+
+	data := filepath.Join("home", "commander", ".local", "share", product.Slug)
+
+	got, err := pluginsFolder("linux", notAsked(t), finding(data))
+
+	want := filepath.Join(data, product.PluginsFolder)
+	if err != nil || got != want {
+		t.Errorf("looked in %q, %v; want %q", got, err, want)
+	}
+}
+
+// A folder that cannot be found is answered as the reason, on either rule.
+func TestAPluginsFolderThatCannotBeFoundAnswersWhy(t *testing.T) {
+	t.Parallel()
+
+	failing := func() (string, error) { return "", os.ErrNotExist }
+	for _, goos := range []string{windowsOS, "linux"} {
+		if got, err := pluginsFolder(goos, failing, failing); got != "" || err != os.ErrNotExist {
+			t.Errorf("%s: answered %q, %v; want the reason", goos, got, err)
+		}
+	}
+}
+
+// finding is a lookup that finds path.
+func finding(path string) func() (string, error) {
+	return func() (string, error) { return path, nil }
+}
+
+// notAsked is a lookup the rule under test must not ask.
+func notAsked(t *testing.T) func() (string, error) {
+	return func() (string, error) {
+		t.Error("the other platform's folder was asked for")
+		return "", os.ErrInvalid
 	}
 }
 
@@ -43,7 +82,8 @@ func TestNoPluginsFolderIsSilence(t *testing.T) {
 	t.Parallel()
 
 	log := &written{}
-	set := loadPlugins(filepath.Join(t.TempDir(), product.Slug+".exe"), nil, "", runlog.NewLines(log))
+	folder := filepath.Join(t.TempDir(), product.PluginsFolder)
+	set := loadPlugins(folder, nil, false, runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {
@@ -51,6 +91,66 @@ func TestNoPluginsFolderIsSilence(t *testing.T) {
 	}
 	if log.String() != "" {
 		t.Errorf("the log says %q about a machine with no plugins, want nothing", log.String())
+	}
+	if _, err := os.Stat(folder); !os.IsNotExist(err) {
+		t.Errorf("a plugins folder was made where the application does not make one: %v", err)
+	}
+}
+
+// Only Windows has a setup program to make the plugins folder, so the application makes it
+// everywhere else (FR-576, FR-818).
+func TestTheApplicationMakesThePluginsFolderOffWindowsAlone(t *testing.T) {
+	t.Parallel()
+
+	if makesPluginsFolder(windowsOS) {
+		t.Error("the application makes the plugins folder on Windows, where setup makes it")
+	}
+	if !makesPluginsFolder("linux") {
+		t.Error("the application does not make the plugins folder on Linux, where nothing else does")
+	}
+}
+
+// FR-819: where the application makes the folder it is there after loading with nothing said
+// about it; a folder already there is used as it is.
+func TestAPluginsFolderTheApplicationMakesIsThereAfterLoading(t *testing.T) {
+	t.Parallel()
+
+	folder := filepath.Join(t.TempDir(), product.Slug, product.PluginsFolder)
+	log := &written{}
+
+	for range 2 {
+		set := loadPlugins(folder, nil, true, runlog.NewLines(log))
+		set.Close()
+	}
+
+	if info, err := os.Stat(folder); err != nil || !info.IsDir() {
+		t.Errorf("no plugins folder at %s after loading: %v", folder, err)
+	}
+	if log.String() != "" {
+		t.Errorf("the log says %q about making an empty folder, want nothing", log.String())
+	}
+}
+
+// A plugins folder that cannot be made stops nothing: the reason is in the log and no plugin is
+// loaded (FR-237).
+func TestAPluginsFolderThatCannotBeMadeIsNamedInTheLog(t *testing.T) {
+	t.Parallel()
+
+	blocked := filepath.Join(t.TempDir(), "not a folder")
+	if err := os.WriteFile(blocked, []byte("in the way"), 0o600); err != nil {
+		t.Fatalf("writing the file: %v", err)
+	}
+	folder := filepath.Join(blocked, product.PluginsFolder)
+	log := &written{}
+
+	set := loadPlugins(folder, nil, true, runlog.NewLines(log))
+	defer set.Close()
+
+	if len(set.Voices()) != 0 {
+		t.Errorf("found %d voices with no folder", len(set.Voices()))
+	}
+	if logged := log.String(); !strings.Contains(logged, "could not be made") || !strings.Contains(logged, folder) {
+		t.Errorf("the log says %q, want the folder named with why it was not made", logged)
 	}
 }
 
@@ -70,7 +170,7 @@ func TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog(t *testing.T) {
 	}
 
 	log := &written{}
-	set := loadPlugins(filepath.Join(dir, product.Slug+".exe"), nil, "", runlog.NewLines(log))
+	set := loadPlugins(folder, nil, false, runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {
@@ -119,13 +219,13 @@ func TestAnApplicationThatCannotTellWhereItIsLoadsNoPlugin(t *testing.T) {
 	t.Parallel()
 
 	log := &written{}
-	set := loadPlugins("", os.ErrNotExist, "", runlog.NewLines(log))
+	set := loadPlugins("", os.ErrNotExist, false, runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {
 		t.Errorf("found %d voices with nowhere to look", len(set.Voices()))
 	}
-	if !strings.Contains(log.String(), "cannot tell where it is") {
+	if !strings.Contains(log.String(), "cannot tell where its plugins folder is") {
 		t.Errorf("the log says %q, want it to say why nothing was loaded", log.String())
 	}
 }

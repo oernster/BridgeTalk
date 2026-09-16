@@ -151,6 +151,7 @@ $measured = [ordered]@{
     './internal/infrastructure/library'   = 100
     './internal/infrastructure/madelines' = 100
     './internal/infrastructure/modelfiles' = 98
+    './internal/infrastructure/nativelib' = 100
     './internal/infrastructure/plugin'     = 91
     './internal/infrastructure/plugin/plugintest' = 100
     './internal/infrastructure/reporoot'  = 100
@@ -195,7 +196,9 @@ foreach ($package in $measured.Keys) {
 # is gated at what its Linux folder opener reaches; the rest of it is Win32 focus handling. TESTING.md says so
 # in full rather than leaving the absence to be read as an oversight.
 # internal/infrastructure/modelfiles/modelfilestest is test support with no tests of its
-# own: the modelfiles and tools/models tests run every part of it.
+# own: the modelfiles and tools/models tests run every part of it. So is
+# internal/infrastructure/nativelib/nativelibtest, which the nativelib, speechmodel and plugin
+# tests run.
 
 if ($Benchmarks) {
     # The benchmark files carry the benchmarks build tag, which the vet and the suite above leave

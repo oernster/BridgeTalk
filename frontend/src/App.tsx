@@ -215,7 +215,6 @@ export function App() {
             active={state?.voice ?? ''}
             machine={state?.machineVoice ?? false}
             plugin={state?.plugin ?? ''}
-            nativeMissingOn={state?.nativeMissingOn ?? ''}
             total={state?.total ?? 0}
             libraryRoot={state?.libraryRoot ?? ''}
             onSelect={selectVoice}

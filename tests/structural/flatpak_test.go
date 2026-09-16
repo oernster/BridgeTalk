@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 	"github.com/oernster/bridge-talk/internal/product"
 )
 
@@ -83,6 +84,32 @@ func TestTheFlatpakIsGrantedWhatItUsesAndNoMore(t *testing.T) {
 	id := appIDLine.FindStringSubmatch(script)
 	if id == nil || id[1] != product.AppID {
 		t.Errorf("%s names the application %v, want %q", flatpakScript, id, product.AppID)
+	}
+}
+
+// modelsDirLine is the script's folder for the machine voices' files.
+var modelsDirLine = regexp.MustCompile(`(?m)^MODELS_DIR="([^"]*)"$`)
+
+// FR-817: the flatpak fetches the machine voices' files and installs them in the folder the application
+// reads them from, beside the executable.
+func TestTheFlatpakInstallsTheModelFilesWhereTheyAreRead(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join(repoRoot(t), flatpakScript))
+	if err != nil {
+		t.Fatalf("reading %s: %v", flatpakScript, err)
+	}
+	script := string(raw)
+
+	dir := modelsDirLine.FindStringSubmatch(script)
+	if dir == nil || dir[1] != voicefiles.Folder {
+		t.Errorf("%s names the models folder %v, want %q", flatpakScript, dir, voicefiles.Folder)
+	}
+	for _, command := range []string{
+		`"      - go run ./tools/models"`,
+		`"      - install -Dm644 -t /app/bin/${MODELS_DIR} ${MODELS_DIR}/*"`,
+	} {
+		if !strings.Contains(script, command) {
+			t.Errorf("%s does not build with %s", flatpakScript, command)
+		}
 	}
 }
 

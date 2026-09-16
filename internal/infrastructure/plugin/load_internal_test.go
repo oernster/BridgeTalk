@@ -8,6 +8,7 @@ package plugin
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -19,7 +20,7 @@ func refusingLister(string) ([]os.DirEntry, error) {
 func TestAFolderThatCannotBeReadIsNamedWithTheReason(t *testing.T) {
 	t.Parallel()
 
-	set := load(`C:\somewhere\plugins`, nil, refusingLister)
+	set := load(filepath.Join(t.TempDir(), "plugins"), nil, refusingLister)
 	defer set.Close()
 
 	if len(set.Plugins) != 0 {

@@ -47,11 +47,6 @@ export interface State {
    * the voice's id within that plugin, it says which plugin voice is cast (FR-569).
    */
   plugin: string
-  /**
-   * The platform where machine voices and plugins are not offered yet, so the Cast pane says so where
-   * each would be; empty where they are offered (FR-817, FR-818).
-   */
-  nativeMissingOn: string
 }
 
 /** MachineVoice is one machine voice the Cast pane offers (FR-508). */

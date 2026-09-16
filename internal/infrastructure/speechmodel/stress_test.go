@@ -1,4 +1,4 @@
-//go:build benchmarks && windows
+//go:build benchmarks && (windows || linux)
 
 package speechmodel_test
 

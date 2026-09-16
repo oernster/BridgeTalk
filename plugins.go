@@ -7,38 +7,65 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
+	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/oernster/bridge-talk/internal/product"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
-// pluginsBeside answers where plugins are looked for, given the running executable.
+// windowsOS is runtime.GOOS on Windows, the one platform whose plugins sit beside the application.
+const windowsOS = "windows"
+
+// pluginsFolder answers where plugins are looked for on the platform goos, given how to find the
+// running executable and the product's own data folder. Both are parameters, so every platform's
+// rule is exercised on every platform.
 //
-// The folder is beside the application, which for an installed build is the install
-// directory itself, since that is where the setup program writes the executable. Reading
-// the recorded install location instead would have a build run from anywhere else look in a
-// folder it is not in. The model files are found the same way, beside the application
-// (FR-539), so this is one habit rather than two.
-func pluginsBeside(executable string) string {
-	return filepath.Join(filepath.Dir(executable), product.PluginsFolder)
+// On Windows the folder is beside the application, which for an installed build is the install
+// directory itself, since that is where the setup program writes the executable. Reading the
+// recorded install location instead would have a build run from anywhere else look in a folder it
+// is not in. The model files are found the same way, beside the application (FR-539), so this is
+// one habit rather than two.
+//
+// Elsewhere it is inside the product's own data folder (FR-818). A flatpak's install directory is
+// read only, so a folder beside the application is one nobody could put a plugin in.
+func pluginsFolder(goos string, executable, dataDir func() (string, error)) (string, error) {
+	if goos == windowsOS {
+		found, err := executable()
+		if err != nil {
+			return "", err
+		}
+		return filepath.Join(filepath.Dir(found), product.PluginsFolder), nil
+	}
+	data, err := dataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(data, product.PluginsFolder), nil
 }
 
-// loadPlugins loads every plugin beside the application, writing to the log every one it
-// passed over and why (FR-567).
+// makesPluginsFolder reports whether the application makes the plugins folder itself on the platform
+// goos: everywhere but Windows, where the setup program makes it (FR-576). Elsewhere no setup program
+// runs, so without this a user would have to create the folder by name in the right place (FR-818).
+func makesPluginsFolder(goos string) bool { return goos != windowsOS }
+
+// loadPlugins loads every plugin in folder, writing to the log every one it passed over and
+// why (FR-567). Where makeFolder is set, the folder is made first where it is not there yet; the
+// maker is setup's own, so the folder is made one way wherever it is made.
 //
-// Not knowing where the application is stops nothing: it means no plugins, which is the
-// ordinary case anyway. Saying so is worth one line, since a user who installed a plugin
-// would otherwise have nothing at all to read. Where plugins are not available yet, which missingOn
-// names, the folder is not looked in at all (FR-818).
-func loadPlugins(executable string, notFound error, missingOn string, log runlog.Lines) *plugin.Set {
-	if missingOn != "" {
-		log.Log("note: plugins are not loaded on " + missingOn + " yet")
-		return &plugin.Set{}
-	}
+// Not knowing where the folder is stops nothing: it means no plugins, which is the ordinary
+// case anyway. Saying so is worth one line, since a user who installed a plugin would
+// otherwise have nothing at all to read. A folder that cannot be made stops nothing either; the
+// reason goes to the log and the loader then finds no folder, which is no plugins.
+func loadPlugins(folder string, notFound error, makeFolder bool, log runlog.Lines) *plugin.Set {
 	if notFound != nil {
-		log.Log("note: the application cannot tell where it is, so no plugin is loaded: " + notFound.Error())
+		log.Log("note: the application cannot tell where its plugins folder is, so no plugin is loaded: " + notFound.Error())
 		return &plugin.Set{}
 	}
-	set := plugin.Load(pluginsBeside(executable), plugin.OpenLibrary)
+	if makeFolder {
+		if err := setup.MakePluginsFolder(filepath.Dir(folder)); err != nil {
+			log.Log("note: the plugins folder could not be made, so no plugin is loaded: " + err.Error())
+		}
+	}
+	set := plugin.Load(folder, plugin.OpenLibrary)
 	reportPlugins(set, log)
 	return set
 }

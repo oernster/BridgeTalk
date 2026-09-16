@@ -255,7 +255,7 @@ func TestTheTrayOffersThePluginVoicesAfterTheMachineVoices(t *testing.T) {
 	absent := plugintest.Voice{ID: "two", Name: "The Engineer", Reason: "its recordings are gone"}
 	set := offering(t, "Bridge Crew", officer(), absent)
 
-	choices := trayChoices(current.available, set.Voices(), "")
+	choices := trayChoices(current.available, set.Voices())
 
 	last := choices[len(choices)-1]
 	want := taskbar.Choice{

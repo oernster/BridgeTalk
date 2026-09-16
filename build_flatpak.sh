@@ -16,6 +16,11 @@
 # the game under Proton. tests/structural/flatpak_test.go holds GRANTS below to exactly that list and
 # APP_ID to the product's own id, so neither can drift from the requirement in silence.
 #
+# The machine voices' files, ONNX Runtime for Linux among them, are fetched inside the sandbox by
+# tools/models, which checks each against the list's hash, then installed beside the executable. The
+# repository's own models folder is skipped: it may hold another platform's runtime. The model is
+# about 310 MB, so the bundle is that much larger than the application alone.
+#
 # Every generated file is written with printf rather than a here-document.
 #
 # Outputs: BridgeTalk.flatpak and a user install of the application id.
@@ -38,6 +43,9 @@ REPO_DIR=".flatpak-repo"
 BUNDLE="${BIN_NAME}.flatpak"
 MANIFEST="${APP_ID}.yml"
 PACKAGING_DIR="packaging"
+# MODELS_DIR is the folder the machine voices' files are read from, beside the executable; its name is
+# voicefiles.Folder, which tests/structural/flatpak_test.go holds this to.
+MODELS_DIR="models"
 VERSION="$(tr -d '[:space:]' < VERSION)"
 RELEASE_DATE="$(date +%F)"
 
@@ -156,6 +164,8 @@ write "$MANIFEST" \
     "      - cd frontend && npm install --no-audit --no-fund && npm run build" \
     "      - go build -tags desktop,production,webkit2_41 -ldflags '-s -w -X main.appVersion=${VERSION}' -o ${BIN_NAME} ." \
     "      - install -Dm755 ${BIN_NAME} /app/bin/${BIN_NAME}" \
+    "      - go run ./tools/models" \
+    "      - install -Dm644 -t /app/bin/${MODELS_DIR} ${MODELS_DIR}/*" \
     "      - go run ./tools/linuxicons -prefix /app" \
     "      - chmod -R u+w /run/build/${BIN_NAME}/gopath /run/build/${BIN_NAME}/gocache 2>/dev/null || true" \
     "      - install -Dm644 ${DESKTOP} /app/share/applications/${APP_ID}.desktop" \
@@ -170,7 +180,7 @@ write "$MANIFEST" \
     "          - .flatpak-builder" \
     "          - ${BUNDLE}" \
     "          - build" \
-    "          - models" \
+    "          - ${MODELS_DIR}" \
     "          - frontend/node_modules" \
     "          - frontend/dist"
 

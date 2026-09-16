@@ -53,12 +53,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 98.6% | 98% | `test.ps1` |
-| `internal/infrastructure/plugin` | 91.5% | 91% | `test.ps1` |
+| `internal/infrastructure/nativelib` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/plugin` | 94.3% | 91% | `test.ps1` |
 | `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
-| `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
+| `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 85.0% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 85.1% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 69.6% | 67% | `test.ps1` |
@@ -69,14 +70,16 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/sounds` | 44.9% | 44% | `test.ps1` |
 | `internal/infrastructure/modelfiles/modelfilestest` | test support with no tests of its own, used by the `modelfiles`, `speechmodel`, `tools/models`, `tools/payload`, `tests/structural` and `tests/machinevoice` tests | none | not gated |
+| `internal/infrastructure/nativelib/nativelibtest` | test support with no tests of its own, used by the `nativelib`, `speechmodel` and `plugin` tests | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-962 test functions, which expand to 1,068 runs once their subtests are counted (measured on
-2026-09-16: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of an
-uncached `go test -count=1 -json ./...`, which are 959 top-level runs plus 109 subtests; the
-three build-tagged benchmarks are counted as functions but do not run).
-Forty-nine of them are the structural tests in `tests/structural`, which scan the source
+1,028 test functions, which expand to 1,134 runs once their subtests are counted (measured on
+2026-09-16 on Windows: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of
+an uncached `go test -count=1 -json ./...`, which are 1,022 top-level runs plus 112 subtests; the
+three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
+functions but do not run there).
+Fifty-six of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band (counting lines as an
 editor shows them), a doc comment on every exported type and the rule that the product is
@@ -91,8 +94,9 @@ be acted on or scrolled, the setup program applying the boxes it shows with a he
 repeats no title, the setup page loading every script it has with its body ringed for the
 keyboard, game vocabulary kept in its home, the shape of every cue id, the shipped script
 holding no problem with lines for every cue, the speech sound table held to the model's
-tokenizer file, `pauses.toml` and `endings.toml` kept from going stale and every address
-handed to a DLL converted only where the call into it is made.
+tokenizer file, `pauses.toml` and `endings.toml` kept from going stale, every address
+handed to a native library converted only where the call into it is made and the flatpak
+installing the model files where they are read.
 
 ### The front end
 
@@ -131,7 +135,7 @@ handed to a DLL converted only where the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.5%** | **96.8%** |
 
-293 tests across 27 files, run under Vitest with jsdom.
+306 tests across 28 files, run under Vitest with jsdom (counted on 2026-09-16).
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -229,15 +233,23 @@ release is for.
   any repository reaches it; whether a real drive holds a `go.mod` at its top is the machine's
   business. `reporoot` tests the same walk over a stand-in that answers no; `Dir` only passes its
   refusal on.
-- **ONNX Runtime's own failures in `internal/infrastructure/speechmodel` (92.1% with `models/` filled).**
+- **ONNX Runtime's own failures in `internal/infrastructure/speechmodel` (92.5% with `models/` filled).**
   Making the environment, the memory description, the session options or a tensor fails only inside
   ONNX Runtime; so does reading a made tensor's shape or data. So does a runtime too old to answer
-  the version 23 function table. `loadReason` also keeps a fallback for a load error that is not
-  `windows.DLLError`, which `golang.org/x/sys/windows` answers every load and lookup failure as. What a
-  test can reach is tested: a missing runtime, a library that is not ONNX Runtime, a missing or
-  damaged model, a path no file can have and a shipped line made by the real model. The tests that need
-  the model files skip where `models/` lacks one; `test.ps1` checks the files before anything else and
-  stops where one is missing, so the floor holds the 92.1% measured with them.
+  the version 23 function table. What a test can reach is tested: a missing runtime, a library that
+  is not ONNX Runtime, a missing or damaged model, a path no file can have and a shipped line made by
+  the real model. The tests that need the model files skip where `models/` lacks one; `test.ps1`
+  checks the files before anything else and stops where one is missing, so the floor holds the 92.5%
+  measured with them.
+- **Linux is not in `test.ps1`.** The gate runs on Windows. The `nativelib`, `speechmodel` and
+  `plugin` tests are written for both platforms and were run on Linux on 2026-09-16 by building each
+  package's tests with `GOOS=linux` and cgo disabled, then running the binary under WSL Ubuntu from the
+  package's folder, with `libonnxruntime.so` fetched into `models/` by `tools/models` built the same
+  way. Every test passed, the stress test included. The flatpak's own build has cgo on, which that run
+  does not cover.
+- **A plugin's three calls in `internal/infrastructure/plugin` (94.3%).** `Version`, `Describe` and
+  `Takes` in `native.go`, with the line of `OpenLibrary` that keeps a function it found, need a
+  library exporting the three functions, which cannot be built here.
 - **`main`, `run`, `startTray` and `newMaking` in `main.go`, `launch` in `window.go`
   and `keepLog`, `runLog` and `reportToTerminal` in `runlog.go`.** The composition root. It keeps the run's
   log, opens a device, scans the disk, builds a tray and the speech model and hands the

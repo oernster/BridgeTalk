@@ -119,7 +119,6 @@ export function CastPane({
   active,
   machine,
   plugin,
-  nativeMissingOn = '',
   total,
   libraryRoot,
   onSelect,
@@ -129,8 +128,6 @@ export function CastPane({
   machine: boolean
   /** The plugin the cast voice came from, empty for every other kind, for the same reason (FR-569). */
   plugin: string
-  /** The platform where machine voices and plugins are not offered yet; empty where they are. */
-  nativeMissingOn?: string
   total: number
   libraryRoot: string
   onSelect: (name: string) => void
@@ -264,9 +261,9 @@ export function CastPane({
         </p>
       )}
 
-      <MachineVoices active={active} machine={machine} total={total} missingOn={nativeMissingOn} />
+      <MachineVoices active={active} machine={machine} total={total} />
 
-      <PluginVoices active={active} plugin={plugin} missingOn={nativeMissingOn} />
+      <PluginVoices active={active} plugin={plugin} />
 
       <MomentsDialog
         voice={showing}

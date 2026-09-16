@@ -1,4 +1,4 @@
-//go:build windows
+//go:build windows || linux
 
 package speechmodel
 
@@ -11,9 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"golang.org/x/sys/windows"
-
 	"github.com/oernster/bridge-talk/internal/infrastructure/modelfiles/modelfilestest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/nativelib/nativelibtest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
@@ -42,11 +41,7 @@ func TestAModelMissingOrDamagedIsRefusedNamingItOnce(t *testing.T) {
 
 // A library that is not ONNX Runtime is refused naming it once; so is a model path no file can have.
 func TestALibraryOrPathThatCannotBeUsedIsRefusedNamingItOnce(t *testing.T) {
-	system, err := windows.GetSystemDirectory()
-	if err != nil {
-		t.Fatalf("GetSystemDirectory: %v", err)
-	}
-	notTheRuntime := filepath.Join(system, "kernel32.dll")
+	notTheRuntime := nativelibtest.SystemLibrary(t)
 	loaded, err := openFrom(notTheRuntime, filepath.Join(t.TempDir(), voicefiles.ModelFile))
 	if loaded != nil {
 		loaded.release()

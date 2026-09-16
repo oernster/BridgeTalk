@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/infrastructure/appdata"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/infrastructure/config"
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
@@ -296,12 +298,12 @@ func run() error {
 	// Plugins are loaded before the window opens, so a voice one offers is there to be cast
 	// rather than appearing later (FR-560). None of it can stop the run: every plugin passed
 	// over is a line in the log (FR-567) and nothing else.
-	executable, whereabouts := os.Executable()
+	pluginsAt, whereabouts := pluginsFolder(runtime.GOOS, os.Executable, appdata.Dir)
 	current := &session{
 		table: table, available: found,
 		chooser: chooser, player: player,
 		making: making, maker: maker,
-		plugins: loadPlugins(executable, whereabouts, nativeVoicesMissingOn, runLog()),
+		plugins: loadPlugins(pluginsAt, whereabouts, makesPluginsFolder(runtime.GOOS), runLog()),
 		// Read once here, over the same store the directories came from (FR-629).
 		chatter: services.NewChatterService(table, settings),
 	}
@@ -336,7 +338,7 @@ func run() error {
 // interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
 func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
 	tray := taskbar.New(taskbar.Options{
-		Title: appTitle, Voices: trayChoices(found, offered, nativeVoicesMissingOn), Active: active, Icon: applicationIcon,
+		Title: appTitle, Voices: trayChoices(found, offered), Active: active, Icon: applicationIcon,
 	})
 	if err := tray.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)

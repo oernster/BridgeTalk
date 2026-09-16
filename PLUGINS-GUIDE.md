@@ -32,15 +32,26 @@ deletes it (FR-572).
 
 ## Where a plugin goes
 
-A plugin is a single library file in the `plugins` folder inside the folder Bridge Talk was installed
-into, which the setup program creates (FR-576). On a default install that is:
+A plugin is a single library file in the `plugins` folder. On Windows the folder is inside the
+folder Bridge Talk was installed into, which the setup program creates (FR-576). On a default install
+that is:
 
 ```
 %LOCALAPPDATA%\Programs\BridgeTalk\plugins
 ```
 
 The install folder can be chosen at install time, so read the location from the Apps list entry
-rather than assuming the default. Bridge Talk loads every file in that folder at startup and loads a
+rather than assuming the default.
+
+On Linux a plugin is a shared object and the folder is inside Bridge Talk's own data folder, since
+the flatpak's install directory is read only (FR-818). The folder is `BridgeTalk/plugins` under
+`$XDG_DATA_HOME`, which for the flatpak is the application's data folder:
+
+```
+~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/plugins
+```
+
+Bridge Talk makes that folder itself when it starts on Linux (FR-819). Bridge Talk loads every file in that folder at startup and loads a
 plugin from nowhere else (FR-560). The file may be named anything; the name means nothing, because a
 plugin states its own name through the interface (FR-565).
 
@@ -304,7 +315,7 @@ plugin offering it (FR-568).
 For the person installing one; also for an author proving one works.
 
 1. **Put the file in the plugins folder** given in [Where a plugin goes](#where-a-plugin-goes). Setup
-   makes the folder (FR-576). Any file name will do.
+   makes the folder on Windows (FR-576); Bridge Talk makes it on Linux (FR-819). Any file name will do.
 2. **Start Bridge Talk; if it is running, quit it and start it again.** Plugins are loaded once, as the application
    starts; one added while it runs is not seen until the next start.
 3. **Look on the Cast pane.** Each voice the plugin offers is listed by the name it gave (FR-565). Two
@@ -329,9 +340,11 @@ the rights of the person who put it there (NFR-S-3). Install only a plugin whose
 
 ## Linux
 
-Linux is in scope for Bridge Talk after everything else. The contract is unchanged there: the same
-three functions with the same rules, in a shared object built from your own repository. Nothing in
-this document is Windows specific except the paths it gives as examples.
+Bridge Talk loads plugins on Linux too. The contract is unchanged there: the same three functions
+with the same rules, in a shared object built from your own repository, placed in the folder
+[Where a plugin goes](#where-a-plugin-goes) gives for Linux. Nothing else in this document is
+Windows specific except the paths it gives as examples. No plugin has yet been loaded on Linux; the
+loader's refusals have been tested there, a real plugin's calls have not.
 
 ## Checking your layouts against ours
 

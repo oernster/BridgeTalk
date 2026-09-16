@@ -130,9 +130,9 @@ tools directly.
 
 ### The model files
 
-A machine voice is made from files too large to commit: the Kokoro model, ONNX Runtime's
-`onnxruntime.dll`, the model's tokenizer and one file for each of the 28 voices, about 354 MB
-in all. `internal/infrastructure/modelfiles/models.toml` lists every one with a pinned address,
+A machine voice is made from files too large to commit: the Kokoro model, ONNX Runtime for the
+platform the tool runs on (`onnxruntime.dll` on Windows, `libonnxruntime.so` on Linux), the model's
+tokenizer and one file for each of the 28 voices, about 354 MB in all on Windows. `internal/infrastructure/modelfiles/models.toml` lists every one with a pinned address,
 its size and its SHA-256. Fill `models/` at the repository root from that list:
 
 ```powershell

@@ -40,14 +40,10 @@ func playable(found []library.Voice) []taskbar.Choice {
 //
 // A plugin voice whose audio is not on this machine is left out rather than offered and refused.
 // The menu has nowhere to say why: it closes on the click; the reason belongs beside the voice
-// on the Cast pane, where it is already said (FR-570). No machine voice is offered where machine
-// voices are not available yet, which missingOn names (FR-817).
-func trayChoices(found []library.Voice, offered []*plugin.Voice, missingOn string) []taskbar.Choice {
+// on the Cast pane, where it is already said (FR-570).
+func trayChoices(found []library.Voice, offered []*plugin.Voice) []taskbar.Choice {
 	choices := playable(found)
 	for _, voice := range machinevoice.All() {
-		if missingOn != "" {
-			break
-		}
 		choices = append(choices, taskbar.Choice{
 			Voice: taskbar.Voice{Kind: taskbar.Machine, Name: voice.ID()},
 			Label: voice.Name(),

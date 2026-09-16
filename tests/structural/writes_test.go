@@ -59,13 +59,13 @@ var writesByTheApplication = map[string]string{
 	"internal/infrastructure/runlog/runlog.go:Open":               "Log.txt under " + localData + " (FR-715)",
 	setupPackage + "/windows.go:SetLaunchOnBoot":                  "the sign-in entry under HKCU, the one registry write the application makes",
 	setupPackage + "/autostart.go:applyAutostart":                 "the Linux sign-in entry under the user's autostart directory (FR-815)",
+	setupPackage + "/plugins.go:MakePluginsFolder":                "the plugins folder: in the install directory when setup makes it (FR-576), in the data folder when the application makes it on Linux (FR-818)",
 }
 
 // writesBySetupAlone are writes in the setup package the application links but never reaches:
 // TestTheApplicationCallsNoOtherSetupWrite holds it to that.
 var writesBySetupAlone = map[string]string{
 	setupPackage + "/location.go:probeWrite":          "a probe file in the folder chosen to install into, removed at once",
-	setupPackage + "/plugins.go:MakePluginsFolder":    "the plugins folder in the install directory (FR-576)",
 	setupPackage + "/setup.go:ExtractZip":             "the install directory",
 	setupPackage + "/setup.go:extractEntry":           "the install directory",
 	setupPackage + "/setup.go:RemoveTree":             "the saved window state, on uninstall",
@@ -76,7 +76,7 @@ var writesBySetupAlone = map[string]string{
 }
 
 // setupNamesTheApplicationUses are the only names the application reads out of the setup package.
-var setupNamesTheApplicationUses = []string{"HiddenFlag", "IsLaunchOnBoot", "SetLaunchOnBoot"}
+var setupNamesTheApplicationUses = []string{"HiddenFlag", "IsLaunchOnBoot", "SetLaunchOnBoot", "MakePluginsFolder"}
 
 // linkedPackages answers the directory of every package in this module the application imports,
 // directly or through another, starting from the files at the repository root. Test files are not
@@ -190,8 +190,8 @@ func TestEveryWriteTheApplicationLinksSaysWhereItGoes(t *testing.T) {
 	}
 }
 
-// The application reaches the setup package for the sign-in entry and nothing else, so none of the
-// writes setup makes on installing reach the application.
+// The application reaches the setup package for the sign-in entry and the plugins folder alone, so
+// none of the other writes setup makes on installing reach the application.
 func TestTheApplicationCallsNoOtherSetupWrite(t *testing.T) {
 	root := repoRoot(t)
 	for _, dir := range linkedPackages(t) {

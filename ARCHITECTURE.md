@@ -121,7 +121,8 @@ exactly like one that holds.
   both it and the default recordings directory sit in (`appdata`), the log each run leaves in that
   folder with the `RunLog` written to the run's error output (`runlog`),
   the Windows tray (`taskbar`), keyboard focus for the web view plus opening a folder in File Explorer
-  (`window`), the model run through ONNX Runtime's C API with cgo disabled (`speechmodel`), the one rule
+  (`window`), the model run through ONNX Runtime's C API with cgo disabled (`speechmodel`), loading a
+  native library and calling into it on Windows and Linux for both of those (`nativelib`), the one rule
   for putting a file in place whole or not at all, which the made lines, the stored settings, the model
   files and the payload archive are written through (`wholefile`) and the per-user install work behind
   the setup program (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
@@ -202,7 +203,7 @@ its geometry and `launch`.
                        | voicefiles, madelines,      |
                        | speechmodel, appdata,       |
                        | runlog, wholefile, taskbar, |
-                       | window, setup               |
+                       | window, setup, nativelib    |
                        +-----------------------------+
 ```
 
@@ -408,7 +409,8 @@ inside it (FR-227).
 
 ## Plugins
 
-A plugin is a native library in the `plugins` folder inside the install directory, offering voices
+A plugin is a native library in the `plugins` folder, inside the install directory on Windows and
+inside the user's own data folder on Linux, offering voices
 whose audio is already on the user's machine. It is the third implementation of `ports.AudioSource`,
 after a scanned recorded voice and a made machine voice, so the catalogue, the picker, the scheduler
 and the player learn nothing about it. Section 6.3 of `REQUIREMENTS.md` says what the application
@@ -418,9 +420,11 @@ and the byte layouts. They are not repeated here.
 **Why a C ABI.** A plugin is built by somebody else, in a language of their choosing, at a time of
 their choosing. The only interface every language agrees on across separately compiled binaries is
 the platform's C calling convention. Go has no stable ABI between binaries and its own `plugin`
-package does not work on Windows at all, so a plugin cannot be a Go plugin. The technique is one the
-application has already proved: `internal/infrastructure/speechmodel` loads ONNX Runtime with
-`windows.LoadDLL` and calls it with `syscall.SyscallN`, with cgo disabled.
+package does not work on Windows at all, so a plugin cannot be a Go plugin. The technique is the one
+ONNX Runtime is loaded with; both go through one package, `internal/infrastructure/nativelib`: a
+library is opened by its full path, a function found by name and called through `nativelib.Call`,
+with no C written for it. On Windows that is `windows.LoadDLL` and `syscall.SyscallN`; on Linux it is
+purego's `Dlopen` and `SyscallN`. A plugin on Windows is a DLL; on Linux it is a shared object.
 
 **Three functions; why so few.** The version, one description of the plugin with its voices, then one
 answer per cue. Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
@@ -430,10 +434,12 @@ size, so the two can never be confused. Strings carry their own length, so no en
 depends on a separator that a path might contain.
 
 **Every address is converted inside the call.** `uintptr(unsafe.Pointer(...))` appears only in the
-argument list of `syscall.SyscallN` itself, as it does for ONNX Runtime and for the same measured
-reason: through a Go helper, a moving goroutine stack left the library writing to the old copy.
-`TestAddressesAreConvertedOnlyWhereTheCallIsMade` holds that rule over the whole tree, so it already
-covers the plugin adapter.
+argument list of `nativelib.Call` itself, as it does for ONNX Runtime and for the same measured
+reason: converted earlier, a moving goroutine stack left the library writing to the old copy.
+`nativelib.Call` is a Go function taking `...uintptr`, which is safe only because it is marked
+`//go:uintptrescapes`; the table of design decisions says what that was measured to do.
+`TestAddressesAreConvertedOnlyWhereTheCallIsMade` holds both rules over the whole tree, so it covers
+the plugin adapter.
 
 **One thread, one call at a time.** Every call into every plugin is made from a single goroutine
 holding one operating system thread with `runtime.LockOSThread`, fed over a channel. It costs one
@@ -450,9 +456,9 @@ not been measured.
 
 **Where the code sits.** `internal/infrastructure/plugin` is the adapter. Its portable half owns the
 byte layouts, the version check, the buffer protocol and the walk of the plugins folder, all in
-plain Go with unit tests over hand-built answers; its Windows half sits behind a build tag with a
-no-op stub beside it, so the package builds and vets on every platform. That is the split
-`internal/infrastructure/setup` already uses. The composition root wires loaded voices in as audio
+plain Go with unit tests over hand-built answers; its native half, over `nativelib`, sits behind a
+Windows or Linux build tag with a no-op stub beside it, so the package builds and vets on every
+platform. That is the split `internal/infrastructure/setup` already uses. The composition root wires loaded voices in as audio
 sources; nothing in the Application layer learns that a plugin exists.
 
 The seam between the two halves is `Library`, one plugin's three functions. `Load` takes an
@@ -462,17 +468,23 @@ scanner takes a lister: a folder that exists and cannot be read is a case Window
 test produce, since reading a file as a directory answers that the path is not there, measured on
 2026-09-16.
 
-**What is measured about the Windows half.** Not the three calls themselves, which need a plugin
-file that cannot be built here. What is measured is everything they rest on, against libraries
-Windows itself ships: that a library loads by path, that a real library exporting none of the three
-functions is refused by the function it lacks rather than called, that a file which is no library is
-refused, then that a call through `syscall.SyscallN` fills a Go buffer and answers a size the way the
-plugin protocol does. The thread is measured too: every call arrives on one thread id that is not
-the caller's. The three `dllLibrary` methods are the package's only uncovered statements, which is
-why its floor is the measured 91 percent rather than 100.
+**What is measured about the native half.** Not the three calls themselves, which need a plugin
+file that cannot be built here. What is measured is everything they rest on, against a library the
+operating system itself ships (`nativelib/nativelibtest` finds it): that a library loads by path,
+that a real library exporting none of the three functions is refused by the function it lacks rather
+than called, that a file which is no library is refused, then, in `nativelib`, that a call fills a Go
+buffer and answers a size the way the plugin protocol does. Each ran on Windows; each also ran on Linux
+on 2026-09-16, as a Linux test binary under WSL Ubuntu. The thread is measured on Windows too: every call
+arrives on one thread id that is not the caller's. The three `nativeLibrary` methods and the line
+keeping a function `OpenLibrary` found are the package's only uncovered statements, which is why it
+is not held at 100.
 
-**Where the folder is.** Beside the running executable, which for an installed build is the
-install directory. `main.go` loads the folder before the window opens and the session closes the
+**Where the folder is.** On Windows, beside the running executable, which for an installed build is
+the install directory. On Linux, inside the product's data folder, since a flatpak's install
+directory is read only. `pluginsFolder` in `plugins.go` holds both rules and takes the platform as a
+parameter, so each is tested on either. With no setup program on Linux, the application makes the
+folder there as it starts, through setup's own `MakePluginsFolder`, so the folder is made one way
+wherever it is made. `main.go` loads the folder before the window opens and the session closes the
 plugin thread with everything else it holds. Nothing it finds can stop the run: a plugin passed
 over is a line in the log and nothing more.
 
@@ -1184,10 +1196,11 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | Priority, cooldown and dedupe | Without them the application is a slot machine rather than a voice worth listening to | A plain queue |
 | The facade polls a list of event sources | A third trigger source is a line at the composition root rather than surgery on a finished scheduler | Wiring the two sources in directly |
 | No audio shipped | The recordings belong to the user; the application plays them | Bundling audio |
-| ONNX Runtime called through its C API table with cgo disabled, loaded by full path | The build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in | cgo bindings, which need a C toolchain on every build machine |
+| ONNX Runtime called through its C API table with no C written for it, loaded by full path | The Windows build stays pure Go; the full path keeps the older copy Windows ships in System32 from standing in. On Linux the flatpak build has cgo on for webkit2gtk and the audio output, so purego loads the library through the C runtime there; no binding is written either way | cgo bindings, which need a C toolchain and the library's headers on every build machine |
 | The model is loaded at the earlier of a machine voice being cast and its first line being made, then kept until the maker is closed | A player who casts only recorded voices never pays for loading 310 MB; a cast loads it without waiting, so the first cue made on call is spared the 539 ms load (FR-544); a load that fails is tried again on the next line, so a folder Repair put right is used without a restart | Loading at start whatever voice is cast; remembering a failed load |
 | ONNX Runtime is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured | Freeing the library on Close |
-| Every address is converted to uintptr in the argument list of `syscall.SyscallN` itself | Only there does Go keep the variable where ONNX Runtime was told it is; through a Go helper, a moving goroutine stack left ONNX Runtime writing the old copy, which broke a build on 2026-09-14 | A helper taking `...uintptr`; pinning every out-parameter instead |
+| Every address is converted to uintptr in the argument list of `nativelib.Call` itself | Converted earlier, a moving goroutine stack left ONNX Runtime writing the old copy, which broke a build on 2026-09-14 | Converting before the call; pinning every out-parameter instead |
+| One call helper for Windows and Linux, `nativelib.Call`, taking `...uintptr` and marked `//go:uintptrescapes` | ONNX Runtime and a plugin are written once for both platforms. Measured on 2026-09-16 with the compiler's escape analysis over `speechmodel`: with the mark, every local whose address crosses was moved to the heap, where no stack move reaches it; with it replaced by `//go:noinline`, none was. The stress test passed both ways, so the structural test refusing a `...uintptr` function without the mark is what notices it gone | A copy of each loader per platform calling `syscall.SyscallN` and `purego.SyscallN` directly |
 | The Chatter switches are kept in the settings file | The engine needs them before any page loads, which the theme and the volume do not | The page's own storage, beside the theme and the volume |
 | The switches are one value swapped in whole | The poll loop reads them while the window changes them from another goroutine, so a reader holds a whole set without a lock on the path every firing takes | A map edited in place under a lock taken on every firing |
 | A moment switched off while it waits is let go when it is reached | Nothing waiting is edited from the window's goroutine; the scheduler and the tick ask the switch as they come to it | Removing it from the queue at the press |

@@ -25,5 +25,4 @@ export const watching: State = {
   machineVoice: false,
   stoppedReacting: '',
   plugin: '',
-  nativeMissingOn: '',
 }

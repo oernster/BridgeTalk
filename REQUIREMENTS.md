@@ -2880,7 +2880,9 @@ machine voices, every group in them alike.
 Rationale: Oliver, 2026-09-16. A user who installed a plugin chose its voices on purpose, while the
 machine voices are always there; the voices chosen belong nearer the top. It amends only where the
 sections stand on the Cast pane: the notification area's menu (FR-509) keeps plugin voices after the
-machine voices. The Audition chooser follows the Cast pane (FR-585).
+machine voices, by Oliver's ruling of 2026-09-16: the menu opens upwards from the icon at the foot of
+the screen, so the voices at its bottom are the nearest to reach. The Audition chooser follows the
+Cast pane (FR-585).
 Acceptance: Given a plugin offering `Ada` in `Crew`, when the Cast pane opens, then the heading of that
 plugin's section stands before the heading Machine voices.
 Built on 2026-09-16.

@@ -170,6 +170,18 @@ describe('the home pane', () => {
     expect(said.textContent).toContain('Settings pane')
   })
 
+  // FR-742: the loop that watches the game ended, so the window is open and hears nothing. The
+  // pane says so and says what to do, since a window that looks alive and answers nothing is
+  // worse than one that closed.
+  it('says the application has stopped reacting and what to do about it', () => {
+    const fault = 'runtime error: invalid memory address or nil pointer dereference'
+    render(<HomePane state={{ ...watching, stoppedReacting: fault }} />)
+
+    const said = screen.getByRole('alert')
+    expect(said.textContent).toContain(fault)
+    expect(said.textContent).toContain('start it again')
+  })
+
   it('says nothing about the journal while it is being watched', () => {
     render(<HomePane state={watching} />)
 

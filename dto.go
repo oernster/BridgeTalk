@@ -78,6 +78,10 @@ type StateDTO struct {
 	// MachineVoice says whether the cast voice is a machine voice, since a recordings folder may
 	// carry a machine voice's id as its name (FR-540).
 	MachineVoice bool `json:"machineVoice"`
+	// StoppedReacting says why the loop watching the game ended; empty while it runs. The window
+	// stays open and usable when it ends, so the panes are what say that nothing is being watched
+	// any more (FR-742), as they say a journal directory that cannot be watched (FR-238).
+	StoppedReacting string `json:"stoppedReacting"`
 	// Plugin names the plugin the cast voice came from; empty for every other kind. With Voice,
 	// which holds the voice's id within that plugin, it says which plugin voice is cast, since an
 	// id identifies a voice only within its own plugin (FR-569).

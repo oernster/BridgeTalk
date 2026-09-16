@@ -38,6 +38,11 @@ export interface State {
   /** Whether the cast voice is a machine voice, since a recordings folder may carry its id (FR-540). */
   machineVoice: boolean
   /**
+   * Why the loop watching the game ended; empty while it runs. The window stays open and usable
+   * when it ends, so the panes are what say nothing is being watched any more (FR-742).
+   */
+  stoppedReacting: string
+  /**
    * The plugin the cast voice came from; empty for every other kind. With voice, which then holds
    * the voice's id within that plugin, it says which plugin voice is cast (FR-569).
    */

@@ -136,6 +136,22 @@ export function HomePane({ state }: { state: State | null }) {
         />
       </div>
 
+      {/* FR-742: the loop that watches the game ended, so the window is open and nothing is
+          being heard. It is said before the journal problem because it outranks it: a directory
+          that cannot be watched no longer matters while nothing is watching at all. */}
+      {state?.stoppedReacting ? (
+        <p className="callout refused" role="alert">
+          {/* The product is named once on the Go side and reaches the page through About, so the
+              sentence waits for it rather than keeping a copy here. */}
+          {`${name === '' ? 'The application' : name} has stopped reacting to the game: ${
+            state.stoppedReacting
+          }`}
+          <br />
+          The window still works and the run log holds what happened. Close it and start it again
+          to hear the game once more.
+        </p>
+      ) : null}
+
       {/* FR-238: the window opens over a journal directory that cannot be watched, so
           this is where the run says it is hearing nothing from the game. */}
       {state?.journalProblem ? (

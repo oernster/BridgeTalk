@@ -187,6 +187,10 @@ type fakeSource struct {
 	events []event.Event
 	err    error
 	polls  int
+	// faults makes the source raise a fault rather than answer, which is how the loop's own
+	// guard is reached (FR-742). A failure it can report and a fault it cannot are different
+	// paths and this is the only way to plant the second.
+	faults bool
 }
 
 func (f *fakeSource) Name() string { return f.name }
@@ -195,6 +199,9 @@ func (f *fakeSource) Poll() ([]event.Event, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.polls++
+	if f.faults {
+		panic("the journal reader went wrong")
+	}
 	if f.err != nil {
 		return nil, f.err
 	}

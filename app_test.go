@@ -5,7 +5,9 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
@@ -286,5 +288,36 @@ func TestARefusalNamesThePathAsItIsWritten(t *testing.T) {
 	}
 	if !strings.Contains(said, "one directory per person") {
 		t.Errorf("refusal = %s, want it to name what a voice directory looks like", said)
+	}
+}
+
+// FR-742: a fault anywhere in the loop ends the loop and nothing else. The window stays open and
+// says so, since a recovered fault that reaches no surface leaves a window that looks alive and
+// answers nothing, which is worse than the application ending.
+func TestAFaultInTheLoopIsSaidRatherThanEndingTheRun(t *testing.T) {
+	app, log := newTestApp(t, newFakePlayer())
+	source := &fakeSource{name: "journal", faults: true}
+	app.sources = []ports.EventSource{source}
+
+	go app.run()
+	defer close(app.stop)
+
+	payload := log.await(t, stateEvent)
+	state, ok := payload.(StateDTO)
+	if !ok {
+		t.Fatalf("the state payload was %T, want StateDTO", payload)
+	}
+	if !strings.Contains(state.StoppedReacting, "the journal reader went wrong") {
+		t.Errorf("the window was told %q, want the fault said in the words it was raised with",
+			state.StoppedReacting)
+	}
+	if app.State().StoppedReacting == "" {
+		t.Error("a pane asking afterwards is told nothing is wrong")
+	}
+
+	// The loop stays ended rather than running into the same fault four times a second.
+	time.Sleep(3 * pollInterval)
+	if polled := source.polled(); polled != 1 {
+		t.Errorf("the source was asked %d times, want the loop ended after the fault", polled)
 	}
 }

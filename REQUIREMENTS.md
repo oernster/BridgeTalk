@@ -156,7 +156,9 @@ processor alone through one native library loaded with cgo disabled, ONNX Runtim
 
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
 built yet and comes after all other work. The library
-schema in section 3 is already portable, so nothing there changes either way.
+schema in section 3 is already portable, so nothing there changes either way. It is delivered as a
+flatpak built by one script in the house pattern (FR-810), decided by Oliver on 2026-09-16; what that
+leaves unmeasured is OQ-23.
 
 ### 2.4 Constraints
 
@@ -3794,6 +3796,33 @@ Verified by: "keeps each moment inside its category's group" in `frontend/src/ch
 Not verified by a test: the rule down each group's side and the heading staying in view, which the
 style sheet decides and jsdom does not compute.
 
+**FR-742 A fault in the loop watching the game ends the loop alone**
+Priority: Must.
+If the loop that watches the game raises a fault, then the application shall end that loop, shall
+write the fault and where it was raised to the run log (FR-715) and shall say on the Home pane that
+it has stopped reacting, in the words the fault was raised with.
+Rationale: on 2026-09-15 a nil pointer in one of the loop's arms ended the whole run (b4e0065). The
+window went; the only account of why reached a log nobody had been asked to open. The fix that
+day was the missing check; this is the rule that stops the next one of its kind ending the run, since
+the loop reads a journal the application does not write and answers a game it does not control.
+The loop stays ended rather than starting again: running it into the same fault four times a second
+would fill the log with one line repeated and change nothing. Everything the window itself does keeps
+working, since the panes and Quit are called from the page rather than from the loop; the tray menu
+is read by the loop and goes quiet with it, which is why the words on screen say to start the
+application again rather than implying all is well.
+A recovered fault that reaches no surface is worse than the application ending, because a window that
+looks alive and answers nothing tells the reader nothing at all. That is why the saying is part of
+the requirement rather than a courtesy.
+Acceptance: Given a run watching a journal, when the source raises a fault while being polled, then
+the Home pane says Bridge Talk has stopped reacting to the game in the fault's own words, the run
+log holds the fault with its stack and the source is never polled again.
+Verified by: `TestAFaultInTheLoopIsSaidRatherThanEndingTheRun` in `app_test.go`, seen to fail with
+the guard removed, where the fault took the whole test process down; "says the application has
+stopped reacting and what to do about it" in `frontend/src/shell.test.tsx`, seen to fail with the
+callout removed.
+Not verified by a test: the fault reaching `Log.txt`, which FR-715 holds for everything written to
+error output; a real fault of the kind this exists for.
+
 ---
 
 ## 9. The setup program
@@ -3948,6 +3977,31 @@ folder again before it writes; the recorded folder being read back after a real 
 this account cannot write to, such as Program Files; a path whose drive does not exist; a folder that
 exists yet cannot be listed.
 
+**FR-810 Linux is delivered as a flatpak built by one script**
+Priority: Should.
+Where the application is delivered for Linux, the repository shall carry `build_flatpak.sh` at its
+root, which reads the version from `VERSION`, writes the desktop entry, the metainfo and the manifest
+rather than keeping copies of them, builds the front end and the application inside the sandbox,
+installs it for the account running it and writes one `.flatpak` bundle. The repository shall also
+carry `cleanup_flatpak.sh`, which removes what the flatpak build made and nothing another build path
+made.
+Rationale: Oliver on 2026-09-16, the game running on Linux under Proton. It is the house pattern
+rather than a new one: PigeonPost's `build_flatpak.sh` and `cleanup_flatpak.sh` are the reference,
+where the GNOME runtime supplies the webkit2gtk Wails renders through, the golang and node SDK
+extensions build the two halves. The version, the desktop entry and the manifest are generated, so
+nothing holds a second copy of what `VERSION` already says. Generating them is what keeps
+VERSION the one home for the version on this path as on the others. The application id follows the
+house form, `uk.codecrafter.BridgeTalk`.
+Note on what this does not yet settle: three things are unmeasured and are held as OQ-23 rather than
+being specified here. The flatpak build of a Wails application links against the runtime's webkit,
+which is a cgo build, while CON-8 has the machine voices loading ONNX Runtime with cgo disabled and
+`build.ps1` sets `CGO_ENABLED` to `0`; whether the machine voices work at all inside the sandbox has
+never been tried. The journal directory the game writes under Proton sits inside a Wine prefix, which
+is neither where `journal.StandardLocation` looks nor reachable from a sandbox without being granted.
+The audio device needs a permission of its own. No network permission is needed, since the
+application makes no outbound request (section 2.3).
+Verified by: nothing yet.
+
 ---
 
 ## 10. Build order
@@ -3968,6 +4022,7 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
+| OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
 | OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
@@ -3977,8 +4032,8 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-809, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-809, FR-810, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

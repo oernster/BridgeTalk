@@ -217,4 +217,7 @@ func (a *App) confirmWhenMade() {
 func (s *session) release() {
 	s.making.Stop()
 	s.maker.Close()
+	if s.plugins != nil {
+		s.plugins.Close()
+	}
 }

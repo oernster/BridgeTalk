@@ -471,6 +471,11 @@ plugin protocol does. The thread is measured too: every call arrives on one thre
 the caller's. The three `dllLibrary` methods are the package's only uncovered statements, which is
 why its floor is the measured 91 percent rather than 100.
 
+**Where the folder is.** Beside the running executable, which for an installed build is the
+install directory. `main.go` loads the folder before the window opens and the session closes the
+plugin thread with everything else it holds. Nothing it finds can stop the run: a plugin passed
+over is a line in the log and nothing more.
+
 **Proved without a plugin; the limit of that.** A real plugin cannot be built here: a library
 file exporting C functions needs cgo and a C toolchain; this machine has neither, measured on
 2026-09-16. Requiring one would put a C compiler on every build machine, which is exactly what was

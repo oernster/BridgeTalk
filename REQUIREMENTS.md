@@ -2261,10 +2261,13 @@ When the application starts, the application shall load every plugin file in the
 inside its own install directory, which is the only place it loads a plugin from.
 Rationale: one place to look means a user can see what is loaded by opening a folder. A path the user
 can set is a way to load code from anywhere, which is a larger promise than this needs.
-Built on 2026-09-16 in `internal/infrastructure/plugin`, which is not wired at the composition
-root yet, so nothing calls it while the application runs.
+Built and wired on 2026-09-16. The folder is found beside the running executable, which for an
+installed build is the install directory, since that is where the setup program writes the
+executable. Reading the recorded install location instead would have a build run from anywhere
+else look in a folder it is not in; the model files are found the same way (FR-539).
 Verified by: `TestEveryPluginInTheFolderIsLoadedInNameOrder` and
-`TestADirectoryInsideTheFolderIsIgnored` in `internal/infrastructure/plugin/load_test.go`.
+`TestADirectoryInsideTheFolderIsIgnored` in `internal/infrastructure/plugin/load_test.go`;
+`TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` for where it looks.
 
 **FR-561 Each plugin is loaded on its own account**
 Priority: Must.
@@ -2330,7 +2333,13 @@ When the application passes over a plugin or one of its voices, the application 
 reason to the run log (FR-715).
 Rationale: the log is where the author already looks; a refusal that exists only on screen is gone
 by the time it is asked about.
-Verified by: nothing yet.
+Built on 2026-09-16. A refusal is written where every other note goes, which the log keeps
+(FR-715). Only refusals are written: a plugin that loads says nothing, as the ordinary case with
+no plugins says nothing (FR-562).
+Verified by: `TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog` in `plugins_test.go`, which
+puts a text file named as a library in the folder and reads the line back; seen to fail with the
+line not written. A voice passed over inside a plugin that otherwise loads is not built yet,
+since a voice is passed over only with its whole plugin today (FR-566).
 
 **FR-568 Two voices offered under one name stay apart**
 Priority: Should.

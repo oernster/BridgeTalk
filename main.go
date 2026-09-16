@@ -23,6 +23,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/journal"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
 	"github.com/oernster/bridge-talk/internal/infrastructure/madelines"
+	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/oernster/bridge-talk/internal/infrastructure/speechmodel"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
@@ -101,6 +102,10 @@ type session struct {
 	// when the application closes.
 	making *services.MakingService
 	maker  releaser
+	// plugins are the loaded plugins and the thread they are called on, closed with everything
+	// else when the application closes. A session built without them, as some tests build one,
+	// simply has no plugin voices.
+	plugins *plugin.Set
 	// announced is what the page was last told about making, so it is told only of a change.
 	announced makingKey
 	// confirming is set while a cast machine voice's confirmation waits for its line (FR-521). The
@@ -282,10 +287,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// Plugins are loaded before the window opens, so a voice one offers is there to be cast
+	// rather than appearing later (FR-560). None of it can stop the run: every plugin passed
+	// over is a line in the log (FR-567) and nothing else.
+	executable, whereabouts := os.Executable()
 	current := &session{
 		table: table, available: found,
 		chooser: chooser, player: player,
 		making: making, maker: maker,
+		plugins: loadPlugins(executable, whereabouts, runLog()),
 		// Read once here, over the same store the directories came from (FR-629).
 		chatter: services.NewChatterService(table, settings),
 	}

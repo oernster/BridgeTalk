@@ -1,3 +1,27 @@
+Bridge Talk
+Copyright (C) Oliver Ernster
+
+Bridge Talk is licensed under the GNU General Public License, version 3, whose full text follows
+below, together with this additional permission.
+
+ADDITIONAL PERMISSION UNDER GNU GPL VERSION 3 SECTION 7: PLUGIN EXCEPTION
+
+A "plugin" is a separate library file that Bridge Talk loads from its plugins folder and that
+communicates with Bridge Talk only through the plugin interface published with Bridge Talk in
+PLUGINS-GUIDE.md.
+
+As an additional permission under section 7 of the GNU General Public License, version 3, the
+copyright holder gives you permission to load, run and convey a plugin with Bridge Talk under terms
+of the plugin author's own choosing. A plugin is not required to be licensed under the GNU General
+Public License by reason of being loaded by Bridge Talk or of using that published interface.
+
+This permission covers only a plugin's use of that published interface. It grants nothing for a work
+that copies, incorporates or modifies Bridge Talk's own code; the GNU General Public License applies
+to such a work in full.
+
+If you modify Bridge Talk, you may extend this permission to your version of it. You are not obliged
+to do so. If you do not wish to, delete this permission from your version.
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 

@@ -217,5 +217,7 @@ development.
 
 ## Licence
 
-GNU General Public License, version 3: see `LICENSE`. The application shows the same text under
-Help, then Licence.
+GNU General Public License, version 3, with a plugin exception: see `LICENSE`. The exception lets a
+plugin that speaks only the interface in [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) carry terms of its own
+author's choosing; it grants nothing for a work built from Bridge Talk's own code. The application
+shows the same text under Help, then Licence.

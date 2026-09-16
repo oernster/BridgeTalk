@@ -2493,7 +2493,15 @@ If no part of a chosen take can be played, then the application shall play nothi
 shall record what it tried.
 Rationale: silence is the correct answer when the alternative is saying the wrong line; the same
 judgement the catalogue already makes for a cue no voice serves.
-Verified by: nothing yet.
+Measured on 2026-09-16: this holds with FR-574 built and needed no code of its own. Each part that will
+not open is recorded and passed over, so a take none of whose parts open reaches the device with
+nothing, leaves one note per part in the order they were tried, then ends as any sequence ends so its
+cue is let go.
+Verified by: `TestATakeWhosePartsWillNotOpenPlaysNothingAndRecordsEachOne` in
+`internal/infrastructure/audio/sequence_test.go`, which plays a take of three parts that will not
+open through a player with no device, so a part handed to the device would end the test. Seen to
+fail twice: with a part that will not open played anyway, which ended in a nil pointer; with the take
+abandoned at the first such part, which recorded one of the three.
 
 **FR-576 The setup program creates the plugins folder**
 Priority: Must.
@@ -2520,7 +2528,19 @@ folder as it found it.
 Rationale: a plugin is the user's, installed separately; an update that removed it would be a
 surprise with no warning. Measured on 2026-09-16: `ExtractZip` writes its entries over the
 destination and never clears it, so this holds today and the requirement exists to keep it holding.
-Verified by: nothing yet.
+Measured the same day: it did not hold whatever the payload carried. `Pack` carried every file in
+the built application's folder, while the application looks for plugins beside itself, so a build
+tried out with a plugin in place would have shipped that plugin and an update would have written it
+over the user's own. The payload now never carries the plugins folder at the top of the application's
+folder; a folder of that name deeper down is not the plugins folder and is carried as before.
+Verified by: `TestAnUpdateLeavesThePluginsFolderAsItFoundIt` in
+`internal/infrastructure/setup/plugins_test.go`, which writes a payload over an install directory
+whose plugins folder holds files, a subfolder and a file named as the payload's own, then makes the
+folder as an update does and reads every file back unchanged with nothing added or taken away. Seen
+to fail with the extraction clearing the install directory first and with making the folder
+emptying it. `TestThePayloadNeverCarriesAPluginsFolder` in the same file, seen to fail with the
+folder carried. Not verified by a test: the setup facade calling both in order, since `installer`
+has no test that can reach the machine.
 
 **FR-578 Uninstall offers to keep the plugins folder**
 Priority: Must.

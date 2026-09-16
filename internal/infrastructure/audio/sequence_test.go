@@ -315,6 +315,38 @@ func TestAPartThatWillNotOpenIsRecordedAndTheTakeCarriesOn(t *testing.T) {
 	}
 }
 
+// A take none of whose parts will open plays nothing for its cue and records every part it tried,
+// in the order it tried them (FR-575). Silence is the answer when the alternative is a wrong line.
+// The sequence still ends and says so, since a scheduler that never heard the end of one would wait
+// for ever.
+//
+// Nothing reaches the device: this player has none, so a part handed to it would end the test with
+// a nil pointer rather than pass.
+func TestATakeWhosePartsWillNotOpenPlaysNothingAndRecordsEachOne(t *testing.T) {
+	t.Parallel()
+	player := silentPlayer()
+	var noted []string
+	player.load = func(string) (beep.Streamer, error) { return nil, errors.New("it is not there") }
+	player.record = func(line string) { noted = append(noted, line) }
+	parts := []string{"one.wav", "two.wav", "three.wav"}
+	cancel := make(chan struct{})
+	player.playing, player.cancel = true, cancel
+
+	player.run(parts, 0, cancel)
+
+	if len(noted) != len(parts) {
+		t.Fatalf("%d parts were recorded, want all %d: %v", len(noted), len(parts), noted)
+	}
+	for index, part := range parts {
+		if !strings.Contains(noted[index], part) {
+			t.Errorf("note %d reads %q, want %s named", index+1, noted[index], part)
+		}
+	}
+	if !waitForFinish(t, player) || player.Playing() {
+		t.Error("a take that played nothing did not end, so its cue would never be let go")
+	}
+}
+
 // A file the decoders cannot read is reported rather than returned as an empty
 // buffer, so one unreadable clip is skipped by the caller instead of playing as a
 // moment of silence nobody can account for.

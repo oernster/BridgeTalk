@@ -58,7 +58,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | the root package (the Wails facade) | 84.8% | 82% | `test.ps1` |
-| `internal/infrastructure/setup` | 79.6% | 79% | `test.ps1` |
+| `internal/infrastructure/setup` | 79.7% | 79% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.0% | 67% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
@@ -253,7 +253,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (79.6% overall).**
+- **The registry writes in `internal/infrastructure/setup` (79.7% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.

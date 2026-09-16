@@ -41,6 +41,13 @@ func Pack(out io.Writer, payload Payload) error {
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", from, refusal.Reason(err))
 		}
+		// The plugins folder is never carried, whatever the built application's folder holds. The
+		// application looks for plugins beside itself, so a build tried out with a plugin in place
+		// would otherwise ship that plugin; an update would then write it over the user's own
+		// (FR-577). Setup makes the folder empty instead (FR-576).
+		if entry.IsDir() && from == PluginsDir(payload.App) {
+			return filepath.SkipDir
+		}
 		if entry.IsDir() {
 			return nil
 		}

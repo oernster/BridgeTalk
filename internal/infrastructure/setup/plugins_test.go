@@ -1,9 +1,13 @@
 package setup
 
 import (
+	"archive/zip"
+	"bytes"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/product"
@@ -113,6 +117,79 @@ func TestTheUninstallKeepsThePluginsOnlyWhereThereIsSomethingToKeep(t *testing.T
 		if got := KeptOnUninstall(each.dir, each.removePlugins); got != each.want {
 			t.Errorf("%s: kept %q, want %q", each.name, got, each.want)
 		}
+	}
+}
+
+// An update and a repair write the payload over the install directory, then make the plugins
+// folder; every file already in that folder is left as it was found, with nothing added and
+// nothing taken away (FR-577).
+func TestAnUpdateLeavesThePluginsFolderAsItFoundIt(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	held := map[string]string{
+		"crew.dll":             "the user's plugin",
+		"crew data/voices.txt": "what it keeps beside itself",
+		"notes about crew.txt": "the user's own notes",
+		ExeName + ".mine":      "a name close to the application's",
+		"assets/readme.txt":    "a name the payload also carries",
+	}
+	for name, body := range held {
+		plant(t, PluginsDir(dir), name, body)
+	}
+	payload := zipOf(t, map[string]string{ExeName: "the new program", "assets/readme.txt": "a readme"})
+
+	if err := ExtractZip(payload, dir); err != nil {
+		t.Fatalf("extracting: %v", err)
+	}
+	if err := MakePluginsFolder(dir); err != nil {
+		t.Fatalf("making the plugins folder: %v", err)
+	}
+
+	found := map[string]string{}
+	err := filepath.WalkDir(PluginsDir(dir), func(at string, entry os.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+		body, err := os.ReadFile(at)
+		name, _ := filepath.Rel(PluginsDir(dir), at)
+		found[filepath.ToSlash(name)] = string(body)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("reading the plugins folder back: %v", err)
+	}
+	if !maps.Equal(found, held) {
+		t.Errorf("the plugins folder holds %v after the update, want %v", found, held)
+	}
+}
+
+// The payload never carries a plugins folder, whatever the built application's folder holds, so
+// an update has nothing to write over the user's plugins with (FR-577).
+func TestThePayloadNeverCarriesAPluginsFolder(t *testing.T) {
+	t.Parallel()
+	app := t.TempDir()
+	plant(t, app, ExeName, "the program")
+	plant(t, app, product.PluginsFolder+"/crew.dll", "a plugin left from trying the build")
+	plant(t, app, "resources/"+product.PluginsFolder+"/icon.png", "not the plugins folder")
+	var packed bytes.Buffer
+
+	if err := Pack(&packed, Payload{App: app}); err != nil {
+		t.Fatalf("packing: %v", err)
+	}
+
+	reader, err := zip.NewReader(bytes.NewReader(packed.Bytes()), int64(packed.Len()))
+	if err != nil {
+		t.Fatalf("reading the archive: %v", err)
+	}
+	var names []string
+	for _, member := range reader.File {
+		names = append(names, member.Name)
+	}
+	slices.Sort(names)
+	want := []string{"resources/" + product.PluginsFolder + "/icon.png", ExeName}
+	slices.Sort(want)
+	if !slices.Equal(names, want) {
+		t.Errorf("the payload carries %v, want %v", names, want)
 	}
 }
 

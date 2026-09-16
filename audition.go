@@ -7,7 +7,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -18,9 +17,6 @@ import (
 // auditionGap is the pause between the parts of the take a group is auditioned with. It
 // is zero for the reason takeGap is: a take recorded in pieces is one utterance (FR-573).
 const auditionGap = 0
-
-// errNoDevice refuses an audition with nothing to play through.
-var errNoDevice = errors.New("there is no audio device to play through")
 
 // GroupDTO is one auditionable group as the pane shows it.
 type GroupDTO struct {
@@ -69,9 +65,6 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	if !ok {
 		return AuditionDTO{}, nothingFor(voice, group)
 	}
-	if a.session.player == nil {
-		return AuditionDTO{}, errNoDevice
-	}
 	return a.play(group, drawn)
 }
 
@@ -104,9 +97,7 @@ func (a *App) play(group string, chosen take.Take) (AuditionDTO, error) {
 // and the page is told nothing is under way (FR-547).
 func (a *App) StopAudition() {
 	letGo := a.session.auditions.stop()
-	if a.session.player != nil {
-		a.session.player.Stop()
-	}
+	a.session.player.Stop()
 	if letGo {
 		a.announcePlayback()
 	}
@@ -116,7 +107,7 @@ func (a *App) StopAudition() {
 // made for an audition. A pane opened part way through either asks, so its buttons are held
 // from the start rather than from the next event (FR-236, FR-547).
 func (a *App) Playing() bool {
-	return a.session.auditions.busy() || (a.session.player != nil && a.session.player.Playing())
+	return a.session.auditions.busy() || a.session.player.Playing()
 }
 
 // announcePlayback tells the front end whether anything is sounding. The run loop

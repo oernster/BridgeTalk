@@ -84,9 +84,6 @@ func (a *App) AuditionMachineVoice(id, group string) (AuditionDTO, error) {
 	if err != nil {
 		return AuditionDTO{}, err
 	}
-	if a.session.player == nil {
-		return AuditionDTO{}, errNoDevice
-	}
 	stops, free := a.session.auditions.begin()
 	if !free {
 		return AuditionDTO{}, nil

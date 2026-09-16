@@ -94,9 +94,13 @@ type session struct {
 	table     cue.Table
 	available []library.Voice
 	chooser   randomChooser
-	player    audioPlayer
-	tray      trayIcon
-	reporter  ports.Reporter
+	// player is always there, whatever the machine has. A device that will not open answers a
+	// player that is silent rather than no player at all, so nothing above ever asks whether one
+	// exists: the question is what it is doing, never whether it is. The run loop settles that,
+	// since its select waits on the player's own channel and a nil one would wait forever.
+	player   audioPlayer
+	tray     trayIcon
+	reporter ports.Reporter
 
 	// making makes a cast machine voice's lines; maker is the model they are made with, released
 	// when the application closes.
@@ -278,6 +282,8 @@ func run() error {
 		return unboundReport(chosen, table, chooser)
 	}
 
+	// A device that will not open is a warning rather than a stop: the player answered is silent
+	// and everything above it carries on with nothing to hear.
 	player, err := audio.NewPlayer()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running silent)\n", err)

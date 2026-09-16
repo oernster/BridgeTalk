@@ -166,17 +166,15 @@ func TestAMachineVoiceAuditionOfAGroupTheScriptLacksIsRefusedByName(t *testing.T
 	}
 }
 
-// A voice that is not offered is refused; so is an audition with no device, before anything is made.
-func TestAMachineVoiceAuditionIsRefusedForAVoiceNotOfferedOrNoDevice(t *testing.T) {
+// A voice that is not offered is refused before anything is made.
+func TestAMachineVoiceAuditionIsRefusedForAVoiceNotOffered(t *testing.T) {
 	app, _, _ := fixtureApp(t)
 	maker := fixtureMaking(t, app.session, offeredFiles(nil), makingtest.NewStore())
 
 	if _, err := app.AuditionMachineVoice("xx_nobody", "Docked"); err == nil {
 		t.Error("a voice that is not offered auditioned")
 	}
-	app.session.player = nil
-	_, err := app.AuditionMachineVoice("bf_emma", "Docked")
-	if err == nil || !strings.Contains(err.Error(), "audio device") || maker.Made() != 0 {
-		t.Errorf("with no device auditioning = %v after making %d, want the missing device named with nothing made", err, maker.Made())
+	if maker.Made() != 0 {
+		t.Errorf("made %d lines for a voice that was refused, want none", maker.Made())
 	}
 }

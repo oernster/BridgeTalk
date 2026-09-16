@@ -171,8 +171,7 @@ func TestAPollThatStartsNothingAnnouncesNothing(t *testing.T) {
 	}
 }
 
-// A pane opened part way through a clip asks, so the answer follows the device; with
-// no device there is nothing that could be playing.
+// A pane opened part way through a clip asks, so the answer follows the device.
 func TestThePaneCanAskWhetherAnythingIsPlaying(t *testing.T) {
 	app, player, _ := fixtureApp(t)
 
@@ -184,10 +183,6 @@ func TestThePaneCanAskWhetherAnythingIsPlaying(t *testing.T) {
 	player.mu.Unlock()
 	if !app.Playing() {
 		t.Fatal("a playing device reported idle")
-	}
-	app.session.player = nil
-	if app.Playing() {
-		t.Fatal("no device at all reported playing")
 	}
 }
 
@@ -210,19 +205,6 @@ func TestAnAuditionOfAGroupTheVoiceHasNothingForIsRefusedByName(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Under attack") {
 		t.Errorf("refusal = %q, want it to name the group as the pane does", err)
-	}
-}
-
-func TestAnAuditionWithNoAudioDeviceSaysSo(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	app.session.player = nil
-
-	_, err := app.Audition("Alpha", "ShieldState")
-	if err == nil {
-		t.Fatal("an audition succeeded with no device to play through")
-	}
-	if !strings.Contains(err.Error(), "audio device") {
-		t.Errorf("refusal = %q, want it to name the missing device", err)
 	}
 }
 

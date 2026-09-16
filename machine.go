@@ -261,7 +261,7 @@ func (a *App) confirmWhenMade() {
 		return
 	}
 	making := s.making.Progress().Making
-	if a.acknowledge() || s.muted || s.player == nil || !making {
+	if a.acknowledge() || s.muted || !making {
 		s.confirming.Store(false)
 	}
 }

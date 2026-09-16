@@ -149,16 +149,19 @@ func TestTheVolumeIsReadFromAndWrittenToTheDevice(t *testing.T) {
 	}
 }
 
-// With no audio device there is nothing to ask and nothing to set; both controls
-// still have to answer rather than panicking on a nil device.
-func TestTheVolumeControlsAnswerWithNoDevice(t *testing.T) {
-	app, _, _ := fixtureApp(t)
-	app.session.player = nil
+// The volume controls read and write the device's own level, which is there whatever the
+// machine has: a device that will not open answers a silent player rather than none.
+func TestTheVolumeControlsReadAndWriteTheDeviceLevel(t *testing.T) {
+	app, player, _ := fixtureApp(t)
 
-	if app.Volume() != 0 {
-		t.Fatalf("volume = %v, want silence with no device", app.Volume())
+	app.SetVolume(0.25)
+
+	if player.Volume() != 0.25 {
+		t.Errorf("the device is at %v, want the level that was set", player.Volume())
 	}
-	app.SetVolume(0.5)
+	if app.Volume() != 0.25 {
+		t.Errorf("volume = %v, want the level the device holds", app.Volume())
+	}
 }
 
 // Every tray choice goes through the same door as the control it mirrors, so the two

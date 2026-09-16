@@ -314,20 +314,11 @@ func (a *App) SetMuted(muted bool) {
 
 // Volume reports the playback level, where zero is silence and one is the clip as
 // recorded.
-func (a *App) Volume() float64 {
-	if a.session.player == nil {
-		return 0
-	}
-	return a.session.player.Volume()
-}
+func (a *App) Volume() float64 { return a.session.player.Volume() }
 
 // SetVolume sets the playback level. The front end owns the stored preference and
 // pushes it in on load, so nothing here has to persist it.
-func (a *App) SetVolume(level float64) {
-	if a.session.player != nil {
-		a.session.player.SetVolume(level)
-	}
-}
+func (a *App) SetVolume(level float64) { a.session.player.SetVolume(level) }
 
 // emitState tells the front end to re-read the state it does not own.
 func (a *App) emitState() {

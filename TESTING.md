@@ -65,9 +65,9 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-950 test functions, which expand to 1,052 runs once their subtests are counted (measured on
+961 test functions, which expand to 1,067 runs once their subtests are counted (measured on
 2026-09-16: `func Test` in every `_test.go` file bar `TestMain`, then the `run` events of an
-uncached `go test -count=1 -json ./...`, which are 947 top-level runs plus 105 subtests; the
+uncached `go test -count=1 -json ./...`, which are 958 top-level runs plus 109 subtests; the
 three build-tagged benchmarks are counted as functions but do not run).
 Forty-nine of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the

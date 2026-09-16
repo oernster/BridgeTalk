@@ -66,7 +66,7 @@ func (a *App) SelectVoice(name string) error {
 // It reports whether the voice had a confirmation to give, played or not, so a machine
 // voice's confirmation still being made can be waited for (FR-521).
 func (a *App) acknowledge() bool {
-	if a.session.muted || a.session.player == nil || a.session.catalogue == nil {
+	if a.session.muted || a.session.catalogue == nil {
 		return false
 	}
 	chosen, ok := a.session.catalogue.Acknowledgement()

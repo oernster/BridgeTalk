@@ -423,7 +423,8 @@ application has already proved: `internal/infrastructure/speechmodel` loads ONNX
 `windows.LoadDLL` and calls it with `syscall.SyscallN`, with cgo disabled.
 
 **Three functions; why so few.** The version, one description of the plugin with its voices, then one
-answer per cue. Every buffer is asked for its size first, then filled, so nothing is allocated on
+answer per cue. Oliver chose this shape on 2026-09-16 over a dozen smaller calls, which would have
+carried more interface surface in exchange for nothing to decode. Every buffer is asked for its size first, then filled, so nothing is allocated on
 one side of the boundary and freed on the other; a negative return is always a refusal rather than a
 size, so the two can never be confused. Strings carry their own length, so no encoding of the answer
 depends on a separator that a path might contain.
@@ -440,7 +441,8 @@ goroutine and a channel round trip on a path that runs once per cue firing. It b
 plugin author needs no locking; a plugin that initialises something belonging to a thread, such
 as a COM apartment, finds that thread again on the next call. No plugin exists to measure, so this is
 a precaution rather than a finding; it is taken now because it cannot be retrofitted once plugins are
-in the wild.
+in the wild. Oliver chose it on 2026-09-16 on those terms, with the cost and the absence of a
+measurement both stated.
 
 **Never unloaded.** A plugin once loaded stays loaded until the process ends, for the reason ONNX
 Runtime is never unloaded: whether it can be unloaded safely while its own threads may still run has
@@ -1127,7 +1129,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | A plugin is reached through the C ABI, loaded by full path from one folder | It is the only interface every language agrees on across separately built binaries; Go has no stable ABI between binaries and its plugin package does not run on Windows | A Go plugin; a helper process speaking over a pipe, which is a second program to install and keep alive |
 | Buffers are owned by Bridge Talk, sized by a first call | Nothing is allocated on one side of the boundary and freed on the other, so the two need not share an allocator | The plugin allocating and a fourth function freeing |
 | A negative return is always a refusal, never a size | A size and an error code sharing a range is how a one byte answer becomes an error | Negative meaning the bytes needed, with a sentinel carved out of the range |
-| Every call into a plugin is made from one locked operating system thread, one at a time | A plugin author needs no locking; a plugin that initialises something belonging to a thread finds that thread again. No plugin exists to measure; this is a precaution taken while it is still cheap | A mutex alone, which serialises without giving thread affinity |
+| Every call into a plugin is made from one locked operating system thread, one at a time | A plugin author needs no locking; a plugin that initialises something belonging to a thread finds that thread again. No plugin exists to measure; this is a precaution taken while it is still cheap, chosen by Oliver on 2026-09-16 | A mutex alone, which serialises without giving thread affinity |
 | A plugin is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured, the same reason ONNX Runtime is never unloaded | Freeing the library when the last voice it offered is dropped |
 | A plugin is trusted because the user put it in the folder | Checking a signature would mean deciding whose signature counts, which is a promise the application cannot keep for other people's work (Oliver, 2026-09-16) | Refusing an unsigned plugin; asking the user to confirm each one |
 | No fallback chain | A wrong line delivered confidently is worse than silence | Substituting another cue's take |

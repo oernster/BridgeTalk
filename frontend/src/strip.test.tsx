@@ -8,21 +8,22 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import type { About, Making, Reaction } from './api'
+import { refuses } from './testRefusal'
+import type { About, Making, Reaction, Refused } from './api'
 import { flashMs } from './indicator'
 import { nothingMade } from './making'
 import { watching } from './testState'
 
 const about = vi.fn<() => Promise<About | null>>()
 const making = vi.fn<() => Promise<Making>>()
-const openDonation = vi.fn<() => Promise<void>>()
+const openDonation = vi.fn<(refused: Refused) => Promise<void>>()
 const handlers = new Map<string, (...data: unknown[]) => void>()
 
 vi.mock('./api', () => ({
   api: {
     about: () => about(),
     making: () => making(),
-    openDonation: () => openDonation(),
+    openDonation: (refused: Refused) => openDonation(refused),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -117,7 +118,9 @@ describe('the donate button', () => {
   // FR-718 and FR-719: a hand-over that failed is said in the indicator for four seconds after.
   it('says the browser could not be opened for four seconds after a failed press', async () => {
     vi.useFakeTimers()
-    openDonation.mockRejectedValue(new Error('there is no window to open the browser from'))
+    openDonation.mockImplementation(
+      refuses('Error: there is no window to open the browser from', undefined),
+    )
     render(<Strip state={watching} />)
     await settle()
 

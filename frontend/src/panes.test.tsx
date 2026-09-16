@@ -7,16 +7,18 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { refuses } from './testRefusal'
+import type { Refused } from './api'
 
-const chooseLibraryRoot = vi.fn<() => Promise<string>>()
-const chooseJournalDir = vi.fn<() => Promise<string>>()
-const setLaunchOnBoot = vi.fn<(enabled: boolean) => Promise<void>>()
+const chooseLibraryRoot = vi.fn<(refused: Refused) => Promise<string | null>>()
+const chooseJournalDir = vi.fn<(refused: Refused) => Promise<string | null>>()
+const setLaunchOnBoot = vi.fn<(enabled: boolean, refused: Refused) => Promise<void>>()
 
 vi.mock('./api', () => ({
   api: {
-    chooseLibraryRoot: () => chooseLibraryRoot(),
-    chooseJournalDir: () => chooseJournalDir(),
-    setLaunchOnBoot: (enabled: boolean) => setLaunchOnBoot(enabled),
+    chooseLibraryRoot: (refused: Refused) => chooseLibraryRoot(refused),
+    chooseJournalDir: (refused: Refused) => chooseJournalDir(refused),
+    setLaunchOnBoot: (enabled: boolean, refused: Refused) => setLaunchOnBoot(enabled, refused),
   },
 }))
 
@@ -51,7 +53,9 @@ describe('the settings pane', () => {
   })
 
   it('says why a directory was refused, as a refusal under its own row', async () => {
-    chooseJournalDir.mockRejectedValue('reading C:\\Nowhere: no such directory')
+    chooseJournalDir.mockImplementation(
+      refuses('reading C:\\Nowhere: no such directory', null),
+    )
     render(<SettingsPane state={null} />)
     browse()
 
@@ -99,7 +103,7 @@ describe('the settings pane', () => {
     render(<SettingsPane state={{ launchOnBoot: false } as never} />)
     fireEvent.click(screen.getByRole('checkbox'))
 
-    await waitFor(() => expect(setLaunchOnBoot).toHaveBeenCalledWith(true))
+    await waitFor(() => expect(setLaunchOnBoot).toHaveBeenCalledWith(true, expect.any(Function)))
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
@@ -108,13 +112,15 @@ describe('the settings pane', () => {
     render(<SettingsPane state={{ launchOnBoot: false } as never} />)
     fireEvent.keyDown(screen.getByRole('checkbox'), { key: 'Enter' })
 
-    await waitFor(() => expect(setLaunchOnBoot).toHaveBeenCalledWith(true))
+    await waitFor(() => expect(setLaunchOnBoot).toHaveBeenCalledWith(true, expect.any(Function)))
   })
 
   it('says why the entry could not be written; the box stays as it was', async () => {
     // The box follows the state, so a refusal leaves it unticked on its own. Without a
     // reason beside it that reads as a dead control, which is the fault Browse had.
-    setLaunchOnBoot.mockRejectedValue('this copy is running from a temporary directory')
+    setLaunchOnBoot.mockImplementation(
+      refuses('this copy is running from a temporary directory', undefined),
+    )
     render(<SettingsPane state={{ launchOnBoot: false } as never} />)
     fireEvent.click(screen.getByRole('checkbox'))
 
@@ -140,7 +146,9 @@ describe('the settings pane', () => {
   })
 
   it('clears what the last press said before the next one answers', async () => {
-    chooseJournalDir.mockRejectedValue('reading C:\\Nowhere: no such directory')
+    chooseJournalDir.mockImplementation(
+      refuses('reading C:\\Nowhere: no such directory', null),
+    )
     render(<SettingsPane state={null} />)
     browse()
     await screen.findByRole('alert')

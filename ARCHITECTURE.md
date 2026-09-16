@@ -1094,6 +1094,21 @@ journal reader tests a read error's text against `"EOF"`.
   and a login entry that could not be written, which includes turning it on from a copy running under the
   temporary directory.
 
+**A refusal cannot be dropped on the page, because a call that can be refused cannot be written
+without a handler for it.** Every `api` wrapper over a facade method that answers an error takes a
+`Refused` as its last argument and answers with nothing rather than rejecting: `null` where it
+answers a value, since an empty list is a claim about what is there while null is the absence of an
+answer. A promise that rejects with nobody to catch it is the front end's own silent failure: the
+pane keeps the words it says while it waits, so the reader watches a screen that says it is reading
+something, forever, while the reason sits in a console nobody opens.
+
+A structural test was written for this rule first and deleted: it cannot follow a promise handed to
+a helper such as `settle`, `useChooser` or the Chatter pane's `ask`, so it called four correct call
+sites wrong. A rule that cannot be checked is made impossible to break instead. `tsc --noEmit` runs
+ahead of every front-end build, so the check is the build; it was proved by removing one handler and
+reading the exit code. What a suite standing in for the api must answer is in
+`frontend/src/testRefusal.ts`, since a fake that rejects tests a shape the api no longer has.
+
 **A refusal names its path once (FR-237).** A file-system error from the standard library already
 carries the path and the system call behind it, so wrapping one beneath words that name the path showed
 the path twice, with a call such as `GetFileAttributesEx` between. `internal/refusal` is the one home for

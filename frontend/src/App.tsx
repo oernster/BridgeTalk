@@ -102,11 +102,12 @@ export function App() {
   }, [state?.muted, refresh])
 
   // Refreshed either way. A cast can succeed and still report a failure, when the
-  // choice was made but could not be written down, so refusing to re-read on a
-  // rejection would leave the pane naming the voice that has stopped speaking.
+  // choice was made but could not be written down, so leaving the state unread after a
+  // refusal would leave the pane naming the voice that has stopped speaking. The refusal
+  // itself is said by the pane the cast was made from, which is the Cast pane's own row.
   const selectVoice = useCallback(
     (name: string) => {
-      void api.selectVoice(name).then(refresh, refresh)
+      void api.selectVoice(name, refresh).then(refresh)
     },
     [refresh],
   )

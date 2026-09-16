@@ -10,7 +10,8 @@
 
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import type { State, Voice } from './api'
+import { refuses } from './testRefusal'
+import type { Refused, State, Voice } from './api'
 import { layOut, unlayOut } from './testLayout'
 import { watching } from './testState'
 import { nothingMade } from './making'
@@ -18,7 +19,7 @@ import { nothingMade } from './making'
 const state = vi.fn<() => Promise<State | null>>()
 const setMuted = vi.fn<(muted: boolean) => Promise<void>>()
 const setVolume = vi.fn<(level: number) => Promise<void>>()
-const selectVoice = vi.fn<(name: string) => Promise<void>>()
+const selectVoice = vi.fn<(name: string, refused: Refused) => Promise<void>>()
 const voices = vi.fn<() => Promise<Voice[]>>()
 const takeKeyboard = vi.fn<() => Promise<void>>()
 const quit = vi.fn<() => Promise<void>>()
@@ -32,7 +33,7 @@ vi.mock('./api', () => ({
     state: () => state(),
     setMuted: (muted: boolean) => setMuted(muted),
     setVolume: (level: number) => setVolume(level),
-    selectVoice: (name: string) => selectVoice(name),
+    selectVoice: (name: string, refused: Refused) => selectVoice(name, refused),
     takeKeyboard: () => takeKeyboard(),
     quit: () => quit(),
     minimiseToTray: () => minimiseToTray(),
@@ -182,7 +183,7 @@ describe('the shell', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /^Cast Hugo/ }))
 
-    await waitFor(() => expect(selectVoice).toHaveBeenCalledWith('Hugo'))
+    await waitFor(() => expect(selectVoice).toHaveBeenCalledWith('Hugo', expect.any(Function)))
     await waitFor(() => expect(state.mock.calls.length).toBeGreaterThan(1))
   })
 
@@ -191,7 +192,7 @@ describe('the shell', () => {
   // naming the voice that has stopped speaking.
   it('re-reads the state even when the cast reports a failure', async () => {
     voices.mockResolvedValue([hugo])
-    selectVoice.mockRejectedValue(new Error('the disk is full'))
+    selectVoice.mockImplementation(refuses('Error: the disk is full', undefined))
     await show()
     const before = state.mock.calls.length
 

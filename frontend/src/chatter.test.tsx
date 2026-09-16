@@ -7,19 +7,21 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import type { Chatter, CueEntry } from './api'
+import { refuses } from './testRefusal'
+import type { Chatter, CueEntry, Refused } from './api'
 
 const chatter = vi.fn<() => Promise<Chatter>>()
-const setMoment = vi.fn<(id: string, on: boolean) => Promise<Chatter>>()
-const setCategory = vi.fn<(name: string, on: boolean) => Promise<Chatter>>()
-const setAllMoments = vi.fn<(on: boolean) => Promise<Chatter>>()
+const setMoment = vi.fn<(id: string, on: boolean, refused: Refused) => Promise<Chatter | null>>()
+const setCategory =
+  vi.fn<(name: string, on: boolean, refused: Refused) => Promise<Chatter | null>>()
+const setAllMoments = vi.fn<(on: boolean, refused: Refused) => Promise<Chatter | null>>()
 
 vi.mock('./api', () => ({
   api: {
     chatter: () => chatter(),
-    setMoment: (id: string, on: boolean) => setMoment(id, on),
-    setCategory: (name: string, on: boolean) => setCategory(name, on),
-    setAllMoments: (on: boolean) => setAllMoments(on),
+    setMoment: (id: string, on: boolean, refused: Refused) => setMoment(id, on, refused),
+    setCategory: (name: string, on: boolean, refused: Refused) => setCategory(name, on, refused),
+    setAllMoments: (on: boolean, refused: Refused) => setAllMoments(on, refused),
   },
 }))
 
@@ -146,11 +148,11 @@ describe('the chatter pane', () => {
 
     fireEvent.click(switchNamed('Docked'))
     await waitFor(() => expect(checked('Docked')).toBe('false'))
-    expect(setMoment).toHaveBeenLastCalledWith('Docked', false)
+    expect(setMoment).toHaveBeenLastCalledWith('Docked', false, expect.any(Function))
 
     fireEvent.click(switchNamed('Docked'))
     await waitFor(() => expect(checked('Docked')).toBe('true'))
-    expect(setMoment).toHaveBeenLastCalledWith('Docked', true)
+    expect(setMoment).toHaveBeenLastCalledWith('Docked', true, expect.any(Function))
   })
 
   // FR-730.
@@ -175,7 +177,7 @@ describe('the chatter pane', () => {
     fireEvent.click(within(question).getByRole('button', { name: 'Switch 2 off' }))
 
     await waitFor(() => expect(checked('Session')).toBe('false'))
-    expect(setCategory).toHaveBeenCalledWith('Session', false)
+    expect(setCategory).toHaveBeenCalledWith('Session', false, expect.any(Function))
     expect(checked('Load game')).toBe('false')
     expect(checked('Shutdown')).toBe('false')
     expect(checked('Docked')).toBe('true')
@@ -189,7 +191,7 @@ describe('the chatter pane', () => {
     fireEvent.click(switchNamed('Session'))
 
     await waitFor(() => expect(checked('Session')).toBe('false'))
-    expect(setCategory).toHaveBeenCalledWith('Session', false)
+    expect(setCategory).toHaveBeenCalledWith('Session', false, expect.any(Function))
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
@@ -206,7 +208,7 @@ describe('the chatter pane', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Switch all off' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Switch 4 off' }))
     await waitFor(() => expect(checked('Docked')).toBe('false'))
-    expect(setAllMoments).toHaveBeenLastCalledWith(false)
+    expect(setAllMoments).toHaveBeenLastCalledWith(false, expect.any(Function))
   })
 
   // FR-733.
@@ -287,7 +289,7 @@ describe('the chatter pane', () => {
   })
 
   it('draws a refused switch as a refusal', async () => {
-    setMoment.mockRejectedValue('no such moment: Docked')
+    setMoment.mockImplementation(refuses('no such moment: Docked', null))
     await shown()
 
     fireEvent.click(switchNamed('Docked'))

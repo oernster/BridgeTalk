@@ -241,7 +241,7 @@ export function SettingsPane({ state }: { state: State | null }) {
 
   const setBoot = (wanted: boolean) => {
     setBootProblem('')
-    void api.setLaunchOnBoot(wanted).catch((reason: unknown) => setBootProblem(String(reason)))
+    void api.setLaunchOnBoot(wanted, setBootProblem)
   }
 
   return (

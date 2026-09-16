@@ -6,24 +6,25 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import type { Checklist, CueEntry } from './api'
+import type { Checklist, CueEntry, Refused } from './api'
 import { chooser, docked, fromPlugin, hyperspace, progress } from './missingTakesFixtures'
 
-const voiceDirectories = vi.fn<() => Promise<string[]>>()
-const checklist = vi.fn<(voice: string) => Promise<Checklist>>()
+const voiceDirectories = vi.fn<(refused: Refused) => Promise<string[] | null>>()
+const checklist = vi.fn<(voice: string, refused: Refused) => Promise<Checklist | null>>()
 const pluginChecklist = vi.fn<() => Promise<Checklist>>()
-const openMomentFolder = vi.fn<(voice: string, id: string) => Promise<void>>()
-const rescan = vi.fn<() => Promise<number>>()
-const chooseLibraryRoot = vi.fn<() => Promise<string>>()
+const openMomentFolder = vi.fn<(voice: string, id: string, refused: Refused) => Promise<void>>()
+const rescan = vi.fn<(refused: Refused) => Promise<number | null>>()
+const chooseLibraryRoot = vi.fn<(refused: Refused) => Promise<string | null>>()
 
 vi.mock('./api', () => ({
   api: {
-    voiceDirectories: () => voiceDirectories(),
-    checklist: (voice: string) => checklist(voice),
+    voiceDirectories: (refused: Refused) => voiceDirectories(refused),
+    checklist: (voice: string, refused: Refused) => checklist(voice, refused),
     pluginChecklist: () => pluginChecklist(),
-    openMomentFolder: (voice: string, id: string) => openMomentFolder(voice, id),
-    rescan: () => rescan(),
-    chooseLibraryRoot: () => chooseLibraryRoot(),
+    openMomentFolder: (voice: string, id: string, refused: Refused) =>
+      openMomentFolder(voice, id, refused),
+    rescan: (refused: Refused) => rescan(refused),
+    chooseLibraryRoot: (refused: Refused) => chooseLibraryRoot(refused),
   },
 }))
 

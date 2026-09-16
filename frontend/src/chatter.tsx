@@ -6,7 +6,7 @@
 // describes, which keeps the window from showing a switch the application does not hold.
 
 import { useEffect, useState } from 'react'
-import { api, type Chatter, type ChatterCategory, type ChatterMoment } from './api'
+import { api, type Chatter, type ChatterCategory, type ChatterMoment, type Refused } from './api'
 import { Dialog, ReadingBody } from './dialogs'
 
 /** switchedOn counts the moments switched on. */
@@ -20,7 +20,7 @@ interface Change {
   on: boolean
   changes: number
   where: string
-  make: () => Promise<Chatter>
+  make: (refused: Refused) => Promise<Chatter | null>
 }
 
 /**
@@ -62,20 +62,19 @@ export function ChatterPane() {
   }, [])
 
   // settle shows the pane a change was answered with. A switch that applied without being kept
-  // comes back with the reason beside it (FR-633); a refusal has only its reason.
-  const settle = (made: Promise<Chatter>) => {
+  // comes back with the reason beside it (FR-633); a refusal has only its reason. It leaves the
+  // pane holding the moments it already had rather than replacing them with nothing.
+  const settle = (made: (refused: Refused) => Promise<Chatter | null>) => {
     setProblem('')
-    void made.then(
-      (answer) => {
-        setChatter(answer)
-        setProblem(answer.problem)
-      },
-      (reason: unknown) => setProblem(String(reason)),
-    )
+    void made(setProblem).then((answer) => {
+      if (answer === null) return
+      setChatter(answer)
+      setProblem(answer.problem)
+    })
   }
 
   // ask makes a change of one moment at once and asks before any larger one (FR-733).
-  const ask = (change: Change) => (change.changes > 1 ? setAsking(change) : settle(change.make()))
+  const ask = (change: Change) => (change.changes > 1 ? setAsking(change) : settle(change.make))
 
   const categories = chatter?.categories ?? []
   const moments = categories.flatMap((category) => category.moments)
@@ -91,12 +90,17 @@ export function ChatterPane() {
       on: wanted,
       changes: wanted ? category.moments.length : lit,
       where: ` in ${category.name}`,
-      make: () => api.setCategory(category.name, wanted),
+      make: (refused: Refused) => api.setCategory(category.name, wanted, refused),
     })
   }
 
   const pressAll = (wanted: boolean) =>
-    ask({ on: wanted, changes: wanted ? off : on, where: '', make: () => api.setAllMoments(wanted) })
+    ask({
+      on: wanted,
+      changes: wanted ? off : on,
+      where: '',
+      make: (refused: Refused) => api.setAllMoments(wanted, refused),
+    })
 
   const state = asking?.on ? 'on' : 'off'
 
@@ -154,7 +158,9 @@ export function ChatterPane() {
                 <Switch
                   name={moment.cue.title}
                   on={moment.on}
-                  onPress={() => settle(api.setMoment(moment.cue.id, !moment.on))}
+                  onPress={() =>
+                    settle((refused) => api.setMoment(moment.cue.id, !moment.on, refused))
+                  }
                 />
               </div>
             ))}
@@ -178,7 +184,7 @@ export function ChatterPane() {
               data-stop
               type="button"
               onClick={() => {
-                if (asking !== null) settle(asking.make())
+                if (asking !== null) settle(asking.make)
                 setAsking(null)
               }}
             >

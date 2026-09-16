@@ -54,7 +54,7 @@ describe('the audition pane with machine voices', () => {
     await waitFor(() => expect(machineAuditionGroups).toHaveBeenCalled())
     fireEvent.click(await screen.findByRole('button', { name: /Shields/ }))
 
-    await waitFor(() => expect(auditionMachineVoice).toHaveBeenCalledWith('bf_emma', 'shields'))
+    await waitFor(() => expect(auditionMachineVoice).toHaveBeenCalledWith('bf_emma', 'shields', expect.any(Function)))
     expect(auditionGroups).not.toHaveBeenCalled()
     expect(audition).not.toHaveBeenCalled()
   })
@@ -93,16 +93,22 @@ describe('the audition pane with machine voices', () => {
     machineVoices.mockResolvedValue([emma])
     render(<AuditionPane cast="bf_emma" machine />)
     const button = (await screen.findByRole('button', { name: /Shields/ })) as HTMLButtonElement
-    let refuse: (reason: Error) => void = () => undefined
-    auditionMachineVoice.mockReturnValue(
-      new Promise<Audition | null>((_, reject) => {
-        refuse = reject
-      }),
+    // The call is held open while the line is made, then refused the way the api refuses: the
+    // handler is told why and the call answers with nothing, rather than rejecting.
+    let refuse: (reason: string) => void = () => undefined
+    auditionMachineVoice.mockImplementation(
+      (_id, _group, refused) =>
+        new Promise<Audition | null>((resolve) => {
+          refuse = (reason) => {
+            refused(reason)
+            resolve(null)
+          }
+        }),
     )
 
     fireEvent.click(button)
     await waitFor(() => expect(groupButton(/Combat/).disabled).toBe(true))
-    await act(async () => refuse(new Error('reading bf_emma.bin: missing')))
+    await act(async () => refuse('reading bf_emma.bin: missing'))
 
     expect(await screen.findByText(/reading bf_emma.bin: missing/)).toBeTruthy()
     expect(groupButton(/Combat/).disabled).toBe(false)

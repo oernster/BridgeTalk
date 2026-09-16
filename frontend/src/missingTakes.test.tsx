@@ -7,24 +7,26 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { Checklist, CueEntry } from './api'
+import type { Checklist, CueEntry, Refused } from './api'
 import { chooser, docked, hyperspace, progress, undocked } from './missingTakesFixtures'
+import { refuses } from './testRefusal'
 
-const voiceDirectories = vi.fn<() => Promise<string[]>>()
-const checklist = vi.fn<(voice: string) => Promise<Checklist>>()
-const openMomentFolder = vi.fn<(voice: string, id: string) => Promise<void>>()
-const rescan = vi.fn<() => Promise<number>>()
-const chooseLibraryRoot = vi.fn<() => Promise<string>>()
+const voiceDirectories = vi.fn<(refused: Refused) => Promise<string[] | null>>()
+const checklist = vi.fn<(voice: string, refused: Refused) => Promise<Checklist | null>>()
+const openMomentFolder = vi.fn<(voice: string, id: string, refused: Refused) => Promise<void>>()
+const rescan = vi.fn<(refused: Refused) => Promise<number | null>>()
+const chooseLibraryRoot = vi.fn<(refused: Refused) => Promise<string | null>>()
 const pluginChecklist = vi.fn<() => Promise<Checklist>>()
 
 vi.mock('./api', () => ({
   api: {
-    voiceDirectories: () => voiceDirectories(),
-    checklist: (voice: string) => checklist(voice),
+    voiceDirectories: (refused: Refused) => voiceDirectories(refused),
+    checklist: (voice: string, refused: Refused) => checklist(voice, refused),
     pluginChecklist: () => pluginChecklist(),
-    openMomentFolder: (voice: string, id: string) => openMomentFolder(voice, id),
-    rescan: () => rescan(),
-    chooseLibraryRoot: () => chooseLibraryRoot(),
+    openMomentFolder: (voice: string, id: string, refused: Refused) =>
+      openMomentFolder(voice, id, refused),
+    rescan: (refused: Refused) => rescan(refused),
+    chooseLibraryRoot: (refused: Refused) => chooseLibraryRoot(refused),
   },
 }))
 
@@ -106,7 +108,7 @@ describe('the recordings directory on the missing takes pane', () => {
   // The fault this guards was silence: a directory with no voices refused in the body
   // colour read as a button that did nothing.
   it('says why a directory was refused, as a refusal under its own row', async () => {
-    chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
+    chooseLibraryRoot.mockImplementation(refuses('no voices in D:/Empty', null))
     render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
 
     browse()
@@ -131,7 +133,7 @@ describe('the recordings directory on the missing takes pane', () => {
   })
 
   it('clears what the last press said before the next one answers', async () => {
-    chooseLibraryRoot.mockRejectedValue('no voices in D:/Empty')
+    chooseLibraryRoot.mockImplementation(refuses('no voices in D:/Empty', null))
     render(<MissingTakesPane cast="Oliver" plugin="" libraryRoot="D:/Recordings" />)
     browse()
     await screen.findByRole('alert')
@@ -198,12 +200,12 @@ describe('the missing takes pane', () => {
       }),
     )
 
-    expect(openMomentFolder).toHaveBeenCalledWith('Oliver', 'StartJump.JumpType.Hyperspace')
+    expect(openMomentFolder).toHaveBeenCalledWith('Oliver', 'StartJump.JumpType.Hyperspace', expect.any(Function))
   })
 
   // FR-315.
   it('draws a folder that could not be opened as a refusal', async () => {
-    openMomentFolder.mockRejectedValue('that folder could not be made')
+    openMomentFolder.mockImplementation(refuses('that folder could not be made', undefined))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Open the folder for Docked' }))
@@ -275,14 +277,14 @@ describe('the missing takes pane', () => {
   })
 
   it('draws voice folders that could not be read as a refusal', async () => {
-    voiceDirectories.mockRejectedValue('the recordings directory could not be read')
+    voiceDirectories.mockImplementation(refuses('the recordings directory could not be read', null))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/directory could not be read/)
   })
 
   it('draws a checklist that could not be read as a refusal', async () => {
-    checklist.mockRejectedValue('that voice folder could not be read')
+    checklist.mockImplementation(refuses('that voice folder could not be read', null))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/folder could not be read/)
@@ -291,7 +293,7 @@ describe('the missing takes pane', () => {
   // A refusal belongs to the attempt that met it, so the next attempt takes it down
   // rather than leaving an old reason on screen beside a list that has since loaded.
   it('takes a refusal down when the next look begins', async () => {
-    checklist.mockRejectedValueOnce('that voice folder could not be read')
+    checklist.mockImplementationOnce(refuses('that voice folder could not be read', null))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByRole('alert')
 
@@ -302,7 +304,7 @@ describe('the missing takes pane', () => {
   })
 
   it('takes a refusal down when the next open begins', async () => {
-    openMomentFolder.mockRejectedValueOnce('that folder could not be made')
+    openMomentFolder.mockImplementationOnce(refuses('that folder could not be made', undefined))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
     const button = await screen.findByRole('button', { name: 'Open the folder for Docked' })
     fireEvent.click(button)
@@ -328,7 +330,7 @@ describe('the missing takes pane', () => {
 
   // A rescan refused for want of a voice is no reason to leave a stale list on screen.
   it('reads the lists again even when the rescan is refused', async () => {
-    rescan.mockRejectedValue('no voice was found')
+    rescan.mockImplementation(refuses('no voice was found', null))
     render(<MissingTakesPane cast="Oliver" plugin="" />)
     await screen.findByText('Oliver has recordings for 1 of 3 moments.')
     fixture.Oliver = [hyperspace]

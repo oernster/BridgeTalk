@@ -78,9 +78,7 @@ export function MachineVoices({
 
   const cast = (id: string) => {
     setOutcome(null)
-    void api
-      .castMachineVoice(id)
-      .catch((reason: unknown) => setOutcome({ refused: true, text: String(reason) }))
+    void api.castMachineVoice(id, (reason) => setOutcome({ refused: true, text: reason }))
   }
 
   const castVoice = machine ? voices.find((voice) => voice.id === active) : undefined

@@ -4,16 +4,18 @@
 import { vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import type { Audition, Group, MachineVoice, Voice } from './api'
+import type { Audition, Group, MachineVoice, Refused, Voice } from './api'
 
 export const voices = vi.fn<() => Promise<Voice[]>>()
 export const auditionGroups = vi.fn<(voice: string) => Promise<Group[]>>()
-export const audition = vi.fn<(voice: string, group: string) => Promise<Audition | null>>()
+export const audition =
+  vi.fn<(voice: string, group: string, refused: Refused) => Promise<Audition | null>>()
 export const stopAudition = vi.fn<() => Promise<void>>()
 export const playing = vi.fn<() => Promise<boolean>>()
 export const machineVoices = vi.fn<() => Promise<MachineVoice[]>>()
 export const machineAuditionGroups = vi.fn<() => Promise<Group[]>>()
-export const auditionMachineVoice = vi.fn<(id: string, group: string) => Promise<Audition | null>>()
+export const auditionMachineVoice =
+  vi.fn<(id: string, group: string, refused: Refused) => Promise<Audition | null>>()
 
 /** handlers holds whatever the pane subscribed to, so a test can raise the event. */
 export const handlers = new Map<string, (...data: unknown[]) => void>()
@@ -23,12 +25,13 @@ export const mockedApi = {
   api: {
     voices: () => voices(),
     auditionGroups: (voice: string) => auditionGroups(voice),
-    audition: (voice: string, group: string) => audition(voice, group),
+    audition: (voice: string, group: string, refused: Refused) => audition(voice, group, refused),
     stopAudition: () => stopAudition(),
     playing: () => playing(),
     machineVoices: () => machineVoices(),
     machineAuditionGroups: () => machineAuditionGroups(),
-    auditionMachineVoice: (id: string, group: string) => auditionMachineVoice(id, group),
+    auditionMachineVoice: (id: string, group: string, refused: Refused) =>
+      auditionMachineVoice(id, group, refused),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)

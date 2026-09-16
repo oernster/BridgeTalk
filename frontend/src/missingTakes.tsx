@@ -48,14 +48,18 @@ export function MissingTakesPane({
 
   useEffect(() => {
     void api
-      .voiceDirectories()
-      .then((found) => Promise.all(found.map((name) => api.checklist(name))))
-      // The cast plugin voice's list comes first, since it is the voice speaking. Nothing is
-      // asked for where no plugin voice is cast, which is almost every run.
-      .then(async (folders) =>
-        plugin === '' ? folders : [await api.pluginChecklist(), ...folders],
-      )
-      .then((read) => {
+      .voiceDirectories(setProblem)
+      .then(async (found) => {
+        // Nothing back means the folders could not be read, which setProblem has already said.
+        // The lists are left as they were rather than replaced with an empty set, since "no
+        // voices" is a claim about the directory and this run has not read it.
+        if (found === null) return
+        const folders = await Promise.all(found.map((name) => api.checklist(name, setProblem)))
+        // A folder whose list was refused is left out rather than shown as complete; the reason
+        // is already said above. The cast plugin voice's list comes first, since it is the voice
+        // speaking; nothing is asked of a plugin where none is cast, which is almost every run.
+        const kept = folders.filter((list): list is Checklist => list !== null)
+        const read = plugin === '' ? kept : [await api.pluginChecklist(), ...kept]
         setLists(read)
         const offered = stillMissing(read).map((list) => list.voice)
         // The voice already chosen survives a look while it still misses something;
@@ -64,25 +68,20 @@ export function MissingTakesPane({
           offered.includes(current) ? current : offered.includes(cast) ? cast : (offered[0] ?? ''),
         )
       })
-      .catch((reason: unknown) => setProblem(String(reason)))
   }, [cast, plugin, looks])
 
   // A look reads the recordings directory again for the whole window, so a voice filled
   // here appears on the Cast pane too. The lists are read again whatever that finds.
+  // A scan that is refused still leads to a look: the lists are read again whatever the scan
+  // found, which is what it did before it could be refused at all.
   const look = () => {
     setProblem('')
-    void api
-      .rescan()
-      .then(
-        () => undefined,
-        () => undefined,
-      )
-      .then(() => setLooks((count) => count + 1))
+    void api.rescan(setProblem).then(() => setLooks((count) => count + 1))
   }
 
   const open = (id: string) => {
     setProblem('')
-    void api.openMomentFolder(voice, id).catch((reason: unknown) => setProblem(String(reason)))
+    void api.openMomentFolder(voice, id, setProblem)
   }
 
   // A directory taken here has already been read by the time it is answered, so its

@@ -9,6 +9,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { refuses } from './testRefusal'
 import type { Voice } from './api'
 import {
   audition,
@@ -95,7 +96,7 @@ describe('the audition pane', () => {
 
     fireEvent.click(groupButton(/Shields/))
 
-    await waitFor(() => expect(audition).toHaveBeenCalledWith('Grace', 'shields'))
+    await waitFor(() => expect(audition).toHaveBeenCalledWith('Grace', 'shields', expect.any(Function)))
   })
 
   // The pulse stays on until the backend says the sound has stopped. Clearing it when
@@ -182,7 +183,7 @@ describe('the audition pane', () => {
   // clears the pulse, frees the buttons and says what went wrong.
   it('reports a refused clip and puts the pulse out', async () => {
     await show()
-    audition.mockRejectedValue(new Error('the device is busy'))
+    audition.mockImplementation(refuses('Error: the device is busy', null))
     const button = groupButton(/Shields/)
 
     fireEvent.click(button)

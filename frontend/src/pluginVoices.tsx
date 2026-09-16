@@ -34,9 +34,9 @@ export function PluginVoices({ active, plugin }: { active: string; plugin: strin
 
   const cast = (voice: PluginVoice) => {
     setOutcome(null)
-    void api
-      .castPluginVoice(voice.plugin, voice.id)
-      .catch((reason: unknown) => setOutcome({ refused: true, text: String(reason) }))
+    void api.castPluginVoice(voice.plugin, voice.id, (reason) =>
+      setOutcome({ refused: true, text: reason }),
+    )
   }
 
   if (voices.length === 0) return null

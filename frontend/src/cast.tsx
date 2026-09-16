@@ -155,36 +155,32 @@ export function CastPane({
     })
   }, [active, looks])
 
-  const refused = (reason: unknown) => setOutcome({ refused: true, text: String(reason) })
+  const refused = (reason: string) => setOutcome({ refused: true, text: reason })
 
   const make = () => {
     setOutcome(null)
-    void api
-      .makeVoiceFolders(name)
-      .then((answer) => {
-        // An empty path means nothing was made, which only happens outside the window
-        // where no bridge stands behind the page; there is nothing to report.
-        if (answer.path === '') return
-        setOutcome({ refused: false, text: madeText(answer) })
-      })
-      .catch(refused)
+    void api.makeVoiceFolders(name, refused).then((answer) => {
+      // Nothing back means the folders were not made: refused, which `refused` has already
+      // said, else no bridge behind the page at all. Either way there is nothing to report
+      // here. An empty path is the same answer from a bridge that made nothing.
+      if (answer === null || answer.path === '') return
+      setOutcome({ refused: false, text: madeText(answer) })
+    })
   }
 
   const look = () => {
     setOutcome(null)
-    void api
-      .rescan()
-      .then((found) => {
-        setLooks((count) => count + 1)
-        setOutcome({
-          refused: false,
-          text:
-            found === 0
-              ? 'No voice was found. A voice appears once one of its folders holds a recording.'
-              : `Found ${counted(found, 'voice', 'voices')}.`,
-        })
+    void api.rescan(refused).then((found) => {
+      if (found === null) return
+      setLooks((count) => count + 1)
+      setOutcome({
+        refused: false,
+        text:
+          found === 0
+            ? 'No voice was found. A voice appears once one of its folders holds a recording.'
+            : `Found ${counted(found, 'voice', 'voices')}.`,
       })
-      .catch(refused)
+    })
   }
 
   return (

@@ -4,19 +4,20 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import type { MachineVoice, Making } from './api'
+import { refuses } from './testRefusal'
+import type { MachineVoice, Making, Refused } from './api'
 import { nothingMade } from './making'
 
 const machineVoices = vi.fn<() => Promise<MachineVoice[]>>()
 const making = vi.fn<() => Promise<Making>>()
-const castMachineVoice = vi.fn<(id: string) => Promise<void>>()
+const castMachineVoice = vi.fn<(id: string, refused: Refused) => Promise<void>>()
 const handlers = new Map<string, (...data: unknown[]) => void>()
 
 vi.mock('./api', () => ({
   api: {
     machineVoices: () => machineVoices(),
     making: () => making(),
-    castMachineVoice: (id: string) => castMachineVoice(id),
+    castMachineVoice: (id: string, refused: Refused) => castMachineVoice(id, refused),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -97,7 +98,7 @@ describe('the machine voices', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Cast Emma (British, female)' }))
 
-    expect(castMachineVoice).toHaveBeenCalledWith('bf_emma')
+    expect(castMachineVoice).toHaveBeenCalledWith('bf_emma', expect.any(Function))
   })
 
   // FR-721: the cast voice leaves its panel for a card above them all, which is not a control; a
@@ -160,7 +161,9 @@ describe('the machine voices', () => {
 
   // FR-519: a refused cast says why.
   it('says why a machine voice could not be cast', async () => {
-    castMachineVoice.mockRejectedValue('reading bf_emma.bin: the file is missing')
+    castMachineVoice.mockImplementation(
+      refuses('reading bf_emma.bin: the file is missing', undefined),
+    )
     await show()
 
     fireEvent.click(screen.getByRole('button', { name: 'Cast Emma (British, female)' }))

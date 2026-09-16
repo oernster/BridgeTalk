@@ -7,6 +7,7 @@
 // the journal were the thing that had gone wrong.
 
 import { useState } from 'react'
+import type { Refused } from './api'
 
 /**
  * Outcome is what a press of Browse came to; null where the row has not answered.
@@ -26,7 +27,7 @@ export type Outcome = { refused: boolean; text: string } | null
  * knows they cancelled. onTaken runs once a directory is accepted.
  */
 export function useChooser(
-  pick: () => Promise<string>,
+  pick: (refused: Refused) => Promise<string | null>,
   what: string,
   onTaken?: () => void,
 ): [Outcome, () => void] {
@@ -34,17 +35,18 @@ export function useChooser(
 
   const browse = () => {
     setOutcome(null)
-    void pick()
-      .then((taken) => {
-        if (taken === '') {
-          return
-        }
-        // FR-234: the row above already shows the new path, since both choosers announce
-        // the new state before they answer; saying it again here would repeat it.
-        setOutcome({ refused: false, text: `${what} was changed.` })
-        onTaken?.()
-      })
-      .catch((reason: unknown) => setOutcome({ refused: true, text: String(reason) }))
+    void pick((reason) => setOutcome({ refused: true, text: reason })).then((taken) => {
+      // Nothing back is a directory that was not taken: refused, which the handler above has
+      // already said, else no window to open a chooser in. An empty string is the third quiet
+      // case, a dialog the reader cancelled.
+      if (taken === null || taken === '') {
+        return
+      }
+      // FR-234: the row above already shows the new path, since both choosers announce
+      // the new state before they answer; saying it again here would repeat it.
+      setOutcome({ refused: false, text: `${what} was changed.` })
+      onTaken?.()
+    })
   }
 
   return [outcome, browse]

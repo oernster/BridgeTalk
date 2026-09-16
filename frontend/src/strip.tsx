@@ -62,7 +62,7 @@ export function Strip({ state }: { state: State | null }) {
   }, [played, donateFailedAt])
 
   const donate = () => {
-    void api.openDonation().catch(() => {
+    void api.openDonation(() => {
       const at = Date.now()
       setDonateFailedAt(at)
       setNow(at)

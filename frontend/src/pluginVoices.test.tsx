@@ -4,15 +4,18 @@
 
 import { beforeEach, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import type { PluginVoice } from './api'
+import { refuses } from './testRefusal'
+import type { PluginVoice, Refused } from './api'
 
 const pluginVoices = vi.fn<() => Promise<PluginVoice[]>>()
-const castPluginVoice = vi.fn<(plugin: string, id: string) => Promise<void>>()
+const castPluginVoice =
+  vi.fn<(plugin: string, id: string, refused: Refused) => Promise<void>>()
 
 vi.mock('./api', () => ({
   api: {
     pluginVoices: () => pluginVoices(),
-    castPluginVoice: (plugin: string, id: string) => castPluginVoice(plugin, id),
+    castPluginVoice: (plugin: string, id: string, refused: Refused) =>
+      castPluginVoice(plugin, id, refused),
   },
 }))
 
@@ -72,7 +75,7 @@ it('casts a voice by its plugin and its id within it', async () => {
 
   fireEvent.click(screen.getByRole('button', { name: /The Pilot/ }))
 
-  expect(castPluginVoice).toHaveBeenCalledWith('Flight Deck', 'two')
+  expect(castPluginVoice).toHaveBeenCalledWith('Flight Deck', 'two', expect.any(Function))
 })
 
 // The cast voice stands on a card rather than among the pills, so pressing it again is not
@@ -116,7 +119,9 @@ it('shows each voice by the name the facade worked out', async () => {
 
 // A refusal is the reason the facade gave, said where the reader is looking rather than swallowed.
 it('says why a cast was refused', async () => {
-  castPluginVoice.mockRejectedValue('The First Officer cannot speak: no audio')
+  castPluginVoice.mockImplementation(
+    refuses('The First Officer cannot speak: no audio', undefined),
+  )
   await show([officer])
 
   fireEvent.click(screen.getByRole('button', { name: /The First Officer/ }))

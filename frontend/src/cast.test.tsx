@@ -7,20 +7,22 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { CueBreakdown, Voice, VoiceFolders } from './api'
+import { refuses } from './testRefusal'
+import type { CueBreakdown, Refused, Voice, VoiceFolders } from './api'
 import { nothingMade } from './making'
 
 const voices = vi.fn<() => Promise<Voice[]>>()
 const cueBreakdown = vi.fn<(name: string) => Promise<CueBreakdown>>()
-const makeVoiceFolders = vi.fn<(name: string) => Promise<VoiceFolders>>()
-const rescan = vi.fn<() => Promise<number>>()
+const makeVoiceFolders =
+  vi.fn<(name: string, refused: Refused) => Promise<VoiceFolders | null>>()
+const rescan = vi.fn<(refused: Refused) => Promise<number | null>>()
 
 vi.mock('./api', () => ({
   api: {
     voices: () => voices(),
     cueBreakdown: (name: string) => cueBreakdown(name),
-    makeVoiceFolders: (name: string) => makeVoiceFolders(name),
-    rescan: () => rescan(),
+    makeVoiceFolders: (name: string, refused: Refused) => makeVoiceFolders(name, refused),
+    rescan: (refused: Refused) => rescan(refused),
     machineVoices: () => Promise.resolve([]),
     pluginVoices: () => Promise.resolve([]),
     making: () => Promise.resolve(nothingMade),
@@ -234,7 +236,7 @@ describe('making a voice', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Make folders' }))
 
     const said = await screen.findByRole('status')
-    expect(makeVoiceFolders).toHaveBeenCalledWith('Oliver')
+    expect(makeVoiceFolders).toHaveBeenCalledWith('Oliver', expect.any(Function))
     expect(said.textContent).toMatch(/^Made 256 folders in D:\/Recordings\/Oliver/)
     expect(said.textContent).toMatch(/then press Refresh\.$/)
   })
@@ -265,7 +267,9 @@ describe('making a voice', () => {
 
   // FR-225: a refused name is drawn as a refusal, not as body prose.
   it('draws a refused name as a refusal', async () => {
-    makeVoiceFolders.mockRejectedValue('"a/b" holds \'/\', which a folder name cannot')
+    makeVoiceFolders.mockImplementation(
+      refuses('"a/b" holds \'/\', which a folder name cannot', null),
+    )
     await show([])
 
     typeName('a/b')
@@ -313,7 +317,7 @@ describe('making a voice', () => {
   })
 
   it('draws a look that could not be taken as a refusal', async () => {
-    rescan.mockRejectedValue('no recordings directory is chosen yet')
+    rescan.mockImplementation(refuses('no recordings directory is chosen yet', null))
     await show([])
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))

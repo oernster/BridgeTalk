@@ -84,46 +84,49 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** said stands where a test only checks a call reaches the bridge; nothing is refused there. */
+const said = (): void => undefined
+
 describe('with the window bridge present', () => {
   it('sends every call through to the method it names', async () => {
     const calls = installBridge()
 
     await api.state()
     await api.voices()
-    await api.selectVoice('Alpha')
+    await api.selectVoice('Alpha', said)
     await api.machineVoices()
-    await api.castMachineVoice('bf_emma')
+    await api.castMachineVoice('bf_emma', said)
     await api.pluginVoices()
-    await api.castPluginVoice('Bridge Crew', 'one')
+    await api.castPluginVoice('Bridge Crew', 'one', said)
     await api.making()
     await api.setMuted(true)
     await api.volume()
     await api.setVolume(0.25)
     await api.auditionGroups('Alpha')
-    await api.audition('Alpha', 'ShieldState')
+    await api.audition('Alpha', 'ShieldState', said)
     await api.stopAudition()
     await api.machineAuditionGroups()
-    await api.auditionMachineVoice('bf_emma', 'Docked')
+    await api.auditionMachineVoice('bf_emma', 'Docked', said)
     await api.takeKeyboard()
     await api.quit()
     await api.reactions()
     await api.cueBreakdown('Alpha')
     await api.about()
     await api.licence()
-    await api.chooseLibraryRoot()
-    await api.chooseJournalDir()
-    await api.makeVoiceFolders('Alpha')
-    await api.rescan()
-    await api.voiceDirectories()
-    await api.checklist('Alpha')
-    await api.openMomentFolder('Alpha', 'Docked')
-    await api.setLaunchOnBoot(true)
+    await api.chooseLibraryRoot(said)
+    await api.chooseJournalDir(said)
+    await api.makeVoiceFolders('Alpha', said)
+    await api.rescan(said)
+    await api.voiceDirectories(said)
+    await api.checklist('Alpha', said)
+    await api.openMomentFolder('Alpha', 'Docked', said)
+    await api.setLaunchOnBoot(true, said)
     await api.minimiseToTray()
     await api.requestQuit()
     await api.chatter()
-    await api.setMoment('Docked', false)
-    await api.setCategory('Session', true)
-    await api.setAllMoments(false)
+    await api.setMoment('Docked', false, said)
+    await api.setCategory('Session', true, said)
+    await api.setAllMoments(false, said)
 
     expect(calls.map((call) => call.name)).toEqual([
       'State',
@@ -168,18 +171,18 @@ describe('with the window bridge present', () => {
   it('carries the arguments each call was given', async () => {
     const calls = installBridge()
 
-    await api.selectVoice('Beta')
-    await api.castMachineVoice('am_michael')
+    await api.selectVoice('Beta', said)
+    await api.castMachineVoice('am_michael', said)
     await api.setMuted(false)
     await api.setVolume(0.75)
     await api.auditionGroups('Beta')
-    await api.audition('Beta', 'combat')
-    await api.auditionMachineVoice('am_michael', 'combat')
+    await api.audition('Beta', 'combat', said)
+    await api.auditionMachineVoice('am_michael', 'combat', said)
     await api.cueBreakdown('Beta')
-    await api.makeVoiceFolders('Beta')
-    await api.checklist('Beta')
-    await api.openMomentFolder('Beta', 'Docked')
-    await api.setLaunchOnBoot(false)
+    await api.makeVoiceFolders('Beta', said)
+    await api.checklist('Beta', said)
+    await api.openMomentFolder('Beta', 'Docked', said)
+    await api.setLaunchOnBoot(false, said)
 
     expect(calls.map((call) => call.args)).toEqual([
       ['Beta'],
@@ -207,23 +210,23 @@ describe('with the window bridge present', () => {
     expect(await api.making()).toEqual({ voice: 'bf_emma' })
     expect(await api.volume()).toBe(0.5)
     expect(await api.auditionGroups('Alpha')).toEqual([{ key: 'ShieldState' }])
-    expect(await api.audition('Alpha', 'ShieldState')).toEqual({
+    expect(await api.audition('Alpha', 'ShieldState', said)).toEqual({
       group: 'ShieldState',
       clip: 'a.mp3',
     })
     expect(await api.machineAuditionGroups()).toEqual([{ key: 'Docked' }])
-    expect(await api.auditionMachineVoice('bf_emma', 'Docked')).toEqual({
+    expect(await api.auditionMachineVoice('bf_emma', 'Docked', said)).toEqual({
       group: 'Docked',
       clip: 'k.flac',
     })
     expect(await api.reactions()).toEqual([{ cue: 'ShieldState.ShieldsUp.false' }])
     expect(await api.about()).toEqual({ name: 'the application' })
-    expect(await api.chooseLibraryRoot()).toBe('D:/Recordings')
-    expect(await api.chooseJournalDir()).toBe('D:/Journals')
-    expect(await api.makeVoiceFolders('Alpha')).toEqual({ path: 'D:/Recordings/Alpha', made: 3 })
-    expect(await api.rescan()).toBe(2)
-    expect(await api.voiceDirectories()).toEqual(['Alpha', 'Beta'])
-    expect(await api.checklist('Alpha')).toEqual({
+    expect(await api.chooseLibraryRoot(said)).toBe('D:/Recordings')
+    expect(await api.chooseJournalDir(said)).toBe('D:/Journals')
+    expect(await api.makeVoiceFolders('Alpha', said)).toEqual({ path: 'D:/Recordings/Alpha', made: 3 })
+    expect(await api.rescan(said)).toBe(2)
+    expect(await api.voiceDirectories(said)).toEqual(['Alpha', 'Beta'])
+    expect(await api.checklist('Alpha', said)).toEqual({
       voice: 'Alpha',
       recorded: 1,
       total: 3,
@@ -249,64 +252,86 @@ describe('with the window bridge present', () => {
   })
 })
 
+// The whole point of the handler: a call that can be refused cannot be written without one; what
+// comes back is never a rejection. A pane that forgets to catch is not a thing that can be
+// written any more, so the reader is never left watching the words a pane says while it waits.
+describe('a call the facade refuses', () => {
+  it('tells the handler why and answers with nothing', async () => {
+    installBridge({ Checklist: () => Promise.reject(new Error('reading Alpha: cannot be found')) })
+    const said: string[] = []
+
+    const answer = await api.checklist('Alpha', (reason) => said.push(reason))
+
+    expect(answer).toBeNull()
+    expect(said).toEqual(['Error: reading Alpha: cannot be found'])
+  })
+
+  it('leaves nothing to reject, so a caller that adds no catch is safe', async () => {
+    installBridge({ SelectVoice: () => Promise.reject(new Error('no voice named Zeta')) })
+    let reached = false
+
+    await api.selectVoice('Zeta', () => undefined).then(() => {
+      reached = true
+    })
+
+    expect(reached).toBe(true)
+  })
+})
+
 describe('with no window bridge at all', () => {
-  // A missing bridge means the page is being viewed outside the window. Every call
-  // has to answer with something the shell can render; the first await otherwise throws and
-  // the reader is left with a blank screen rather than an empty one.
+  // A missing bridge means the page is being viewed outside the window. Every call has to answer
+  // with something the shell can render; the first await otherwise throws and the reader is left
+  // with a blank screen rather than an empty one. A call that can be refused answers null, which
+  // is the same answer it gives for a refusal: the page cannot tell them apart and has no reason
+  // to, since neither happened.
   it('answers every call with an empty value rather than throwing', async () => {
     removeBridge()
 
     expect(await api.state()).toBeNull()
     expect(await api.voices()).toEqual([])
-    expect(await api.selectVoice('Alpha')).toBeUndefined()
+    expect(await api.selectVoice('Alpha', said)).toBeUndefined()
     expect(await api.machineVoices()).toEqual([])
-    expect(await api.castMachineVoice('bf_emma')).toBeUndefined()
+    expect(await api.castMachineVoice('bf_emma', said)).toBeUndefined()
     expect(await api.pluginVoices()).toEqual([])
-    expect(await api.castPluginVoice('Bridge Crew', 'one')).toBeUndefined()
+    expect(await api.castPluginVoice('Bridge Crew', 'one', said)).toBeUndefined()
     expect(await api.making()).toEqual(nothingMade)
     expect(await api.setMuted(true)).toBeUndefined()
     expect(await api.setVolume(0.5)).toBeUndefined()
     expect(await api.auditionGroups('Alpha')).toEqual([])
-    expect(await api.audition('Alpha', 'ShieldState')).toBeNull()
+    expect(await api.audition('Alpha', 'ShieldState', said)).toBeNull()
     expect(await api.stopAudition()).toBeUndefined()
     expect(await api.machineAuditionGroups()).toEqual([])
-    expect(await api.auditionMachineVoice('bf_emma', 'Docked')).toBeNull()
+    expect(await api.auditionMachineVoice('bf_emma', 'Docked', said)).toBeNull()
     expect(await api.takeKeyboard()).toBeUndefined()
     expect(await api.quit()).toBeUndefined()
     expect(await api.reactions()).toEqual([])
     expect(await api.about()).toBeNull()
     expect(await api.licence()).toBeNull()
-    expect(await api.rescan()).toBe(0)
-    expect(await api.voiceDirectories()).toEqual([])
-    expect(await api.openMomentFolder('Alpha', 'Docked')).toBeUndefined()
-    expect(await api.setLaunchOnBoot(true)).toBeUndefined()
+    expect(await api.rescan(said)).toBeNull()
+    expect(await api.voiceDirectories(said)).toBeNull()
+    expect(await api.openMomentFolder('Alpha', 'Docked', said)).toBeUndefined()
+    expect(await api.setLaunchOnBoot(true, said)).toBeUndefined()
     expect(await api.minimiseToTray()).toBeUndefined()
     expect(await api.requestQuit()).toBeUndefined()
-    const noChatter = { categories: [], problem: '' }
-    expect(await api.chatter()).toEqual(noChatter)
-    expect(await api.setMoment('Docked', false)).toEqual(noChatter)
-    expect(await api.setCategory('Session', true)).toEqual(noChatter)
-    expect(await api.setAllMoments(false)).toEqual(noChatter)
+    expect(await api.chatter()).toEqual({ categories: [], problem: '' })
+    expect(await api.setMoment('Docked', false, said)).toBeNull()
+    expect(await api.setCategory('Session', true, said)).toBeNull()
+    expect(await api.setAllMoments(false, said)).toBeNull()
   })
 
-  // Making folders with no bridge makes none and answers with an empty path, so the Cast
-  // pane reads it as nothing done rather than as a folder at an empty path.
+  // Making folders with no bridge makes none and answers with nothing, so the Cast pane reads it
+  // as nothing done rather than as a folder at an empty path.
   it('answers making folders with nothing made', async () => {
     removeBridge()
-    expect(await api.makeVoiceFolders('Alpha')).toEqual({ path: '', made: 0 })
+    expect(await api.makeVoiceFolders('Alpha', said)).toBeNull()
   })
 
-  // The checklist answers for the voice that was asked about, as the breakdown does, so
-  // the Missing takes pane's count still names a voice.
-  it('answers the checklist for the voice that was asked about', async () => {
+  // The checklist answers with nothing rather than an empty list for a voice nobody read. An
+  // empty list is a claim, that the folder holds a recording for no moment at all; the pane would
+  // then say a voice is complete on the strength of a call that never happened.
+  it('answers with no checklist at all rather than an empty one', async () => {
     removeBridge()
-    expect(await api.checklist('Alpha')).toEqual({
-      voice: 'Alpha',
-      recorded: 0,
-      total: 0,
-      missing: [],
-      folder: '',
-    })
+    expect(await api.checklist('Alpha', said)).toBeNull()
   })
 
   // The volume falls back to full rather than to zero. A slider that opened at
@@ -316,12 +341,13 @@ describe('with no window bridge at all', () => {
     expect(await api.volume()).toBe(1)
   })
 
-  // A cancelled chooser and a missing bridge are the same answer on purpose: an
-  // empty string, which the pane already reads as "nothing changed".
+  // A chooser that could not be opened answers with nothing, which the pane reads as it reads a
+  // refusal: nothing changed. A cancelled dialog is the other quiet case and answers an empty
+  // string, which only a bridge can give.
   it('answers the directory choosers with nothing taken', async () => {
     removeBridge()
-    expect(await api.chooseLibraryRoot()).toBe('')
-    expect(await api.chooseJournalDir()).toBe('')
+    expect(await api.chooseLibraryRoot(said)).toBeNull()
+    expect(await api.chooseJournalDir(said)).toBeNull()
   })
 
   // The breakdown answers for the voice that was asked about, so the dialog behind

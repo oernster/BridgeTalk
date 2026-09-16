@@ -92,17 +92,17 @@ export function AuditionPane({ cast, machine = false }: { cast: string; machine?
       setPlaying(group.key)
       setBusy(true)
       setFailure('')
-      // Nothing clears the pulse or frees the buttons here. audition resolves when the
-      // clip STARTS, so the end of the sound arrives later as a playback event; only a
-      // failure is known to mean no sound at all.
-      const played = machineId
-        ? api.auditionMachineVoice(machineId, group.key)
-        : api.audition(voice, group.key)
-      void played.catch((error: unknown) => {
+      // Nothing clears the pulse or frees the buttons on the way out. An audition answers when
+      // the clip STARTS, so the end of the sound arrives later as a playback event; only a
+      // refusal is known to mean no sound at all, which is what this handler is for.
+      const refused = (reason: string) => {
         setPlaying('')
         setBusy(false)
-        setFailure(String(error))
-      })
+        setFailure(reason)
+      }
+      void (machineId
+        ? api.auditionMachineVoice(machineId, group.key, refused)
+        : api.audition(voice, group.key, refused))
     },
     [voice, machineId],
   )

@@ -122,7 +122,7 @@ handed to a DLL converted only where the call into it is made.
 | `main.tsx` | 0% | 0% |
 | **all files** | **99.4%** | **96.8%** |
 
-291 tests across 26 files, run under Vitest with jsdom.
+293 tests across 26 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -143,7 +143,10 @@ No Go test uses a mocking library. Every Go double is a hand-written fake with t
 real interface behind it: `fakePlayer` for the output device, `fakeSource` for an
 event source, `fakeSettings` for the settings store, plus a recorder that captures
 what the facade emits to the front end. The front end replaces its `api` module with
-Vitest's own `vi.mock`, so a component renders without a Wails bridge behind it.
+Vitest's own `vi.mock`, so a component renders without a Wails bridge behind it. A stand-in for a
+call that can be refused answers the way the real one does, through `src/testRefusal.ts`: it tells
+the handler why and answers with nothing. A fake that rejects would be testing a shape the api no
+longer has, since nothing it answers rejects any more (ARCHITECTURE.md, Errors).
 
 **No test writes to the machine it runs on.** Every filesystem test builds its tree
 under `t.TempDir()`. Every test that would otherwise reach the user's own

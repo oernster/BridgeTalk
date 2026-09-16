@@ -55,6 +55,15 @@ Write-Host 'Vetting...'
 go vet $packages
 if ($LASTEXITCODE -ne 0) { throw "go vet failed with exit code $LASTEXITCODE" }
 
+# NFR-M-4. The version is pinned rather than taken as the latest: a checker that moved under the
+# gate could fail a change that touched nothing it reads, on the day a new release came out. Raise
+# it here on purpose, having read what the new version reports. The first run on a machine fetches
+# it; every run after reads it from the module cache.
+$staticcheckVersion = 'v0.8.1'
+Write-Host "Running staticcheck $staticcheckVersion..."
+go run "honnef.co/go/tools/cmd/staticcheck@$staticcheckVersion" $packages
+if ($LASTEXITCODE -ne 0) { throw "staticcheck failed with exit code $LASTEXITCODE" }
+
 Write-Host 'Running the whole suite...'
 go test $packages
 if ($LASTEXITCODE -ne 0) { throw "go test failed with exit code $LASTEXITCODE" }

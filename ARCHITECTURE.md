@@ -1159,8 +1159,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   against NFR-C-502. `wails build` runs the
   front end's own build script, which runs `eslint` and `tsc --noEmit` before bundling, so a lint or type
   error stops the build too.
-- Neither script runs `staticcheck` or the front-end test runner. Both are run by hand, the tests with
-  `npx vitest run` from `frontend/`; the front-end coverage report carries no threshold.
+- `test.ps1` also runs `staticcheck` (pinned at the version it names) and the front end's own
+  checks: `npm run lint`, `typecheck` and `test`. The front-end coverage report carries no threshold.
 
 ## Design decisions
 

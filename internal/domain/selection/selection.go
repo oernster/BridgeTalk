@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // Chooser supplies the randomness a take selection needs. The domain defines it so
@@ -16,10 +17,10 @@ type Chooser interface {
 	Intn(n int) int
 }
 
-// Picker chooses a take, avoiding the clip last played for the same cue (FR-610).
+// Picker chooses a take, avoiding the take last played for the same cue (FR-610).
 //
-// Avoiding only the immediately previous clip is deliberate. Remembering more would
-// make a two-clip cue silent on alternate firings; a long memory makes a large
+// Avoiding only the immediately previous take is deliberate. Remembering more would
+// make a two-take cue silent on alternate firings; a long memory makes a large
 // folder feel ordered rather than varied.
 type Picker struct {
 	chooser Chooser
@@ -31,41 +32,45 @@ func NewPicker(chooser Chooser) *Picker {
 	return &Picker{chooser: chooser, last: make(map[cue.ID]string)}
 }
 
-// Pick returns one clip for a cue; false when there is nothing to play. It records nothing;
+// Pick returns one take for a cue; false when there is nothing to play. It records nothing;
 // Played does, for the reason Open records nothing: a take picked for a firing that is then
 // let go was never heard, so it is not the take to avoid next time.
-func (p *Picker) Pick(id cue.ID, clips []string) (string, bool) {
-	switch len(clips) {
+//
+// A take is chosen whole. Its parts are one utterance rather than alternatives, so nothing
+// here chooses between them (FR-573).
+func (p *Picker) Pick(id cue.ID, takes []take.Take) (take.Take, bool) {
+	switch len(takes) {
 	case 0:
-		return "", false
+		return nil, false
 	case 1:
-		return clips[0], true
+		return takes[0], true
 	}
 
 	previous, seen := p.last[id]
 	if !seen {
-		return clips[p.chooser.Intn(len(clips))], true
+		return takes[p.chooser.Intn(len(takes))], true
 	}
 
-	// Choose from the clips that are not the previous one by picking an index into
+	// Choose from the takes that are not the previous one by picking an index into
 	// the shortened list, then stepping over the excluded entry. This draws evenly
-	// across the remaining clips with a single call to the chooser.
-	candidates := make([]string, 0, len(clips)-1)
-	for _, clip := range clips {
-		if clip != previous {
-			candidates = append(candidates, clip)
+	// across the remaining takes with a single call to the chooser.
+	candidates := make([]take.Take, 0, len(takes)-1)
+	for _, each := range takes {
+		if each.Key() != previous {
+			candidates = append(candidates, each)
 		}
 	}
 	if len(candidates) == 0 {
-		return clips[0], true
+		return takes[0], true
 	}
 	return candidates[p.chooser.Intn(len(candidates))], true
 }
 
-// Played notes that a clip was handed over to be spoken for a cue, making it the clip the
-// next Pick for that cue avoids.
-func (p *Picker) Played(id cue.ID, clip string) {
-	p.last[id] = clip
+// Played notes that a take was handed over to be spoken for a cue, making it the take the
+// next Pick for that cue avoids. A take is remembered by its key rather than by its parts,
+// so the rule that says which take this is has one home (take.Take.Key).
+func (p *Picker) Played(id cue.ID, chosen take.Take) {
+	p.last[id] = chosen.Key()
 }
 
 // CooldownGate rate-limits a cue to at most one firing per its cooldown.

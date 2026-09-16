@@ -7,6 +7,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 func TestTheAuditionPaneListsWhatAVoiceCanBeHeardOn(t *testing.T) {
@@ -147,7 +148,7 @@ func TestAPollThatStartsAReactionAnnouncesIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("building cue: %v", err)
 	}
-	app.session.scheduler.Submit(services.Request{Cue: docked, Clips: []string{"docked.mp3"}})
+	app.session.scheduler.Submit(services.Request{Cue: docked, Take: take.Of("docked.mp3")})
 
 	app.pollAndAnnounce()
 

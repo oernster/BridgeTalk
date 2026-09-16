@@ -468,9 +468,9 @@ the same cue; the scheduler hands that take's parts to the player.
 that answer is made of, played in order with no added gap (FR-573). Most takes have one part. The
 port answers takes of parts for every kind of voice, so no part of the application asks where a take
 came from before deciding what a take is. The player has always played a sequence: `Play` takes a
-list of clips and a gap, with `takeGap` at zero. What changes is that the scheduler stops keeping only
-the first clip; the picker chooses among takes rather than among files, identifying the take it
-last chose by its first part's path.
+list of clips and a gap, with `takeGap` at zero. So the change was small: the scheduler no longer
+keeps only the first clip, while the picker chooses among takes rather than among files, identifying
+the take it last chose by its first part's path (`take.Take.Key`).
 
 There is no fallback chain. A voice that recorded nothing for a cue answers it with silence and the
 reaction list records why, because a wrong line delivered confidently is worse than silence. A voice is

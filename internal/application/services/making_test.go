@@ -5,6 +5,7 @@ package services_test
 
 import (
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/domain/script/scripttest"
 	"github.com/oernster/bridge-talk/internal/domain/speech"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // The reasons the tests below refuse a voice's files and a delete with.
@@ -158,7 +160,7 @@ func TestWhileMakingTheVoiceSpeaksOnlyWhatIsMade(t *testing.T) {
 	makingtest.Await(t, maker.Started, "making starting")
 	defer service.Stop()
 
-	if takes, ok := source.Lookup("Docked"); !ok || !slices.Equal(takes, []string{store.Path(emma, makingtest.Key("bə"))}) {
+	if takes, ok := source.Lookup("Docked"); !ok || !reflect.DeepEqual(takes, []take.Take{take.Of(store.Path(emma, makingtest.Key("bə")))}) {
 		t.Errorf("Docked answered %v, %v; want the one line already made", takes, ok)
 	}
 	if _, ok := source.Lookup("Undocked"); ok {
@@ -355,7 +357,7 @@ func TestALineSharingSoundsWithOneMadeIsMadeOnce(t *testing.T) {
 	shared := store.Path(emma, makingtest.Key("bə"))
 	docked, _ := source.Lookup("Docked")
 	undocked, _ := source.Lookup("Undocked")
-	if maker.Made() != 5 || service.Progress().Current != 6 || !slices.Contains(docked, shared) || !slices.Contains(undocked, shared) {
+	if maker.Made() != 5 || service.Progress().Current != 6 || !holds(docked, shared) || !holds(undocked, shared) {
 		t.Errorf("made %d, current %d, Docked %v, Undocked %v; want one made line shared by both",
 			maker.Made(), service.Progress().Current, docked, undocked)
 	}

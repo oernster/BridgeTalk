@@ -69,12 +69,12 @@ func (a *App) acknowledge() bool {
 	if a.session.muted || a.session.player == nil || a.session.catalogue == nil {
 		return false
 	}
-	clip, ok := a.session.catalogue.Acknowledgement()
+	chosen, ok := a.session.catalogue.Acknowledgement()
 	if !ok {
 		return false
 	}
 	// Casting ends what was playing on purpose, so this is Play rather than PlayIfIdle.
-	if a.session.player.Play([]string{clip}, auditionGap) == nil {
+	if a.session.player.Play(chosen, auditionGap) == nil {
 		a.announcePlayback()
 	}
 	return true

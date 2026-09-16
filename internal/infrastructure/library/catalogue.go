@@ -6,6 +6,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/selection"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // Catalogue answers, for a cue, what the chosen voice can play for it.
@@ -34,27 +35,27 @@ func (c *Catalogue) ActiveVoice() string { return c.shown }
 
 // Clips returns the takes the source holds for a cue; false when it has none.
 func (c *Catalogue) Clips(id cue.ID) (ports.Performance, bool) {
-	clips, ok := c.source.Lookup(id)
+	takes, ok := c.source.Lookup(id)
 	if !ok {
 		return ports.Performance{}, false
 	}
-	return ports.Performance{Clips: clips}, true
+	return ports.Performance{Takes: takes}, true
 }
 
 // Acknowledgement returns one take of the acknowledgement cue, chosen at random.
 //
 // Nothing here is worth an error. A voice with no acknowledgement recorded is silent
 // when it is chosen rather than broken.
-func (c *Catalogue) Acknowledgement() (string, bool) {
+func (c *Catalogue) Acknowledgement() (take.Take, bool) {
 	id, named := c.table.Confirmation()
 	if !named {
-		return "", false
+		return nil, false
 	}
-	clips, ok := c.source.Lookup(id)
+	takes, ok := c.source.Lookup(id)
 	if !ok {
-		return "", false
+		return nil, false
 	}
-	return clips[c.chooser.Intn(len(clips))], true
+	return takes[c.chooser.Intn(len(takes))], true
 }
 
 // Coverage counts the cues this voice can serve, out of the whole table.

@@ -38,7 +38,7 @@ func mustCue(t *testing.T, id string, cooldown time.Duration) cue.Cue {
 }
 
 func TestPickerNeverRepeatsTheImmediatelyPreviousClip(t *testing.T) {
-	clips := []string{"a.mp3", "b.mp3", "c.mp3"}
+	clips := takesOf("a.mp3", "b.mp3", "c.mp3")
 	// A chooser that always asks for index 0 would repeat forever without the guard.
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
 
@@ -66,7 +66,7 @@ func TestPickerHandlesSmallFolders(t *testing.T) {
 	}
 	// A single-clip cue must keep speaking, so the no-repeat rule yields to it.
 	for range 3 {
-		clip, ok := play(picker, "one", []string{"only.mp3"})
+		clip, ok := play(picker, "one", takesOf("only.mp3"))
 		if !ok || clip != "only.mp3" {
 			t.Fatalf("single-clip pick = %q, %v", clip, ok)
 		}
@@ -74,7 +74,7 @@ func TestPickerHandlesSmallFolders(t *testing.T) {
 }
 
 func TestPickerDrawsAcrossTheWholeFolder(t *testing.T) {
-	clips := []string{"a.mp3", "b.mp3", "c.mp3", "d.mp3"}
+	clips := takesOf("a.mp3", "b.mp3", "c.mp3", "d.mp3")
 	picker := selection.NewPicker(&fixedChooser{values: []int{0, 1, 2, 0, 1, 2}})
 	seen := make(map[string]bool)
 	for range 12 {
@@ -145,12 +145,12 @@ func TestDedupeCollapsesRapidRepeats(t *testing.T) {
 func TestPickerRepeatsWhenEveryClipIsTheOneItJustPlayed(t *testing.T) {
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
 
-	first, ok := play(picker, "Bounty", []string{"a.mp3", "a.mp3"})
+	first, ok := play(picker, "Bounty", takesOf("a.mp3", "a.mp3"))
 	if !ok || first != "a.mp3" {
 		t.Fatalf("first pick = %q, %v", first, ok)
 	}
 
-	second, ok := play(picker, "Bounty", []string{"a.mp3", "a.mp3"})
+	second, ok := play(picker, "Bounty", takesOf("a.mp3", "a.mp3"))
 	if !ok || second != "a.mp3" {
 		t.Fatalf("second pick = %q, %v, want the repeat rather than silence", second, ok)
 	}

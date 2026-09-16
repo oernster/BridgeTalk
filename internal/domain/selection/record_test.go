@@ -10,6 +10,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/selection"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // fire asks the gate and records the firing when it passes, which is what the reaction
@@ -31,29 +32,40 @@ func seen(window *selection.DedupeWindow, id cue.ID, now time.Time) bool {
 	return true
 }
 
-// play picks a take and records it as played, for the same reason again.
-func play(picker *selection.Picker, id cue.ID, clips []string) (string, bool) {
-	clip, ok := picker.Pick(id, clips)
-	if ok {
-		picker.Played(id, clip)
+// takesOf builds one take per path, which is what every voice that records one file per
+// take answers with. The tests that care about parts build their takes by hand.
+func takesOf(paths ...string) []take.Take {
+	out := make([]take.Take, 0, len(paths))
+	for _, path := range paths {
+		out = append(out, take.Of(path))
 	}
-	return clip, ok
+	return out
+}
+
+// play picks a take and records it as played, for the same reason again. It answers the
+// take's key, since that is what the caller compares.
+func play(picker *selection.Picker, id cue.ID, takes []take.Take) (string, bool) {
+	chosen, ok := picker.Pick(id, takes)
+	if ok {
+		picker.Played(id, chosen)
+	}
+	return chosen.Key(), ok
 }
 
 // Picking is not playing either: a take picked for a firing that is then let go was never
 // heard, so it is not the take to avoid next time (FR-610).
 func TestPickingRecordsNothing(t *testing.T) {
 	picker := selection.NewPicker(&fixedChooser{values: []int{0}})
-	clips := []string{"a.mp3", "b.mp3"}
+	takes := []take.Take{take.Of("a.mp3"), take.Of("b.mp3")}
 
 	for range 2 {
-		if got, _ := picker.Pick("Bounty", clips); got != "a.mp3" {
+		if got, _ := picker.Pick("Bounty", takes); got.Key() != "a.mp3" {
 			t.Fatalf("pick = %q, want a.mp3: a take only picked was remembered as played", got)
 		}
 	}
 
-	picker.Played("Bounty", "a.mp3")
-	if got, _ := picker.Pick("Bounty", clips); got != "b.mp3" {
+	picker.Played("Bounty", take.Of("a.mp3"))
+	if got, _ := picker.Pick("Bounty", takes); got.Key() != "b.mp3" {
 		t.Fatalf("pick = %q, want b.mp3: a take played did not hold back the next pick", got)
 	}
 }

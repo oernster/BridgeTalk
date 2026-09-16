@@ -21,7 +21,7 @@ type fakeCatalogue struct {
 
 func (f *fakeCatalogue) Clips(id cue.ID) (ports.Performance, bool) {
 	found, ok := f.clips[id]
-	return ports.Performance{Clips: found}, ok
+	return ports.Performance{Takes: takesOf(found...)}, ok
 }
 
 func (f *fakeCatalogue) ActiveVoice() string         { return f.active }

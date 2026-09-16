@@ -79,7 +79,7 @@ func TestAManifestAddsTheTakesItDeclares(t *testing.T) {
 		"IsInDanger.Set": {filepath.Join(alice, "alternates", "another.mp3"), filepath.Join(alice, "odd.wav")},
 	}
 	for id, clips := range want {
-		if got, _ := found.Lookup(cue.ID(id)); !reflect.DeepEqual(got, clips) {
+		if got, _ := found.Lookup(cue.ID(id)); !reflect.DeepEqual(got, takesOf(clips...)) {
 			t.Errorf("%s takes = %v, want %v", id, got, clips)
 		}
 	}
@@ -109,7 +109,7 @@ func TestAManifestEntryThatCannotBeUsedIsPassedOverAlone(t *testing.T) {
 	voices, report := scanned(t, root, journalTable(t, "StartJump"))
 
 	alone := only(t, voices)
-	if got, _ := alone.Lookup("StartJump"); !reflect.DeepEqual(got, []string{filepath.Join(alice, "odd.wav")}) {
+	if got, _ := alone.Lookup("StartJump"); !reflect.DeepEqual(got, takesOf(filepath.Join(alice, "odd.wav"))) {
 		t.Errorf("takes = %v, want odd.wav alone", got)
 	}
 	mentions := []string{`"NoSuchCue" is no cue's id`, `"../outside.wav" is not inside`, `"` + elsewhere + `" is not inside`, `"notes.txt" is not a recording`}

@@ -6,16 +6,19 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
-// takeGap is the gap used for a single take, which has no second part.
+// takeGap is the silence inserted between the parts of one take. It is zero: a take recorded
+// in pieces is one utterance, joined as naturally as the recordings allow (FR-573).
 const takeGap = 0
 
-// Request is one thing waiting to be said. One cue plays one file, so a request
-// carrying alternatives speaks the first of them and no more.
+// Request is one thing waiting to be said: one cue answered by one take (FR-221). The
+// alternatives were chosen between before it got here, so a request carries the take that
+// was chosen rather than the takes it was chosen from.
 type Request struct {
-	Cue   cue.Cue
-	Clips []string
+	Cue  cue.Cue
+	Take take.Take
 }
 
 // Scheduler decides what is spoken, in what order and what is interrupted or
@@ -111,12 +114,7 @@ func (s *Scheduler) Advance() {
 
 // start plays one request.
 func (s *Scheduler) start(next Request) {
-	clips := next.Clips
-	if len(clips) > 1 {
-		clips = clips[:1]
-	}
-
-	if err := s.player.Play(clips, time.Duration(takeGap)); err != nil {
+	if err := s.player.Play(next.Take, time.Duration(takeGap)); err != nil {
 		s.current = nil
 		s.report(next, ports.OutcomeUnbound)
 		return
@@ -151,10 +149,7 @@ func (s *Scheduler) report(request Request, outcome string) {
 	if s.reporter == nil {
 		return
 	}
-	clip := ""
-	if len(request.Clips) > 0 {
-		clip = request.Clips[0]
-	}
+	clip := request.Take.Key()
 	s.reporter.Report(ports.Reaction{
 		At:      s.clock.Now(),
 		Cue:     request.Cue.ID(),

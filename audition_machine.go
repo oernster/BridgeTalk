@@ -12,6 +12,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // auditionGate holds the machine voice audition whose line is being made, one at a time. A press while
@@ -103,5 +104,6 @@ func (a *App) AuditionMachineVoice(id, group string) (AuditionDTO, error) {
 	if !playable {
 		return AuditionDTO{}, nil
 	}
-	return a.play(group, clip)
+	// A made line is one file, so a machine voice auditions a take of one part (FR-573).
+	return a.play(group, take.Of(clip))
 }

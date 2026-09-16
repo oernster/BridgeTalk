@@ -8,6 +8,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
 	"github.com/oernster/bridge-talk/internal/domain/selection"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // dedupeWindow is the width of the repeat collapse. It is much shorter than any
@@ -96,8 +97,8 @@ func (r *ReactionService) Tick() {
 		switch {
 		case r.off(each.matched.ID()):
 			r.report(each.matched, each.candidate, "", ports.OutcomeOff)
-		case served && len(performance.Clips) > 0:
-			r.speak(each.matched, each.candidate, performance.Clips, now)
+		case served && len(performance.Takes) > 0:
+			r.speak(each.matched, each.candidate, performance.Takes, now)
 		case now.Sub(each.fired) > madeOnCallLimit:
 			r.report(each.matched, each.candidate, "", ports.OutcomeDropped)
 		default:
@@ -140,11 +141,11 @@ func (r *ReactionService) Handle(candidate event.Event) {
 	}
 
 	performance, served := r.catalogue.Clips(matched.ID())
-	if !served || len(performance.Clips) == 0 {
+	if !served || len(performance.Takes) == 0 {
 		r.makeOnCall(matched, candidate, now)
 		return
 	}
-	r.speak(matched, candidate, performance.Clips, now)
+	r.speak(matched, candidate, performance.Takes, now)
 }
 
 // off reports whether a moment is switched off on Chatter.
@@ -168,7 +169,7 @@ func (r *ReactionService) makeOnCall(matched cue.Cue, candidate event.Event, now
 }
 
 // speak hands a cue with takes to the scheduler, as though it fired at now.
-func (r *ReactionService) speak(matched cue.Cue, candidate event.Event, clips []string, now time.Time) {
+func (r *ReactionService) speak(matched cue.Cue, candidate event.Event, takes []take.Take, now time.Time) {
 	if r.muted {
 		r.report(matched, candidate, "", ports.OutcomeDropped)
 		return
@@ -176,13 +177,13 @@ func (r *ReactionService) speak(matched cue.Cue, candidate event.Event, clips []
 
 	// The picker declines only an empty list; an empty list has already been answered
 	// before a cue reaches here, so there is nothing left here to decline.
-	chosen, _ := r.picker.Pick(matched.ID(), clips)
+	chosen, _ := r.picker.Pick(matched.ID(), takes)
 
 	// A firing counts against the repeat window and the cooldown only once the scheduler
 	// takes it. One that was muted, had no take or was let go was never heard, so it holds
 	// back nothing that follows it (Oliver, 2026-09-13). Its take is the one not to repeat
 	// only then too, so a take let go never stands in for the one heard before it (FR-610).
-	if r.scheduler.Submit(Request{Cue: matched, Clips: []string{chosen}}) {
+	if r.scheduler.Submit(Request{Cue: matched, Take: chosen}) {
 		r.picker.Played(matched.ID(), chosen)
 		r.dedupe.Mark(matched.ID(), now)
 		r.cooldown.Record(matched.ID(), now)

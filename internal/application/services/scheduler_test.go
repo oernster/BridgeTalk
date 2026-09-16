@@ -1,67 +1,13 @@
 package services_test
 
 import (
+	"reflect"
 	"testing"
-	"time"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/application/services"
-	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/selection"
 )
-
-// fakePlayer records what it was asked to do. It is hand-written rather than
-// generated, so the test states exactly the behaviour it depends on.
-type fakePlayer struct {
-	played  [][]string
-	gaps    []time.Duration
-	stops   int
-	playing bool
-	fail    bool
-	done    chan struct{}
-}
-
-func newFakePlayer() *fakePlayer {
-	return &fakePlayer{done: make(chan struct{}, 1)}
-}
-
-func (f *fakePlayer) Play(clips []string, gap time.Duration) error {
-	if f.fail {
-		return ports.ErrPlaybackFailed
-	}
-	f.played = append(f.played, clips)
-	f.gaps = append(f.gaps, gap)
-	f.playing = true
-	return nil
-}
-
-func (f *fakePlayer) Stop()                 { f.stops++; f.playing = false }
-func (f *fakePlayer) Playing() bool         { return f.playing }
-func (f *fakePlayer) Done() <-chan struct{} { return f.done }
-func (f *fakePlayer) Close() error          { return nil }
-func (f *fakePlayer) finish()               { f.playing = false }
-
-// frozenClock never moves, so nothing in these tests depends on real time.
-type frozenClock struct{}
-
-func (frozenClock) Now() time.Time { return time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC) }
-
-// collector captures the reaction log.
-type collector struct{ outcomes []string }
-
-func (c *collector) Report(reaction ports.Reaction) {
-	c.outcomes = append(c.outcomes, reaction.Outcome)
-}
-
-func request(t *testing.T, id string, priority string, clips ...string) services.Request {
-	t.Helper()
-	built, err := cue.New(cue.Definition{
-		ID: id, Source: "journal", Event: "X", Priority: priority,
-	})
-	if err != nil {
-		t.Fatalf("building cue: %v", err)
-	}
-	return services.Request{Cue: built, Clips: clips}
-}
 
 func TestAlertInterruptsWhatIsSpeaking(t *testing.T) {
 	player := newFakePlayer()
@@ -212,14 +158,16 @@ func TestQueueIsOrderedByPriorityThenArrival(t *testing.T) {
 	}
 }
 
-func TestEveryCuePlaysExactlyOneFile(t *testing.T) {
+// One cue plays one take (FR-221). A take of one part is one clip; a take recorded in
+// pieces is those pieces in order, joined by nothing (FR-573). Both are one utterance.
+func TestEveryCuePlaysExactlyOneTake(t *testing.T) {
 	player := newFakePlayer()
 	scheduler := services.NewScheduler(player, &collector{}, frozenClock{})
 
-	scheduler.Submit(request(t, "take", "notice", "one.mp3", "two.mp3", "three.mp3"))
+	scheduler.Submit(request(t, "take", "notice", "one.mp3"))
 	scheduler.Advance()
 	if len(player.played[0]) != 1 {
-		t.Fatalf("a take played %d clips, want 1", len(player.played[0]))
+		t.Fatalf("a take of one part played %d clips, want 1", len(player.played[0]))
 	}
 	if player.gaps[0] != 0 {
 		t.Fatalf("a take used a gap of %v, want none", player.gaps[0])
@@ -228,17 +176,17 @@ func TestEveryCuePlaysExactlyOneFile(t *testing.T) {
 	player.finish()
 	scheduler.Finished()
 
-	// Several takes are alternatives, never the parts of one utterance: one cue plays
-	// one file, so a request carrying three speaks the first and no more.
-	scheduler.Submit(request(t, "alternatives", "notice", "1.mp3", "2.mp3", "3.mp3"))
+	// The parts of one take are one utterance, so all of them are played and the order
+	// they were given in is the order they are heard in.
+	scheduler.Submit(request(t, "parts", "notice", "1.mp3", "2.mp3", "3.mp3"))
 	player.finish()
 	scheduler.Advance()
 	last := player.played[len(player.played)-1]
-	if len(last) != 1 {
-		t.Fatalf("a cue with three takes played %d clips, want 1", len(last))
+	if !reflect.DeepEqual(last, []string{"1.mp3", "2.mp3", "3.mp3"}) {
+		t.Fatalf("a take of three parts played %v, want all three in order", last)
 	}
 	if player.gaps[len(player.gaps)-1] != 0 {
-		t.Fatal("a single take needs no gap")
+		t.Fatal("the parts of a take were joined by a gap, want none")
 	}
 }
 
@@ -352,16 +300,22 @@ func TestAFlavourLineIsTakenWhenNothingElseIsPending(t *testing.T) {
 	}
 }
 
-// A request speaks once, however many clips it carries. The number of clips
-// available is not a reason to speak for longer.
-func TestAnUnorderedRequestSpeaksOnceHoweverManyClipsItCarries(t *testing.T) {
+// A request speaks once, however many takes the voice holds for the cue. A folder of
+// alternatives is not a reason to speak for longer, so the choosing happens before the
+// scheduler sees it and one take arrives.
+func TestAnUnorderedRequestSpeaksOnceHoweverManyTakesTheVoiceHolds(t *testing.T) {
 	player := newFakePlayer()
 	scheduler := services.NewScheduler(player, &collector{}, frozenClock{})
+	picker := selection.NewPicker(lineAt(0))
 
-	folder := request(t, "Undocked", "notice", "0.mp3",
+	folder := takesOf("0.mp3",
 		"1.mp3", "2.mp3", "3.mp3", "4.mp3", "5.mp3", "6.mp3", "7.mp3", "8.mp3", "9.mp3", "10.mp3")
+	chosen, ok := picker.Pick("Undocked", folder)
+	if !ok {
+		t.Fatal("the picker declined a folder of eleven takes")
+	}
 
-	scheduler.Submit(folder)
+	scheduler.Submit(request(t, "Undocked", "notice", chosen...))
 	scheduler.Advance()
 
 	if len(player.played) != 1 {

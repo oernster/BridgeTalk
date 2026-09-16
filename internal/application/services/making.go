@@ -13,6 +13,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/pause"
 	"github.com/oernster/bridge-talk/internal/domain/script"
 	"github.com/oernster/bridge-talk/internal/domain/speech"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // LineFailure is a line that could not be made: its cue, its place among that cue's lines and why
@@ -314,7 +315,7 @@ func (v madeVoice) MakeNext(id cue.ID) bool {
 
 // Lookup returns where a cue's current made lines are played from; false where there are none or
 // the cast it belongs to is over.
-func (v madeVoice) Lookup(id cue.ID) ([]string, bool) {
+func (v madeVoice) Lookup(id cue.ID) ([]take.Take, bool) {
 	m := v.service
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -325,9 +326,10 @@ func (v madeVoice) Lookup(id cue.ID) ([]string, bool) {
 	if len(keys) == 0 {
 		return nil, false
 	}
-	paths := make([]string, 0, len(keys))
+	// A made line is one file, so each take here has one part (FR-573).
+	takes := make([]take.Take, 0, len(keys))
 	for _, key := range keys {
-		paths = append(paths, m.store.Path(m.voice, key))
+		takes = append(takes, take.Of(m.store.Path(m.voice, key)))
 	}
-	return paths, true
+	return takes, true
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // fixedChooser always answers with the same index, bounded by the range it is given.
@@ -32,11 +33,24 @@ func catalogueOver(voice Voice, table cue.Table, chooser fixedChooser) *Catalogu
 }
 
 // takesOnly is an audio source that is no scanned voice: takes by cue and nothing more.
+// Its takes have one part each, which is what a source of single files answers.
 type takesOnly map[cue.ID][]string
 
-func (t takesOnly) Lookup(id cue.ID) ([]string, bool) {
+func (t takesOnly) Lookup(id cue.ID) ([]take.Take, bool) {
 	clips, ok := t[id]
-	return clips, ok && len(clips) > 0
+	if !ok || len(clips) == 0 {
+		return nil, false
+	}
+	return takesOf(clips...), true
+}
+
+// takesOf builds one take per path, the shape a voice recording one file per take answers.
+func takesOf(paths ...string) []take.Take {
+	out := make([]take.Take, 0, len(paths))
+	for _, path := range paths {
+		out = append(out, take.Of(path))
+	}
+	return out
 }
 
 // ids lists the ids of cues in order.
@@ -56,8 +70,8 @@ func TestTheCatalogueAnswersFromAnyAudioSource(t *testing.T) {
 		journalTable(t, "DockingGranted", "StartJump"), fixedChooser{})
 
 	performance, ok := catalogue.Clips("DockingGranted")
-	if !ok || !reflect.DeepEqual(performance.Clips, []string{"made.flac"}) {
-		t.Fatalf("clips = %v, %v; want the take the source holds", performance.Clips, ok)
+	if !ok || !reflect.DeepEqual(performance.Takes, takesOf("made.flac")) {
+		t.Fatalf("clips = %v, %v; want the take the source holds", performance.Takes, ok)
 	}
 	if _, ok := catalogue.Clips("StartJump"); ok {
 		t.Error("a cue the source holds no take for answered")
@@ -84,7 +98,7 @@ func TestTheAcknowledgementIsFoundByItsSource(t *testing.T) {
 
 	clip, ok := catalogueOver(voice, table, fixedChooser{at: 1}).Acknowledgement()
 
-	if !ok || clip != "second.wav" {
+	if !ok || clip.Key() != "second.wav" {
 		t.Fatalf("acknowledgement = %q, %v; want the take the chooser picked", clip, ok)
 	}
 }
@@ -111,8 +125,8 @@ func TestClipsAnswerOnlyForARecordedCue(t *testing.T) {
 	catalogue := catalogueOver(voice, journalTable(t, "DockingGranted", "ShieldState.ShieldsUp.false"), fixedChooser{})
 
 	performance, ok := catalogue.Clips("DockingGranted")
-	if !ok || !reflect.DeepEqual(performance.Clips, []string{"a.wav", "b.wav"}) {
-		t.Fatalf("clips = %v, %v; want both takes", performance.Clips, ok)
+	if !ok || !reflect.DeepEqual(performance.Takes, takesOf("a.wav", "b.wav")) {
+		t.Fatalf("clips = %v, %v; want both takes", performance.Takes, ok)
 	}
 	if _, ok := catalogue.Clips("ShieldState.ShieldsUp.false"); ok {
 		t.Error("a cue the voice never recorded answered")
@@ -168,8 +182,8 @@ func TestGroupsGatherDistinctTakesUnderTheFirstSegment(t *testing.T) {
 	got := catalogueOver(voice, table, fixedChooser{}).Groups()
 
 	want := []Group{
-		{Key: "DockingDenied", Clips: []string{"no.wav", "yes.wav"}},
-		{Key: "HullDamage", Clips: []string{"ouch.wav"}},
+		{Key: "DockingDenied", Takes: takesOf("no.wav", "yes.wav")},
+		{Key: "HullDamage", Takes: takesOf("ouch.wav")},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("groups = %+v, want %+v", got, want)
@@ -187,7 +201,7 @@ func TestAnAuditionDrawsFromTheNamedGroup(t *testing.T) {
 	table := journalTable(t, "DockingDenied.Reason.NoSpace", "DockingDenied.Reason.Distance", "HullDamage")
 	catalogue := catalogueOver(voice, table, fixedChooser{at: 1})
 
-	if clip, ok := catalogue.Audition("DockingDenied"); !ok || clip != "yes.wav" {
+	if clip, ok := catalogue.Audition("DockingDenied"); !ok || clip.Key() != "yes.wav" {
 		t.Errorf("audition = %q, %v; want the take the chooser picked", clip, ok)
 	}
 	if _, ok := catalogue.Audition("UnderAttack"); ok {

@@ -60,7 +60,7 @@ func TestMakingAVoicesFoldersMakesOneForEveryCue(t *testing.T) {
 		t.Fatalf("got %v, want the underscore folder's take counted and the dotted folder's ignored", voices)
 	}
 	want := filepath.Join(dir, "StartJump_JumpType_Hyperspace", "take.wav")
-	if clips, ok := voices[0].Lookup(cue.ID("StartJump.JumpType.Hyperspace")); !ok || len(clips) != 1 || clips[0] != want {
+	if clips, ok := voices[0].Lookup(cue.ID("StartJump.JumpType.Hyperspace")); !ok || len(clips) != 1 || clips[0].Key() != want {
 		t.Fatalf("got %v, want only %s", clips, want)
 	}
 }

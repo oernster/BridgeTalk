@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
@@ -71,12 +72,21 @@ type Voice struct {
 }
 
 // Lookup returns the takes recorded for a cue; false when the voice has none.
-func (v Voice) Lookup(id cue.ID) ([]string, bool) {
+//
+// A scanned voice records one file per take: the names on disk say which cue a file
+// answers, never that two files are halves of one line. So every take here has one part,
+// and a take of several parts reaches the application from a source that knows its own
+// arrangement (FR-573, OQ-21).
+func (v Voice) Lookup(id cue.ID) ([]take.Take, bool) {
 	clips, ok := v.byCue[id]
 	if !ok || len(clips) == 0 {
 		return nil, false
 	}
-	return clips, true
+	takes := make([]take.Take, 0, len(clips))
+	for _, clip := range clips {
+		takes = append(takes, take.Of(clip))
+	}
+	return takes, true
 }
 
 // Cues counts the cues this voice has at least one take for.

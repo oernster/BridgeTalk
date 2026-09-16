@@ -8,6 +8,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/event"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // EventSource yields the events that have happened since it was last asked.
@@ -36,7 +37,7 @@ type AudioPlayer interface {
 // Performance is one resolved answer to a cue: every take the cast voice holds for it.
 // The takes are alternatives; the reaction service picks one, so exactly one is spoken.
 type Performance struct {
-	Clips []string
+	Takes []take.Take
 }
 
 // AudioSource answers, for a cue id, the takes a voice can play for it (FR-501).
@@ -45,8 +46,11 @@ type Performance struct {
 // holds and whatever else one kind of voice knows about itself stay with that kind, so a
 // second kind can be supplied without the catalogue learning where its audio came from.
 // The boolean is true only with at least one take.
+//
+// A take carries its parts, so one shape serves a recorded voice, a machine voice and a
+// plugin alike (FR-573). A voice with one file per take answers takes of one part.
 type AudioSource interface {
-	Lookup(id cue.ID) ([]string, bool)
+	Lookup(id cue.ID) ([]take.Take, bool)
 }
 
 // VoiceCatalogue resolves a cue into the takes the chosen voice can play for it.

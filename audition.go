@@ -12,10 +12,11 @@ import (
 	"strings"
 
 	"github.com/oernster/bridge-talk/internal/domain/cue"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
-// auditionGap is the pause between clips when a group is auditioned. An audition
-// plays one clip, so it exists only to satisfy the player's signature.
+// auditionGap is the pause between the parts of the take a group is auditioned with. It
+// is zero for the reason takeGap is: a take recorded in pieces is one utterance (FR-573).
 const auditionGap = 0
 
 // errNoDevice refuses an audition with nothing to play through.
@@ -48,7 +49,7 @@ func (a *App) AuditionGroups(voice string) []GroupDTO {
 		out = append(out, GroupDTO{
 			Key:   group.Key,
 			Label: label(group.Key),
-			Clips: len(group.Clips),
+			Clips: len(group.Takes),
 		})
 	}
 	return out
@@ -64,14 +65,14 @@ func (a *App) Audition(voice, group string) (AuditionDTO, error) {
 	if !found {
 		return AuditionDTO{}, fmt.Errorf("no voice named %q", voice)
 	}
-	clip, ok := a.session.catalogueFor(chosen).Audition(group)
+	drawn, ok := a.session.catalogueFor(chosen).Audition(group)
 	if !ok {
 		return AuditionDTO{}, nothingFor(voice, group)
 	}
 	if a.session.player == nil {
 		return AuditionDTO{}, errNoDevice
 	}
-	return a.play(group, clip)
+	return a.play(group, drawn)
 }
 
 // nothingFor refuses a group a voice has nothing for, naming the group in the words the pane shows.
@@ -79,12 +80,12 @@ func nothingFor(voice, group string) error {
 	return fmt.Errorf("%s has nothing for %s", voice, label(group))
 }
 
-// play plays the clip an audition drew from a group, answering what it played.
-func (a *App) play(group, clip string) (AuditionDTO, error) {
+// play plays the take an audition drew from a group, answering what it played.
+func (a *App) play(group string, chosen take.Take) (AuditionDTO, error) {
 	// FR-236: a press never cuts short what is already sounding, whether an earlier
 	// audition or the ship speaking. The question and the start are one call on the
 	// player, since asking first and playing second leaves a gap another caller can use.
-	started, err := a.session.player.PlayIfIdle([]string{clip}, auditionGap)
+	started, err := a.session.player.PlayIfIdle(chosen, auditionGap)
 	if err != nil {
 		return AuditionDTO{}, fmt.Errorf("playing %s: %w", label(group), err)
 	}
@@ -94,7 +95,8 @@ func (a *App) play(group, clip string) (AuditionDTO, error) {
 		return AuditionDTO{}, nil
 	}
 	a.announcePlayback()
-	return AuditionDTO{Group: group, Clip: clipName(clip)}, nil
+	// The pane names the take by its first part, which is the take's identity (take.Take.Key).
+	return AuditionDTO{Group: group, Clip: clipName(chosen.Key())}, nil
 }
 
 // StopAudition ends whatever is playing, so a long clip can be cut short. A machine voice's

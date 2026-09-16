@@ -708,10 +708,10 @@ Amended on 2026-09-16. It read "One cue plays one file" and forbade assembling a
 into one utterance, on the rationale that a long line is one long file. FR-573 supersedes that half
 of it: a take may be several parts played in order, because a line is sometimes recorded in pieces
 (Oliver, 2026-09-16). The rule that survives is the one that mattered, which is that a cue is
-answered by one take. `TestEveryCuePlaysExactlyOneFile` tests the withdrawn half and is to be
-rewritten as one take per cue when FR-573 is built.
-Verified by: `TestEveryCuePlaysExactlyOneFile` in `internal/application/services/scheduler_test.go`,
-which holds the withdrawn half until it is rewritten;
+answered by one take. `TestEveryCuePlaysExactlyOneFile` tested the withdrawn half; it was seen
+to fail against the new scheduler, then rewritten.
+Verified by: `TestEveryCuePlaysExactlyOneTake` in `internal/application/services/scheduler_test.go`;
+`TestAnUnorderedRequestSpeaksOnceHoweverManyTakesTheVoiceHolds` in the same file;
 `TestACueWithSeveralTakesSpeaksOnce` in `internal/application/services/reaction_test.go`.
 
 **FR-232 Casting a voice plays its confirmation**
@@ -2369,7 +2369,13 @@ same shape, so the catalogue, the picker and the player learn nothing about wher
 (Oliver, 2026-09-16). A natural join between parts is enough; nothing here asks for gapless playback.
 Note: a scanned recorded voice and a machine voice answer takes of one part each today. Whether the
 scanner ever groups files into one take is OQ-21.
-Verified by: nothing yet.
+Built on 2026-09-16 as far as the port reaches: `ports.AudioSource` answers takes, the domain owns
+`take.Take` with the key that identifies one, the picker chooses whole takes and the scheduler hands
+a take's parts to the player, which has always played a sequence.
+Verified by: `TestEveryCuePlaysExactlyOneTake` in `internal/application/services/scheduler_test.go`,
+which plays a take of three parts and pins their order; it was seen to fail with the scheduler
+truncating to one part. The take itself is held by `internal/domain/take/take_test.go`, seen to fail
+with its key taken from the wrong end.
 
 **FR-574 If a part will not open, then play the parts that do**
 Priority: Must.
@@ -2377,7 +2383,10 @@ If a part of a chosen take cannot be opened or decoded, then the application sha
 part, shall play the remaining parts in order and shall record the part it passed over.
 Rationale: Oliver's ruling on 2026-09-16. Most of a line is better than none of it; the audio can
 change under the application at any time without the plugin knowing.
-Verified by: nothing yet.
+Measured on 2026-09-16: the first half already holds. `Player.playOne` answers true for a clip it
+cannot read, so the sequence carries on; the comment there says so in as many words. The second
+half does not hold: nothing is recorded when a part is passed over.
+Verified by: nothing yet for the recording.
 
 **FR-575 If no part of a chosen take plays, then the cue is silent**
 Priority: Must.

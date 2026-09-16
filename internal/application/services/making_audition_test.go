@@ -6,6 +6,7 @@ package services_test
 
 import (
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/application/services/makingtest"
 	"github.com/oernster/bridge-talk/internal/domain/script"
+	"github.com/oernster/bridge-talk/internal/domain/take"
 )
 
 // lineAt draws the line at a fixed place in a group, so a test knows which line an audition makes.
@@ -92,8 +94,8 @@ func TestALineAuditionedForTheCastVoiceCountsAsMade(t *testing.T) {
 		t.Fatalf("Audition: %v", err)
 	}
 
-	want := []string{makingtest.PathOf("bf_emma", makingtest.Key("dɪ"))}
-	if takes, ok := source.Lookup("Undocked"); !ok || !slices.Equal(takes, want) {
+	want := []take.Take{take.Of(makingtest.PathOf("bf_emma", makingtest.Key("dɪ")))}
+	if takes, ok := source.Lookup("Undocked"); !ok || !reflect.DeepEqual(takes, want) {
 		t.Errorf("Undocked answered %v, %v; want the auditioned line", takes, ok)
 	}
 	if got := service.Progress().Current; got != 4 {

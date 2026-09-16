@@ -82,7 +82,7 @@ func TestAFolderNamedForACueHoldsThatCuesTakes(t *testing.T) {
 	alice := only(t, voices)
 
 	want := []string{filepath.Join(cueDir, "a.wav"), filepath.Join(cueDir, "b.WAV")}
-	if got, ok := alice.Lookup("StartJump"); !ok || !reflect.DeepEqual(got, want) {
+	if got, ok := alice.Lookup("StartJump"); !ok || !reflect.DeepEqual(got, takesOf(want...)) {
 		t.Fatalf("takes = %v, %v; want %v", got, ok, want)
 	}
 	if alice.Takes != 2 || alice.Cues() != 1 {

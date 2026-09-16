@@ -2314,7 +2314,8 @@ Rationale: the file name is not a contract, since the user may rename the file. 
 only thing that knows what it is.
 Verified by: `TestEveryPluginInTheFolderIsLoadedInNameOrder` in
 `internal/infrastructure/plugin/load_test.go`, which pins that the name shown is the one the
-plugin gave rather than the file it came from.
+plugin gave rather than the file it came from; `TestEveryPluginVoiceReachesTheCastPane` in
+`pluginvoices_test.go` for every one of them reaching the window.
 
 **FR-566 If a plugin offers no usable voice, then refuse it with a reason**
 Priority: Must.
@@ -2347,7 +2348,14 @@ If two plugin voices are offered under the same name, then the application shall
 show each with the name of the plugin offering it.
 Rationale: two plugins may honestly choose one name. Dropping one silently loses a voice the user
 installed.
-Verified by: nothing yet.
+Built on 2026-09-16. The name a voice is shown by is worked out over the whole list rather than
+per voice, since whether a name is shared is a fact about the list. Where the two plugins carry
+one name as well, the file each was loaded from tells them apart: that is the one thing about a
+plugin the user can see by opening the folder.
+Verified by: `TestTwoVoicesUnderOneNameAreShownWithTheirPlugins` and
+`TestTwoPluginsUnderOneNameAreToldApartByTheirFiles` in `pluginvoices_test.go`;
+`shows each voice by the name the facade worked out` in `frontend/src/pluginVoices.test.tsx`
+for the pane showing what it was given rather than the plain name.
 
 **FR-569 A plugin voice is cast as a kind of its own**
 Priority: Must.
@@ -2359,12 +2367,18 @@ plugin is unique only within that plugin.
 Built on 2026-09-16 as far as reading reaches: the settings carry `plugin` and `pluginVoice`,
 both absent from a file an older build wrote; a kept plugin voice is cast at startup ahead
 of a kept machine voice. A voice named on the command line still sets every kept voice aside,
-whichever kind it is. Writing the pair when a voice is cast from the window is not built, since
-nothing casts one from the window yet.
+whichever kind it is. Completed on 2026-09-16: `CastPluginVoice` keeps the pair when a voice is
+cast from the window; casting a voice of any other kind now forgets it. Measured that day:
+nothing cleared `plugin` and `pluginVoice`, so a machine or recorded voice cast after a plugin
+voice was kept would have been spoken over by that plugin voice at the next start. The four
+fields are written together in one place for that reason.
 A plugin is identified by its own name rather than by its file, since the user may rename the
 file; PLUGINS-GUIDE.md asks a plugin author to keep that name stable for this reason.
 Verified by: `TestAKeptPluginVoiceIsCastAtStart`, `TestACastPluginVoiceAnswersTheCatalogue` and
 `TestAKeptPluginVoiceThatCannotBeCastFallsBackToARecordedVoice` in `plugincast_test.go`;
+`TestCastingAPluginVoiceFromTheWindowKeepsIt` and
+`TestCastingAnotherKindForgetsTheKeptPluginVoice` in `pluginvoices_test.go`, the second seen to
+fail against the settings as they were written before it;
 `TestChoicesSurviveASave` in `internal/infrastructure/config/settings_test.go` for the file.
 
 **FR-570 A plugin says whether the audio a voice needs is present**
@@ -2374,11 +2388,15 @@ it needs is present on this machine, then take a voice that says it is not as un
 cast, with the reason it gave.
 Rationale: the audio belongs to the user and can be moved or removed at any time. A voice offered
 and then silent is worse than a voice shown as unavailable with a reason.
-Built on 2026-09-16 as far as casting reaches: a voice that says its audio is absent is refused
-rather than cast, naming the voice and the reason it gave; it is never asked for a take.
-Showing it in the window as unavailable is not built yet.
-Verified by: `TestAPluginVoiceWithNoAudioIsRefusedWithItsReason` in `plugincast_test.go` and
-`TestAVoiceThatIsNotReadyIsNeverAsked` in `internal/infrastructure/plugin/lookup_test.go`.
+Built on 2026-09-16: a voice that says its audio is absent is refused rather than cast, naming
+the voice and the reason it gave; it is never asked for a take. Completed that day in the window,
+where such a voice is listed with the reason it gave rather than left out and is never drawn as a
+control: a control that refuses when pressed says the same thing later and worse.
+Verified by: `TestAPluginVoiceWithNoAudioIsRefusedWithItsReason` in `plugincast_test.go`,
+`TestAVoiceThatIsNotReadyIsNeverAsked` in `internal/infrastructure/plugin/lookup_test.go`,
+`TestAVoiceWithNoAudioIsListedWithTheReasonItGave` in `pluginvoices_test.go` and
+`names a voice that cannot speak with the reason it gave` in
+`frontend/src/pluginVoices.test.tsx`.
 
 **FR-571 The checklist offers no folder for a plugin voice**
 Priority: Should.

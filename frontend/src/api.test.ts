@@ -29,6 +29,8 @@ function installBridge(overrides: Record<string, unknown> = {}) {
     SelectVoice: record('SelectVoice', undefined),
     MachineVoices: record('MachineVoices', [{ id: 'bf_emma', name: 'Emma (British, female)' }]),
     CastMachineVoice: record('CastMachineVoice', undefined),
+    PluginVoices: record('PluginVoices', [{ plugin: 'Bridge Crew', id: 'one' }]),
+    CastPluginVoice: record('CastPluginVoice', undefined),
     Making: record('Making', { voice: 'bf_emma' }),
     Muted: record('Muted', true),
     SetMuted: record('SetMuted', undefined),
@@ -91,6 +93,8 @@ describe('with the window bridge present', () => {
     await api.selectVoice('Alpha')
     await api.machineVoices()
     await api.castMachineVoice('bf_emma')
+    await api.pluginVoices()
+    await api.castPluginVoice('Bridge Crew', 'one')
     await api.making()
     await api.setMuted(true)
     await api.volume()
@@ -127,6 +131,8 @@ describe('with the window bridge present', () => {
       'SelectVoice',
       'MachineVoices',
       'CastMachineVoice',
+      'PluginVoices',
+      'CastPluginVoice',
       'Making',
       'SetMuted',
       'Volume',
@@ -197,6 +203,7 @@ describe('with the window bridge present', () => {
     expect(await api.state()).toEqual({ voice: 'Alpha' })
     expect(await api.voices()).toEqual([{ name: 'Alpha' }])
     expect(await api.machineVoices()).toEqual([{ id: 'bf_emma', name: 'Emma (British, female)' }])
+    expect(await api.pluginVoices()).toEqual([{ plugin: 'Bridge Crew', id: 'one' }])
     expect(await api.making()).toEqual({ voice: 'bf_emma' })
     expect(await api.volume()).toBe(0.5)
     expect(await api.auditionGroups('Alpha')).toEqual([{ key: 'ShieldState' }])
@@ -254,6 +261,8 @@ describe('with no window bridge at all', () => {
     expect(await api.selectVoice('Alpha')).toBeUndefined()
     expect(await api.machineVoices()).toEqual([])
     expect(await api.castMachineVoice('bf_emma')).toBeUndefined()
+    expect(await api.pluginVoices()).toEqual([])
+    expect(await api.castPluginVoice('Bridge Crew', 'one')).toBeUndefined()
     expect(await api.making()).toEqual(nothingMade)
     expect(await api.setMuted(true)).toBeUndefined()
     expect(await api.setVolume(0.5)).toBeUndefined()

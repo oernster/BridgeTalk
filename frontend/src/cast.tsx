@@ -10,6 +10,7 @@ import { api, type Voice, type VoiceFolders } from './api'
 import { castLabel, counted } from './castWords'
 import { MomentsIcon } from './icons'
 import { MachineVoices } from './machineVoices'
+import { PluginVoices } from './pluginVoices'
 import { MomentsDialog } from './moments'
 import type { Outcome } from './chooser'
 
@@ -117,6 +118,7 @@ function VoiceRow({
 export function CastPane({
   active,
   machine,
+  plugin,
   total,
   libraryRoot,
   onSelect,
@@ -124,6 +126,8 @@ export function CastPane({
   active: string
   /** Whether the cast voice is a machine voice, so a folder carrying its id is not marked cast. */
   machine: boolean
+  /** The plugin the cast voice came from, empty for every other kind, for the same reason (FR-569). */
+  plugin: string
   total: number
   libraryRoot: string
   onSelect: (name: string) => void
@@ -212,7 +216,7 @@ export function CastPane({
             key={voice.name}
             voice={voice}
             total={total}
-            cast={voice.name === active && !machine}
+            cast={voice.name === active && !machine && plugin === ''}
             onSelect={onSelect}
             onShowMoments={setShowing}
           />
@@ -262,6 +266,8 @@ export function CastPane({
       )}
 
       <MachineVoices active={active} machine={machine} total={total} />
+
+      <PluginVoices active={active} plugin={plugin} />
 
       <MomentsDialog
         voice={showing}

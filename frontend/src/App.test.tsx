@@ -54,6 +54,7 @@ vi.mock('./api', () => ({
     checklist: (voice: string) => Promise.resolve({ voice, recorded: 0, total: 0, missing: [] }),
     rescan: () => Promise.resolve(0),
     machineVoices: () => Promise.resolve([]),
+    pluginVoices: () => Promise.resolve([]),
     making: () => Promise.resolve(nothingMade),
     castMachineVoice: () => Promise.resolve(),
     openDonation: () => Promise.resolve(),

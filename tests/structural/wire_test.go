@@ -15,13 +15,14 @@ import (
 )
 
 // wireContract is the front end's hand-written statement of the shapes the facade
-// returns.
+// returns. It is wire.ts rather than api.ts beside it: the shapes moved there when api.ts
+// reached the size cap; the shapes are the contract while the calls are not.
 //
 // Wails generates the same shapes into frontend/wailsjs at build time. That file is
 // gitignored and imported by nothing, so it is not the contract. This one is, typed out
 // by a person. Nothing in the build compares the two halves: the type checker sees the
 // interface, the marshaller sees the struct and neither can see the other.
-var wireContract = filepath.Join("frontend", "src", "api.ts")
+var wireContract = filepath.Join("frontend", "src", "wire.ts")
 
 // dtoSuffix marks a struct as part of the wire. Naming is the only thing that says so,
 // because Wails binds whatever the facade returns rather than a declared set of types.
@@ -47,6 +48,7 @@ var wireShapes = map[string]string{
 	"MachineVoiceDTO":    "MachineVoice",
 	"MakingDTO":          "Making",
 	"PlaybackDTO":        "Playback",
+	"PluginVoiceDTO":     "PluginVoice",
 	"ReactionDTO":        "Reaction",
 	"StateDTO":           "State",
 	"VoiceDTO":           "Voice",

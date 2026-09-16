@@ -6,31 +6,11 @@ package main
 // present but with no audio behind it.
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
 )
-
-// offering loads one plugin offering the voices given, as the composition root would.
-func offering(t *testing.T, name string, voices ...plugintest.Voice) *plugin.Set {
-	t.Helper()
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "one.dll"), []byte("stand-in"), 0o600); err != nil {
-		t.Fatalf("writing the file: %v", err)
-	}
-	set := plugin.Load(dir, func(string) (plugin.Library, error) {
-		return &plugintest.Plugin{Name: name, Voices: voices}, nil
-	})
-	t.Cleanup(set.Close)
-	if len(set.Refusals) != 0 {
-		t.Fatalf("the plugin was refused: %+v", set.Refusals)
-	}
-	return set
-}
 
 // officer is a voice with audio behind it, answering the fixture's docking cue.
 func officer() plugintest.Voice {

@@ -23,4 +23,5 @@ export const watching: State = {
   worstStall: 0,
   journalProblem: '',
   machineVoice: false,
+  plugin: '',
 }

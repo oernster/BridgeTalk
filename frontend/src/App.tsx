@@ -336,6 +336,7 @@ export function App() {
           <CastPane
             active={state?.voice ?? ''}
             machine={state?.machineVoice ?? false}
+            plugin={state?.plugin ?? ''}
             total={state?.total ?? 0}
             libraryRoot={state?.libraryRoot ?? ''}
             onSelect={selectVoice}

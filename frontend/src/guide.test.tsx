@@ -38,6 +38,7 @@ vi.mock('./api', () => ({
     chooseJournalDir: () => Promise.resolve(''),
     setLaunchOnBoot: () => Promise.resolve(),
     machineVoices: () => Promise.resolve([]),
+    pluginVoices: () => Promise.resolve([]),
     making: async () => (await import('./making')).nothingMade,
     castMachineVoice: () => Promise.resolve(),
   },

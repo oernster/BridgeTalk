@@ -196,15 +196,34 @@ func (a *App) rememberJournalDir(dir string) error {
 // there when the stored name is not, so writing the voice from remember would freeze
 // a voice nobody picked and keep honouring it every run afterwards.
 //
-// A recorded voice and a machine voice are kept apart, so casting one forgets the other (FR-540).
+// Each kind of voice is kept apart from the others, so casting one forgets whichever was kept
+// before (FR-540, FR-569).
 func (a *App) rememberVoice(name string) error {
-	return a.keep(func(held *ports.Settings) { held.Voice, held.MachineVoice = name, "" })
+	return a.keep(castKept(name, "", "", ""))
 }
 
-// rememberMachineVoice writes the cast machine voice's id down, forgetting any recorded voice, for
+// rememberMachineVoice writes the cast machine voice's id down, forgetting every other kind, for
 // the reason rememberVoice writes a recorded one (FR-540).
 func (a *App) rememberMachineVoice(id string) error {
-	return a.keep(func(held *ports.Settings) { held.Voice, held.MachineVoice = "", id })
+	return a.keep(castKept("", id, "", ""))
+}
+
+// rememberPluginVoice writes the cast plugin voice down by the plugin that offered it and the
+// voice's id within that plugin, forgetting every other kind (FR-569).
+func (a *App) rememberPluginVoice(from, id string) error {
+	return a.keep(castKept("", "", from, id))
+}
+
+// castKept writes the voice cast, of whichever kind, then forgets the rest.
+//
+// The four fields are written together in one place because at most one of them ever holds a
+// voice: a start casts a kept plugin voice ahead of a kept machine voice ahead of a recorded one,
+// so a kind left behind from an earlier cast would speak in place of the one just chosen.
+func castKept(voice, machine, from, pluginVoice string) func(*ports.Settings) {
+	return func(held *ports.Settings) {
+		held.Voice, held.MachineVoice = voice, machine
+		held.Plugin, held.PluginVoice = from, pluginVoice
+	}
 }
 
 // keep reads what is stored, applies a change to it and writes it back.

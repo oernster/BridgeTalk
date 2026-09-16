@@ -78,6 +78,10 @@ type StateDTO struct {
 	// MachineVoice says whether the cast voice is a machine voice, since a recordings folder may
 	// carry a machine voice's id as its name (FR-540).
 	MachineVoice bool `json:"machineVoice"`
+	// Plugin names the plugin the cast voice came from; empty for every other kind. With Voice,
+	// which holds the voice's id within that plugin, it says which plugin voice is cast, since an
+	// id identifies a voice only within its own plugin (FR-569).
+	Plugin string `json:"plugin"`
 }
 
 // MachineVoiceDTO is one machine voice the Cast pane offers: its id, which a cast sends back, the
@@ -88,6 +92,25 @@ type MachineVoiceDTO struct {
 	Name  string `json:"name"`
 	Given string `json:"given"`
 	Group string `json:"group"`
+}
+
+// PluginVoiceDTO is one voice a plugin offers, as the Cast pane shows it.
+//
+// Plugin and ID are what a cast sends back, since an id identifies a voice only within the plugin
+// that offered it (FR-569). Name is the name the plugin gave it; Display is what the screen shows,
+// which is that name unless another plugin offers one like it (FR-568). Ready says whether the
+// audio the voice needs is on this machine and Reason says why it is not, empty while it is
+// (FR-570).
+//
+// No completeness figures travel with it. A recorded voice's figures are read off a folder this
+// application owns; a plugin's audio is the plugin's own business and is never counted here.
+type PluginVoiceDTO struct {
+	Plugin  string `json:"plugin"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Display string `json:"display"`
+	Ready   bool   `json:"ready"`
+	Reason  string `json:"reason"`
 }
 
 // MakingDTO is how far making the cast machine voice's lines has got, as the Cast pane shows it.

@@ -22,6 +22,7 @@ vi.mock('./api', () => ({
     makeVoiceFolders: (name: string) => makeVoiceFolders(name),
     rescan: () => rescan(),
     machineVoices: () => Promise.resolve([]),
+    pluginVoices: () => Promise.resolve([]),
     making: () => Promise.resolve(nothingMade),
     castMachineVoice: () => Promise.resolve(),
   },
@@ -50,7 +51,14 @@ async function show(found: Voice[], active = '') {
   voices.mockResolvedValue(found)
   const onSelect = vi.fn<(name: string) => void>()
   render(
-    <CastPane active={active} machine={false} total={moments} libraryRoot="D:/Recordings" onSelect={onSelect} />,
+    <CastPane
+      active={active}
+      machine={false}
+      plugin=""
+      total={moments}
+      libraryRoot="D:/Recordings"
+      onSelect={onSelect}
+    />,
   )
   if (found.length > 0) {
     // findAllByRole, because every row carries two buttons naming the same voice:
@@ -129,7 +137,7 @@ describe('the cast pane', () => {
   // useful thing it can say is exactly where it looked.
   it('says where it looked when nothing was found', async () => {
     voices.mockResolvedValue([])
-    render(<CastPane active="" machine={false} total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" machine={false} plugin="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
 
     await screen.findByText('No voices found.')
     expect(screen.getByText('D:/Recordings')).toBeTruthy()
@@ -140,14 +148,14 @@ describe('the cast pane', () => {
   // saying nothing.
   it('says nothing about an absence until the answer has arrived', () => {
     voices.mockReturnValue(new Promise(() => undefined))
-    render(<CastPane active="" machine={false} total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" machine={false} plugin="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
 
     expect(screen.queryByText('No voices found.')).toBeNull()
   })
 
   it('names the directory generically when there is not even a root', async () => {
     voices.mockResolvedValue([])
-    render(<CastPane active="" machine={false} total={moments} libraryRoot="" onSelect={vi.fn()} />)
+    render(<CastPane active="" machine={false} plugin="" total={moments} libraryRoot="" onSelect={vi.fn()} />)
 
     await screen.findByText('No voices found.')
     expect(screen.getByText('the chosen directory')).toBeTruthy()
@@ -284,7 +292,7 @@ describe('making a voice', () => {
   it('looks again and lists the voices it found', async () => {
     voices.mockResolvedValueOnce([]).mockResolvedValue([grace])
     rescan.mockResolvedValue(1)
-    render(<CastPane active="" machine={false} total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
+    render(<CastPane active="" machine={false} plugin="" total={moments} libraryRoot="D:/Recordings" onSelect={vi.fn()} />)
     await screen.findByText('No voices found.')
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))

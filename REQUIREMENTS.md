@@ -2403,6 +2403,8 @@ If two plugin voices are offered under the same name, then the application shall
 show each with the name of the plugin offering it.
 Rationale: two plugins may honestly choose one name. Dropping one silently loses a voice the user
 installed.
+Amended on 2026-09-16 by FR-583, not yet built: once each plugin's voices stand in a section headed by
+the plugin, the heading names the plugin and the voice is shown by its own name inside it.
 Built on 2026-09-16. The name a voice is shown by is worked out over the whole list rather than
 per voice, since whether a name is shared is a fact about the list. Where the two plugins carry
 one name as well, the file each was loaded from tells them apart: that is the one thing about a
@@ -2660,6 +2662,146 @@ which is a guard that looks present and is not.
 Verified by: `TestAPanicOnThePluginThreadEndsThatCallAlone` in
 `internal/infrastructure/plugin/runner_internal_test.go`, seen to fail with the guard removed, where
 it took the whole test process down with it.
+
+**Added later on 2026-09-16: version 2 of the interface.** Reviewed and agreed by Oliver the same day;
+nothing below is built. Three abilities a plugin offering many voices needs: its voices shown in named groups, its
+voices heard on Audition before one is cast and a part of a take read from inside a larger file rather
+than from a file of its own. The first and the third change what crosses the boundary, so the
+interface moves to version 2 and version 1 is refused (FR-564). Measured on 2026-09-16 before writing:
+`PLUGINS-GUIDE.md` states version 1; `DecodeDescription` and `DecodeTakes` in
+`internal/infrastructure/plugin/wire.go` read no group and no span; `take.Take` is a list of paths
+(`internal/domain/take/take.go`); the Cast pane shows every plugin voice under one heading, "Plugin
+voices" (`frontend/src/pluginVoices.tsx`); the Audition chooser asks for recorded and machine voices
+alone (`frontend/src/audition.tsx`); the player picks a decoder by the path's extension and opens the
+whole file (`internal/infrastructure/audio/formats.go`).
+
+**FR-581 The application implements version 2 of the interface**
+Priority: Must.
+The application shall implement version 2 of the plugin interface and no other version.
+Rationale: Oliver's ruling on 2026-09-16. A group and a span each change a layout, so a plugin built
+against version 1 would be read wrongly rather than refused. No plugin has been loaded against
+version 1 (`PLUGINS-GUIDE.md`, "A worked example"), so nobody's plugin stops working.
+Acceptance: Given a plugin whose `BridgeTalkPluginABIVersion` answers 1, when the application starts,
+then that plugin is passed over and the run log names its file, the version 1 and the version 2.
+Not yet built.
+
+**FR-582 A plugin voice may name a group**
+Priority: Must.
+When the application reads a plugin's description, the application shall read with each voice the name
+of the group it belongs to, where an empty name places the voice in no group.
+Rationale: a plugin offering many voices of different kinds wants them told apart on the screen; the
+plugin is the only thing that knows the kinds. A group is shown and never kept: a cast voice is still
+found again by its plugin and id alone (FR-569), so a plugin may move a voice between groups freely.
+Acceptance: Given a plugin describing `quartermaster` in the group `Crew` and `dockmaster` with an empty
+group, then the first is read in `Crew` and the second in no group.
+Not yet built.
+
+**FR-583 The Cast pane shows each plugin's voices in a section of its own**
+Priority: Must.
+While at least one plugin offers a voice, the Cast pane shall show one section for each plugin, headed by
+the name that plugin gives, in place of the single "Plugin voices" section.
+Rationale: with several plugins loaded, one list mixes voices whose audio lives in unrelated places.
+Where two plugins give one name, the section is headed by the name with the file it was loaded from,
+as FR-568 tells two such voices apart.
+Oliver ruled on 2026-09-16 that a voice is shown by its own name inside its section, since the heading
+already says which plugin offers it, which amends FR-568; the cast voice's card and the list of voices
+that cannot speak stand inside their own plugin's section.
+Acceptance: Given the plugins `Quartermaster Voices` and `Station Voices` each offering one voice, when
+the Cast pane opens, then two sections are shown, headed `Quartermaster Voices` and `Station Voices`,
+each holding its own voice.
+Not yet built.
+
+**FR-584 A plugin's groups are sub-sections of its section**
+Priority: Must.
+The Cast pane shall show, inside a plugin's section, the voices in no group first, then one sub-section
+for each group headed by the group's name, in the order the plugin first names each group.
+Rationale: the order a plugin gives is the one order the plugin author controls; sorting by name would
+put a plugin's lesser group first on the strength of its spelling.
+Acceptance: Given `Quartermaster Voices` offering, in order, `Ada` in `Crew`, `Bo` in no group, `Cy` in
+`Stations` and `Di` in `Crew`, when the Cast pane opens, then its section shows `Bo`, then `Crew`
+holding `Ada` and `Di`, then `Stations` holding `Cy`.
+Not yet built.
+
+**FR-585 The Audition pane offers plugin voices**
+Priority: Should.
+The Audition pane's chooser shall offer every plugin voice that can speak after the machine voices,
+shown by the name the Cast pane shows it by.
+Rationale: Oliver's ruling on 2026-09-16 (FR-745). Hearing a voice before casting it is the point of
+Audition; a plugin voice is the kind a user is least able to judge from its name. A voice that cannot
+speak is not offered, as it is not offered as a control on the Cast pane (FR-570).
+Acceptance: Given a plugin offering `Ada` (who can speak) and `Bo` (who cannot), when the Audition
+pane opens, then the chooser offers `Ada` after the machine voices and does not offer `Bo`.
+Not yet built.
+
+**FR-586 An auditioned plugin voice plays its own takes without being cast**
+Priority: Should.
+When a group is auditioned with a plugin voice chosen, the application shall play a take that plugin
+answers for that voice (drawn as FR-745 draws one) and shall leave the cast voice as it was.
+Rationale: today only the cast plugin voice is asked for takes (FR-571), so auditioning a voice that is
+not cast needs its takes asked for on its own account. Casting stays a separate act on the Cast pane,
+as it does for every other kind of voice. The group counts follow FR-746 over the same answers.
+Acceptance: Given `Ada` cast and `Bo` chosen on the Audition pane, with `Bo` answering one take for
+`DockingGranted`, when the `DockingGranted` group is auditioned, then that take plays and `Ada` is still
+cast.
+Not yet built.
+
+**FR-587 If a plugin refuses a moment during an audition, then that moment has no take**
+Priority: Should.
+If a plugin refuses the call for a moment's takes or answers a layout that does not read while its voice
+is auditioned, then the application shall count no take for that moment and shall play nothing for it.
+Rationale: the same answer the catalogue gives a cast voice (`PLUGINS-GUIDE.md`, "When Bridge Talk
+refuses a plugin"); a moment that fails on Audition and plays on a cast voice would teach the user
+something untrue.
+Acceptance: Given `Bo` refusing every call for `Docked.Set` and answering one take for `Docked`, with both
+switched on, when the `Docked` group is auditioned, then its count is one and the take of `Docked` plays.
+Not yet built.
+
+**FR-588 A part of a take may be a span of a file**
+Priority: Must.
+When a plugin answers a take, the application shall read each part either as a whole file or as a span
+of a file given by its path, the offset of its first byte and its length in bytes.
+Rationale: some audio a user already has sits many recordings to one file. Without a span a plugin
+would have to copy each recording out to a file of its own before it could be played, which writes to
+the user's disk what they never asked for. A span is still a file path in the application's own terms
+(CON-9); the application reads the bytes where they stand (FR-572).
+A file can be larger than a 32 bit number reaches, so the offset and the length are 64 bit integers,
+amending calling rule 7 of `PLUGINS-GUIDE.md` for those two fields alone (Oliver, 2026-09-16).
+Acceptance: Given a file whose bytes 1,000 to 4,999 hold a whole MP3 recording, when a take answers one
+part as that file at offset 1,000 with length 4,000, then that recording is played and the file is
+unchanged.
+Not yet built.
+
+**FR-589 A span is decoded as the format the plugin names**
+Priority: Must.
+The application shall decode a span as the format its plugin names for it (one of MP3, WAV, FLAC and
+Ogg) and shall decode a whole file by its extension as it does today (FR-203).
+Rationale: the file holding a span carries an extension of its own that says nothing about what is
+inside it. The list of formats keeps its one home beside the decoders.
+Acceptance: Given a span named as MP3 inside a file ending `.bin`, then it is decoded as MP3.
+Not yet built.
+
+**FR-590 If a span cannot be read as given, then that part is passed over**
+Priority: Must.
+If a span's offset or length is negative, if the span reaches past the end of its file or if it names a
+format the application does not decode, then the application shall pass over that part and shall record
+the part with the reason, as FR-574 passes over a part that will not open.
+Rationale: an offset and a length are foreign input (FR-579's reasoning). A span past the end of its
+file is most often a file changed on disk since the plugin read it, which is a note rather than a fault.
+Acceptance: Given a file of 10,000 bytes and a take of two parts, the first a span at offset 9,000 with
+length 4,000 and the second a whole WAV file, then the first is recorded as reaching past the end of its
+file and the second plays.
+Not yet built.
+
+**FR-591 Two spans of one file are two different takes**
+Priority: Must.
+The application shall identify a take by its first part's path together with that part's offset and
+length, where the part is a span.
+Rationale: the picker avoids the take it chose last by its identity (FR-610). Measured on 2026-09-16:
+`Take.Key` answers the first part's path alone, so every take beginning in one shared file would read as
+one take and the picker could not tell them apart.
+Acceptance: Given three takes of `DockingGranted`, each one span of the same file at a different offset,
+when the moment fires twice, then the second take played is a different span from the first.
+Not yet built.
 
 ---
 
@@ -4576,8 +4718,8 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

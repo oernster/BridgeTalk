@@ -2489,6 +2489,42 @@ Rationale: uninstall hands the whole install directory to a shell that removes i
 mentioned.
 Verified by: nothing yet.
 
+**FR-579 An answer larger than the application will set aside is refused**
+Priority: Must.
+If a plugin names, for one answer, a size larger than the most the application will set aside, then
+the application shall pass over that answer, shall record the size it named and shall not ask the
+plugin for that answer again.
+Rationale: the size a plugin names is the one number acted on before anything can be read, since the
+buffer is made to fit before a byte arrives. A size field is 32 bits wide, so a plugin answering
+garbage can ask for two gigabytes; an allocation that large is not an error a program recovers from,
+it is the application ending with nothing said. Everything else a plugin sends is already distrusted
+(CON-9's reading rules); this is the one number that was not.
+Built on 2026-09-16 during a robustness pass, with the limit at four mebibytes and stated as a
+calling rule in PLUGINS-GUIDE.md so a plugin author knows it. No honest answer comes near it: the
+largest the layouts allow is a description of every voice a plugin offers, which is names and
+reasons.
+Verified by: `TestAnAnswerOverTheCapIsRefusedByItsSize` in
+`internal/infrastructure/plugin/runner_internal_test.go`, which pins both sides of the limit and
+was seen to fail with the guard removed. The test holds the boundary wherever the limit sits; the
+value of the limit is a judgement rather than something a test can settle.
+
+**FR-580 A fault raised by a call into a plugin ends that call alone**
+Priority: Must.
+If a call into a plugin raises a fault the application can catch, then the application shall treat
+that call as refused and shall carry on running.
+Rationale: a plugin is somebody else's code reached through a raw call, so a fault on the way into
+it or out of it is a thing that happens. Without this it ends the whole application, taking the
+window with it, over one voice that misbehaved; a refused call already has a meaning here and
+nothing downstream has to learn a new one.
+Note on what this cannot cover: a fault inside the plugin's own code, an access violation being the
+usual one, cannot be caught by the application and ends the run. Nothing here claims otherwise.
+Built on 2026-09-16 during a robustness pass. The guard sits on the plugin thread rather than on
+the caller waiting for it: a guard on the caller cannot catch a fault raised on another thread,
+which is a guard that looks present and is not.
+Verified by: `TestAPanicOnThePluginThreadEndsThatCallAlone` in
+`internal/infrastructure/plugin/runner_internal_test.go`, seen to fail with the guard removed, where
+it took the whole test process down with it.
+
 ---
 
 ## 7. The cue engine
@@ -3941,7 +3977,7 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-578, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-809, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

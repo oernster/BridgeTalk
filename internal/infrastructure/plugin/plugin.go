@@ -11,6 +11,19 @@ import (
 // other version is passed over by name (FR-564).
 const ABIVersion = 1
 
+// maxAnswer is the most bytes a plugin may ask this application to set aside for one answer.
+//
+// The size a plugin names is foreign input like every other number it sends; it is also the one
+// acted on before anything can be read: the buffer is made to fit before a single byte
+// arrives. A size field is a 32 bit number, so a plugin that answers garbage can ask for two
+// gigabytes. An allocation that large is not an error a program recovers from; it is the program
+// ending with nothing said.
+//
+// Four megabytes is far beyond any honest answer. The largest answer the layouts allow is a
+// description of every voice a plugin offers, which is names and reasons; a list of paths for one
+// cue is smaller again. A plugin that needs more than this has gone wrong rather than grown.
+const maxAnswer = 4 << 20
+
 // Library is a loaded plugin's three exported functions, as PLUGINS-GUIDE.md states them.
 //
 // It is an interface so that everything above it can be exercised without a library file,
@@ -105,6 +118,9 @@ func (p *Plugin) ask(call func(buffer []byte) int32) ([]byte, error) {
 	}
 	if size == 0 {
 		return nil, nil
+	}
+	if size > maxAnswer {
+		return nil, fmt.Errorf("%w: it asked for %d bytes, over the %d it may", ErrMalformed, size, maxAnswer)
 	}
 	buffer := make([]byte, size)
 	p.on.do(func() { written = call(buffer) })

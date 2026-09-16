@@ -83,6 +83,11 @@ implements (FR-564).
    zero byte inside one is harmless.
 7. **Integers are signed, 32 bit, little endian.** No floating point crosses the boundary, no struct
    is passed by value and there are no callbacks.
+8. **An answer is at most 4 MiB.** The size asked for is the one number acted on before anything can
+   be read, since the buffer is made to fit before a byte arrives; a size field is 32 bits wide, so a
+   plugin answering garbage could ask Bridge Talk to set aside two gigabytes. A size above the limit
+   is refused by the number it asked for and the second call is never made. No honest answer comes
+   near it: the largest is a description of every voice a plugin offers, which is names and reasons.
 
 ### Calls arrive one at a time, on one thread
 
@@ -173,6 +178,8 @@ it is described by appears anywhere in this repository (`REQUIREMENTS.md`, CON-9
 Every refusal names what was refused and why, in the run log at `%LOCALAPPDATA%\BridgeTalk\Log.txt`
 (FR-567). A plugin is passed over when the file will not load, when a required function is missing,
 when the ABI version does not match, when it offers no voice or when it offers a voice with no name.
+A single answer is passed over when it does not read as its layout, when the plugin asks for more
+than 4 MiB or when a call into it panics: the call answers nothing and the application carries on.
 One plugin being passed over never stops another loading (FR-561).
 
 If two plugins offer voices under the same name, both are kept and each is shown with the name of the

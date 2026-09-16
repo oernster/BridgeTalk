@@ -39,6 +39,8 @@ project.
   speaking one shared script and made on the user's own machine (section 6.1).
 - An audio source port through which another kind of voice is supplied (section 6); recorded voices
   and machine voices both reach the catalogue through it.
+- Plugins: voices supplied by native libraries the user installs into the application's own plugins
+  folder, reaching the catalogue through that same port (section 6.3).
 - Windows and Linux, decided by Oliver on 2026-09-13. Linux work comes after
   everything else.
 
@@ -68,6 +70,11 @@ project.
 | Searching or filtering the list on Chatter | Not asked for; the categories of FR-635 break the 262 moments up |
 | Changing a moment's priority, cooldown or words from Chatter | `cues.toml` and `script.toml` are edited as files |
 | Switching moments on or off by time or by what the game is doing | Not asked for; a switch changes only when it is pressed |
+| Shipping a plugin or any audio a plugin reads, with the application | The application ships the interface alone (CON-5, CON-9) |
+| Checking a plugin's signature or its author | A plugin is trusted because the user put it in the folder (Oliver, 2026-09-16); stated as a non claim in section 5 |
+| Finding, downloading, installing or updating a plugin from the application | A plugin is installed by its own means; the application loads what is in the folder and nothing more |
+| A plugin adding cues, altering the cue table or changing playback | FR-502; a plugin supplies audio alone |
+| Loading a plugin from a path the user chooses | FR-560; one folder inside the install directory, so what is loaded can be seen by opening it |
 
 ### 1.4 Definitions
 
@@ -85,7 +92,10 @@ project.
 | **Fade** | The end of a made line whose last speech sound is a nasal, falling linearly to zero over the 30 ms before the hiss the model adds after that nasal starts, then silent to the line's end, from the sample the pauses tool found for that voice and line (FR-555, FR-556). |
 | **Library root** | One directory the user chooses, holding one subdirectory per voice. |
 | **Manifest** | `voice.toml` in a voice directory. Optional; it may carry the name a voice is shown by, a credit and takes the convention cannot find (FR-210). |
-| **Take** | One audio file answering one cue. A cue may have several takes. |
+| **Take** | One answer to one cue, made of one part or more played in order. A cue may have several takes. |
+| **Part** | One audio file of a take. A take of several parts is played in order, with no join beyond the natural one (FR-573). |
+| **Plugin** | A native library file in the application's plugins folder, offering one voice or more whose audio is already on the user's machine. It answers takes for cue ids and nothing else (FR-502, section 6.3). |
+| **Plugin voice** | A voice offered by a plugin, identified by the plugin it came from and by its own id within that plugin (FR-569). |
 | **Cast** | The act of selecting the voice that speaks. |
 | **Audition** | Playing a take on demand from the user interface, outside game events. |
 | **Message key** | The `Message` value of a `ReceiveText` journal event, exactly as the game writes it. |
@@ -160,6 +170,8 @@ schema in section 3 is already portable, so nothing there changes either way.
 | CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
 | CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. |
+| CON-9 | No file in this repository, tracked or ignored, names the audio a plugin reads, the folders it sits in, the way it is arranged or the words it is described by. The interface speaks the application's own cue ids and file paths alone. That mapping lives in the plugin's own repository. Added on 2026-09-16. |
+| CON-10 | A plugin is a native library loaded from the application's own install directory, so loading one asks for no administrator rights (CON-6) and writes nothing outside it. Added on 2026-09-16. |
 
 ### 2.5 Assumptions
 
@@ -955,11 +967,15 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt` and `go vet`; `build.ps1` runs `test.ps1` ahead of any build. Not enforced today for `staticcheck`: no script runs it; it is run by hand |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. No test asserts the outbound surface today; `TestDomainIsPure` forbids `net` and `net/http` in the domain alone |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | No test today. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
+| NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection of the loader once it is built; no test today |
+| NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. The limit is a proposal for Oliver to react to rather than a measurement; nothing has been built to measure |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
 
 **Non claims, stated deliberately:**
 
 - The application does not encrypt recordings at rest.
+- The application does not check who wrote a plugin or whether it has been altered. A plugin runs
+  with the rights of the person who put it in the folder.
 - The application does not verify who a recording is of or who owns it.
 - The application does not record, process, clean up or improve audio.
 - The application cannot control the game.
@@ -983,10 +999,15 @@ implementation. The name a voice is shown by is handed to the catalogue beside i
 Verified by: `TestTheCatalogueAnswersFromAnyAudioSource` in
 `internal/infrastructure/library/catalogue_test.go`.
 
-**FR-502 An extension supplies audio, never behaviour**
+**FR-502 A plugin supplies audio, never behaviour**
 Priority: Must.
 An implementation of the port shall supply takes for cue ids and nothing else. It
 shall not add cues, alter the cue table or change playback behaviour.
+Amended on 2026-09-16: the word was extension, which this document already uses for the part of a
+file name after the dot. A supplier of audio from outside the application is a plugin throughout
+(section 6.3). The rule itself is unchanged. FR-573 lets a take carry several parts, which is the
+shape of a take rather than a change to playback behaviour; it is answered through this same method
+and is offered to every kind of voice.
 Verified by: in part, `ports.AudioSource` declares one method, `Lookup`, which answers takes for a cue id.
 A scanned `library.Voice` and the made voice `MakingService.Cast` answers with both implement it.
 
@@ -2206,6 +2227,184 @@ script.
 | NFR-Q-501 | Withdrawn on 2026-09-14. It held a Go port of misaki's rules to 99 percent agreement with misaki; misaki itself now makes every line's speech sounds (FR-532), so there is no port to hold. NFR-Q-501 is retired and is not reused. | None |
 | NFR-C-501 | The files a machine voice is made from add no more than 400 MB to an install | Inspection of the setup payload. Measured parts: about 354 MB |
 | NFR-C-502 | The made lines of the cast machine voice for a complete script take no more than 60 MB of disk | `TestMakingACompleteScriptKeepsWithinDisk` in `tests/machinevoice/script_test.go` casts `bf_emma` over an empty store with the real model and asks for every cue's lines, then sums the made lines' files once making ends and fails over the limit; it has no time limit (Oliver, 2026-09-14). It runs with `./test.ps1 -Benchmarks` and on every build. Measured on 2026-09-14 over the complete script: 768 of 768 lines made in 3 m 17 s, taking 51.7 MB. Proved before M11: 3 lines took 0.2 MB and passed, then the test failed naming NFR-C-502 with the limit cut to one byte |
+
+### 6.3 Plugins
+
+**Added on 2026-09-16.** Oliver asked for voices supplied from outside the application: audio already
+on the user's machine, held in an arrangement the application knows nothing about, reached through a
+native library installed separately from the application itself. His rulings that day: the plugins
+folder holds one library file or more, named as their authors please, each loaded on its own account;
+the name a voice is shown by comes from the plugin rather than from the file it lives in; a signature
+is not checked, so a plugin is trusted because the user put it there; a take may sometimes be several
+audio files played in order; that ability belongs to every kind of voice rather than to plugins
+alone; a part that will not open is passed over rather than losing the take; the uninstall screen
+offers to keep the folder; a plugin built against a different interface version is refused by name.
+
+The interface is specified here in the application's own terms alone: cue ids and file paths. What a
+plugin's audio is, where it came from and how it is arranged are the plugin's own business and are
+named nowhere in this repository (CON-9).
+
+**Assumed, not ruled on:** the setup program creates the plugins folder; the application treats
+its absence as no plugins rather than as a fault (FR-560, FR-562). Owner Oliver, to confirm before
+FR-560 is built.
+
+**FR-560 Plugins are loaded from one folder**
+Priority: Must.
+When the application starts, the application shall load every plugin file in the plugins folder
+inside its own install directory, which is the only place it loads a plugin from.
+Rationale: one place to look means a user can see what is loaded by opening a folder. A path the user
+can set is a way to load code from anywhere, which is a larger promise than this needs.
+Verified by: nothing yet.
+
+**FR-561 Each plugin is loaded on its own account**
+Priority: Must.
+If a plugin file cannot be loaded, then the application shall pass over that file alone and shall
+load the rest.
+Rationale: one bad file leaving the user with no voices at all would be a poor trade for simplicity.
+Verified by: nothing yet.
+
+**FR-562 No folder and no plugin are not faults**
+Priority: Must.
+While the plugins folder is absent or holds no plugin, the application shall start as it does today
+and shall report nothing.
+Rationale: almost every user has no plugin. Nothing about the ordinary case should mention them.
+Verified by: nothing yet.
+
+**FR-563 A plugin states the interface version it was built against**
+Priority: Must.
+When the application loads a plugin, the application shall ask the plugin which version of the
+interface it was built against.
+Rationale: the handshake is what lets the interface change later without a plugin failing in a way
+nobody can read.
+Verified by: nothing yet.
+
+**FR-564 If the interface version does not match, then refuse the plugin by name**
+Priority: Must.
+If a plugin states a version the application does not implement, then the application shall pass over
+that plugin and shall record its file name, the version it stated and the version the application
+implements.
+Rationale: the house rule for a refusal is that it names what was refused in words of its own
+(FR-237). "A plugin failed to load" sends the user nowhere.
+Verified by: nothing yet.
+
+**FR-565 A plugin states its own name and the voices it offers**
+Priority: Must.
+When the application has loaded a plugin, the application shall ask it for its name and for the
+voices it offers, each with the name it is shown by.
+Rationale: the file name is not a contract, since the user may rename the file. The plugin is the
+only thing that knows what it is.
+Verified by: nothing yet.
+
+**FR-566 If a plugin offers no voice, then refuse it with a reason**
+Priority: Must.
+If a plugin offers no voice or offers a voice with no name, then the application shall pass over
+that plugin and shall record why.
+Rationale: a plugin present and silent is the case a user cannot diagnose without being told.
+Verified by: nothing yet.
+
+**FR-567 Every plugin refusal reaches the log**
+Priority: Must.
+When the application passes over a plugin or one of its voices, the application shall write the
+reason to the run log (FR-715).
+Rationale: the log is where the author already looks; a refusal that exists only on screen is gone
+by the time it is asked about.
+Verified by: nothing yet.
+
+**FR-568 Two voices offered under one name stay apart**
+Priority: Should.
+If two plugin voices are offered under the same name, then the application shall keep both and shall
+show each with the name of the plugin offering it.
+Rationale: two plugins may honestly choose one name. Dropping one silently loses a voice the user
+installed.
+Verified by: nothing yet.
+
+**FR-569 A plugin voice is cast as a kind of its own**
+Priority: Must.
+The settings shall keep a cast plugin voice apart from a recorded voice and from a machine voice, by
+the plugin it came from and the voice's own id within that plugin.
+Rationale: FR-540 keeps a machine voice apart from a recorded voice for the same reason: one name
+could not say which kind was cast. A third kind needs the same treatment; a voice's id within a
+plugin is unique only within that plugin.
+Verified by: nothing yet.
+
+**FR-570 A plugin says whether the audio a voice needs is present**
+Priority: Must.
+When the application loads a plugin, the application shall ask each of its voices whether the audio
+it needs is present on this machine, then take a voice that says it is not as unavailable to
+cast, with the reason it gave.
+Rationale: the audio belongs to the user and can be moved or removed at any time. A voice offered
+and then silent is worse than a voice shown as unavailable with a reason.
+Verified by: nothing yet.
+
+**FR-571 The checklist offers no folder for a plugin voice**
+Priority: Should.
+While a plugin voice is cast, the checklist shall name the moments that voice has no take for and
+shall not offer to open or create a folder for any of them.
+Rationale: the checklist opens the folder a recording belongs in. A plugin voice has no such folder,
+since the application does not know where its audio lives and may not write there.
+Verified by: nothing yet.
+
+**FR-572 The application never writes a plugin's audio**
+Priority: Must.
+The application shall play a plugin's audio where it stands and shall never copy, move, rewrite or
+delete it.
+Rationale: the promise made to recordings (CON-7, NFR-S-2) is the same promise; the audio here is
+more likely still to belong to somebody else.
+Verified by: nothing yet.
+
+**FR-573 A take may be several parts played in order**
+Priority: Must.
+The audio source port shall answer, for a cue id, takes of one part or more; the player shall
+play a chosen take's parts in the order the port gave them.
+Rationale: a moment's line is sometimes recorded in pieces. Offering the pieces as separate takes
+would let the picker choose the middle of a line and speak it alone. Every kind of voice answers the
+same shape, so the catalogue, the picker and the player learn nothing about where a take came from
+(Oliver, 2026-09-16). A natural join between parts is enough; nothing here asks for gapless playback.
+Note: a scanned recorded voice and a machine voice answer takes of one part each today. Whether the
+scanner ever groups files into one take is OQ-21.
+Verified by: nothing yet.
+
+**FR-574 If a part will not open, then play the parts that do**
+Priority: Must.
+If a part of a chosen take cannot be opened or decoded, then the application shall pass over that
+part, shall play the remaining parts in order and shall record the part it passed over.
+Rationale: Oliver's ruling on 2026-09-16. Most of a line is better than none of it; the audio can
+change under the application at any time without the plugin knowing.
+Verified by: nothing yet.
+
+**FR-575 If no part of a chosen take plays, then the cue is silent**
+Priority: Must.
+If no part of a chosen take can be played, then the application shall play nothing for that cue and
+shall record what it tried.
+Rationale: silence is the correct answer when the alternative is saying the wrong line; the same
+judgement the catalogue already makes for a cue no voice serves.
+Verified by: nothing yet.
+
+**FR-576 The setup program creates the plugins folder**
+Priority: Should.
+When the setup program installs or updates the application, it shall create the plugins folder inside
+the install directory if it is not already there.
+Rationale: a folder the user has to create by name is a step to get wrong. Creating it costs nothing
+and says where a plugin goes.
+Verified by: nothing yet.
+
+**FR-577 An update and a repair leave the plugins folder alone**
+Priority: Must.
+When the setup program updates or repairs the application, it shall leave every file in the plugins
+folder as it found it.
+Rationale: a plugin is the user's, installed separately; an update that removed it would be a
+surprise with no warning. Measured on 2026-09-16: `ExtractZip` writes its entries over the
+destination and never clears it, so this holds today and the requirement exists to keep it holding.
+Verified by: nothing yet.
+
+**FR-578 Uninstall offers to keep the plugins folder**
+Priority: Must.
+While the plugins folder holds at least one file, when the uninstall screen is shown, the setup
+program shall offer to keep that folder, as it offers to keep the saved window state.
+Rationale: uninstall hands the whole install directory to a shell that removes it (measured on
+2026-09-16 in `dirDeletion`), so a plugin the user installed separately would go without being
+mentioned.
+Verified by: nothing yet.
 
 ---
 
@@ -3650,6 +3849,8 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
+| OQ-21 | FR-573 gives every kind of voice a take of several parts. Does a recorded voice need one? By what convention would the scanner group files into a single take? | Oliver | Before any scanner change is written for it | Leave the scanner as it stands. A plugin answers its parts directly, so it needs no convention; a recorded voice would need one invented (a suffix, a folder or a manifest entry), which is a feature of its own with its own reporting. Nothing is specified for it until it is asked for. |
+| OQ-22 | Is the plugins folder created by the setup program as FR-576 assumes? The alternative is the application creating it at startup. | Oliver | Before FR-560 is built | The setup program, since it already makes the install directory and the application then has one less thing to write. The application treats an absent folder as no plugins either way (FR-562). |
 | OQ-20 | Lines heard back to back and over station traffic: which moments did the player hear together? | Oliver, asking the player | Before any requirement for it is written | Ask the player for `Log.txt` from `%LOCALAPPDATA%\BridgeTalk` after a session where it happened; nothing is specified for it until that log is read. Measured so far over Oliver's 101 journals: each of the 2,147 `$STATION_docking_granted` messages arrived in the same second as a `DockingGranted` event. Both reach an `ambient` cue (`ReceiveText.StationTraffic` since FR-638 and `DockingGranted`), which joins the queue while nothing waits even though something plays (FR-612). Read from the specification, a granted docking therefore speaks twice back to back while the station speaks; that is a hypothesis, since no session has been heard doing it. |
 
 ---
@@ -3658,8 +3859,8 @@ headless test is how it gets tested.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1, NFR-S-2, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-809, NFR-P-201, NFR-P-204 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-575, FR-577, FR-578, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Should** | FR-206, FR-210, FR-212, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-568, FR-571, FR-576, FR-809, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

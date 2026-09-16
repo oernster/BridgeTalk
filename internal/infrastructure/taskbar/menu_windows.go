@@ -4,28 +4,23 @@ package taskbar
 
 import "unsafe"
 
-// menuVoice is one entry of the Voice submenu as it is drawn.
+// menuVoice is one entry of the Voice submenu with the identifier Win32 reports it chosen by.
 type menuVoice struct {
-	id      uint32
-	label   string
-	checked bool
-	// separated marks the first voice of a kind after a voice of another, drawn under a separator.
+	id        uint32
+	label     string
+	checked   bool
 	separated bool
 }
 
-// voiceItems lists the Voice submenu: each voice under the label it is shown by, the cast one
-// checked by everything that identifies it (FR-210, FR-540, FR-569, FR-710). The kinds follow one
-// another in the order they were given, each group after the first under a separator (FR-509). It
+// voiceItems lists the Voice submenu as menu.go says it reads, each entry with its identifier. It
 // is apart from showMenu so the entries can be read without a menu to draw them in.
 func (t *Tray) voiceItems() []menuVoice {
 	active, _ := t.active.Load().(Voice)
-	items := make([]menuVoice, 0, len(t.options.Voices))
-	for index, choice := range t.options.Voices {
+	entries := voiceEntries(t.options.Voices, active)
+	items := make([]menuVoice, 0, len(entries))
+	for index, entry := range entries {
 		items = append(items, menuVoice{
-			id:        uint32(idVoiceBase + index),
-			label:     choice.Label,
-			checked:   choice.Voice == active,
-			separated: index > 0 && choice.Kind != t.options.Voices[index-1].Kind,
+			id: uint32(idVoiceBase + index), label: entry.label, checked: entry.checked, separated: entry.separated,
 		})
 	}
 	return items
@@ -51,7 +46,7 @@ func (t *Tray) showMenu() {
 		appendMenuItem(voices, item.id, item.label, flags)
 	}
 	if len(t.options.Voices) > 0 {
-		appendSubmenu(menu, voices, "Voice")
+		appendSubmenu(menu, voices, voiceMenu)
 		appendSeparator(menu)
 	}
 
@@ -59,11 +54,11 @@ func (t *Tray) showMenu() {
 	if t.muted.Load() {
 		muteFlags = mfChecked
 	}
-	appendMenuItem(menu, idShow, "Open", 0)
+	appendMenuItem(menu, idShow, openItem, 0)
 	appendSeparator(menu)
-	appendMenuItem(menu, idMute, "Mute", muteFlags)
+	appendMenuItem(menu, idMute, muteItem, muteFlags)
 	appendSeparator(menu)
-	appendMenuItem(menu, idQuit, "Quit", 0)
+	appendMenuItem(menu, idQuit, quitItem, 0)
 
 	var cursor point
 	_, _, _ = procGetCursorPos.Call(uintptr(unsafe.Pointer(&cursor)))

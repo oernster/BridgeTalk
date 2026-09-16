@@ -86,6 +86,9 @@ type StateDTO struct {
 	// which holds the voice's id within that plugin, it says which plugin voice is cast, since an
 	// id identifies a voice only within its own plugin (FR-569).
 	Plugin string `json:"plugin"`
+	// NativeMissingOn names the platform where machine voices and plugins are not offered yet, so the
+	// Cast pane can say so where each would be; empty where they are offered (FR-817, FR-818).
+	NativeMissingOn string `json:"nativeMissingOn"`
 }
 
 // MachineVoiceDTO is one machine voice the Cast pane offers: its id, which a cast sends back, the

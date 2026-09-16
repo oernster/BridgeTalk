@@ -43,7 +43,7 @@ func TestNoPluginsFolderIsSilence(t *testing.T) {
 	t.Parallel()
 
 	log := &written{}
-	set := loadPlugins(filepath.Join(t.TempDir(), product.Slug+".exe"), nil, runlog.NewLines(log))
+	set := loadPlugins(filepath.Join(t.TempDir(), product.Slug+".exe"), nil, "", runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {
@@ -70,7 +70,7 @@ func TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog(t *testing.T) {
 	}
 
 	log := &written{}
-	set := loadPlugins(filepath.Join(dir, product.Slug+".exe"), nil, runlog.NewLines(log))
+	set := loadPlugins(filepath.Join(dir, product.Slug+".exe"), nil, "", runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {
@@ -119,7 +119,7 @@ func TestAnApplicationThatCannotTellWhereItIsLoadsNoPlugin(t *testing.T) {
 	t.Parallel()
 
 	log := &written{}
-	set := loadPlugins("", os.ErrNotExist, runlog.NewLines(log))
+	set := loadPlugins("", os.ErrNotExist, "", runlog.NewLines(log))
 	defer set.Close()
 
 	if len(set.Voices()) != 0 {

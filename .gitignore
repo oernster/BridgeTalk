@@ -64,6 +64,14 @@ frontend/src/assets/bridge-talk.png
 dist-installer/
 installer/build/
 
+# What build_flatpak.sh makes; cleanup_flatpak.sh removes the same list
+.flatpak-build/
+.flatpak-repo/
+.flatpak-builder/
+/BridgeTalk.flatpak
+/packaging/
+/uk.codecrafter.BridgeTalk.yml
+
 # The files a machine voice is made from, filled by `go run ./tools/models` (FR-536)
 /models/
 

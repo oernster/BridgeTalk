@@ -129,3 +129,14 @@ it('says why a cast was refused', async () => {
 
   expect(screen.getByRole('alert').textContent).toContain('cannot speak')
 })
+
+// FR-818: where plugins are not available yet, the section says so even with no plugin loaded, which
+// is every run there; it offers no voice.
+it('says plugins are not available on the platform named and offers no voice', async () => {
+  pluginVoices.mockResolvedValue([officer])
+  render(<PluginVoices active="" plugin="" missingOn="Linux" />)
+  await act(async () => {})
+  expect(screen.getByRole('heading', { name: 'Plugin voices' })).toBeTruthy()
+  expect(screen.getByText('Plugins are not available on Linux yet.')).toBeTruthy()
+  expect(screen.queryAllByRole('button')).toHaveLength(0)
+})

@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from 'react'
 import { api, on, type MachineVoice, type Making } from './api'
-import { castLabel, counted } from './castWords'
+import { castLabel, counted, notYetOn } from './castWords'
 import type { Outcome } from './chooser'
 import { nothingMade } from './making'
 
@@ -56,10 +56,13 @@ export function MachineVoices({
   active,
   machine,
   total,
+  missingOn = '',
 }: {
   active: string
   machine: boolean
   total: number
+  /** The platform where machine voices are not offered yet; empty where they are (FR-817). */
+  missingOn?: string
 }) {
   const [voices, setVoices] = useState<MachineVoice[]>([])
   const [making, setMaking] = useState<Making>(nothingMade)
@@ -82,6 +85,15 @@ export function MachineVoices({
   }
 
   const castVoice = machine ? voices.find((voice) => voice.id === active) : undefined
+
+  if (missingOn !== '') {
+    return (
+      <>
+        <h3>Machine voices</h3>
+        <p className="lede">{notYetOn('Machine voices', missingOn)}</p>
+      </>
+    )
+  }
 
   return (
     <>

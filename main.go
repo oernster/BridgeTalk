@@ -301,7 +301,7 @@ func run() error {
 		table: table, available: found,
 		chooser: chooser, player: player,
 		making: making, maker: maker,
-		plugins: loadPlugins(executable, whereabouts, runLog()),
+		plugins: loadPlugins(executable, whereabouts, nativeVoicesMissingOn, runLog()),
 		// Read once here, over the same store the directories came from (FR-629).
 		chatter: services.NewChatterService(table, settings),
 	}
@@ -336,7 +336,7 @@ func run() error {
 // interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
 func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
 	tray := taskbar.New(taskbar.Options{
-		Title: appTitle, Voices: trayChoices(found, offered), Active: active,
+		Title: appTitle, Voices: trayChoices(found, offered, nativeVoicesMissingOn), Active: active, Icon: applicationIcon,
 	})
 	if err := tray.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)

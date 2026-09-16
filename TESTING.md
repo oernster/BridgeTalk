@@ -41,6 +41,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/application/...` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/appdata` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/config` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/iconfile` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/journal` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/library` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/madelines` | 100% | 100% | `test.ps1` |
@@ -57,16 +58,17 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 84.8% | 82% | `test.ps1` |
-| `internal/infrastructure/setup` | 79.7% | 79% | `test.ps1` |
+| the root package (the Wails facade) | 85.0% | 82% | `test.ps1` |
+| `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 67.0% | 67% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 69.6% | 67% | `test.ps1` |
+| `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
+| `internal/infrastructure/window` | 7.0% | 7% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
 | `tools/sounds` | 44.9% | 44% | `test.ps1` |
 | `internal/infrastructure/modelfiles/modelfilestest` | test support with no tests of its own, used by the `modelfiles`, `speechmodel`, `tools/models`, `tools/payload`, `tests/structural` and `tests/machinevoice` tests | none | not gated |
-| `internal/infrastructure/window` | 0% | none | not gated |
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
@@ -170,10 +172,11 @@ These need Windows itself or a device; no harness reaches them. A defect in any
 of them is found by running the application, which is what the manual pass before a
 release is for.
 
-- **`internal/infrastructure/window` (0%).** Win32 focus handling: finding the
+- **`internal/infrastructure/window` (7.0%).** Win32 focus handling: finding the
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File
   Explorer lives here too. There is no window in a test; the facade reaches the opener
-  through a field, so what it opens is tested while Explorer appearing is not.
+  through a field, so what it opens is tested while Explorer appearing is not. The Linux
+  opener's rule is tested on every platform (FR-816); the 7% is that rule.
 - **`internal/infrastructure/taskbar` (67.0%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   window, replacing only the call that hands the icon to the shell, so the

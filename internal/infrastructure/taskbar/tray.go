@@ -21,6 +21,11 @@ const (
 	// window that has been put away, so it has to answer a plain click as well as
 	// the menu: an icon that does nothing on the usual gesture reads as broken.
 	CommandShow
+	// CommandNoTray says the desktop never took the icon, so there is no tray after all. Only a
+	// platform where the icon is offered to the desktop rather than drawn sends it: on Linux a
+	// desktop may draw no tray; whether one does is known only once it has had time to answer
+	// (FR-814).
+	CommandNoTray
 )
 
 // Kind says which sort of voice a choice is.
@@ -79,4 +84,7 @@ type Options struct {
 	Active Voice
 	// Muted is the starting state of the mute item.
 	Muted bool
+	// Icon is the application's .ico file, which a tray handed a picture takes its frame from. Windows
+	// reads the icon out of the binary instead, so it is left empty there (FR-814).
+	Icon []byte
 }

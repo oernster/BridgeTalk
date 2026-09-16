@@ -27,8 +27,13 @@ func pluginsBeside(executable string) string {
 //
 // Not knowing where the application is stops nothing: it means no plugins, which is the
 // ordinary case anyway. Saying so is worth one line, since a user who installed a plugin
-// would otherwise have nothing at all to read.
-func loadPlugins(executable string, notFound error, log runlog.Lines) *plugin.Set {
+// would otherwise have nothing at all to read. Where plugins are not available yet, which missingOn
+// names, the folder is not looked in at all (FR-818).
+func loadPlugins(executable string, notFound error, missingOn string, log runlog.Lines) *plugin.Set {
+	if missingOn != "" {
+		log.Log("note: plugins are not loaded on " + missingOn + " yet")
+		return &plugin.Set{}
+	}
 	if notFound != nil {
 		log.Log("note: the application cannot tell where it is, so no plugin is loaded: " + notFound.Error())
 		return &plugin.Set{}

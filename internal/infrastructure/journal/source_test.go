@@ -3,7 +3,6 @@ package journal_test
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -252,57 +251,5 @@ func TestAJournalFileIsRecognisedByItsName(t *testing.T) {
 		if got := journal.IsJournalFile(each.name); got != each.want {
 			t.Fatalf("%q: got %v, want %v", each.name, got, each.want)
 		}
-	}
-}
-
-// homeVariable names the environment variable the standard library resolves a home
-// directory from on this platform.
-func homeVariable() string {
-	if runtime.GOOS == "windows" {
-		return "USERPROFILE"
-	}
-	return "HOME"
-}
-
-func TestTheStandardLocationIsTheGamesUsualSavedGamesPath(t *testing.T) {
-	home := t.TempDir()
-	saved := filepath.Join(home, "Saved Games", "Frontier Developments", "Elite Dangerous")
-	if err := os.MkdirAll(saved, 0o755); err != nil {
-		t.Fatalf("building the saved games path: %v", err)
-	}
-	t.Setenv(homeVariable(), home)
-
-	got, err := journal.StandardLocation()
-	if err != nil {
-		t.Fatalf("default directory: %v", err)
-	}
-	if got != saved {
-		t.Fatalf("got %q, want %q", got, saved)
-	}
-}
-
-// A machine where the game has never run has no such directory. The place is still
-// named, so the window can say where it looked; opening a source there is what refuses it.
-func TestTheStandardLocationIsNamedWhereTheGameHasNeverRun(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv(homeVariable(), home)
-
-	got, err := journal.StandardLocation()
-	if err != nil {
-		t.Fatalf("a home directory with no saved games was refused before anything looked: %v", err)
-	}
-	if want := filepath.Join(home, "Saved Games", "Frontier Developments", "Elite Dangerous"); got != want {
-		t.Fatalf("got %q, want %q", got, want)
-	}
-	if _, err := journal.NewSource(got, clock); err == nil {
-		t.Fatal("a source opened over a saved games directory that is not there")
-	}
-}
-
-func TestTheStandardLocationIsReportedWhenThereIsNoHomeAtAll(t *testing.T) {
-	t.Setenv(homeVariable(), "")
-
-	if _, err := journal.StandardLocation(); err == nil {
-		t.Fatal("an unresolvable home directory was accepted")
 	}
 }

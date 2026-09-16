@@ -58,6 +58,7 @@ var writesByTheApplication = map[string]string{
 	"internal/infrastructure/runlog/output_windows.go:toTerminal": "the console the run was started from, which is no file",
 	"internal/infrastructure/runlog/runlog.go:Open":               "Log.txt under " + localData + " (FR-715)",
 	setupPackage + "/windows.go:SetLaunchOnBoot":                  "the sign-in entry under HKCU, the one registry write the application makes",
+	setupPackage + "/autostart.go:applyAutostart":                 "the Linux sign-in entry under the user's autostart directory (FR-815)",
 }
 
 // writesBySetupAlone are writes in the setup package the application links but never reaches:

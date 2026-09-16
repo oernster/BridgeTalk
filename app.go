@@ -46,6 +46,11 @@ type App struct {
 	// is. The window opens either way, so the panes are where it is said (FR-238).
 	journalProblem string
 
+	// nativeMissingOn names the platform where machine voices and plugins are not offered yet;
+	// empty where they are (FR-817, FR-818). A field rather than the constant read directly, so a
+	// test on any platform can ask what Linux shows.
+	nativeMissingOn string
+
 	// settings keeps the two directory choices between runs. The facade owns the
 	// writing because it owns the act that changes them.
 	settings ports.SettingsStore
@@ -100,6 +105,10 @@ type App struct {
 	// broughtBack records that the tray has brought the window back. The tray's goroutine sets it;
 	// the page's request for the keyboard reads it from the window's.
 	broughtBack atomic.Bool
+
+	// trayGone records that the desktop said it will draw no tray icon after all. The loop sets it;
+	// the window's close reads it (FR-814).
+	trayGone atomic.Bool
 }
 
 // newApp builds the facade over an assembled session.
@@ -110,10 +119,11 @@ func newApp(
 	settings ports.SettingsStore,
 ) *App {
 	built := &App{
-		session:     current,
-		libraryRoot: libraryRoot,
-		settings:    settings,
-		stop:        make(chan struct{}),
+		session:         current,
+		libraryRoot:     libraryRoot,
+		settings:        settings,
+		stop:            make(chan struct{}),
+		nativeMissingOn: nativeVoicesMissingOn,
 	}
 	built.watch(watched)
 	built.emit = built.emitToWails
@@ -215,6 +225,7 @@ func (a *App) State() StateDTO {
 		StoppedReacting: a.reactingStopped(),
 		MachineVoice:    a.session.active.Machine,
 		Plugin:          a.session.active.Plugin,
+		NativeMissingOn: a.nativeMissingOn,
 	}
 }
 

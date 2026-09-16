@@ -20,3 +20,8 @@ export function castLabel(shown: string, cast: boolean): string {
 export function counted(count: number, one: string, many: string): string {
   return `${count.toLocaleString()} ${count === 1 ? one : many}`
 }
+
+/** notYetOn says a kind of voice is not available on a platform yet (FR-817, FR-818). */
+export function notYetOn(kind: string, platform: string): string {
+  return `${kind} are not available on ${platform} yet.`
+}

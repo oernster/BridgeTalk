@@ -253,7 +253,7 @@ func TestWithNowhereToKeepMadeLinesNoMachineVoiceIsCast(t *testing.T) {
 func TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices(t *testing.T) {
 	current, _ := fixtureSession(t, newFakePlayer())
 
-	choices := trayChoices(current.available, nil)
+	choices := trayChoices(current.available, nil, "")
 
 	want := playable(current.available)
 	for _, voice := range machinevoice.All() {

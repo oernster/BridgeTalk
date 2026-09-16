@@ -127,6 +127,15 @@ func (a *App) handleTray(command taskbar.Command) {
 		a.SetMuted(!a.session.muted)
 	case taskbar.CommandSelectVoice:
 		a.castFromTray(command.Chosen)
+	case taskbar.CommandNoTray:
+		// The desktop draws no tray after all, so the cross closes rather than hiding into
+		// nothing; a window started hidden for a tray that never came is shown (FR-814).
+		a.trayGone.Store(true)
+		if a.startedHidden {
+			a.broughtBack.Store(true)
+			a.restore()
+			a.emit(windowShownEvent, nil)
+		}
 	}
 }
 

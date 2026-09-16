@@ -8,11 +8,12 @@
 // opens what a recorded voice covers has nothing to open.
 //
 // Nothing is drawn while no plugin offers a voice, which is almost every run: the ordinary case
-// should mention plugins nowhere (FR-562).
+// should mention plugins nowhere (FR-562). The one exception is a platform where plugins are not
+// available yet, which is said so the reader is not left looking for them (FR-818).
 
 import { useEffect, useState } from 'react'
 import { api, type PluginVoice } from './api'
-import { castLabel } from './castWords'
+import { castLabel, notYetOn } from './castWords'
 import type { Outcome } from './chooser'
 
 /**
@@ -22,7 +23,16 @@ import type { Outcome } from './chooser'
  * there, since an id identifies a voice within its own plugin alone and a recordings folder may
  * carry the same name (FR-569).
  */
-export function PluginVoices({ active, plugin }: { active: string; plugin: string }) {
+export function PluginVoices({
+  active,
+  plugin,
+  missingOn = '',
+}: {
+  active: string
+  plugin: string
+  /** The platform where plugins are not loaded yet; empty where they are (FR-818). */
+  missingOn?: string
+}) {
   const [voices, setVoices] = useState<PluginVoice[]>([])
   const [outcome, setOutcome] = useState<Outcome>(null)
 
@@ -36,6 +46,15 @@ export function PluginVoices({ active, plugin }: { active: string; plugin: strin
     setOutcome(null)
     void api.castPluginVoice(voice.plugin, voice.id, (reason) =>
       setOutcome({ refused: true, text: reason }),
+    )
+  }
+
+  if (missingOn !== '') {
+    return (
+      <>
+        <h3>Plugin voices</h3>
+        <p className="lede">{notYetOn('Plugins', missingOn)}</p>
+      </>
     )
   }
 

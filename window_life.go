@@ -49,7 +49,7 @@ func (a *App) hideInWails() {
 // itself, passes straight through. Without that flag the dialog would ask again about
 // the quit it was just told to perform.
 func (a *App) beforeClose(context.Context) bool {
-	if a.quitting.Load() || a.session.tray == nil {
+	if a.quitting.Load() || !a.hasTray() {
 		return false
 	}
 	// The cross can be pressed on a window that is behind others; it can also come
@@ -58,6 +58,12 @@ func (a *App) beforeClose(context.Context) bool {
 	a.show()
 	a.emit(closeRequestEvent, nil)
 	return true
+}
+
+// hasTray reports whether a tray icon is there to hide the window into: one was started and the
+// desktop has not since said it will draw none (FR-814).
+func (a *App) hasTray() bool {
+	return a.session.tray != nil && !a.trayGone.Load()
 }
 
 // MinimiseToTray puts the window away and leaves the application listening.

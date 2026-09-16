@@ -157,8 +157,9 @@ processor alone through one native library loaded with cgo disabled, ONNX Runtim
 **Linux is in scope alongside Windows,** decided by Oliver on 2026-09-13. It is not
 built yet and comes after all other work. The library
 schema in section 3 is already portable, so nothing there changes either way. It is delivered as a
-flatpak built by one script in the house pattern (FR-810), decided by Oliver on 2026-09-16; what that
-leaves unmeasured is OQ-23.
+flatpak built by one script in the house pattern (FR-810), decided by Oliver on 2026-09-16. Section
+9.1 says what differs there: the first Linux release delivers recorded voices; machine voices and
+plugins follow.
 
 **The reference machine** for the performance requirements is the development machine they were
 measured on, read on 2026-09-16: an AMD Ryzen 9 9900X with 12 cores and 24 threads, 61.6 GB of
@@ -989,7 +990,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned at v0.8.1 in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that version on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
 | NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
-| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to three names in the setup package, so of setup's writes only the sign-in entry is reached. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to three names in the setup package, so of setup's writes only the sign-in entry is reached. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory, which is per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `windows.LoadDLL` by its whole path and nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
 | NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. Claude proposed the limit rather than measuring it; Oliver accepted it as proposed on 2026-09-16. Measuring it waits on a built plugin, which needs a C toolchain the development machine does not have |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
@@ -4162,16 +4163,164 @@ where the GNOME runtime supplies the webkit2gtk Wails renders through, the golan
 extensions build the two halves. The version, the desktop entry and the manifest are generated, so
 nothing holds a second copy of what `VERSION` already says. Generating them is what keeps
 VERSION the one home for the version on this path as on the others. The application id follows the
-house form, `uk.codecrafter.BridgeTalk`.
-Note on what this does not yet settle: three things are unmeasured and are held as OQ-23 rather than
-being specified here. The flatpak build of a Wails application links against the runtime's webkit,
-which is a cgo build, while CON-8 has the machine voices loading ONNX Runtime with cgo disabled and
-`build.ps1` sets `CGO_ENABLED` to `0`; whether the machine voices work at all inside the sandbox has
-never been tried. The journal directory the game writes under Proton sits inside a Wine prefix, which
-is neither where `journal.StandardLocation` looks nor reachable from a sandbox without being granted.
-The audio device needs a permission of its own. No network permission is needed, since the
-application makes no outbound request (section 2.3).
-Verified by: nothing yet.
+house form, `uk.codecrafter.BridgeTalk`. Section 9.1 says what the application does differently
+on Linux.
+Verified by: `bash -n` over `build_flatpak.sh` and `cleanup_flatpak.sh` on 2026-09-16; the grants the
+manifest is written from are held by FR-813's test. Not verified: either script run, since no machine
+here has flatpak or flatpak-builder. Two things only that run settles: whether the golang extension's
+Go satisfies `go.mod` or fetches the toolchain it names over the build's network; whether the
+GNOME SDK carries the ALSA headers the audio output's cgo build needs. The icons are written by
+`tools/linuxicons` from the committed `.ico`; `TestEveryPictureIsInstalledAtItsSize` holds that.
+
+### 9.1 Linux
+
+Decided by Oliver on 2026-09-16, taking Claude's recommendations. o7 Debrief is the reference: its
+flatpak was built on Ubuntu and watched a real session of the game under Proton, which settled where
+the journal is found, that the sandbox can read it, how a tray icon reaches the desktop and where a
+sign-in entry must be written. Those are measurements of o7 Debrief, not of Bridge Talk; each
+requirement below says what is still to be seen in this application. o7 Debrief never reads
+`Status.json`. That the game writes it beside the journal inside the prefix, as it does on Windows,
+is expected rather than measured.
+
+Linux arrives in two steps. The first delivers recorded voices; machine voices and plugins follow
+in a second step, since both load a native library, which on Linux is one mechanism yet to be built
+and measured (OQ-23 is closed by this ruling).
+
+**FR-811 On Linux the game's journal directory is looked for inside its prefix**
+Priority: Should.
+While the application runs on Linux, when no journal directory is chosen in Settings or passed with
+`-journal`, the application shall watch the first of these directories that exists, each ending in
+`Saved Games/Frontier Developments/Elite Dangerous`: inside `$STEAM_COMPAT_DATA_PATH/pfx/drive_c/users`
+for `steamuser` then for the account; inside `steamapps/compatdata/359320/pfx/drive_c/users` for
+`steamuser` then for the account under each Steam root in turn, `~/.steam/steam`, `~/.steam/root`,
+`~/.local/share/Steam` and `~/.var/app/com.valvesoftware.Steam/.local/share/Steam`; inside
+`$WINEPREFIX/drive_c/users` then `~/.wine/drive_c/users` for the account then for `steamuser`. The
+account is the name in `USER`. A variable that is not set contributes no directory.
+Rationale: the game runs under Proton or Wine, so it writes inside a Windows prefix rather than
+under the home directory. 359320 is the game's Steam application id. The order is o7 Debrief's,
+which found the live journal this way.
+Acceptance: Given a home of `/home/pilot` with `USER` set to `pilot`, neither `STEAM_COMPAT_DATA_PATH` nor
+`WINEPREFIX` set, with only
+`/home/pilot/.local/share/Steam/steamapps/compatdata/359320/pfx/drive_c/users/steamuser/Saved Games/Frontier Developments/Elite Dangerous`
+existing, when the application starts, then it watches that directory.
+Non claim: a Steam library on another drive, Lutris and Heroic prefixes are not looked in; Browse on
+the Journal directory row reaches any of them.
+Verified by: `TestOnLinuxTheFirstPrefixHoldingTheJournalIsWatched`,
+`TestOnLinuxEveryPlaceIsLookedInItsOrder` and `TestOnLinuxAVariableNotSetContributesNothing` in
+`internal/infrastructure/journal/location_test.go`, run on every platform through the parameters the
+lookup takes; each was seen to fail on 2026-09-16 with Proton's two accounts swapped or the flatpak
+Steam root dropped. Not verified: a real Proton prefix, which only a Linux machine with the game shows.
+
+**FR-812 If no prefix holds the journal, then every place looked is named**
+Priority: Should.
+If the application runs on Linux with no journal directory chosen and none of the directories of
+FR-811 exists, then the window shall open as FR-238 says, with the reason naming every directory
+looked in, in the order looked.
+Rationale: a Linux machine has several places the game may be; a reader told only "not found" cannot
+tell whether the right one was tried.
+Acceptance: Given a home where none of the directories exists, when the application starts, then
+the window opens and the Status pane lists each directory of FR-811 that was built, in order.
+Verified by: `TestOnLinuxNoPrefixNamesEveryPlaceLooked` in the same file, seen to fail on 2026-09-16
+with only the first place named. That the reason reaches the Status pane is FR-238's path, read from
+`openJournal` in `journaldir.go` rather than tested again here.
+
+**FR-813 The sandbox is granted what the application uses and no more**
+Priority: Should.
+The manifest `build_flatpak.sh` writes shall grant `--share=ipc`, `--socket=wayland`,
+`--socket=fallback-x11`, `--device=dri`, `--socket=pulseaudio`, `--filesystem=home`,
+`--filesystem=~/.var/app/com.valvesoftware.Steam:ro`, `--filesystem=xdg-config/autostart:create`
+and `--talk-name=org.kde.StatusNotifierWatcher`, each once; it shall grant nothing else.
+Rationale: home holds the prefix of FR-811 and any library root; flatpak excludes `~/.var/app` from
+home, so Steam installed as a flatpak needs its own read-only grant; the sign-in entry of FR-815 sits
+outside the sandbox's own configuration; the tray of FR-814 needs the watcher. No network is granted,
+since the application makes no request (NFR-S-1).
+Verified by: `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` in `tests/structural/flatpak_test.go`, which
+reads the script's GRANTS list and its APP_ID; seen to fail on 2026-09-16 with a network grant added,
+a grant dropped and the manifest's grants written from anything but GRANTS. Not verified: that each
+grant is enough on a real desktop.
+
+**FR-814 On Linux the tray icon is offered to the desktop's watcher**
+Priority: Should.
+While the application runs on Linux, the application shall offer its tray icon to the
+StatusNotifierWatcher on the session bus, asking for the watcher until one answers or 15 seconds
+from start have passed. The icon shall carry what FR-710 gives it. If no watcher has answered by
+then, then the application shall treat itself as having no tray icon: the cross closes it
+(FR-709) and a start with `-hidden` shows the window.
+Rationale: a Linux tray icon is published over D-Bus for the desktop to draw; not every desktop
+draws one. Started at sign-in, the application is up before the panel that hosts the icon, so asking
+once would find no tray on a desktop about to have one; o7 Debrief measured this and waits 15
+seconds. Before this, the Linux stand-in reported an icon that was never drawn, so the cross offered
+to minimise to a notification area with nothing in it.
+Acceptance: Given a session bus with no StatusNotifierWatcher, when the application starts with
+`-hidden`, then after 15 seconds the window is shown and its cross closes the application.
+Verified by: `TestATrayTheDesktopNeverTookIsNoTray` in `window_life_test.go`, seen to fail on
+2026-09-16 with the command ignored and with the hidden window left hidden;
+`TestTheWatcherIsAskedUntilItAnswersOrTheGracePeriodEnds` and
+`TestTheMenuAndHoverTextReadTheSameOnEveryTray` in
+`internal/infrastructure/taskbar/portable_test.go`; `TestTheCommittedIconHoldsTheTraysPicture` in
+`internal/infrastructure/iconfile/iconfile_test.go`. Not verified: `tray_linux.go` itself, which talks
+to a session bus no test here has, nor the icon and menu as a desktop draws them. It builds and vets
+for Linux.
+
+**FR-815 On Linux the sign-in entry is an autostart file**
+Priority: Should.
+While the application runs on Linux, when the box of FR-708 is ticked, the application shall write
+`uk.codecrafter.BridgeTalk.desktop` into `autostart` under the configuration directory, starting the
+application with `-hidden`; when it is unticked, the application shall remove that file. Inside the
+flatpak the directory is `~/.config/autostart` whatever `XDG_CONFIG_HOME` says; the file starts
+`flatpak run uk.codecrafter.BridgeTalk`; outside it the directory follows `XDG_CONFIG_HOME` and the
+file starts the program that is running. The box shall read ticked only while that file exists.
+Rationale: the flatpak points `XDG_CONFIG_HOME` inside the sandbox, where no session reads an
+autostart entry; o7 Debrief wrote its entry there, read it back as on and started nothing until the
+real directory was used.
+Acceptance: Given the flatpak with `XDG_CONFIG_HOME` set to
+`/home/pilot/.var/app/uk.codecrafter.BridgeTalk/config`, when the box is ticked, then
+`/home/pilot/.config/autostart/uk.codecrafter.BridgeTalk.desktop` exists, naming
+`flatpak run uk.codecrafter.BridgeTalk -hidden`. The box reads ticked.
+Verified by: `TestInsideTheFlatpakTheEntryIgnoresTheSandboxConfiguration`,
+`TestOutsideTheFlatpakTheEntryFollowsTheConfigurationDirectory`,
+`TestOutsideTheFlatpakTheEntryStartsTheRunningProgramQuoted`, `TestTheEntryIsWrittenReadBackAndRemoved`
+and `TestAnEntryThatCannotBeWrittenSaysWhy` in `internal/infrastructure/setup/autostart_test.go`; seen
+to fail on 2026-09-16 with the flatpak following `XDG_CONFIG_HOME` and with the path left unquoted.
+Not verified: `boot_linux.go` over a real home, nor a sign-in that starts the application.
+
+**FR-816 On Linux a folder is opened with xdg-open**
+Priority: Should.
+While the application runs on Linux, when a folder is to be opened (FR-314, FR-223), the application
+shall start `xdg-open` with that folder. If `xdg-open` cannot be started or ends in failure, then the
+application shall say why, naming the folder once (FR-237).
+Rationale: `xdg-open` opens the user's own file manager; inside the flatpak it reaches it through the
+desktop portal with no grant of its own.
+Verified by: `TestAFolderIsHandedToXdgOpen` and
+`TestAnOpenerThatFailsSaysWhyWithoutNamingTheFolderAgain` in
+`internal/infrastructure/window/opener_test.go`, the second seen to fail on 2026-09-16 with the folder
+named twice. Not verified: `xdg-open` reaching a file manager through the portal.
+
+**FR-817 On Linux no machine voice is offered in the first step**
+Priority: Should.
+While the application runs on Linux, the application shall offer no machine voice: where the Cast
+pane offers machine voices it shall say they are not available on Linux yet. Neither the tray
+menu nor Auditioning shall list one.
+Rationale: a machine voice loads ONNX Runtime, a native library not yet loaded on Linux. Offering
+voices that each fail when cast reads as a broken feature rather than one still to come.
+Verified by: `TestWhereMachineVoicesAreMissingNoneIsOfferedAndThePlatformIsNamed` and
+`TestWhereMachineVoicesAreMissingTheTrayOffersRecordedVoicesAlone` in `native_test.go`; "says machine
+voices are not available on the platform named and offers none" in
+`frontend/src/machineVoices.test.tsx`. Each was seen to fail on 2026-09-16 with its guard taken out.
+Auditioning lists the machine voices the facade offers, so it offers none either; that is read from
+`audition.tsx` rather than tested. The platform is named by `native_other.go`, which only a Linux build
+compiles.
+
+**FR-818 On Linux no plugin is loaded in the first step**
+Priority: Should.
+While the application runs on Linux, the application shall load no plugin: where the Cast pane
+offers plugin voices it shall say plugins are not available on Linux yet.
+Rationale: a plugin is a native library, loaded by the same mechanism as FR-817. The flatpak's
+install directory is read only, so the second step also moves the plugins folder into the user's own
+data folder.
+Verified by: `TestWherePluginsAreMissingTheFolderIsNotLookedIn` in `native_test.go`; "says plugins are
+not available on the platform named and offers no voice" in `frontend/src/pluginVoices.test.tsx`.
+Each was seen to fail on 2026-09-16 with its guard taken out.
 
 ---
 
@@ -4193,7 +4342,8 @@ headless test is how it gets tested.
 
 | ID | Question | Owner | Confirm by | Recommendation |
 |---|---|---|---|---|
-| OQ-23 | The Linux flatpak of FR-810: does a machine voice work inside the sandbox, given that the flatpak build links against the runtime's webkit and is therefore a cgo build while CON-8 loads ONNX Runtime with cgo disabled? Where does the game write its journal under Proton; what must the sandbox be granted to read it and to reach an audio device? | Oliver, on a Linux machine with the game installed | Before any Linux packaging work is written | Measure before specifying anything. Each is a question a single run on the real machine answers and none can be answered from here; a recorded voice needs none of them, so a first flatpak that speaks only recorded voices is a smaller thing to get working than one that must also make lines. |
+
+There are no open questions.
 
 ---
 
@@ -4202,7 +4352,7 @@ headless test is how it gets tested.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-580, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743, FR-744, FR-568, FR-571, FR-809, FR-810, FR-811 to FR-818, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

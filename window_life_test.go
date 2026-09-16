@@ -136,3 +136,31 @@ func TestASummonedWindowIsToldToOpenOnTheCast(t *testing.T) {
 		t.Error("nothing told the page the window was summoned, so it opens wherever it was left")
 	}
 }
+
+// FR-814: a tray the desktop never took is no tray. The cross then closes rather than asking to hide
+// into nothing; a window started hidden for it is shown with the keyboard; one already showing is
+// left alone.
+func TestATrayTheDesktopNeverTookIsNoTray(t *testing.T) {
+	for _, hidden := range []bool{true, false} {
+		app, log := newTestApp(t, newFakePlayer())
+		app.session.tray = &taskbar.Tray{}
+		app.startedHidden = hidden
+		restored := 0
+		app.restore = func() { restored++ }
+
+		app.handleTray(taskbar.Command{Kind: taskbar.CommandNoTray})
+
+		if prevented := app.beforeClose(context.Background()); prevented {
+			t.Errorf("hidden %v: the close was cancelled with no tray to hide into", hidden)
+		}
+		if log.saw(closeRequestEvent) {
+			t.Errorf("hidden %v: the page was asked to choose with no tray to choose", hidden)
+		}
+		if want := map[bool]int{true: 1, false: 0}[hidden]; restored != want {
+			t.Errorf("hidden %v: the window was brought back %d times, want %d", hidden, restored, want)
+		}
+		if hidden && (!log.saw(windowShownEvent) || !app.broughtBack.Load()) {
+			t.Error("a window shown for a tray that never came was not announced or cannot take the keyboard")
+		}
+	}
+}

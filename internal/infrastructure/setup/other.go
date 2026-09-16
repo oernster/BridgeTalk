@@ -43,15 +43,6 @@ func InstalledVersion() (string, bool) { return "", false }
 // recordedInstallDir records no install folder off Windows, so the offered folder answers.
 func recordedInstallDir() string { return "" }
 
-// SetLaunchOnBoot has no login entry to write off Windows.
-func SetLaunchOnBoot(string, bool) error { return ErrUnsupported }
-
-// IsLaunchOnBoot reports no login entry off Windows.
-func IsLaunchOnBoot() bool { return false }
-
-// HasLaunchOnBootEntry reports no login entry off Windows.
-func HasLaunchOnBootEntry() bool { return false }
-
 // SystemPrefersDark reports light off Windows, so the setup window has a definite
 // starting theme everywhere.
 func SystemPrefersDark() bool { return false }

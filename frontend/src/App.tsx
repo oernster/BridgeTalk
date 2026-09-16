@@ -1,9 +1,10 @@
-// The shell: menu bar, nav band, switched pane and the modal dialogs.
+// The shell: menu bar, nav band, switched pane and the modal dialogs. The menu bar is menubar.tsx.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api, on, type State } from './api'
 import { AboutDialog, CloseChoiceDialog, LicenceDialog } from './dialogs'
-import { MenuTitle, NavButton, Volume } from './chrome'
+import { NavButton, Volume } from './chrome'
+import { MenuBar, type Pane } from './menubar'
 import { useRing } from './hooks'
 import { useTheme, useVolume } from './preferences'
 import {
@@ -27,8 +28,6 @@ import { MissingTakesPane } from './missingTakes'
 import { HomePane, SettingsPane } from './panes'
 import { Strip } from './strip'
 
-type Pane = 'home' | 'settings' | 'cast' | 'audition' | 'takes' | 'chatter' | 'guide'
-type Menu = 'file' | 'audio' | 'settings' | 'help' | null
 
 // How long the keyboard is given to settle on the window before the page decides
 // it has not arrived. Long enough for the webview to be handed focus in the normal
@@ -42,7 +41,6 @@ export function App() {
   // something is already speaking, which makes it the second question rather than
   // the first. Status keeps its place in the band as the leftmost of the pair.
   const [pane, setPane] = useState<Pane>('cast')
-  const [menu, setMenu] = useState<Menu>(null)
   const [about, setAbout] = useState(false)
   const [licence, setLicence] = useState(false)
   // Raised by the backend when the cross is pressed, since the window's own close is
@@ -112,140 +110,19 @@ export function App() {
     [refresh],
   )
 
-  const openMenu = (which: Menu) => setMenu((current) => (current === which ? null : which))
-  const closeMenu = useCallback(() => setMenu(null), [])
-
   return (
     <div className="shell" ref={shell}>
       <div ref={sink} tabIndex={-1} style={{ width: 0, height: 0, outline: 'none' }} />
 
-      <nav className="menubar" onMouseLeave={() => setMenu(null)}>
-        <MenuTitle label="File" open={menu === 'file'} onOpen={() => openMenu('file')} onClose={closeMenu}>
-          <button className="menuitem" type="button" onClick={() => void api.quit()}>
-            Quit
-          </button>
-        </MenuTitle>
-        <MenuTitle
-          label="Audio"
-          open={menu === 'audio'}
-          onOpen={() => openMenu('audio')}
-          onClose={closeMenu}
-        >
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('cast')
-              setMenu(null)
-            }}
-          >
-            Cast
-          </button>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('audition')
-              setMenu(null)
-            }}
-          >
-            Audition
-          </button>
-          {/* Missing takes and Chatter are on the band too; the menu repeats them as it
-              repeats Cast and Audition. */}
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('takes')
-              setMenu(null)
-            }}
-          >
-            Missing takes
-          </button>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('chatter')
-              setMenu(null)
-            }}
-          >
-            Chatter
-          </button>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              toggleMute()
-              setMenu(null)
-            }}
-          >
-            {state?.muted ? 'Unmute' : 'Mute'}
-          </button>
-        </MenuTitle>
-        <MenuTitle
-          label="Settings"
-          open={menu === 'settings'}
-          onOpen={() => openMenu('settings')}
-          onClose={closeMenu}
-        >
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('settings')
-              setMenu(null)
-            }}
-          >
-            Open settings
-          </button>
-          {/* One item, not two: it names the theme it would switch to, so there is
-              never a choice between the mode you are in and the one you are not. */}
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setTheme(theme === 'dark' ? 'light' : 'dark')
-              setMenu(null)
-            }}
-          >
-            {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          </button>
-        </MenuTitle>
-        <MenuTitle label="Help" open={menu === 'help'} onOpen={() => openMenu('help')} onClose={closeMenu}>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setPane('guide')
-              setMenu(null)
-            }}
-          >
-            Guide
-          </button>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setLicence(true)
-              setMenu(null)
-            }}
-          >
-            Licence
-          </button>
-          <button
-            className="menuitem"
-            type="button"
-            onClick={() => {
-              setAbout(true)
-              setMenu(null)
-            }}
-          >
-            About
-          </button>
-        </MenuTitle>
-      </nav>
+      <MenuBar
+        muted={state?.muted ?? false}
+        theme={theme}
+        onPane={setPane}
+        onToggleMute={toggleMute}
+        onTheme={setTheme}
+        onLicence={() => setLicence(true)}
+        onAbout={() => setAbout(true)}
+      />
 
       {/* A flat row: the two groups are separated by a stretch, so layout order is
           reading order and the ring needs no declared override.
@@ -338,6 +215,7 @@ export function App() {
             active={state?.voice ?? ''}
             machine={state?.machineVoice ?? false}
             plugin={state?.plugin ?? ''}
+            nativeMissingOn={state?.nativeMissingOn ?? ''}
             total={state?.total ?? 0}
             libraryRoot={state?.libraryRoot ?? ''}
             onSelect={selectVoice}

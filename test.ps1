@@ -145,6 +145,7 @@ $measured = [ordered]@{
     './internal/infrastructure/audio'     = 95
     './internal/infrastructure/audio/audiotest' = 86
     './internal/infrastructure/config'    = 100
+    './internal/infrastructure/iconfile'  = 100
     './internal/infrastructure/appdata'   = 100
     './internal/infrastructure/journal'   = 100
     './internal/infrastructure/library'   = 100
@@ -160,12 +161,14 @@ $measured = [ordered]@{
     './internal/infrastructure/taskbar'   = 67
     './internal/infrastructure/tomlfile'  = 100
     './internal/infrastructure/voicefiles' = 100
+    './internal/infrastructure/window'    = 7
     './internal/infrastructure/wholefile' = 100
     './internal/refusal'                  = 100
     './tools/sounds'                      = 44
     './tools/pauses'                      = 73
     './tools/models'                      = 48
     './tools/payload'                     = 53
+    './tools/linuxicons'                  = 80
     './tools/internal/pyvenv'             = 100
 }
 
@@ -186,10 +189,10 @@ foreach ($package in $measured.Keys) {
     Write-Host ("  {0,-38} {1,5}%  floor {2}%" -f $package, $reached, $floor)
 }
 
-# Not gated at all, deliberately: internal/infrastructure/window is Win32 focus
-# handling; installer is the setup program's Wails facade over acts that change the
-# machine. Neither has anything a test can reach without the platform behind it, so a
-# floor over either would be a floor at zero, which asserts nothing. TESTING.md says so
+# Not gated at all, deliberately: installer is the setup program's Wails facade over acts
+# that change the machine. It has nothing a test can reach without the platform behind it,
+# so a floor over it would be a floor at zero, which asserts nothing. The window package
+# is gated at what its Linux folder opener reaches; the rest of it is Win32 focus handling. TESTING.md says so
 # in full rather than leaving the absence to be read as an oversight.
 # internal/infrastructure/modelfiles/modelfilestest is test support with no tests of its
 # own: the modelfiles and tools/models tests run every part of it.

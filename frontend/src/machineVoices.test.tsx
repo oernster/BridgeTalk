@@ -171,3 +171,14 @@ describe('the machine voices', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('reading bf_emma.bin: the file is missing')
   })
 })
+
+// FR-817: where machine voices are not available yet, the panel says so and offers no pill, whatever
+// the facade would list.
+it('says machine voices are not available on the platform named and offers none', async () => {
+  render(<MachineVoices active="" machine={false} total={moments} missingOn="Linux" />)
+  await act(async () => {})
+  expect(screen.getByRole('heading', { name: 'Machine voices' })).toBeTruthy()
+  expect(screen.getByText('Machine voices are not available on Linux yet.')).toBeTruthy()
+  expect(screen.queryAllByRole('group')).toHaveLength(0)
+  expect(screen.queryAllByRole('button')).toHaveLength(0)
+})

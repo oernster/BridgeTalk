@@ -18,11 +18,6 @@ import (
 // two programs registering a tray class cannot collide.
 const className = product.Slug + "TrayWindow"
 
-// commandBuffer is how many menu choices may queue before the tray thread blocks.
-// A user cannot click faster than the main loop drains, so a small buffer is ample
-// and a full one indicates the main loop has stopped rather than that it is busy.
-const commandBuffer = 8
-
 // Tray is the notification-area icon and its menu.
 //
 // Everything inside the message loop runs on one locked OS thread. The only things
@@ -207,22 +202,11 @@ func (t *Tray) iconData() notifyIconData {
 	return data
 }
 
-// mutedMark ends the hover text while playback is muted.
-const mutedMark = " (muted)"
-
-// tooltip renders the hover text: the product, the cast voice where one is cast and whether
-// playback is muted, so the state is readable without opening the menu (FR-710). The mute is
-// said with no voice cast too, since the mute answers with nothing cast.
+// tooltip renders the hover text from the state the tray holds (FR-710).
 func (t *Tray) tooltip() string {
-	tip := t.options.Title
-	if cast, _ := t.active.Load().(Voice); cast.Name != "" {
-		shown, _ := t.activeLabel.Load().(string)
-		tip = fmt.Sprintf("%s: %s", tip, shown)
-	}
-	if t.muted.Load() {
-		return tip + mutedMark
-	}
-	return tip
+	cast, _ := t.active.Load().(Voice)
+	shown, _ := t.activeLabel.Load().(string)
+	return hoverText(t.options.Title, cast, shown, t.muted.Load())
 }
 
 // refreshTooltip re-sends the icon data so the hover text follows the state. It runs on
@@ -293,24 +277,9 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 }
 
 // label answers with what a voice the menu holds is shown by; it answers the start's active voice
-// before any is handed over. A voice the menu does not hold is shown by its name as it is.
-func (t *Tray) label(cast Voice) string {
-	for _, choice := range t.options.Voices {
-		if choice.Voice == cast {
-			return choice.Label
-		}
-	}
-	return cast.Name
-}
+// before any is handed over.
+func (t *Tray) label(cast Voice) string { return labelOf(t.options.Voices, cast) }
 
-// send offers one command to the main loop, dropping it where nothing is reading.
-//
-// Dropping is deliberate: this runs on the tray's own locked thread and blocking it
-// would freeze the icon and its menu, which is a worse answer to a busy moment than
-// one lost click.
-func (t *Tray) send(command Command) {
-	select {
-	case t.commands <- command:
-	default:
-	}
-}
+// send offers one command to the main loop from the tray's own locked thread, which must never
+// block on it.
+func (t *Tray) send(command Command) { offer(t.commands, command) }

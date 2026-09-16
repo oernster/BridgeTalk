@@ -23,6 +23,9 @@ const (
 	// Slug is the same identity where only a file name will do. It must stay free of
 	// the characters a path refuses, which a test in tests/structural enforces.
 	Slug = "BridgeTalk"
+	// AppID is the reverse domain identity Linux knows the application by: the flatpak, its desktop
+	// entry and its sign-in entry are each named with it (FR-810, FR-815).
+	AppID = "uk.codecrafter." + Slug
 
 	// PluginsFolder is the folder inside the install directory that holds plugins (FR-560). The
 	// application looks in it and the setup program makes it, keeps it or removes it (FR-576,

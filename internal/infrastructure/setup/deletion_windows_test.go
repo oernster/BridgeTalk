@@ -11,8 +11,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/oernster/bridge-talk/internal/product"
 )
 
 // standInVariable turns the test binary into a stand-in for setup: a process that runs
@@ -73,11 +76,49 @@ func TestTheInstallDirectoryGoesOnceSetupHasClosed(t *testing.T) {
 	dir := standingDir(t)
 	pid, closeSetup := startStandIn(t)
 
-	scheduleDirDeletionAfter(pid, dir)
+	scheduleDirDeletionAfter(pid, dir, "")
 	closeSetup()
 
 	if !gone(dir, deletionDeadline) {
 		t.Fatalf("the directory was still there %v after setup closed", deletionDeadline)
+	}
+}
+
+// Keeping the plugins folder, everything else in the directory goes once setup has closed while
+// that folder stays with everything in it, a folder of its own included (FR-578). A folder of the
+// same name deeper down is not the one offered, so it goes with its parent.
+func TestKeepingThePluginsFolderRemovesEverythingElse(t *testing.T) {
+	dir := standingDir(t)
+	plugins := filepath.Join(dir, product.PluginsFolder)
+	kept := filepath.Join(plugins, "crew.dll")
+	keptInside := filepath.Join(plugins, "crew data", "voices.txt")
+	deeper := filepath.Join(dir, "resources", product.PluginsFolder)
+	for _, folder := range []string{filepath.Dir(keptInside), deeper} {
+		if err := os.MkdirAll(folder, dirPerm); err != nil {
+			t.Fatalf("making %s: %v", folder, err)
+		}
+	}
+	for _, file := range []string{kept, keptInside} {
+		if err := os.WriteFile(file, []byte("the user's"), dirPerm); err != nil {
+			t.Fatalf("writing %s: %v", file, err)
+		}
+	}
+	pid, closeSetup := startStandIn(t)
+
+	scheduleDirDeletionAfter(pid, dir, product.PluginsFolder)
+	closeSetup()
+
+	standing := filepath.Join(dir, standingFile)
+	if !gone(standing, deletionDeadline) {
+		t.Fatalf("%s was still there %v after setup closed", standing, deletionDeadline)
+	}
+	if !gone(filepath.Join(dir, "resources"), deletionDeadline) {
+		t.Errorf("a folder named %s deeper down was kept", product.PluginsFolder)
+	}
+	for _, file := range []string{kept, keptInside} {
+		if _, err := os.Stat(file); err != nil {
+			t.Errorf("%s went with the install: %v", file, err)
+		}
 	}
 }
 
@@ -96,7 +137,7 @@ func TestTheInstallDirectoryGoesWhenSetupWasStartedInsideIt(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(previous) })
 	pid, closeSetup := startStandIn(t)
 
-	scheduleDirDeletionAfter(pid, dir)
+	scheduleDirDeletionAfter(pid, dir, "")
 	closeSetup()
 	_ = os.Chdir(previous)
 
@@ -138,7 +179,7 @@ func standingDir(t *testing.T) string {
 func TestTheInstallDirectoryOutlivesTheRunningSetup(t *testing.T) {
 	dir := standingDir(t)
 
-	ScheduleDirDeletion(dir)
+	ScheduleDirDeletion(dir, "")
 	time.Sleep(pastTheOldWait)
 
 	if _, err := os.Stat(dir); err != nil {

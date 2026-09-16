@@ -88,6 +88,9 @@ type StateDTO struct {
 	StartMenu        bool   `json:"startMenu"`
 	Desktop          bool   `json:"desktop"`
 	PrefersDark      bool   `json:"prefersDark"`
+	// KeepablePlugins is the plugins folder where uninstall has something in it to offer to keep;
+	// empty where it has nothing (FR-578).
+	KeepablePlugins string `json:"keepablePlugins"`
 }
 
 // OptionsDTO carries the choices made on the install or reinstall screen. InstallDir is the
@@ -150,6 +153,7 @@ func (a *App) DetectState() StateDTO {
 		StartMenu:        shortcuts.StartMenu,
 		Desktop:          shortcuts.Desktop,
 		PrefersDark:      a.prefersDark,
+		KeepablePlugins:  setup.KeepablePlugins(dir),
 	}
 }
 
@@ -232,6 +236,9 @@ func (a *App) write(choices OptionsDTO) error {
 	if err := setup.ExtractZip(a.payload, dir); err != nil {
 		return fmt.Errorf("extract files: %w", err)
 	}
+	if err := setup.MakePluginsFolder(dir); err != nil {
+		return err
+	}
 	exePath := filepath.Join(dir, setup.ExeName)
 
 	a.progress(55, "Registering the application...")
@@ -279,8 +286,9 @@ func (a *App) register(dir, exePath string) error {
 // Uninstall removes the shortcuts, the login entry, the registry record, the lines made
 // for machine voices, the log and the installed files. When the user asks to forget their
 // settings, the application's stored choices go too, along with the theme and volume
-// the window keeps.
-func (a *App) Uninstall(removeState bool) error {
+// the window keeps. The plugins folder stays with everything in it unless removePlugins is set,
+// wherever it holds anything (FR-578).
+func (a *App) Uninstall(removeState, removePlugins bool) error {
 	// The scheduled deletion cannot remove a locked executable, so a running
 	// application has to close first.
 	if setup.IsAppRunning() {
@@ -313,7 +321,7 @@ func (a *App) Uninstall(removeState bool) error {
 	}
 
 	a.progress(90, "Removing files...")
-	setup.ScheduleDirDeletion(dir)
+	setup.ScheduleDirDeletion(dir, setup.KeptOnUninstall(dir, removePlugins))
 
 	a.progress(100, "Done.")
 	return nil

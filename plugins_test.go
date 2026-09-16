@@ -33,7 +33,7 @@ func TestPluginsAreLookedForBesideTheApplication(t *testing.T) {
 
 	got := pluginsBeside(filepath.Join(installed, product.Slug+".exe"))
 
-	want := filepath.Join(installed, pluginsFolder)
+	want := filepath.Join(installed, product.PluginsFolder)
 	if got != want {
 		t.Errorf("looked in %q, want %q", got, want)
 	}
@@ -61,7 +61,7 @@ func TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	folder := filepath.Join(dir, pluginsFolder)
+	folder := filepath.Join(dir, product.PluginsFolder)
 	if err := os.Mkdir(folder, 0o700); err != nil {
 		t.Fatalf("making the plugins folder: %v", err)
 	}

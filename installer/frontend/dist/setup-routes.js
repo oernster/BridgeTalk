@@ -117,13 +117,27 @@ function routeManage(state) {
 }
 
 function routeUninstall(state) {
-    const read = renderOptions($('uninstall-options'), [
+    // The plugins are offered only where the folder holds something; they are kept unless
+    // asked otherwise, as the settings are (FR-578). The folder arrives named, so the page writes no
+    // folder name of its own.
+    const plugins = state.keepablePlugins
+    const options = [
         {
             key: 'state', label: 'Also forget my settings',
             hint: 'Removes the folders you chose, the voice you cast, the theme and the volume. Your recordings are not touched. It cannot be undone.',
             checked: false,
         },
-    ])
+    ]
+    if (plugins) {
+        options.push({
+            key: 'plugins', label: 'Also remove my plugins',
+            hint: `Deletes ${plugins} with everything in it. Left unticked, that folder stays where it is. It cannot be undone.`,
+            checked: false,
+        })
+    }
+    const read = renderOptions($('uninstall-options'), options)
+    const removed = 'The application, its shortcuts, its log and the lines made for machine voices are gone.'
+    const verdict = () => plugins && !read('plugins') ? `${removed} Your plugins are still in ${plugins}.` : removed
     showScreen('uninstall')
     // Cancel goes back to the screen setup opened on. Opened from the Apps list, that
     // screen is this one, so there is nothing to go back to: setup closes and leaves the
@@ -133,9 +147,8 @@ function routeUninstall(state) {
         {
             label: 'Uninstall', kind: 'danger', lead: true,
             onClick: () => withAppClosed(() => run(
-                () => backend().Uninstall(read('state')),
-                `Removing ${appName}`, `${appName} is removed`,
-                'The application, its shortcuts, its log and the lines made for machine voices are gone.')),
+                () => backend().Uninstall(read('state'), Boolean(plugins) && read('plugins')),
+                `Removing ${appName}`, `${appName} is removed`, verdict())),
         },
     ])
 }

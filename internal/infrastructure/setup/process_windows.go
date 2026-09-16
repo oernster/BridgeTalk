@@ -123,15 +123,18 @@ func LaunchApp() error {
 // escapes those quotes on the command line in a form cmd does not read, so rmdir refused
 // the path as bad syntax and nothing was ever deleted; measured on 2026-09-15. The pause
 // was never tied to setup closing either.
-func ScheduleDirDeletion(dir string) { scheduleDirDeletionAfter(os.Getpid(), dir) }
+//
+// keep names a folder inside dir to leave standing with everything in it; empty removes the lot
+// (FR-578).
+func ScheduleDirDeletion(dir, keep string) { scheduleDirDeletionAfter(os.Getpid(), dir, keep) }
 
 // scheduleDirDeletionAfter starts the delete waiting on the process pid, so a test can
 // play setup with a process it is able to close.
-func scheduleDirDeletionAfter(pid int, dir string) {
-	args, env := dirDeletion(pid, dir)
+func scheduleDirDeletionAfter(pid int, dir, keep string) {
+	args, env := dirDeletion(pid, dir, keep)
 	cmd := exec.Command(deletionShell, args...)
 	cmd.Dir = deletionWorkDir(dir)
-	cmd.Env = append(os.Environ(), env)
+	cmd.Env = append(os.Environ(), env...)
 	cmd.SysProcAttr = hidden()
 	if err := cmd.Start(); err != nil {
 		return

@@ -81,4 +81,4 @@ func CloseRunningApp() error { return ErrUnsupported }
 func LaunchApp() error { return ErrUnsupported }
 
 // ScheduleDirDeletion schedules nothing off Windows.
-func ScheduleDirDeletion(string) {}
+func ScheduleDirDeletion(string, string) {}

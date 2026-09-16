@@ -7,11 +7,9 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
+	"github.com/oernster/bridge-talk/internal/product"
 	"github.com/oernster/bridge-talk/internal/refusal"
 )
-
-// pluginsFolder is the folder inside the install directory that holds plugins (FR-560).
-const pluginsFolder = "plugins"
 
 // pluginsBeside answers where plugins are looked for, given the running executable.
 //
@@ -21,7 +19,7 @@ const pluginsFolder = "plugins"
 // folder it is not in. The model files are found the same way, beside the application
 // (FR-539), so this is one habit rather than two.
 func pluginsBeside(executable string) string {
-	return filepath.Join(filepath.Dir(executable), pluginsFolder)
+	return filepath.Join(filepath.Dir(executable), product.PluginsFolder)
 }
 
 // loadPlugins loads every plugin beside the application, writing to the log every one it

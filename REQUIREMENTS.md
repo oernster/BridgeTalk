@@ -2502,7 +2502,16 @@ the install directory if it is not already there.
 Rationale: Oliver's ruling on 2026-09-16. A folder the user has to create by name in the right place
 is a step to get wrong silently. Setup already writes that directory tree, so creating one more
 folder costs nothing; the application is then left writing nothing inside its own install directory.
-Verified by: nothing yet.
+Built on 2026-09-16. The folder is made straight after the files are extracted, on the one write
+path every install shares, so a reinstall and a repair make it too where it has gone. A folder
+already there is left exactly as it is, with everything in it. A folder that cannot be made fails
+the install with the reason (FR-237, FR-807). The folder's name has one home, `product.PluginsFolder`,
+read by the application looking in it and by setup making it.
+Verified by: `TestThePluginsFolderIsMadeAndWhatIsInItIsLeftAlone` and
+`TestAPluginsFolderThatCannotBeMadeIsRefused` in
+`internal/infrastructure/setup/plugins_test.go`, both seen to fail with the folder never made. Not
+verified by a test: the setup facade calling it, since `installer` has no test that can reach the
+machine.
 
 **FR-577 An update and a repair leave the plugins folder alone**
 Priority: Must.
@@ -2515,12 +2524,34 @@ Verified by: nothing yet.
 
 **FR-578 Uninstall offers to keep the plugins folder**
 Priority: Must.
-While the plugins folder holds at least one file, when the uninstall screen is shown, the setup
+While the plugins folder holds anything, when the uninstall screen is shown, the setup
 program shall offer to keep that folder, as it offers to keep the saved window state.
 Rationale: uninstall hands the whole install directory to a shell that removes it (measured on
 2026-09-16 in `dirDeletion`), so a plugin the user installed separately would go without being
 mentioned.
-Verified by: nothing yet.
+Amended on 2026-09-16 from "at least one file" to "anything": a plugin may keep what it needs in a
+folder beside itself; a folder the user put there would be lost as silently as a file.
+Built on 2026-09-16. The offer is "Also remove my plugins", unticked, beside "Also forget my
+settings", so the plugins are kept unless asked otherwise, as the settings are. Its hint names the
+folder; so does the verdict where it was kept. The delete then removes everything directly
+inside the install directory except that folder, which carries on standing with everything in it,
+so the install directory stays around it; a folder of that name deeper down is not the one offered
+and goes. The folder name reaches the delete as a value rather than as text in its script, as the
+directory does. A folder that is there and cannot be read is offered too, since it cannot be shown
+to be empty. Whether anything is kept is read again when Uninstall is pressed rather than taken
+from what the screen was shown, so an empty folder is never left behind.
+Verified by: `TestOnlyAPluginsFolderHoldingSomethingIsOfferedToKeep`,
+`TestAPluginsFolderThatCannotBeReadIsOfferedToKeep` and
+`TestTheUninstallKeepsThePluginsOnlyWhereThereIsSomethingToKeep` in
+`internal/infrastructure/setup/plugins_test.go`; `TestAFolderToKeepIsCarriedAsAValue` in
+`deletion_test.go`; `TestKeepingThePluginsFolderRemovesEverythingElse` in
+`deletion_windows_test.go`, which runs the real PowerShell delete over a temporary directory; "offers
+nothing about plugins where the folder holds nothing", "keeps the plugins unless asked, saying where
+they are" and "removes the plugins when the box is ticked, saying nothing is kept" in
+`frontend/src/setupScreens.test.ts`. Each was seen to fail against a planted fault: an empty folder
+offered, an unreadable one not offered, removal ignored, the kept folder ignored by the delete, the
+box never offered, the tick never sent and the kept folder never named. Not verified by a test: the
+real install directory, with the real setup window closing.
 
 **FR-579 An answer larger than the application will set aside is refused**
 Priority: Must.

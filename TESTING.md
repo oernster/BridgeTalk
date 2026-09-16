@@ -17,8 +17,9 @@ what that package measured, so it fails once cover is lost, which is
 the only moment it is worth being told. `internal/infrastructure/setup` is the one to
 watch: its registry reads branch on what the registry of the machine running the tests
 holds, so part of its figure moves from one machine to the next. Its floor was raised
-from 61% to 78% on 2026-09-16, which is what this machine reads three runs running with
-nothing to spare. Where another machine reads below it, the answer is to measure there
+from 61% to 78% on 2026-09-16, which is what this machine read three runs running with
+nothing to spare, then to 79% the same day when the plugins folder brought 79.6% three runs
+running. Where another machine reads below it, the answer is to measure there
 and set the floor at the lower of the two, never to lower it by reflex to whatever that
 run happened to give.
 
@@ -57,7 +58,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
 | the root package (the Wails facade) | 84.8% | 82% | `test.ps1` |
-| `internal/infrastructure/setup` | 78.4% | 78% | `test.ps1` |
+| `internal/infrastructure/setup` | 79.6% | 79% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.0% | 67% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
@@ -243,7 +244,8 @@ release is for.
 
 - **`installer` (0%).** The setup program's own Wails facade. Its methods write the
   uninstall registry key, create or remove shortcuts, write the login entry, close or
-  launch the application or extract a payload into the install folder; the
+  launch the application, extract a payload into the install folder or make the plugins
+  folder inside it (FR-576); the
   few that do none of that read the machine or drive the Wails window, such as the folder
   picker behind the Install screen's Change button. Which folder it answers with is tested
   in `internal/infrastructure/setup`; what the page does with the answer is tested in
@@ -251,7 +253,7 @@ release is for.
   underneath it, in `internal/infrastructure/setup`, is tested against a temporary
   tree. The facade calls that package directly rather than through a field, so there
   is nowhere to redirect its acts to.
-- **The registry writes in `internal/infrastructure/setup` (78.4% overall).**
+- **The registry writes in `internal/infrastructure/setup` (79.6% overall).**
   `WriteUninstallEntry`, `RemoveUninstallEntry` and `SetLaunchOnBoot` write to
   `HKCU`. Unlike a filesystem path there is nothing to point them at, so exercising
   them would register or deregister a real install on the machine running the tests.
@@ -271,7 +273,8 @@ release is for.
 - **Process control in `process_windows.go`.** Closing and launching the application.
   Deleting the install directory is tested against a temporary directory: a PowerShell
   process started beside it waits for a stand-in for setup to exit, then deletes it, including
-  where setup was started inside the directory. The real install directory going once the
+  where setup was started inside the directory. Keeping the plugins folder is tested the same
+  way: it stands with everything in it while the rest goes (FR-578). The real install directory going once the
   real setup window has closed is not, nor is PowerShell failing to start. Enumerating processes
   is tested: `processIDs` must find the test binary by its own name, which is the one process a
   test can be certain is running. Taking or walking the process snapshot failing is not reached.

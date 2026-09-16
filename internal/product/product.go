@@ -24,6 +24,11 @@ const (
 	// the characters a path refuses, which a test in tests/structural enforces.
 	Slug = "BridgeTalk"
 
+	// PluginsFolder is the folder inside the install directory that holds plugins (FR-560). The
+	// application looks in it and the setup program makes it, keeps it or removes it (FR-576,
+	// FR-578), so the name has one home both can read.
+	PluginsFolder = "plugins"
+
 	// DonateURL is the donation page the donate button hands to the desktop (FR-718), the
 	// one the site's donate section links. The application never fetches it; the browser
 	// does the asking.

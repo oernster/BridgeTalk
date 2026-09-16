@@ -24,6 +24,7 @@ interface State {
   startMenu: boolean
   desktop: boolean
   prefersDark: boolean
+  keepablePlugins: string
 }
 
 /** Options are the choices the page hands an install. */
@@ -44,7 +45,8 @@ interface InstallLocation {
 class FakeSetup {
   running = false
   quits = 0
-  uninstalls: boolean[] = []
+  /** uninstalls records each removal as whether to forget the settings, then the plugins. */
+  uninstalls: [boolean, boolean][] = []
   installs: Options[] = []
   /** picks are the answers the folder picker gives, one per press of Change. */
   picks: InstallLocation[] = []
@@ -55,8 +57,8 @@ class FakeSetup {
   Quit = (): void => {
     this.quits++
   }
-  Uninstall = (forget: boolean): Promise<void> => {
-    this.uninstalls.push(forget)
+  Uninstall = (forget: boolean, removePlugins: boolean): Promise<void> => {
+    this.uninstalls.push([forget, removePlugins])
     return Promise.resolve()
   }
   Repair = (): Promise<void> => Promise.resolve()
@@ -94,6 +96,7 @@ const installed: State = {
   startMenu: true,
   desktop: true,
   prefersDark: false,
+  keepablePlugins: '',
 }
 
 let setup: FakeSetup
@@ -253,7 +256,7 @@ describe('the Uninstall screen', () => {
     setupPage.route({ ...installed, mode: 'uninstall' })
     footerButton('Uninstall').click()
     await settle()
-    expect(setup.uninstalls).toEqual([false])
+    expect(setup.uninstalls).toEqual([[false, false]])
   })
 
   it('returns to the screen setup opened on when Cancel is pressed', () => {
@@ -268,5 +271,43 @@ describe('the Uninstall screen', () => {
     setupPage.route({ ...installed, mode: 'uninstall' })
     footerButton('Cancel').click()
     expect(setup.quits).toBe(1)
+  })
+})
+
+describe('the plugins folder on the Uninstall screen (FR-578)', () => {
+  const plugins = 'C:\\Programs\\Product\\plugins'
+
+  /** optionLabels names the boxes the Uninstall screen offers, in order. */
+  function optionLabels(): string[] {
+    return Array.from(document.querySelectorAll('#uninstall-options .label')).map(
+      (label) => label.textContent ?? '',
+    )
+  }
+
+  it('offers nothing about plugins where the folder holds nothing', async () => {
+    setupPage.route({ ...installed, mode: 'uninstall' })
+    expect(optionLabels()).toEqual(['Also forget my settings'])
+    footerButton('Uninstall').click()
+    await settle()
+    expect(setup.uninstalls).toEqual([[false, false]])
+  })
+
+  it('keeps the plugins unless asked, saying where they are', async () => {
+    setupPage.route({ ...installed, mode: 'uninstall', keepablePlugins: plugins })
+    expect(optionLabels()).toEqual(['Also forget my settings', 'Also remove my plugins'])
+    footerButton('Uninstall').click()
+    await settle()
+    expect(setup.uninstalls).toEqual([[false, false]])
+    expect(document.getElementById('done-msg')?.textContent).toContain(plugins)
+  })
+
+  it('removes the plugins when the box is ticked, saying nothing is kept', async () => {
+    setupPage.route({ ...installed, mode: 'uninstall', keepablePlugins: plugins })
+    const boxes = document.querySelectorAll<HTMLInputElement>('#uninstall-options input')
+    boxes[1].checked = true
+    footerButton('Uninstall').click()
+    await settle()
+    expect(setup.uninstalls).toEqual([[false, true]])
+    expect(document.getElementById('done-msg')?.textContent).not.toContain(plugins)
   })
 })

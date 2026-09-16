@@ -14,6 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
+	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
 // castVoice is the voice speaking: the name that identifies it, the name it is shown by and whether
@@ -25,6 +26,22 @@ type castVoice struct {
 	// Plugin names the plugin a voice came from; empty for every other kind. With Name, which
 	// holds the voice's id within that plugin, it is what the settings keep (FR-569).
 	Plugin string
+}
+
+// chosen answers what identifies this voice to the tray menu (FR-540, FR-569).
+//
+// The mapping lives here, beside the fields it reads, because the tray is not the only thing that
+// will ever ask which kind a cast voice is: written out at each caller it would be a rule in as
+// many places as there are callers.
+func (c castVoice) chosen() taskbar.Voice {
+	switch {
+	case c.Plugin != "":
+		return taskbar.Voice{Kind: taskbar.Plugin, Plugin: c.Plugin, Name: c.Name}
+	case c.Machine:
+		return taskbar.Voice{Kind: taskbar.Machine, Name: c.Name}
+	default:
+		return taskbar.Voice{Kind: taskbar.Recorded, Name: c.Name}
+	}
 }
 
 // releaser is the model's hold on memory, let go when the application closes.

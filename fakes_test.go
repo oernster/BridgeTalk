@@ -10,16 +10,17 @@ import (
 
 // fakeTray stands in for the notification area icon, recording what it was last told to show.
 type fakeTray struct {
-	voice, shown   string
-	machine, muted bool
+	voice taskbar.Voice
+	shown string
+	muted bool
 }
 
 func (f *fakeTray) Commands() <-chan taskbar.Command { return nil }
 
 func (f *fakeTray) SetMuted(muted bool) { f.muted = muted }
 
-func (f *fakeTray) SetActiveVoice(name, label string, machine bool) {
-	f.voice, f.shown, f.machine = name, label, machine
+func (f *fakeTray) SetActiveVoice(cast taskbar.Voice, label string) {
+	f.voice, f.shown = cast, label
 }
 
 func (f *fakeTray) Stop() {}

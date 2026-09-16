@@ -49,7 +49,7 @@ func TestTheHoverTextFollowsTheStateOnTheTrayThread(t *testing.T) {
 	}
 	tray.SetMuted(true)
 	awaitTip("Test: Grace (muted)")
-	tray.SetActiveVoice("Jack", "Jack", false)
+	tray.SetActiveVoice(Voice{Name: "Jack"}, "Jack")
 	awaitTip("Test: Jack (muted)")
 
 	tray.dispatch(idMute)
@@ -65,17 +65,17 @@ func TestTheHoverTextFollowsTheStateOnTheTrayThread(t *testing.T) {
 func newTestTray(voices []string, active string) *Tray {
 	choices := make([]Choice, 0, len(voices))
 	for _, name := range voices {
-		choices = append(choices, Choice{Name: name, Label: name})
+		choices = append(choices, Choice{Voice: Voice{Name: name}, Label: name})
 	}
-	return New(Options{Title: "Test", Voices: choices, ActiveVoice: active})
+	return New(Options{Title: "Test", Voices: choices, Active: Voice{Name: active}})
 }
 
 // FR-210: the menu and the hover text show each voice by its label, while a choice carries
 // the name that identifies it and the check mark follows that name.
 func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
-	tray := New(Options{Title: "Test", ActiveVoice: "leo", Voices: []Choice{
-		{Name: "grace", Label: "Grace Hart"},
-		{Name: "leo", Label: "Leo Marsh"},
+	tray := New(Options{Title: "Test", Active: Voice{Name: "leo"}, Voices: []Choice{
+		{Voice: Voice{Name: "grace"}, Label: "Grace Hart"},
+		{Voice: Voice{Name: "leo"}, Label: "Leo Marsh"},
 	}})
 
 	want := []menuVoice{
@@ -88,17 +88,17 @@ func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Leo Marsh"; got != want {
 		t.Errorf("tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("carol", "Carol Hart", false)
+	tray.SetActiveVoice(Voice{Name: "carol"}, "Carol Hart")
 	if got, want := tray.tooltip(), "Test: Carol Hart"; got != want {
 		t.Errorf("tooltip = %q, want a voice the menu does not hold shown by the label handed over", got)
 	}
-	tray.SetActiveVoice("nobody listed", "", false)
+	tray.SetActiveVoice(Voice{Name: "nobody listed"}, "")
 	if got, want := tray.tooltip(), "Test: nobody listed"; got != want {
 		t.Errorf("tooltip = %q, want a blank label shown by the name as it is", got)
 	}
 
 	tray.dispatch(idVoiceBase)
-	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Voice: "grace"}) {
+	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Chosen: Voice{Name: "grace"}}) {
 		t.Errorf("command = %+v, want grace chosen by the name that identifies her", got)
 	}
 }
@@ -106,11 +106,15 @@ func TestTheMenuShowsEachVoiceByTheNameItIsShownBy(t *testing.T) {
 // FR-509 and FR-540: the machine voices follow the recorded voices under a separator, each cast by
 // its id; a recordings folder carrying the same name is a different voice, checked and named apart.
 func TestTheMenuListsMachineVoicesAfterTheRecordedVoices(t *testing.T) {
-	tray := New(Options{Title: "Test", ActiveVoice: "bf_emma", ActiveMachine: true, Voices: []Choice{
-		{Name: "bf_emma", Label: "bf_emma"},
-		{Name: "bf_emma", Label: "Emma (British, female)", Machine: true},
-		{Name: "am_adam", Label: "Adam (American, male)", Machine: true},
-	}})
+	tray := New(Options{
+		Title:  "Test",
+		Active: Voice{Kind: Machine, Name: "bf_emma"},
+		Voices: []Choice{
+			{Voice: Voice{Name: "bf_emma"}, Label: "bf_emma"},
+			{Voice: Voice{Kind: Machine, Name: "bf_emma"}, Label: "Emma (British, female)"},
+			{Voice: Voice{Kind: Machine, Name: "am_adam"}, Label: "Adam (American, male)"},
+		},
+	})
 
 	want := []menuVoice{
 		{id: idVoiceBase, label: "bf_emma"},
@@ -123,17 +127,18 @@ func TestTheMenuListsMachineVoicesAfterTheRecordedVoices(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Emma (British, female)"; got != want {
 		t.Errorf("tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("bf_emma", "bf_emma", false)
+	tray.SetActiveVoice(Voice{Name: "bf_emma"}, "bf_emma")
 	if got, want := tray.tooltip(), "Test: bf_emma"; got != want {
 		t.Errorf("tooltip = %q, want the recorded voice's own label", got)
 	}
 
 	tray.dispatch(idVoiceBase + 1)
-	if got := <-tray.commands; got != (Command{Kind: CommandSelectMachineVoice, Voice: "bf_emma"}) {
+	machineEmma := Command{Kind: CommandSelectVoice, Chosen: Voice{Kind: Machine, Name: "bf_emma"}}
+	if got := <-tray.commands; got != machineEmma {
 		t.Errorf("command = %+v, want the machine voice cast by its id", got)
 	}
 	tray.dispatch(idVoiceBase)
-	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Voice: "bf_emma"}) {
+	if got := <-tray.commands; got != (Command{Kind: CommandSelectVoice, Chosen: Voice{Name: "bf_emma"}}) {
 		t.Errorf("command = %+v, want the recorded voice cast by its name", got)
 	}
 }
@@ -147,8 +152,8 @@ func TestDispatchMapsMenuIdentifiers(t *testing.T) {
 	}{
 		{"mute", idMute, Command{Kind: CommandToggleMute}},
 		{"quit", idQuit, Command{Kind: CommandQuit}},
-		{"first voice", idVoiceBase, Command{Kind: CommandSelectVoice, Voice: "Grace"}},
-		{"last voice", idVoiceBase + 2, Command{Kind: CommandSelectVoice, Voice: "Leo"}},
+		{"first voice", idVoiceBase, Command{Kind: CommandSelectVoice, Chosen: Voice{Name: "Grace"}}},
+		{"last voice", idVoiceBase + 2, Command{Kind: CommandSelectVoice, Chosen: Voice{Name: "Leo"}}},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
@@ -202,7 +207,7 @@ func TestTooltipReflectsVoiceAndMuteState(t *testing.T) {
 	if got, want := tray.tooltip(), "Test: Grace (muted)"; got != want {
 		t.Fatalf("muted tooltip = %q, want %q", got, want)
 	}
-	tray.SetActiveVoice("Jack", "Jack", false)
+	tray.SetActiveVoice(Voice{Name: "Jack"}, "Jack")
 	if got, want := tray.tooltip(), "Test: Jack (muted)"; got != want {
 		t.Fatalf("after switching voice tooltip = %q, want %q", got, want)
 	}
@@ -263,5 +268,43 @@ func TestTheMenuOffersTheWindowToo(t *testing.T) {
 		}
 	default:
 		t.Error("the menu's Open asked for nothing at all")
+	}
+}
+
+// FR-565 and FR-569: the plugin voices follow the machine voices under a separator of their own,
+// and the cast one is checked by its plugin as well as its id, since two plugins may offer a voice
+// under one id.
+func TestTheMenuListsPluginVoicesAfterTheMachineVoices(t *testing.T) {
+	tray := New(Options{
+		Title:  "Test",
+		Active: Voice{Kind: Plugin, Plugin: "Flight Deck", Name: "one"},
+		Voices: []Choice{
+			{Voice: Voice{Name: "Grace"}, Label: "Grace Hart"},
+			{Voice: Voice{Kind: Machine, Name: "bf_emma"}, Label: "Emma (British, female)"},
+			{Voice: Voice{Kind: Plugin, Plugin: "Bridge Crew", Name: "one"}, Label: "Officer (Bridge Crew)"},
+			{Voice: Voice{Kind: Plugin, Plugin: "Flight Deck", Name: "one"}, Label: "Officer (Flight Deck)"},
+		},
+	})
+
+	want := []menuVoice{
+		{id: idVoiceBase, label: "Grace Hart"},
+		{id: idVoiceBase + 1, label: "Emma (British, female)", separated: true},
+		{id: idVoiceBase + 2, label: "Officer (Bridge Crew)", separated: true},
+		{id: idVoiceBase + 3, label: "Officer (Flight Deck)", checked: true},
+	}
+	if got := tray.voiceItems(); !reflect.DeepEqual(got, want) {
+		t.Errorf("items = %+v, want %+v", got, want)
+	}
+	if got, want := tray.tooltip(), "Test: Officer (Flight Deck)"; got != want {
+		t.Errorf("tooltip = %q, want %q", got, want)
+	}
+
+	tray.dispatch(idVoiceBase + 2)
+	chosen := Command{
+		Kind:   CommandSelectVoice,
+		Chosen: Voice{Kind: Plugin, Plugin: "Bridge Crew", Name: "one"},
+	}
+	if got := <-tray.commands; got != chosen {
+		t.Errorf("command = %+v, want the other plugin's voice of the same id", got)
 	}
 }

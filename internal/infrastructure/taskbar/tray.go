@@ -13,7 +13,7 @@ type CommandKind int
 const (
 	// CommandToggleMute asks for playback to be silenced or unsilenced.
 	CommandToggleMute CommandKind = iota
-	// CommandSelectVoice asks for a different voice.
+	// CommandSelectVoice asks for the voice it carries to be cast, of whichever kind.
 	CommandSelectVoice
 	// CommandQuit asks the application to stop.
 	CommandQuit
@@ -21,28 +21,51 @@ const (
 	// window that has been put away, so it has to answer a plain click as well as
 	// the menu: an icon that does nothing on the usual gesture reads as broken.
 	CommandShow
-	// CommandSelectMachineVoice asks for a machine voice, by its id (FR-509).
-	CommandSelectMachineVoice
 )
+
+// Kind says which sort of voice a choice is.
+//
+// A name identifies a voice only within its own kind: a recordings folder may carry a machine
+// voice's id (FR-540) and an id inside a plugin is unique only there (FR-569). So the kind travels
+// with the name everywhere the menu speaks about a voice.
+type Kind int
+
+const (
+	// Recorded is a voice read from a folder of recordings.
+	Recorded Kind = iota
+	// Machine is a voice the application speaks itself (FR-509).
+	Machine
+	// Plugin is a voice a plugin offers (FR-565).
+	Plugin
+)
+
+// Voice is what identifies one voice to the menu.
+//
+// It is one type rather than a field for each kind, because every place that speaks about a voice
+// here asks the same question: is this the one that is cast? A comparison of three fields written
+// out at each of those places is three chances for them to disagree.
+type Voice struct {
+	Kind Kind
+	// Plugin is the name of the plugin that offered the voice; empty for every other kind.
+	Plugin string
+	// Name identifies the voice within its kind; within its plugin too where it has one.
+	Name string
+}
 
 // Command is one choice made from the tray menu.
 type Command struct {
 	Kind CommandKind
-	// Voice carries the voice name for CommandSelectVoice and the id for
-	// CommandSelectMachineVoice; empty otherwise.
-	Voice string
+	// Chosen is the voice to cast for CommandSelectVoice; empty for every other kind. The
+	// application casts it by its kind, which is the one thing the tray need not know how to do.
+	Chosen Voice
 }
 
-// Choice is one voice the menu offers: the name that identifies it and the label it is shown
-// by, which differ where the voice's manifest names it (FR-210).
+// Choice is one voice the menu offers: what identifies it and the label it is shown by, which
+// differ where the voice's manifest names it (FR-210).
 type Choice struct {
-	// Name identifies the voice; a choice from the menu carries it.
-	Name string
+	Voice
 	// Label is what the menu and the hover text show.
 	Label string
-	// Machine marks a machine voice, which a choice casts by its id. A recordings folder may
-	// carry the same name, so the kind is part of what identifies a voice (FR-540).
-	Machine bool
 }
 
 // Options configures a tray at construction.
@@ -51,10 +74,9 @@ type Options struct {
 	Title string
 	// Voices lists the selectable voices, in the order they appear in the menu.
 	Voices []Choice
-	// ActiveVoice names the voice shown as chosen, by the name that identifies it.
-	ActiveVoice string
-	// ActiveMachine says whether ActiveVoice names a machine voice.
-	ActiveMachine bool
+	// Active is the voice shown as chosen; its zero value is no voice at all, since a name is
+	// what a voice must have.
+	Active Voice
 	// Muted is the starting state of the mute item.
 	Muted bool
 }

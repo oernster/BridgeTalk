@@ -14,6 +14,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/domain/cue"
 	"github.com/oernster/bridge-talk/internal/domain/machinevoice"
 	"github.com/oernster/bridge-talk/internal/infrastructure/library"
+	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
@@ -25,18 +26,38 @@ import (
 func playable(found []library.Voice) []taskbar.Choice {
 	var choices []taskbar.Choice
 	for _, candidate := range found {
-		choices = append(choices, taskbar.Choice{Name: candidate.Name, Label: candidate.Display()})
+		choices = append(choices, taskbar.Choice{
+			Voice: taskbar.Voice{Kind: taskbar.Recorded, Name: candidate.Name},
+			Label: candidate.Display(),
+		})
 	}
 	return choices
 }
 
 // trayChoices is every voice the tray's Voice menu offers: the recorded voices found, then every
-// machine voice by the name it is shown by, each marked as one so a choice casts it by its id
-// (FR-509).
-func trayChoices(found []library.Voice) []taskbar.Choice {
+// machine voice, then every voice the loaded plugins offer, each under the name it is shown by and
+// carrying what identifies it so a choice casts the right one (FR-509, FR-565).
+//
+// A plugin voice whose audio is not on this machine is left out rather than offered and refused.
+// The menu has nowhere to say why: it closes on the click; the reason belongs beside the voice
+// on the Cast pane, where it is already said (FR-570).
+func trayChoices(found []library.Voice, offered []*plugin.Voice) []taskbar.Choice {
 	choices := playable(found)
 	for _, voice := range machinevoice.All() {
-		choices = append(choices, taskbar.Choice{Name: voice.ID(), Label: voice.Name(), Machine: true})
+		choices = append(choices, taskbar.Choice{
+			Voice: taskbar.Voice{Kind: taskbar.Machine, Name: voice.ID()},
+			Label: voice.Name(),
+		})
+	}
+	shown := pluginDisplays(offered)
+	for index, voice := range offered {
+		if !voice.Ready {
+			continue
+		}
+		choices = append(choices, taskbar.Choice{
+			Voice: taskbar.Voice{Kind: taskbar.Plugin, Plugin: voice.Plugin().Name, Name: voice.ID},
+			Label: shown[index],
+		})
 	}
 	return choices
 }

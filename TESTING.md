@@ -56,10 +56,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 84.4% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 84.7% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 78.4% | 78% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 68.1% | 68% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 67.0% | 67% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
@@ -173,12 +173,15 @@ release is for.
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not.
-- **`internal/infrastructure/taskbar` (68.1%).** The tray icon runs its own Win32
+- **`internal/infrastructure/taskbar` (67.0%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is
   not. The command vocabulary and the state the menu reads are tested directly; the
-  menu as drawn is not.
+  menu as drawn is not. The figure fell from 68.1% on 2026-09-16 with the plugin voices:
+  what the menu was given grew by statements that only the Windows shell can run, the
+  separator between one kind of voice and the next among them, while everything a test
+  can reach in the package is still reached.
 - **`internal/infrastructure/audio` (95.7%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,

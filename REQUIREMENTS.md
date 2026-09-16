@@ -1209,13 +1209,23 @@ Verified by: in part, `TestTheVoicesOfferedAreTheTwentyEightOfFR508` in
 `TestTheCastPaneOffersEveryMachineVoiceByItsName` in `machinepane_test.go`; "offers a panel for each
 accent and sex, its voices sorted by name" in `frontend/src/machineVoices.test.tsx`.
 
-**FR-509 The tray offers the machine voices**
+**FR-509 The tray offers the machine and plugin voices**
 Priority: Should.
-The tray icon's Voice menu (FR-710) shall list the machine voices after the recorded voices.
-Verified by: `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` in
-`internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices`
-in `machine_test.go`; "selecting a machine voice casts it" in `facade_test.go`. Not verified by a test:
-the menu as drawn, with its separator.
+The tray icon's Voice menu (FR-710) shall list the machine voices after the recorded voices, then
+the voices the loaded plugins offer, each under the name it is shown by (FR-568). A plugin voice
+whose audio is not on this machine (FR-570) shall be left out rather than offered.
+Rationale: the menu closes on the click, so it has nowhere to give the reason a voice cannot speak.
+That reason belongs beside the voice on the Cast pane, where it is already said.
+Built on 2026-09-16: one choice carries everything that identifies a voice, its kind, the plugin it
+came from and its name, so casting from the menu needs no second lookup and cannot cast the wrong
+voice of a shared name.
+Verified by: `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` and
+`TestTheMenuListsPluginVoicesAfterTheMachineVoices` in
+`internal/infrastructure/taskbar/tray_windows_test.go`;
+`TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices` in `machine_test.go`;
+`TestTheTrayOffersThePluginVoicesAfterTheMachineVoices` and
+`TestAPluginVoiceChosenFromTheTrayIsCast` in `pluginvoices_test.go`; "selecting a machine voice casts it" in `facade_test.go`. Not verified by
+a test: the menu as drawn, with its separators.
 
 **FR-510 A machine voice speaks with its own accent**
 Priority: Must.
@@ -3226,10 +3236,11 @@ press outside the question.
 Priority: Must.
 When the tray icon is clicked or Open is chosen from its menu, the application shall bring the
 window back, centred, on the Cast pane. The menu shall hold, in order: Voice, listing the voices
-found at startup by the name each is shown by (FR-210), then the machine voices under a separator (FR-509), with the cast one marked by its name and its kind (FR-540); Open; Mute, marked
-while muted; Quit. The icon's hover text shall name the product, the cast voice where one is cast
-and whether playback
-is muted. When playback is muted or unmuted or a voice is cast, whether from the window or from the
+found at startup by the name each is shown by (FR-210), then the machine voices and then the plugin
+voices, each group after the first under a separator (FR-509), with the cast one marked by
+everything that identifies it: its kind, the plugin it came from where it has one and its name
+(FR-540, FR-569); Open; Mute, marked while muted; Quit. The icon's hover text shall name the
+product, the cast voice where one is cast and whether playback is muted. When playback is muted or unmuted or a voice is cast, whether from the window or from the
 tray menu, the application shall send the hover text again with the new state. If the icon cannot be
 made, then the application shall print a warning and run without it.
 Verified by: `TestAClickAsksForTheWindowBack`, `TestTheMenuOffersTheWindowToo`,
@@ -3237,8 +3248,12 @@ Verified by: `TestAClickAsksForTheWindowBack`, `TestTheMenuOffersTheWindowToo`,
 `TestDispatchDoesNotBlockWhenNobodyIsReading`, `TestTooltipReflectsVoiceAndMuteState`,
 `TestTheHoverTextSaysMutedWithNoVoiceCast`,
 `TestTheHoverTextFollowsTheStateOnTheTrayThread`,
-`TestTheMenuShowsEachVoiceByTheNameItIsShownBy` and `TestTheMenuListsMachineVoicesAfterTheRecordedVoices` in
-`internal/infrastructure/taskbar/tray_windows_test.go`; `TestTheTrayIconBringsTheWindowBack` and
+`TestTheMenuShowsEachVoiceByTheNameItIsShownBy`,
+`TestTheMenuListsMachineVoicesAfterTheRecordedVoices` and
+`TestTheMenuListsPluginVoicesAfterTheMachineVoices` in
+`internal/infrastructure/taskbar/tray_windows_test.go`;
+`TestTheTrayIsToldWhichKindOfVoiceIsCast` in `pluginvoices_test.go`;
+`TestTheTrayIconBringsTheWindowBack` and
 `TestASummonedWindowIsToldToOpenOnTheCast` in `window_life_test.go`;
 `TestOnlyDirectoriesHoldingTakesAreOfferedToTheTray` in `cast_test.go`;
 `TestTheTrayShowsAVoiceFoundLaterByItsManifestName` in `session_test.go`. Not verified by a test: the

@@ -33,9 +33,10 @@ type Tray struct {
 	commands chan Command
 	options  Options
 
-	muted         atomic.Bool
-	activeVoice   atomic.Value
-	activeMachine atomic.Bool
+	muted atomic.Bool
+	// active is the Voice shown as cast, stored whole rather than a field at a time: the menu asks
+	// whether a choice IS the cast voice, which is one comparison of one value.
+	active atomic.Value
 	// activeLabel is what the hover text shows the active voice by (FR-210). It is handed over with
 	// the voice rather than looked up in the menu, which holds only the voices found at startup.
 	activeLabel atomic.Value
@@ -74,9 +75,8 @@ func New(options Options) *Tray {
 		ready:    make(chan error, 1),
 	}
 	tray.muted.Store(options.Muted)
-	tray.activeVoice.Store(options.ActiveVoice)
-	tray.activeMachine.Store(options.ActiveMachine)
-	tray.activeLabel.Store(tray.label(options.ActiveVoice, options.ActiveMachine))
+	tray.active.Store(options.Active)
+	tray.activeLabel.Store(tray.label(options.Active))
 	return tray
 }
 
@@ -97,16 +97,15 @@ func (t *Tray) SetMuted(muted bool) {
 	t.post(wmRefreshTip)
 }
 
-// SetActiveVoice updates which voice the menu and the hover text show: the name that identifies
-// it, the label it is shown by and whether it is a machine voice. A blank label shows the voice by
-// its name. Safe from any goroutine.
-func (t *Tray) SetActiveVoice(name, label string, machine bool) {
+// SetActiveVoice updates which voice the menu and the hover text show: everything that identifies
+// it, with the label it is shown by. A blank label shows the voice by its name. Safe from any
+// goroutine.
+func (t *Tray) SetActiveVoice(cast Voice, label string) {
 	if label == "" {
-		label = name
+		label = cast.Name
 	}
-	t.activeVoice.Store(name)
+	t.active.Store(cast)
 	t.activeLabel.Store(label)
-	t.activeMachine.Store(machine)
 	t.post(wmRefreshTip)
 }
 
@@ -216,7 +215,7 @@ const mutedMark = " (muted)"
 // said with no voice cast too, since the mute answers with nothing cast.
 func (t *Tray) tooltip() string {
 	tip := t.options.Title
-	if voice, _ := t.activeVoice.Load().(string); voice != "" {
+	if cast, _ := t.active.Load().(Voice); cast.Name != "" {
 		shown, _ := t.activeLabel.Load().(string)
 		tip = fmt.Sprintf("%s: %s", tip, shown)
 	}
@@ -293,16 +292,15 @@ func (t *Tray) windowProc(hwnd windows.HWND, message uint32, wParam, lParam uint
 	return ret
 }
 
-// label answers with what a voice the menu holds is shown by, given the name that identifies it and
-// its kind; it answers the start's active voice before any is handed over. A voice the menu does
-// not hold is shown by its name as it is.
-func (t *Tray) label(name string, machine bool) string {
+// label answers with what a voice the menu holds is shown by; it answers the start's active voice
+// before any is handed over. A voice the menu does not hold is shown by its name as it is.
+func (t *Tray) label(cast Voice) string {
 	for _, choice := range t.options.Voices {
-		if choice.Name == name && choice.Machine == machine {
+		if choice.Voice == cast {
 			return choice.Label
 		}
 	}
-	return name
+	return cast.Name
 }
 
 // send offers one command to the main loop, dropping it where nothing is reading.

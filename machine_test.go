@@ -249,15 +249,18 @@ func TestWithNowhereToKeepMadeLinesNoMachineVoiceIsCast(t *testing.T) {
 }
 
 // FR-509: the tray offers the recorded voices found, then every machine voice by the name it is
-// shown by, each marked as one.
+// shown by, each carrying the kind that says how to cast it.
 func TestTheTrayOffersTheMachineVoicesAfterTheRecordedVoices(t *testing.T) {
 	current, _ := fixtureSession(t, newFakePlayer())
 
-	choices := trayChoices(current.available)
+	choices := trayChoices(current.available, nil)
 
 	want := playable(current.available)
 	for _, voice := range machinevoice.All() {
-		want = append(want, taskbar.Choice{Name: voice.ID(), Label: voice.Name(), Machine: true})
+		want = append(want, taskbar.Choice{
+			Voice: taskbar.Voice{Kind: taskbar.Machine, Name: voice.ID()},
+			Label: voice.Name(),
+		})
 	}
 	if !slices.Equal(choices, want) {
 		t.Errorf("tray offers %+v, want %+v", choices, want)

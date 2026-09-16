@@ -18,8 +18,8 @@ import (
 // part the facade talks to, so it stands in for the real icon without one.
 func idleTray() *taskbar.Tray {
 	return taskbar.New(taskbar.Options{Title: appTitle, Voices: []taskbar.Choice{
-		{Name: "Alpha", Label: "Alpha"},
-		{Name: "Beta", Label: "Beta"},
+		{Voice: taskbar.Voice{Name: "Alpha"}, Label: "Alpha"},
+		{Voice: taskbar.Voice{Name: "Beta"}, Label: "Beta"},
 	}})
 }
 
@@ -58,8 +58,8 @@ func TestTheTrayShowsAVoiceFoundLaterByItsManifestName(t *testing.T) {
 	if err := app.SelectVoice("Carol"); err != nil {
 		t.Fatalf("casting Carol: %v", err)
 	}
-	if tray.voice != "Carol" || tray.shown != "Carol Hart" {
-		t.Errorf("the tray was told %q shown as %q, want Carol shown as Carol Hart", tray.voice, tray.shown)
+	if tray.voice != (taskbar.Voice{Name: "Carol"}) || tray.shown != "Carol Hart" {
+		t.Errorf("the tray was told %+v shown as %q, want Carol shown as Carol Hart", tray.voice, tray.shown)
 	}
 }
 

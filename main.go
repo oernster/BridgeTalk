@@ -86,7 +86,7 @@ type audioPlayer interface {
 type trayIcon interface {
 	Commands() <-chan taskbar.Command
 	SetMuted(muted bool)
-	SetActiveVoice(name, label string, machine bool)
+	SetActiveVoice(cast taskbar.Voice, label string)
 	Stop()
 }
 
@@ -175,7 +175,7 @@ func (s *session) speakWith(source ports.AudioSource, cast castVoice) {
 		s.reactions.SetCueMaker(maker)
 	}
 	if s.tray != nil {
-		s.tray.SetActiveVoice(cast.Name, cast.Display, cast.Machine)
+		s.tray.SetActiveVoice(cast.chosen(), cast.Display)
 	}
 }
 
@@ -306,7 +306,7 @@ func run() error {
 		chatter: services.NewChatterService(table, settings),
 	}
 	if !*noTray {
-		current.tray = startTray(found, chosen.Name)
+		current.tray = startTray(found, current.plugins.Voices(), taskbar.Voice{Name: chosen.Name})
 	}
 
 	// A journal directory that cannot be watched is carried to the window rather than
@@ -334,9 +334,9 @@ func run() error {
 // A tray that fails to start is not fatal. The application still watches the journal
 // and still speaks, which is the whole point of it. The nil it answers then is the
 // interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
-func startTray(found []library.Voice, active string) trayIcon {
+func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
 	tray := taskbar.New(taskbar.Options{
-		Title: appTitle, Voices: trayChoices(found), ActiveVoice: active,
+		Title: appTitle, Voices: trayChoices(found, offered), Active: active,
 	})
 	if err := tray.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)

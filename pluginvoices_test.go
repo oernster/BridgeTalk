@@ -13,6 +13,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin/plugintest"
+	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
 )
 
 // loadedPlugin is one plugin as a test lays it out: the file it is loaded from, the name it
@@ -243,5 +244,78 @@ func TestCastingAnotherKindForgetsTheKeptPluginVoice(t *testing.T) {
 				t.Errorf("kept %+v, want the plugin voice forgotten", store.held)
 			}
 		})
+	}
+}
+
+// FR-509 and FR-565: the tray offers the plugin voices after the machine voices, each carrying the
+// plugin that offered it so a choice casts the right one. A voice whose audio is not on this
+// machine is left out: the menu closes on the click and has nowhere to say why (FR-570).
+func TestTheTrayOffersThePluginVoicesAfterTheMachineVoices(t *testing.T) {
+	current, _ := fixtureSession(t, newFakePlayer())
+	absent := plugintest.Voice{ID: "two", Name: "The Engineer", Reason: "its recordings are gone"}
+	set := offering(t, "Bridge Crew", officer(), absent)
+
+	choices := trayChoices(current.available, set.Voices())
+
+	last := choices[len(choices)-1]
+	want := taskbar.Choice{
+		Voice: taskbar.Voice{Kind: taskbar.Plugin, Plugin: "Bridge Crew", Name: "one"},
+		Label: "The First Officer",
+	}
+	if last != want {
+		t.Errorf("the last choice is %+v, want %+v", last, want)
+	}
+	for _, choice := range choices {
+		if choice.Name == "two" {
+			t.Error("a voice with no audio behind it is offered in the menu")
+		}
+	}
+	// Every machine voice still comes before it, which is what the separator in the menu reads.
+	if choices[len(choices)-2].Kind != taskbar.Machine {
+		t.Errorf("the choice before it is %+v, want the last machine voice", choices[len(choices)-2])
+	}
+}
+
+// The tray is told which kind is cast as well as which name, since a name identifies a voice only
+// within its kind (FR-540, FR-569).
+func TestTheTrayIsToldWhichKindOfVoiceIsCast(t *testing.T) {
+	for _, each := range []struct {
+		name string
+		cast castVoice
+		want taskbar.Voice
+	}{
+		{"a recorded voice", castVoice{Name: "Alpha"}, taskbar.Voice{Name: "Alpha"}},
+		{
+			"a machine voice",
+			castVoice{Name: "bf_emma", Machine: true},
+			taskbar.Voice{Kind: taskbar.Machine, Name: "bf_emma"},
+		},
+		{
+			"a plugin voice",
+			castVoice{Name: "one", Plugin: "Bridge Crew"},
+			taskbar.Voice{Kind: taskbar.Plugin, Plugin: "Bridge Crew", Name: "one"},
+		},
+	} {
+		t.Run(each.name, func(t *testing.T) {
+			if got := each.cast.chosen(); got != each.want {
+				t.Errorf("the tray is told %+v, want %+v", got, each.want)
+			}
+		})
+	}
+}
+
+// A plugin voice chosen from the tray is cast by the plugin that offered it and its id within that
+// plugin, which is the pair nothing but the menu's own choice carries (FR-569).
+func TestAPluginVoiceChosenFromTheTrayIsCast(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	app.session.plugins = offering(t, "Bridge Crew", officer())
+
+	app.handleTray(taskbar.Command{
+		Kind:   taskbar.CommandSelectVoice,
+		Chosen: taskbar.Voice{Kind: taskbar.Plugin, Plugin: "Bridge Crew", Name: "one"},
+	})
+
+	if app.session.active.Plugin != "Bridge Crew" || app.session.active.Name != "one" {
+		t.Errorf("cast %+v, want the plugin voice the menu named", app.session.active)
 	}
 }

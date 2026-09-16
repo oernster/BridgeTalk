@@ -7,14 +7,19 @@ package audio
 //
 // What is not reachable that way is the part that actually sounds: playOne and the
 // loop around it call into the speaker package and cannot be exercised without a real
-// device and a real clip to hear. TESTING.md names that as the gap.
+// device and a real clip to hear. TESTING.md names that as the gap. The one exception is
+// playOne's first decision, the part that will not open: it answers before the device is
+// reached, so what it records is read back here (FR-574).
 
 import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/gopxl/beep/v2"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/audio/audiotest"
 )
@@ -278,6 +283,35 @@ func TestAClipIsReadWholeBeforeItReachesTheDevice(t *testing.T) {
 	}
 	if err := source.Err(); err != nil {
 		t.Fatalf("Err returned %v, want nil", err)
+	}
+}
+
+// A part of a take that will not open is passed over so the rest of the take still plays; it
+// is recorded with the reason (FR-574). The audio belongs to the user and can go at any time, so
+// the note is the only thing that would ever say a part is missing: a take short of one still
+// sounds like a take.
+//
+// The read fails before the device is reached, which is what makes this reachable with no sound
+// card: the player answers that the sequence carries on without anything having been played.
+func TestAPartThatWillNotOpenIsRecordedAndTheTakeCarriesOn(t *testing.T) {
+	t.Parallel()
+	player := silentPlayer()
+	var noted []string
+	player.load = func(string) (beep.Streamer, error) { return nil, errors.New("it is not there") }
+	player.record = func(line string) { noted = append(noted, line) }
+
+	if !player.playOne(filepath.Join("C:", "Recordings", "part two.wav"), make(chan struct{})) {
+		t.Fatal("a part that would not open ended the take, want the rest of it played")
+	}
+
+	if len(noted) != 1 {
+		t.Fatalf("%d parts were recorded, want one: %v", len(noted), noted)
+	}
+	if !strings.Contains(noted[0], "part two.wav") || !strings.Contains(noted[0], "it is not there") {
+		t.Errorf("the note reads %q, want the part named with the reason", noted[0])
+	}
+	if !strings.Contains(noted[0], "passed over") {
+		t.Errorf("the note reads %q, want it to say the part was passed over", noted[0])
 	}
 }
 

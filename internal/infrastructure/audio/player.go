@@ -9,11 +9,13 @@ package audio
 import (
 	"errors"
 	"fmt"
-	"math"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/gopxl/beep/v2"
+
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // deviceSampleRate is the rate the output device runs at. Clips recorded at another
@@ -44,24 +46,6 @@ const stallInterval = time.Second / bufferDivisor
 // choice, good enough for speech without the cost of a wide filter.
 const resampleQuality = 4
 
-// volumeBase and volumeOctaves shape the gain curve. Perceived loudness is roughly
-// logarithmic in gain, so a linear slider mapped straight onto gain spends most of
-// its travel in a range that all sounds the same. The slider position instead picks
-// a point volumeOctaves below full; the gain is that many halvings. At the top the
-// clip plays as recorded, at the middle it is an eighth of that, at the bottom it is
-// silence.
-//
-// Two is beep's documented natural base. The curve is computed here rather than
-// through effects.Volume because that type reads its own fields; a slider has to be
-// heard while a clip is already playing.
-const (
-	volumeBase    = 2
-	volumeOctaves = 6
-)
-
-// fullVolume is the level at which a clip plays exactly as recorded.
-const fullVolume = 1.0
-
 // ErrNoClips is returned when a request carries nothing playable.
 var ErrNoClips = errors.New("no clips to play")
 
@@ -79,6 +63,10 @@ type Player struct {
 	// read part way, which is where a take can be cancelled while nothing of it has reached the
 	// speaker yet.
 	load func(path string) (beep.Streamer, error)
+
+	// record notes a part that would not open; left nil, a line on error output does, which is
+	// where the run log keeps it (FR-574, FR-715). A test sets it to read the note back.
+	record func(line string)
 
 	// sequence is held while a sequence is cancelled and the speaker cleared behind it; it is also
 	// held while a clip read for a sequence is handed to the speaker. A clip read for a sequence
@@ -117,39 +105,6 @@ func NewPlayer() (*Player, error) {
 
 // Silent reports whether the player is running without an output device.
 func (p *Player) Silent() bool { return p.silent }
-
-// SetVolume sets the playback level, where zero is silence and one is the clip as
-// recorded. A level outside that range is clamped rather than refused, because the
-// caller is a slider and a slider cannot usefully be told it is wrong.
-func (p *Player) SetVolume(level float64) {
-	switch {
-	case level < 0:
-		level = 0
-	case level > fullVolume:
-		level = fullVolume
-	}
-	p.mu.Lock()
-	p.volume = level
-	p.mu.Unlock()
-}
-
-// Volume reports the playback level.
-func (p *Player) Volume() float64 {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	return p.volume
-}
-
-// gain converts the level into the multiplier applied to each sample. It is read
-// once per buffer rather than once per clip, so moving the slider is heard straight
-// away instead of at the next clip.
-func (p *Player) gain() float64 {
-	level := p.Volume()
-	if level <= 0 {
-		return 0
-	}
-	return math.Pow(volumeBase, (level-fullVolume)*volumeOctaves)
-}
 
 // Done yields once per completed or stopped sequence.
 func (p *Player) Done() <-chan struct{} { return p.finished }
@@ -258,7 +213,11 @@ func (p *Player) run(clips []string, gap time.Duration, cancel chan struct{}) {
 func (p *Player) playOne(path string, cancel chan struct{}) bool {
 	source, err := p.loadClip(path)
 	if err != nil {
-		// One unreadable clip should not abandon the rest of the sequence.
+		// One unreadable clip should not abandon the rest of the sequence; the part passed
+		// over is recorded rather than dropped in silence (FR-574). Most of a line is better
+		// than none of it; nothing else would ever say a part is missing, since a take short of
+		// a part still sounds like a take.
+		p.passedOver(path, err)
 		return true
 	}
 
@@ -288,6 +247,20 @@ func (p *Player) playOne(path string, cancel chan struct{}) bool {
 	case <-cancel:
 		return false
 	}
+}
+
+// passedOver records one part of a take that would not open, with the reason it would not.
+//
+// The audio belongs to the user and can be moved or removed at any time without the voice
+// offering it knowing, so this is an ordinary event rather than a fault: it is a note, worded
+// as every other thing passed over is; it stops nothing.
+func (p *Player) passedOver(path string, err error) {
+	line := refusal.PassedOver("the part "+path, refusal.Reason(err).Error())
+	if p.record != nil {
+		p.record(line)
+		return
+	}
+	fmt.Fprintln(os.Stderr, line)
 }
 
 // loadClip reads a clip whole with the player's load where one is set, else the package's own.

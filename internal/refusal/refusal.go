@@ -44,6 +44,21 @@ func Reason(err error) error {
 	return err
 }
 
+// PassedOver words one thing the application decided not to use, so a plugin, a voice inside a
+// plugin that otherwise loaded and a part of a take that would not open all read the same way in
+// the run log (FR-567, FR-574).
+//
+// It is here rather than beside any one of them for the reason Reason is here: three packages
+// need these words and none of them may depend on another. A reason of nothing says so rather
+// than trailing off, since a plugin may mark a voice unavailable and give no reason at all; a
+// line ending in a colon reads as a line that was cut off.
+func PassedOver(what, why string) string {
+	if why == "" {
+		why = "it gave no reason"
+	}
+	return "note: " + what + " was passed over: " + why
+}
+
 // Check lists what a refusal over path gets wrong under FR-237: nothing refused at all,
 // the path named other than once, its separators doubled or a system call written before
 // a path. An empty list is a refusal that reads as it should.

@@ -2349,10 +2349,22 @@ by the time it is asked about.
 Built on 2026-09-16. A refusal is written where every other note goes, which the log keeps
 (FR-715). Only refusals are written: a plugin that loads says nothing, as the ordinary case with
 no plugins says nothing (FR-562).
+Completed on 2026-09-16 for a voice passed over inside a plugin that otherwise loaded, which is
+the voice whose audio is not on this machine (FR-570): it cannot be cast and the notification area
+does not offer it (FR-509), so it is passed over as surely as a file that would not load. The Cast
+pane says so beside the voice and that is gone when the window closes; the log is what is still
+there when the user is asked afterwards what happened. The plugin is named by its file, as a
+refused plugin is, since two plugins may honestly choose one name (FR-568). A plugin that marks a
+voice unavailable and gives no reason is said to have given none, rather than the line trailing
+off after the colon; the words are `refusal.PassedOver`, which is also what a part that will not
+open is worded by (FR-574), so everything passed over reads the same way.
 Verified by: `TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog` in `plugins_test.go`, which
 puts a text file named as a library in the folder and reads the line back; seen to fail with the
-line not written. A voice passed over inside a plugin that otherwise loads is not built yet,
-since a voice is passed over only with its whole plugin today (FR-566).
+line not written. `TestAVoicePassedOverInsideALoadedPluginIsNamedInTheLog` in the same file for
+the voice, seen to fail twice: once with the walk over the voices deleted and once with the skip
+over a voice that can speak deleted, which then named every voice.
+`TestWhatWasPassedOverIsWordedTheOneWay` in `internal/refusal/refusal_test.go` for the wording and
+for a reason of nothing.
 
 **FR-568 Two voices offered under one name stay apart**
 Priority: Should.
@@ -2462,9 +2474,18 @@ part, shall play the remaining parts in order and shall record the part it passe
 Rationale: Oliver's ruling on 2026-09-16. Most of a line is better than none of it; the audio can
 change under the application at any time without the plugin knowing.
 Measured on 2026-09-16: the first half already holds. `Player.playOne` answers true for a clip it
-cannot read, so the sequence carries on; the comment there says so in as many words. The second
-half does not hold: nothing is recorded when a part is passed over.
-Verified by: nothing yet for the recording.
+cannot read, so the sequence carries on; the comment there says so in as many words.
+Completed on 2026-09-16: the part is recorded with the reason it would not open, worded by
+`refusal.PassedOver` as everything else passed over is (FR-567) and written to error output, which
+the run log keeps (FR-715). It is a note rather than a fault and stops nothing: the audio belongs
+to the user and can be moved at any time without the voice offering it knowing. Nothing else would
+ever say a part is missing, since a take short of a part still sounds like a take.
+The player takes the recorder as a field left nil in production, as it already takes the clip
+read, so a test reads the note back without a sound card: the read fails before the device is
+reached.
+Verified by: `TestAPartThatWillNotOpenIsRecordedAndTheTakeCarriesOn` in
+`internal/infrastructure/audio/sequence_test.go`, which reads back the part named with its reason
+and holds that the take carries on; seen to fail with the recording deleted.
 
 **FR-575 If no part of a chosen take plays, then the cue is silent**
 Priority: Must.

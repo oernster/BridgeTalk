@@ -7,6 +7,7 @@ import (
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/plugin"
 	"github.com/oernster/bridge-talk/internal/infrastructure/runlog"
+	"github.com/oernster/bridge-talk/internal/refusal"
 )
 
 // pluginsFolder is the folder inside the install directory that holds plugins (FR-560).
@@ -35,8 +36,31 @@ func loadPlugins(executable string, notFound error, log runlog.Lines) *plugin.Se
 		return &plugin.Set{}
 	}
 	set := plugin.Load(pluginsBeside(executable), plugin.OpenLibrary)
-	for _, passed := range set.Refusals {
-		log.Log("note: the plugin " + passed.File + " was passed over: " + passed.Why)
-	}
+	reportPlugins(set, log)
 	return set
+}
+
+// reportPlugins writes to the log every plugin passed over and every voice passed over inside a
+// plugin that otherwise loaded (FR-567).
+//
+// A voice whose audio is not on this machine is passed over as surely as a file that would not
+// load: it cannot be cast (FR-570) and the notification area does not offer it (FR-509). The Cast
+// pane says so beside the voice, which is gone the moment the window closes; the log is what is
+// still there when the user is asked afterwards what happened.
+//
+// The plugin is named by its file rather than by the name it gave itself, as a refused plugin is:
+// the file is the one thing about a plugin the user can see by opening the folder; two
+// plugins may honestly choose one name (FR-568).
+func reportPlugins(set *plugin.Set, log runlog.Lines) {
+	for _, passed := range set.Refusals {
+		log.Log(refusal.PassedOver("the plugin "+passed.File, passed.Why))
+	}
+	for _, loaded := range set.Plugins {
+		for _, voice := range loaded.Voices() {
+			if voice.Ready {
+				continue
+			}
+			log.Log(refusal.PassedOver("the voice "+voice.Name+" in the plugin "+loaded.File, voice.Reason))
+		}
+	}
 }

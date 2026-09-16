@@ -53,10 +53,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/modelfiles` | 99.1% | 99% | `test.ps1` |
 | `internal/infrastructure/plugin` | 91.2% | 91% | `test.ps1` |
 | `internal/infrastructure/plugin/plugintest` | 100% | 100% | `test.ps1` |
-| `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
+| `internal/infrastructure/audio` | 95.8% | 95% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.1% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 84.7% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 84.8% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 78.4% | 78% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
 | `internal/infrastructure/taskbar` | 67.0% | 67% | `test.ps1` |
@@ -182,7 +182,7 @@ release is for.
   what the menu was given grew by statements that only the Windows shell can run, the
   separator between one kind of voice and the next among them, while everything a test
   can reach in the package is still reached.
-- **`internal/infrastructure/audio` (95.7%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/audio` (95.8%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
   while a stop, an interrupting take and a take after silence each drop what is queued. The
@@ -192,9 +192,10 @@ release is for.
   volume curve are tested without a sound card. What stays unreached is the device
   failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
   rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
-  error, an unreadable clip in `playOne` and a cancel landing between clips or during the
-  gap in `run`. The figure moves between runs: 95.3% and 95.7% were both measured on
-  2026-09-15, so the floor sits at 95%. Reading a clip whole
+  error and a cancel landing between clips or during the gap in `run`. A part that will not
+  open is no longer among them: `playOne` answers on that path before the device is
+  reached, so what it records is read back with no sound card (FR-574). The figure moves
+  between runs: 95.3% and 95.7% were both measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
   into memory is tested directly, by deleting the file before streaming what came back:
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected

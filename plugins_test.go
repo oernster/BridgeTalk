@@ -85,6 +85,36 @@ func TestSomethingInTheFolderThatIsNoPluginIsNamedInTheLog(t *testing.T) {
 	}
 }
 
+// A voice inside a plugin that loaded perfectly well is passed over when its audio is not on
+// this machine (FR-570); that reaches the log too (FR-567). The plugin itself says nothing,
+// since it loaded: only what was passed over is written.
+func TestAVoicePassedOverInsideALoadedPluginIsNamedInTheLog(t *testing.T) {
+	t.Parallel()
+
+	set := offeringAll(t, loadedPlugin{file: "crew.dll", name: "Bridge Crew", voices: []plugintest.Voice{
+		{ID: "one", Name: "The First Officer", Ready: true},
+		{ID: "two", Name: "The Engineer", Reason: "its recordings are gone"},
+		{ID: "three", Name: "The Pilot"},
+	}})
+
+	log := &written{}
+	reportPlugins(set, runlog.NewLines(log))
+
+	logged := log.String()
+	if !strings.Contains(logged, "the voice The Engineer in the plugin crew.dll was passed over: its recordings are gone") {
+		t.Errorf("the log says %q, want the voice named with the reason it gave", logged)
+	}
+	if !strings.Contains(logged, "the voice The Pilot in the plugin crew.dll was passed over: it gave no reason") {
+		t.Errorf("the log says %q, want a voice that gave no reason said so", logged)
+	}
+	if strings.Contains(logged, "The First Officer") {
+		t.Errorf("the log says %q about a voice that can speak, want nothing", logged)
+	}
+	if strings.Contains(logged, "note: the plugin crew.dll was passed over") {
+		t.Errorf("the log says %q about a plugin that loaded, want nothing", logged)
+	}
+}
+
 func TestAnApplicationThatCannotTellWhereItIsLoadsNoPlugin(t *testing.T) {
 	t.Parallel()
 

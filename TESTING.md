@@ -118,11 +118,13 @@ handed to a DLL converted only where the call into it is made.
 | `panes.tsx` | 100% | 95.9% |
 | `chrome.tsx` | 100% | 94.3% |
 | `guide.tsx` | 100% | 86.7% |
+| `panes.tsx` | 100% | 94.7% |
+| `chatter.tsx` | 100% | 97.6% |
 | `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
-| **all files** | **99.4%** | **96.8%** |
+| **all files** | **99.5%** | **96.8%** |
 
-293 tests across 26 files, run under Vitest with jsdom.
+293 tests across 27 files, run under Vitest with jsdom.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -361,9 +363,21 @@ to skip:
 
 It checks `models/` against the model files list first and stops where a file is
 missing or differs, saying to run the tool above. It then checks formatting, runs
-`go vet`, runs every test, holds the domain and the application layers at 100%, then
-holds each other gated package at its floor. Read the exit code rather than the last
-line of output.
+`go vet`, runs every test, runs the front end's own three checks, holds the domain and
+the application layers at 100%, then holds each other gated package at its floor. Read
+the exit code rather than the last line of output.
+
+The front end's checks are `npm run lint`, `npm run typecheck` and `npm run test`, run
+from `frontend`. They are named in `package.json` rather than spelled out in the gate, so
+the build and the gate run the same three. They used to run only inside `wails build`,
+which meant a lint failure, a type error or a broken component test was caught by cutting
+a release rather than by the everyday gate; the type check in particular holds a rule the
+compiler enforces, that a call which can be refused cannot be written without a handler
+for it (ARCHITECTURE.md, Errors). Proved on 2026-09-16 by removing one handler and reading
+the exit code: `npm run typecheck failed with exit code 2`. Dependencies that are not
+installed stop the gate rather than skipping the front end, on the ground that a check
+which quietly does not run is the one that is not there on the day it would have caught
+something; that half is not proved by a test.
 
 To hold the domain and the application layers to a different floor, for a deliberate check:
 
@@ -399,8 +413,8 @@ release of it failing an analyser would break a build over something unowned.
 `test.ps1` narrows the same way for `go vet` and `go test`; the formatting check
 filters by path instead, because gofmt walks directories rather than packages.
 
-The front end, from the `frontend` directory. The application's build runs the first two;
-nothing runs the third for you:
+The front end, from the `frontend` directory. `test.ps1` and the application's build both
+run all three; these are how to run one on its own:
 
 ```powershell
 npx eslint .

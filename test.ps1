@@ -1,4 +1,5 @@
-# Verifies Bridge Talk: formatting, vet, the test suite and the coverage floor.
+# Verifies Bridge Talk: formatting, vet, the Go suite, the front end's own checks and the
+# coverage floors.
 #
 #   ./test.ps1              run everything
 #   ./test.ps1 -Floor 95    run with a different coverage floor, for a deliberate check
@@ -57,6 +58,31 @@ if ($LASTEXITCODE -ne 0) { throw "go vet failed with exit code $LASTEXITCODE" }
 Write-Host 'Running the whole suite...'
 go test $packages
 if ($LASTEXITCODE -ne 0) { throw "go test failed with exit code $LASTEXITCODE" }
+
+# The front end is held to the same bar in its own runner, here rather than at build time
+# alone. Its checks used to run only inside `wails build`, which meant a lint failure, a type error
+# or a broken component test was caught by cutting a release rather than by the everyday gate; the
+# type check in particular is what holds a rule the compiler enforces, that a call which can be
+# refused cannot be written without a handler for it (ARCHITECTURE.md, Errors).
+#
+# The commands live in package.json rather than being spelled out here, so the build and this gate
+# run the same three. A missing node_modules stops the gate rather than skipping the front end: a
+# check that quietly does not run is the one that is not there on the day it would have caught
+# something.
+Write-Host 'Checking the front end...'
+$frontend = Join-Path $root 'frontend'
+if (-not (Test-Path (Join-Path $frontend 'node_modules'))) {
+    throw "the front end's dependencies are not installed: run npm install in $frontend, then run this again"
+}
+Push-Location $frontend
+try {
+    foreach ($check in 'lint', 'typecheck', 'test') {
+        npm run $check
+        if ($LASTEXITCODE -ne 0) { throw "npm run $check failed with exit code $LASTEXITCODE" }
+    }
+} finally {
+    Pop-Location
+}
 
 Write-Host "Measuring coverage of $($gated -join ', ')..."
 $profilePath = Join-Path ([System.IO.Path]::GetTempPath()) 'bridge-talk-coverage.out'

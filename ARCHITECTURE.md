@@ -353,7 +353,7 @@ manifest only adds to it (below).
 - **Matching is exact apart from case.** A file name matches a cue id only when the two are equal compared
   case insensitively; a folder name matches only the id with each dot written as an underscore
   (FR-229), compared the same way. `cue.ID.Folder` is the one home of that form. Nothing else is
-  normalised, so a folder named in prose or named with dots resolves nothing, which is what makes it
+  normalised, so a name spaced apart, joined by hyphens or written with dots in a folder resolves nothing, which is what makes it
   safe to point the application at a directory and simply see what happens.
 - **Four formats are recognised**, `.wav`, `.mp3`, `.flac` and `.ogg`, matched case insensitively.
   Every other file is ignored without a word.

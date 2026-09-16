@@ -289,21 +289,21 @@ func TestNamesMatchingNoCueAreReportedWhereTheyWereFound(t *testing.T) {
 	}
 }
 
-// FR-213: a tree named in space separated prose resolves nothing, however closely its
-// words follow the cue ids, so no directory is offered as a voice by accident.
-func TestATreeNamedInProseResolvesNothing(t *testing.T) {
+// FR-213: names that only resemble cue ids resolve nothing: a name spaced apart, a name joined by
+// hyphens and a cue folder one folder too deep. No directory is offered as a voice by accident.
+func TestNamesThatOnlyResembleCueIdsResolveNothing(t *testing.T) {
 	root := t.TempDir()
-	narrator := filepath.Join(root, "Narrator")
-	audiotest.WriteTake(t, filepath.Join(narrator, "Carrier Jump Request", "take.wav"))
-	audiotest.WriteTake(t, filepath.Join(narrator, "Reservoir Replenished.wav"))
-	audiotest.WriteTake(t, filepath.Join(narrator, "Sorted By Hand", "Colonisation Contribution", "one.mp3"))
+	frank := filepath.Join(root, "Frank")
+	audiotest.WriteTake(t, filepath.Join(frank, "Docking Granted.wav"))
+	audiotest.WriteTake(t, filepath.Join(frank, "start-jump", "take.wav"))
+	audiotest.WriteTake(t, filepath.Join(frank, "Recordings", "Undocked", "one.mp3"))
 
-	voices, report := scanned(t, root, journalTable(t, "CarrierJumpRequest", "ReservoirReplenished", "ColonisationContribution"))
+	voices, report := scanned(t, root, journalTable(t, "DockingGranted", "StartJump", "Undocked"))
 
 	if len(voices) != 0 {
 		t.Fatalf("voices = %v, want none", voices)
 	}
-	if got, want := paths(report.Empty), []string{"Narrator"}; !reflect.DeepEqual(got, want) {
+	if got, want := paths(report.Empty), []string{"Frank"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("empty = %v, want %v", got, want)
 	}
 }

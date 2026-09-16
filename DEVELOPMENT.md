@@ -428,4 +428,6 @@ behind each decision; it lists every structural test against the rule it enforce
 - [README.md](README.md) for what the application is and how to use it.
 - [TESTING.md](TESTING.md) for the test suite in full.
 - [ARCHITECTURE.md](ARCHITECTURE.md) for the invariants and the design decisions.
+- [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) for the plugin contract: the exported functions, the buffer
+  rules and the byte layouts.
 - [TECH_DEBT.md](TECH_DEBT.md) for what is open and what only looks like debt.

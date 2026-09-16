@@ -698,13 +698,20 @@ Verified by: `TestACueTheActiveVoiceCannotServeIsRecordedAsUnbound` in
 `internal/application/services/reaction_test.go`, for the silence; the list is held by the tests
 FR-311 names.
 
-**FR-221 One cue plays one file**
+**FR-221 One cue plays one take**
 Priority: Must.
-The application shall play exactly one audio file per fired cue and shall not
-assemble a sequence of files into one utterance.
-Rationale: a long line is one long file. The person recording decides where a line
-ends.
-Verified by: `TestEveryCuePlaysExactlyOneFile` in `internal/application/services/scheduler_test.go`;
+The application shall play exactly one take per fired cue and shall never play two takes of one
+cue as a single utterance.
+Rationale: a cue is answered once. The alternatives a voice holds are alternatives, so speaking two
+of them together would say the same thing twice.
+Amended on 2026-09-16. It read "One cue plays one file" and forbade assembling a sequence of files
+into one utterance, on the rationale that a long line is one long file. FR-573 supersedes that half
+of it: a take may be several parts played in order, because a line is sometimes recorded in pieces
+(Oliver, 2026-09-16). The rule that survives is the one that mattered, which is that a cue is
+answered by one take. `TestEveryCuePlaysExactlyOneFile` tests the withdrawn half and is to be
+rewritten as one take per cue when FR-573 is built.
+Verified by: `TestEveryCuePlaysExactlyOneFile` in `internal/application/services/scheduler_test.go`,
+which holds the withdrawn half until it is rewritten;
 `TestACueWithSeveralTakesSpeaksOnce` in `internal/application/services/reaction_test.go`.
 
 **FR-232 Casting a voice plays its confirmation**

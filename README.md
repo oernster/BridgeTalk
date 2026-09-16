@@ -178,6 +178,8 @@ It runs the gate, then writes the application to `build/bin/BridgeTalk.exe` and 
 to `dist-installer/BridgeTalkSetup.exe`. [DEVELOPMENT.md](DEVELOPMENT.md) sets up a machine from
 nothing, fetches the model files the build needs and lists the command-line options.
 [ARCHITECTURE.md](ARCHITECTURE.md) explains the layering and the reasoning behind each decision.
+[PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) is the contract for writing a plugin: a library file offering
+voices whose audio already sits on the machine the application runs on.
 
 ## Supporting
 

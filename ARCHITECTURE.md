@@ -406,11 +406,69 @@ is `BridgeTalk/Recordings` under `$XDG_DATA_HOME`, else under `~/.local/share`. 
 folders needs it and when the recordings Browse opens with no directory chosen, since that dialog opens
 inside it (FR-227).
 
+## Plugins
+
+A plugin is a native library in the `plugins` folder inside the install directory, offering voices
+whose audio is already on the user's machine. It is the third implementation of `ports.AudioSource`,
+after a scanned recorded voice and a made machine voice, so the catalogue, the picker, the scheduler
+and the player learn nothing about it. Section 6.3 of `REQUIREMENTS.md` says what the application
+promises; **`PLUGINS-GUIDE.md` is the contract** and states the exported functions, the buffer rules
+and the byte layouts. They are not repeated here.
+
+**Why a C ABI.** A plugin is built by somebody else, in a language of their choosing, at a time of
+their choosing. The only interface every language agrees on across separately compiled binaries is
+the platform's C calling convention. Go has no stable ABI between binaries and its own `plugin`
+package does not work on Windows at all, so a plugin cannot be a Go plugin. The technique is one the
+application has already proved: `internal/infrastructure/speechmodel` loads ONNX Runtime with
+`windows.LoadDLL` and calls it with `syscall.SyscallN`, with cgo disabled.
+
+**Three functions; why so few.** The version, one description of the plugin with its voices, then one
+answer per cue. Every buffer is asked for its size first, then filled, so nothing is allocated on
+one side of the boundary and freed on the other; a negative return is always a refusal rather than a
+size, so the two can never be confused. Strings carry their own length, so no encoding of the answer
+depends on a separator that a path might contain.
+
+**Every address is converted inside the call.** `uintptr(unsafe.Pointer(...))` appears only in the
+argument list of `syscall.SyscallN` itself, as it does for ONNX Runtime and for the same measured
+reason: through a Go helper, a moving goroutine stack left the library writing to the old copy.
+`TestAddressesAreConvertedOnlyWhereTheCallIsMade` holds that rule over the whole tree, so it already
+covers the plugin adapter.
+
+**One thread, one call at a time.** Every call into every plugin is made from a single goroutine
+holding one operating system thread with `runtime.LockOSThread`, fed over a channel. It costs one
+goroutine and a channel round trip on a path that runs once per cue firing. It buys two things: a
+plugin author needs no locking; a plugin that initialises something belonging to a thread, such
+as a COM apartment, finds that thread again on the next call. No plugin exists to measure, so this is
+a precaution rather than a finding; it is taken now because it cannot be retrofitted once plugins are
+in the wild.
+
+**Never unloaded.** A plugin once loaded stays loaded until the process ends, for the reason ONNX
+Runtime is never unloaded: whether it can be unloaded safely while its own threads may still run has
+not been measured.
+
+**Where the code sits.** `internal/infrastructure/plugin` is the adapter. Its portable half owns the
+byte layouts, the version check and the buffer protocol in plain Go with unit tests over hand-built
+answers; its Windows half sits behind a build tag with no-op stubs beside it, so the package builds
+and vets on every platform. That is the split `internal/infrastructure/setup` already uses. The
+composition root wires loaded voices in as audio sources; nothing in the Application layer learns
+that a plugin exists.
+
+**Proved without a plugin.** A test plugin built in this repository answers invented voices and
+invented paths, so no test, fixture or document needs any real content to exist.
+
 ## Resolving a cue
 
 An event resolves to a cue through the table. The reaction service asks the catalogue for the cast
 voice's takes for that cue; the domain `Picker` chooses one, avoiding the take last handed over to be spoken for
-the same cue; the scheduler hands that single clip to the player. One cue plays one file.
+the same cue; the scheduler hands that take's parts to the player.
+
+**A take is one or more parts.** A take is one alternative answer to a cue; its parts are the files
+that answer is made of, played in order with no added gap (FR-573). Most takes have one part. The
+port answers takes of parts for every kind of voice, so no part of the application asks where a take
+came from before deciding what a take is. The player has always played a sequence: `Play` takes a
+list of clips and a gap, with `takeGap` at zero. What changes is that the scheduler stops keeping only
+the first clip; the picker chooses among takes rather than among files, identifying the take it
+last chose by its first part's path.
 
 There is no fallback chain. A voice that recorded nothing for a cue answers it with silence and the
 reaction list records why, because a wrong line delivered confidently is worse than silence. A voice is
@@ -1064,7 +1122,14 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | Go with a web front end | A single binary with no runtime to ship; the same web view serves the setup program | A Python and Qt desktop stack |
 | Pure-Go audio, cgo disabled | No system codec, no external process | A system media framework; a bundled transcoder, too heavy for the job |
 | The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no mapping file | A mapping file per voice, kept in step by hand |
-| One cue plays one file | Every recording answers exactly one moment | Several files played in turn for one moment |
+| One cue plays one take | A cue is answered once, by one alternative chosen from what the voice holds | Playing every take a voice has for a cue |
+| A take is one or more parts, played in order with no added gap | A line is sometimes recorded in pieces; offering the pieces as separate takes would let the picker speak the middle of a line on its own (Oliver, 2026-09-16) | One file per take, which was the rule until plugins needed otherwise |
+| A plugin is reached through the C ABI, loaded by full path from one folder | It is the only interface every language agrees on across separately built binaries; Go has no stable ABI between binaries and its plugin package does not run on Windows | A Go plugin; a helper process speaking over a pipe, which is a second program to install and keep alive |
+| Buffers are owned by Bridge Talk, sized by a first call | Nothing is allocated on one side of the boundary and freed on the other, so the two need not share an allocator | The plugin allocating and a fourth function freeing |
+| A negative return is always a refusal, never a size | A size and an error code sharing a range is how a one byte answer becomes an error | Negative meaning the bytes needed, with a sentinel carved out of the range |
+| Every call into a plugin is made from one locked operating system thread, one at a time | A plugin author needs no locking; a plugin that initialises something belonging to a thread finds that thread again. No plugin exists to measure; this is a precaution taken while it is still cheap | A mutex alone, which serialises without giving thread affinity |
+| A plugin is never unloaded | Whether it can be unloaded safely while its own threads may still run has not been measured, the same reason ONNX Runtime is never unloaded | Freeing the library when the last voice it offered is dropped |
+| A plugin is trusted because the user put it in the folder | Checking a signature would mean deciding whose signature counts, which is a promise the application cannot keep for other people's work (Oliver, 2026-09-16) | Refusing an unsigned plugin; asking the user to confirm each one |
 | No fallback chain | A wrong line delivered confidently is worse than silence | Substituting another cue's take |
 | No cue id ends in digits | The flat form reads a trailing dot and digits as a take number | Letting a file name carry two meanings |
 | Status flags as a first-class source | A large block of cues describes ship state that never appears in the journal | Journal only, which would leave those cues permanently unreachable |

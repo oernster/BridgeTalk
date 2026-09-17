@@ -44,6 +44,27 @@ function Switch({ name, on, onPress }: { name: string; on: boolean; onPress: () 
 }
 
 /**
+ * DisclosureMark is the mark before a heading's words saying whether its group is open (FR-755):
+ * pointing down while its moments show, pointing at the words while they are hidden.
+ */
+function DisclosureMark({ open }: { open: boolean }) {
+  return (
+    <svg className={open ? 'mark' : 'mark shut'} viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+      <path d="M2 4 6 8 10 4" />
+    </svg>
+  )
+}
+
+/** MoveMark is the arrow after a category's name in the header, pointing down at the list it moves (FR-755). */
+function MoveMark() {
+  return (
+    <svg className="mark" viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+      <path d="M6 1V11M2 7 6 11 10 7" />
+    </svg>
+  )
+}
+
+/**
  * ChatterPane holds a header that stays put above the list (FR-740): the two buttons that switch every
  * moment (FR-732), then a switch for each category (FR-730, FR-731). Beneath it the list scrolls, every
  * category a group of its own whose heading counts what is on (FR-728) and stays in view while its
@@ -172,6 +193,7 @@ export function ChatterPane() {
                 onClick={() => moveTo(category.name)}
               >
                 {category.name}
+                <MoveMark />
               </button>
             </div>
           ))}
@@ -203,6 +225,7 @@ export function ChatterPane() {
                 aria-expanded={!collapsed.has(category.name)}
                 onClick={() => toggle(category.name)}
               >
+                <DisclosureMark open={!collapsed.has(category.name)} />
                 {`${category.name} (${switchedOn(category.moments)} of ${category.moments.length} on)`}
               </button>
             </h3>

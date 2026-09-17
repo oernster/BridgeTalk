@@ -4230,7 +4230,7 @@ reached only by scrolling past every other.
 Acceptance: Given the list scrolled to the top, when Session is pressed in the header, then Session's
 heading is at the top of the list and every switch reads as it did.
 Verified by: "moves the list to a category named in the header, opening it" in
-`frontend/src/chatter.test.tsx`, which gives the list and the group their places on the page and reads
+`frontend/src/chatter.find.test.tsx`, which gives the list and the group their places on the page and reads
 the list moved by the distance between them; seen to fail with the category left shut and with the
 list not moved. Not verified by a test: the move as drawn in the web view, since jsdom lays nothing out.
 
@@ -4245,7 +4245,7 @@ player chose without saying so.
 Acceptance: Given the pane open, when the heading of Combat and danger is pressed, then none of its 39
 moments is shown and the heading still counts them; pressed again, all 39 are shown.
 Verified by: "collapses a category from its heading and opens it again" in
-`frontend/src/chatter.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
+`frontend/src/chatter.find.test.tsx`, seen to fail with a collapse that hid nothing. Not verified by a test: the ring
 either control wears, which the style sheet draws and jsdom does not compute.
 
 **FR-745 An audition draws only on moments switched on**
@@ -4421,6 +4421,24 @@ Verified by: `TestTheHeadingPillsContrastInBothThemes` in `tests/structural/cont
 contrast; "draws each category heading as a pill" in `frontend/src/chatter.test.tsx` and in
 `frontend/src/audition.test.tsx` for the markup. Not verified by a test: the pill as drawn, which the
 style sheet decides and jsdom does not compute.
+
+**FR-755 Chatter's category names and headings show they can be pressed**
+Priority: Should.
+Each category's name in the Chatter pane's header (FR-743) shall carry an arrow after its words
+pointing down at the list. Each category heading in the list (FR-744) shall carry a disclosure mark
+before its words, pointing down while the category is open and pointing at the words while it is
+collapsed. Both marks shall be drawn in the words' own colour and hidden from the reader, so neither
+changes what a control is announced as.
+Rationale: Oliver, 2026-09-17: the names and the headings were drawn as plain words and showed a ring
+only on hover, so he did not know either could be pressed. The Chatter guide section named neither
+until the same change.
+Acceptance: Given Chatter open, then Session in the header shows an arrow pointing down and the
+heading "Session (2 of 2 on)" shows a mark pointing down; when that heading is pressed, then its mark
+points at its words; when it is pressed again, then the mark points down.
+Verified by: "marks every heading open or shut and every name in the header with an arrow" in
+`frontend/src/chatter.find.test.tsx`, seen to fail with the mark left unturned while shut; "describes the
+Chatter pane" in `frontend/src/guide.test.tsx` for the guide's words. Not verified by a test: the
+marks as drawn and turned, which the style sheet decides and jsdom does not compute.
 
 ---
 
@@ -4827,7 +4845,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-754, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-755, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

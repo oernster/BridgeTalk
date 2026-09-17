@@ -857,7 +857,9 @@ applied without being kept (FR-633). The pane is `frontend/src/chatter.tsx`; its
 
 A category's name in the header is a button that opens that category and moves the list to it
 (FR-743). Its heading in the list is a button that collapses or opens it; every category is open
-when the pane opens and none is kept (FR-744). A category's moments stand in three columns (FR-752).
+when the pane opens and none is kept (FR-744). The name carries an arrow pointing down and the
+heading a disclosure mark that turns while its category is collapsed, both inline SVG drawn in
+`currentColor` and hidden from the reader (FR-755). A category's moments stand in three columns (FR-752).
 Category headings on Chatter and Audition stand in a lavender pill whose words read at 4.5 to 1
 against it (FR-754).
 

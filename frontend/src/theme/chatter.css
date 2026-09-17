@@ -120,6 +120,38 @@
   cursor: pointer;
 }
 
+/* Each carries a mark saying it can be pressed (FR-755): the name an arrow after it, the heading a
+   disclosure mark before it. The words and the mark sit on one line with --mark-gap between them.
+   The heading's selector outweighs the pill's display so the pill lays its mark out the same way. */
+.chatter-name,
+.pane .chatter-group .chatter-toggle {
+  --mark-gap: 6px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mark-gap);
+}
+
+/* A mark is drawn in the words' own colour at --mark-size. The disclosure mark turns a quarter
+   to point at the words while its group is shut. */
+.chatter-name .mark,
+.chatter-toggle .mark {
+  --mark-size: 12px;
+
+  flex: 0 0 auto;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chatter-toggle .mark.shut {
+  transform: rotate(-90deg);
+}
+
 .chatter-name:enabled:hover,
 .chatter-name:enabled:focus,
 .chatter-toggle:enabled:hover,

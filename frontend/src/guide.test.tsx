@@ -116,6 +116,8 @@ describe('the guide pane', () => {
     expect(said).toContain('which moments are spoken for')
     expect(said).toContain("a category's switch changes every moment in that category")
     expect(said).toContain('The switches belong to no voice')
+    expect(said).toContain("Pressing a category's name in the header")
+    expect(said).toContain('pressing a heading')
   })
 
   it('draws every rule and every paragraph', () => {

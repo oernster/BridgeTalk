@@ -1,93 +1,33 @@
 // The Chatter pane: which moments are spoken for.
 //
-// The switches live in the application, so the fake below plays its part: it holds the switches and
-// answers every press with the pane as it then stands. What these guard is that the pane lists and
-// counts what it is given, that each press asks for exactly the change it names and that a press
-// changing more than one moment changes nothing until the question is answered.
+// The switches live in the application, so the fake in chatterFixtures.tsx plays its part: it holds the
+// switches and answers every press with the pane as it then stands. What these guard is that the pane
+// lists and counts what it is given, that each press asks for exactly the change it names and that a
+// press changing more than one moment changes nothing until the question is answered. Finding a
+// category, by moving to it, collapsing it and the marks saying so, is chatter.find.test.tsx.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { refuses } from './testRefusal'
-import type { Chatter, CueEntry, Refused } from './api'
+import {
+  categories,
+  checked,
+  docked,
+  every,
+  held,
+  resetFake,
+  setAllMoments,
+  setCategory,
+  setMoment,
+  shown,
+  switchNamed,
+} from './chatterFixtures'
 
-const chatter = vi.fn<() => Promise<Chatter>>()
-const setMoment = vi.fn<(id: string, on: boolean, refused: Refused) => Promise<Chatter | null>>()
-const setCategory =
-  vi.fn<(name: string, on: boolean, refused: Refused) => Promise<Chatter | null>>()
-const setAllMoments = vi.fn<(on: boolean, refused: Refused) => Promise<Chatter | null>>()
-
-vi.mock('./api', () => ({
-  api: {
-    chatter: () => chatter(),
-    setMoment: (id: string, on: boolean, refused: Refused) => setMoment(id, on, refused),
-    setCategory: (name: string, on: boolean, refused: Refused) => setCategory(name, on, refused),
-    setAllMoments: (on: boolean, refused: Refused) => setAllMoments(on, refused),
-  },
-}))
+vi.mock('./api', async () => ({ api: (await import('./chatterFixtures')).fakeApi }))
 
 const { ChatterPane } = await import('./chatter')
 
-/** entry names one moment as the pane is given it. */
-const entry = (id: string, title: string, purpose: string): CueEntry => ({ id, title, folder: id, purpose })
-
-const docked = entry('Docked', 'Docked', 'When the ship finishes docking, as the journal records it.')
-const undocked = entry('Undocked', 'Undocked', 'When the ship leaves its pad.')
-const loadGame = entry('LoadGame', 'Load game', 'When the game finishes loading.')
-const shutdown = entry('Shutdown', 'Shutdown', 'When the game closes.')
-
-// categories are the table's categories in order, each moment's switch on unless named in `off`.
-const categories = [
-  { name: 'Docking and stations', moments: [docked, undocked] },
-  { name: 'Session', moments: [loadGame, shutdown] },
-]
-
-// off holds the ids switched off; problem is what the next answer says about keeping it.
-let off = new Set<string>()
-let problem = ''
-
-/** answer is the pane as the fake application holds it now. */
-const answer = (): Chatter => ({
-  categories: categories.map((category) => ({
-    name: category.name,
-    moments: category.moments.map((cue) => ({ cue, on: !off.has(cue.id) })),
-  })),
-  problem,
-})
-
-/** switchTo switches the ids given to one state. */
-const switchTo = (ids: string[], on: boolean) => {
-  for (const id of ids) {
-    if (on) off.delete(id)
-    else off.add(id)
-  }
-  return Promise.resolve(answer())
-}
-
-const every = categories.flatMap((category) => category.moments.map((cue) => cue.id))
-
-beforeEach(() => {
-  off = new Set()
-  problem = ''
-  for (const spy of [chatter, setMoment, setCategory, setAllMoments]) spy.mockReset()
-  chatter.mockImplementation(() => Promise.resolve(answer()))
-  setMoment.mockImplementation((id, on) => switchTo([id], on))
-  setCategory.mockImplementation((name, on) =>
-    switchTo(categories.find((category) => category.name === name)?.moments.map((cue) => cue.id) ?? [], on),
-  )
-  setAllMoments.mockImplementation((on) => switchTo(every, on))
-})
-
-/** shown opens the pane and waits for its list to land. */
-async function shown() {
-  render(<ChatterPane />)
-  await screen.findByRole('switch', { name: 'Docked' })
-}
-
-/** switchNamed finds one switch by the moment or category it is named for. */
-const switchNamed = (name: string) => screen.getByRole('switch', { name })
-
-/** checked reads a switch's state as it is announced. */
-const checked = (name: string) => switchNamed(name).getAttribute('aria-checked')
+beforeEach(resetFake)
 
 describe('the chatter pane', () => {
   // FR-727.
@@ -165,7 +105,7 @@ describe('the chatter pane', () => {
 
   // FR-728.
   it('counts the moments switched on under each heading', async () => {
-    off = new Set(['Docked'])
+    held.off = new Set(['Docked'])
     await shown()
 
     expect(screen.getByRole('heading', { name: 'Docking and stations (1 of 2 on)' })).toBeTruthy()
@@ -186,13 +126,13 @@ describe('the chatter pane', () => {
 
   // FR-730.
   it('reads a category on while any moment in it is on', async () => {
-    off = new Set(['LoadGame'])
+    held.off = new Set(['LoadGame'])
     const { unmount } = render(<ChatterPane />)
     await screen.findByRole('switch', { name: 'Session' })
     expect(checked('Session')).toBe('true')
     unmount()
 
-    off = new Set(['LoadGame', 'Shutdown'])
+    held.off = new Set(['LoadGame', 'Shutdown'])
     await shown()
     expect(checked('Session')).toBe('false')
   })
@@ -214,7 +154,7 @@ describe('the chatter pane', () => {
 
   // FR-733 asks only where more than one moment would change.
   it('changes a category with one moment on without asking', async () => {
-    off = new Set(['LoadGame'])
+    held.off = new Set(['LoadGame'])
     await shown()
 
     fireEvent.click(switchNamed('Session'))
@@ -226,13 +166,13 @@ describe('the chatter pane', () => {
 
   // FR-732.
   it('switches every moment on or off from the two buttons', async () => {
-    off = new Set(['Docked', 'LoadGame'])
+    held.off = new Set(['Docked', 'LoadGame'])
     await shown()
 
     fireEvent.click(screen.getByRole('button', { name: 'Switch all on' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Switch 2 on' }))
     await waitFor(() => expect(checked('Docked')).toBe('true'))
-    expect(every.every((id) => !off.has(id))).toBe(true)
+    expect(every.every((id) => !held.off.has(id))).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: 'Switch all off' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Switch 4 off' }))
@@ -242,7 +182,7 @@ describe('the chatter pane', () => {
 
   // FR-733.
   it('asks before changing many moments and changes nothing when declined', async () => {
-    off = new Set(['Docked', 'LoadGame'])
+    held.off = new Set(['Docked', 'LoadGame'])
     await shown()
 
     fireEvent.click(screen.getByRole('button', { name: 'Switch all on' }))
@@ -276,7 +216,7 @@ describe('the chatter pane', () => {
   // FR-735 in the markup: the state the style sheet places the thumb by. Where the thumb is drawn
   // is the style sheet's, which jsdom does not compute.
   it('draws a switch on at its end and off at its start', async () => {
-    off = new Set(['Undocked'])
+    held.off = new Set(['Undocked'])
     await shown()
 
     expect(checked('Docked')).toBe('true')
@@ -298,7 +238,7 @@ describe('the chatter pane', () => {
 
   // FR-738.
   it('names each switch and says whether it is on', async () => {
-    off = new Set(['Docked'])
+    held.off = new Set(['Docked'])
     await shown()
 
     expect(checked('Docked')).toBe('false')
@@ -309,11 +249,11 @@ describe('the chatter pane', () => {
   // FR-633: the switch applied, so the pane shows it off and says why it was not kept.
   it('says why a switch could not be kept', async () => {
     await shown()
-    problem = 'the settings file could not be written'
+    held.problem = 'the settings file could not be written'
 
     fireEvent.click(switchNamed('Docked'))
 
-    expect((await screen.findByRole('alert')).textContent).toBe(problem)
+    expect((await screen.findByRole('alert')).textContent).toBe(held.problem)
     expect(checked('Docked')).toBe('false')
   })
 
@@ -325,44 +265,5 @@ describe('the chatter pane', () => {
 
     expect((await screen.findByRole('alert')).textContent).toMatch(/no such moment/)
     expect(checked('Docked')).toBe('true')
-  })
-
-  // FR-744: a heading collapses its group and opens it again, still counting, changing no moment.
-  it('collapses a category from its heading and opens it again', async () => {
-    await shown()
-    const heading = screen.getByRole('button', { name: 'Docking and stations (2 of 2 on)' })
-    expect(heading.getAttribute('aria-expanded')).toBe('true')
-
-    fireEvent.click(heading)
-    const group = within(screen.getByRole('region', { name: 'Docking and stations' }))
-    expect(group.queryAllByRole('switch')).toEqual([])
-    expect(heading.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.getByRole('button', { name: 'Docking and stations (2 of 2 on)' })).toBe(heading)
-
-    fireEvent.click(heading)
-    expect(group.getAllByRole('switch').map((each) => each.getAttribute('aria-label'))).toEqual([
-      docked.title,
-      undocked.title,
-    ])
-    expect(setMoment).not.toHaveBeenCalled()
-    expect(setCategory).not.toHaveBeenCalled()
-  })
-
-  // FR-743: a category's name in the header moves the list to it, opening it, changing no moment.
-  it('moves the list to a category named in the header, opening it', async () => {
-    await shown()
-    const list = document.querySelector('.chatter-list') as HTMLElement
-    const session = screen.getByRole('region', { name: 'Session' })
-    list.getBoundingClientRect = () => ({ top: 100 }) as DOMRect
-    session.getBoundingClientRect = () => ({ top: 700 }) as DOMRect
-    fireEvent.click(screen.getByRole('button', { name: 'Session (2 of 2 on)' }))
-    expect(within(session).queryAllByRole('switch')).toEqual([])
-
-    fireEvent.click(screen.getByRole('button', { name: 'Move to Session' }))
-
-    await waitFor(() => expect(list.scrollTop).toBe(600))
-    expect(within(session).getAllByRole('switch')).toHaveLength(2)
-    expect(setMoment).not.toHaveBeenCalled()
-    expect(setCategory).not.toHaveBeenCalled()
   })
 })

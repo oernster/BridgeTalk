@@ -368,8 +368,8 @@ file whose base name equals a cue id, optionally followed by a dot and digits, a
 a take for that cue.
 Acceptance: Given `Bob/DockingGranted.wav` and `Bob/DockingGranted.2.wav`, when
 a scan runs, then Bob has two takes for `DockingGranted`.
-Verified by: `TestAFileNamedForACueIsATakeWithDigitsTellingTakesApart`;
-`TestOnlyASegmentOfDigitsMarksAnotherTake`.
+Verified by: `TestAFileNamedForACueIsATakeWithDigitsTellingTakesApart` and
+`TestOnlyASegmentOfDigitsMarksAnotherTake` in `internal/infrastructure/library/voice_test.go`.
 
 **FR-207 Matching is exact and literal**
 Priority: Must.
@@ -377,7 +377,7 @@ The application shall compare a directory or file name to a cue id by case
 insensitive string equality alone, a directory name against the id's folder form
 (FR-229). It shall not normalise punctuation, whitespace or word separators; nor shall
 it perform any fuzzy, partial or nearest match.
-Verified by: `TestMatchingIsExactApartFromCase`.
+Verified by: `TestMatchingIsExactApartFromCase` in `internal/infrastructure/library/voice_test.go`.
 
 **FR-208 If a name does not match a cue id, then skip it and report it**
 Priority: Must.
@@ -387,14 +387,16 @@ unmatched, naming what it found.
 Rationale: a typo is the most likely user error and it is otherwise silent.
 Note: the scan report reaches only standard error, printed at startup. Choosing a library
 root and a rescan both discard it.
-Verified by: `TestNamesMatchingNoCueAreReportedWhereTheyWereFound`.
+Verified by: `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` in
+`internal/infrastructure/library/voice_test.go`.
 
 **FR-209 If a directory yields no takes, then it is not a voice**
 Priority: Must.
 If an immediate subdirectory of the library root yields no resolved take, then the
 application shall omit it from the voice list and shall record it in the scan
 report with the reason.
-Verified by: `TestADirectoryResolvingNothingIsReportedRatherThanOffered`.
+Verified by: `TestADirectoryResolvingNothingIsReportedRatherThanOffered` in
+`internal/infrastructure/library/voice_test.go`.
 
 **FR-210 Optional manifest**
 Priority: Should.
@@ -470,8 +472,8 @@ and update the voice list, the completeness figures and the cast voice's catalog
 without a restart.
 Note: a rescan that finds no voice leaves the voices already known in place. The
 tray's voice menu is built at startup and is not refreshed by a rescan.
-Verified by: `TestLookingAgainFindsAVoiceFilledSinceTheStart`;
-`TestLookingAgainWithNothingToFindChangesNothing`.
+Verified by: `TestLookingAgainFindsAVoiceFilledSinceTheStart` and
+`TestLookingAgainWithNothingToFindChangesNothing` in `folders_test.go` at the repository root.
 
 **FR-215 Report both completeness figures**
 Priority: Must.
@@ -535,7 +537,8 @@ one set and shall record the duplication in the scan report.
 Rationale: Linux permits `DockingGranted/` beside `dockinggranted/`; Windows and
 macOS do not. Merging is deterministic and loses nothing. Silently choosing one
 would make a library behave differently on two machines holding identical files.
-Verified by: `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes`.
+Verified by: `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in
+`internal/infrastructure/library/voice_test.go`.
 
 **FR-219 No cue id may end in a digit only segment**
 Priority: Must.
@@ -619,8 +622,8 @@ vocabulary, named with that id's folder form (FR-229).
 Rationale: a folder named for its cue is the folder form of rule 2, so a person
 filling a voice by hand puts each recording in the folder for its moment and never
 types a cue id. The Missing takes pane opens the same folders under FR-314.
-Acceptance: Given an empty library root and a vocabulary of 256 cues, when the user
-makes the folders for `Oliver`, then `Oliver/` holds 256 empty subdirectories, one
+Acceptance: Given an empty library root and a vocabulary of 263 cues, when the user
+makes the folders for `Oliver`, then `Oliver/` holds 263 empty subdirectories, one
 per cue id; a take then placed in `Oliver/DockingGranted/` under any file name
 resolves for `DockingGranted` on the next scan.
 Verified by: `TestMakingAVoicesFoldersMakesOneForEveryCue` in
@@ -635,7 +638,8 @@ already under that voice directory unchanged.
 Acceptance: Given `Oliver/Docked/a.wav` and a file named `Oliver/Undocked`, when the
 folders are made, then both are unchanged and only the missing folders are created;
 a second run creates none.
-Verified by: `TestMakingFoldersAgainAddsOnlyWhatIsMissing`.
+Verified by: `TestMakingFoldersAgainAddsOnlyWhatIsMissing` in
+`internal/infrastructure/library/folders_test.go`.
 
 **FR-225 If a voice name cannot be a folder name, then refuse it**
 Priority: Must.
@@ -906,8 +910,8 @@ every cue that voice has no take for, each under its full title alone (FR-233), 
 path of the folder an audio file for it belongs in.
 Rationale: what a voice is missing is audio files in particular folders, so the list says
 where each one goes rather than leaving the reader to work out a path from a cue id.
-Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 256
-cues, when Oliver is chosen, then 255 cues are listed and `Docked` is not; `Undocked` is
+Acceptance: Given `Oliver/` holding a take for `Docked` alone and a vocabulary of 263
+cues, when Oliver is chosen, then 262 cues are listed and `Docked` is not; `Undocked` is
 shown with `<library root>\Oliver\Undocked` as its folder.
 Verified by: `TestMissingListsWhatAVoiceHasNoTakeFor` in
 `internal/infrastructure/library/checklist_test.go`; `TestTheChecklistCountsWhatIsRecorded`
@@ -945,8 +949,9 @@ is exactly the one that needs the list.
 Acceptance: Given `Grace/` with a take for every cue, `Oliver/` with a take for `Docked` alone
 and an empty `Hugo/`, when the pane opens, then the chooser offers Hugo and Oliver, each with
 its count of missing cues; it does not offer Grace.
-Verified by: `frontend/src/missingTakes.test.tsx`; `TestVoiceDirsListsEveryFolderRecordedOrNot`
-and `TestEveryVoiceFolderIsOfferedRecordedOrNot` for the folders the pane chooses among.
+Verified by: `frontend/src/missingTakes.test.tsx`; `TestVoiceDirsListsEveryFolderRecordedOrNot` in
+`internal/infrastructure/library/checklist_test.go` and `TestEveryVoiceFolderIsOfferedRecordedOrNot` in
+`checklist_test.go` at the repository root for the folders the pane chooses among.
 
 **FR-317 The voice chooser is always shown**
 Priority: Must.
@@ -966,7 +971,7 @@ Verified by: `frontend/src/missingTakes.test.tsx`.
 Priority: Should.
 While a voice folder is chosen, the Missing takes pane shall show how many cues of the
 vocabulary it has at least one take for.
-Verified by: `TestTheChecklistCountsWhatIsRecorded`.
+Verified by: `TestTheChecklistCountsWhatIsRecorded` in `checklist_test.go` at the repository root.
 
 **FR-314 Open a moment's folder**
 Priority: Must.
@@ -975,8 +980,9 @@ folder inside the chosen voice folder in the system file manager, creating the f
 where it is missing.
 Acceptance: Given `Oliver/` with no `Docked` folder, when Open folder is pressed beside
 Docked, then `Oliver/Docked/` exists and File Explorer shows it.
-Verified by: `TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot`;
-`TestOpeningAMomentsFolderMakesItAndShowsIt`. File Explorer appearing is not verified by
+Verified by: `TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot` in
+`internal/infrastructure/library/checklist_test.go`; `TestOpeningAMomentsFolderMakesItAndShowsIt` in
+`checklist_test.go` at the repository root. File Explorer appearing is not verified by
 a test, since a test opens no window.
 
 **FR-315 If a moment's folder cannot be opened, then say why**
@@ -984,8 +990,9 @@ Priority: Must.
 If the cue is not in the vocabulary, the voice folder does not exist or the folder
 cannot be made or shown, then the application shall report the reason on the Missing
 takes pane without opening anything.
-Verified by: `TestAMomentFolderThatCannotBeMadeIsReported`;
-`TestAMomentFolderThatCannotBeOpenedIsReported`.
+Verified by: `TestAMomentFolderThatCannotBeMadeIsReported` in
+`internal/infrastructure/library/checklist_test.go`; `TestAMomentFolderThatCannotBeOpenedIsReported` in
+`checklist_test.go` at the repository root.
 
 ---
 
@@ -1375,8 +1382,8 @@ in `internal/domain/making/making_test.go`; playing them through the catalogue i
 Priority: Must.
 The Cast pane shall show, for the cast machine voice, how many of its lines are current out of how
 many lines the script holds, rising as lines are made.
-Acceptance: Given a script of 768 lines, when `bf_emma` is cast with 100 current, then the pane
-reads 100 of 768 and the figure rises as lines are made.
+Acceptance: Given a script of 789 lines, when `bf_emma` is cast with 100 current, then the pane
+reads 100 of 789 and the figure rises as lines are made.
 Verified by: in part, `TestLinesWithAKeyOnDiskAreCurrentAndTheRestAreToMake` in
 `internal/domain/making/making_test.go` for the count; `TestMakingReportsHowFarItHasGot` and
 `TestAPollAnnouncesMakingOnlyWhenItHasMoved` in `machinepane_test.go`, the second proved on 2026-09-14 by
@@ -4066,8 +4073,8 @@ Priority: Must.
 When a moment's switch is pressed, the application shall switch that moment to the other state.
 Acceptance: Given `Docked` switched on, when its switch is pressed, then `Docked` is off; when it is
 pressed again, then `Docked` is on.
-Verified by: "turns a moment off then on again from its switch" and
-`TestSettingASwitchIsAppliedAndKept` in `internal/application/services/chatter_test.go`.
+Verified by: "turns a moment off then on again from its switch" in `frontend/src/chatter.test.tsx`
+and `TestSettingASwitchIsAppliedAndKept` in `internal/application/services/chatter_test.go`.
 
 **FR-730 A category's switch reads on while anything in it is on**
 Priority: Should.
@@ -4127,7 +4134,8 @@ the accent in the dark theme, where the accent read as garish (Oliver, 2026-09-1
 Acceptance: Given `Docked` on and `Docked.Set` off, when the pane opens, then the thumb of the `Docked`
 switch sits at its end on an orange track and the thumb of the `Docked.Set` switch at its start on a
 neutral track.
-Verified by: "draws a switch on at its end and off at its start", for the state the style sheet places the
+Verified by: "draws a switch on at its end and off at its start" in `frontend/src/chatter.test.tsx`,
+for the state the style sheet places the
 thumb by; the colours by `TestColoursOnlyInTokens` in `tests/structural/colours_test.go` holding them to
 the theme's tokens. Not verified by a test: where the thumb and the track are drawn, which the style
 sheet decides and jsdom does not compute.

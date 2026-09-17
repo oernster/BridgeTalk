@@ -96,8 +96,9 @@ log names the file, the version it stated and the version Bridge Talk implements
    returns the number of bytes written, which must equal the size it gave. An answer of any other
    length is refused as malformed.
 3. **A negative return is always a refusal**, never a size. `-1` means the plugin cannot answer this
-   call. Bridge Talk records it and carries on. Because negatives are refusals and nothing else, a
-   size can never be mistaken for an error.
+   call. Bridge Talk carries on: a refused `BridgeTalkPluginDescribe` passes the plugin over and is
+   logged; a refused `BridgeTalkPluginTakes` leaves the cue silent and is not logged. Because
+   negatives are refusals and nothing else, a size can never be mistaken for an error.
 4. **Bridge Talk owns the buffer.** It allocates it, it frees it. Nothing is allocated on one side of
    the boundary and freed on the other, so the two sides need not share a memory allocator.
 5. **Never keep the pointer.** A buffer is valid only for the duration of the call.
@@ -333,7 +334,8 @@ between the two, the reason changes length and Bridge Talk refuses the answer. A
 ## When Bridge Talk refuses a plugin
 
 Every refusal names what was refused and why, in the run log at `%LOCALAPPDATA%\BridgeTalk\Log.txt`
-(FR-567). A plugin is passed over when the file will not load, when a required function is missing,
+(FR-567). That holds for a run given no error output of its own; a run that has one, such as a run
+whose error output is redirected, writes these lines to that output instead. A plugin is passed over when the file will not load, when a required function is missing,
 when the ABI version does not match, when it offers no voice or when it offers a voice with no name
 or no id (FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: the voice is shown with
 its reason and cannot be cast; the log names it with that reason too. A voice that gives an empty
@@ -392,8 +394,11 @@ with the same rules, in a shared object built from your own repository, placed i
 commands, the log path and everything said about the setup program are Windows specific. On Linux,
 export the functions with `__attribute__((visibility("default")))` in place of
 `__declspec(dllexport)`. This build command has not been run:
-`gcc -shared -fPIC -O2 -o quartermaster.so quartermaster.c`. Read the run log at
-`~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/Log.txt`. No setup program runs there, so the
+`gcc -shared -fPIC -O2 -o quartermaster.so quartermaster.c`. On Linux the lines naming a plugin, a
+voice or a part passed over go to the run's error output rather than to the run log: sending error
+output to the log is built for Windows alone, so
+`~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/Log.txt` holds each run's start line and any
+crash report. No setup program runs there, so the
 folder is kept or removed by hand. No plugin has yet been loaded on Linux; the
 loader's refusals have been tested there, a real plugin's calls have not.
 

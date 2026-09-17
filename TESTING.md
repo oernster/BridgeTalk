@@ -130,8 +130,9 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `testLayout.ts` | 100% | 100% |
 | `testRefusal.ts` | 100% | 100% |
 | `testState.ts` | 100% | 100% |
-| `chatter.tsx` | 100% | 96.5% |
+| `chatter.tsx` | 100% | 96.7% |
 | `hooks.ts` | 100% | 96.3% |
+| `chatterFixtures.tsx` | 100% | 96.2% |
 | `panes.tsx` | 100% | 94.7% |
 | `chrome.tsx` | 100% | 94.3% |
 | `App.tsx` | 100% | 92.2% |
@@ -142,7 +143,11 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `wire.ts` | 0% | 0% |
 | **all files** | **99.5%** | **96.3%** |
 
-321 tests across 30 files, run under Vitest with jsdom.
+322 tests across 31 files, run under Vitest with jsdom.
+
+The Chatter suite is two files: `chatter.test.tsx` holds the switches; `chatter.find.test.tsx` holds
+moving to a category, collapsing one and the marks on both (FR-743, FR-744, FR-755). Both read
+`chatterFixtures.tsx`, the shared fake application.
 
 A figure of 100% says every line ran, not that a test would notice the line being
 wrong. The way to find out is to plant a violation for a behaviour and read the exit
@@ -196,7 +201,7 @@ release is for.
   menu as drawn is not. The plugin voices added statements to what the menu is given that
   only the Windows shell can run, the separator between one kind of voice and the next among
   them; everything a test can reach in the package is still reached.
-- **`internal/infrastructure/audio` (95.8%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/audio` (95.7%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
   while a stop, an interrupting take and a take after silence each drop what is queued. The
@@ -254,7 +259,7 @@ release is for.
   way. Every test passed then, the stress test included; the `plugin` tests have changed since the
   plugin interface was revised and have not been run there again. The flatpak's own build has cgo on, which that run
   does not cover.
-- **A plugin's three calls in `internal/infrastructure/plugin` (94.3%).** `Version`, `Describe` and
+- **A plugin's three calls in `internal/infrastructure/plugin` (94.8%).** `Version`, `Describe` and
   `Takes` in `native.go`, with the line of `OpenLibrary` that keeps a function it found, need a
   library exporting the three functions, which cannot be built here.
 - **`main`, `run` and `newMaking` in `main.go`, `startTray` in `voices.go`, `launch` in `window.go`
@@ -367,6 +372,9 @@ rather than excused. Four of them, in code that still exists:
   is in `opened`, which answers the collapsed categories unchanged where a category already
   stands as asked; one arm of that test is never run. Nothing stops a test reaching either, so
   each is a gap to close rather than a limit of the harness.
+- **`chatterFixtures.tsx` (96.2% of branches).** Test support: the fake application switching a
+  category it does not hold, which answers no moments, is never asked for, since every test
+  presses a category the fake lists. It is the fake's own guard rather than the pane's behaviour.
 - **`setupPage.ts` (80.6% of branches).** Test support: it lays out the shipped setup page for
   the setup suites. What is not run is its own failure branches, a page with no body and a
   button or element that is not there, plus the empty fallbacks beside them. Each fires only

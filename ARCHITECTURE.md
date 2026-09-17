@@ -73,7 +73,7 @@ exactly like one that holds.
 | Every tone the live indicator takes is drawn in the colour token of its name | `TestEveryIndicatorToneHasItsColourToken` | `strip_test.go` |
 | Every style part is listed in the manifest that reads them | `TestEveryStylePartIsRead` | `styles_test.go` |
 | The front end reaches only the methods declared as bound | `TestTheBoundSurfaceIsDeclared` | `surface_test.go` |
-| An address handed to a DLL becomes a uintptr only in the argument list of the call into it; no function takes `...uintptr` | `TestAddressesAreConvertedOnlyWhereTheCallIsMade` | `syscall_test.go` |
+| An address handed to a DLL becomes a uintptr only in the argument list of the call into it; a function taking `...uintptr` is marked `//go:uintptrescapes` | `TestAddressesAreConvertedOnlyWhereTheCallIsMade` | `syscall_test.go` |
 | The speech sound table matches the model's tokenizer file: every symbol at the same number, the boundary as its marker and nothing more | `TestTheSymbolTableIsTheModelsOwn` | `tokenizer_test.go` |
 | Cue ids, journal events and status values stay in the cue table | `TestGameVocabularyStaysInItsHome` | `vocabulary_test.go` |
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
@@ -164,7 +164,8 @@ exactly like one that holds.
   writes `endings.toml`, printing each voice's faded lines (FR-555). Python only reads the sound; every
   setting, the doubtful rule and the files' shapes stay in Go. Making, digesting and writing the lines
   a finder is handed is one step both finders share. `-only` names some voices and needs `-out` and
-  `-endings`, since books missing voices are never written over the shipped files. `-endings-only` finds
+  `-endings` (`-endings` alone with `-endings-only`, which refuses `-out`), since books missing
+  voices are never written over the shipped files. `-endings-only` finds
   and writes the endings alone, leaving `pauses.toml` untouched.
   Both tools find their venv's Python through `tools/internal/pyvenv`.
 - **The models tool** (`tools/models`): a command run while developing, never shipped. It fills
@@ -251,6 +252,7 @@ priority = "notice"
 [[cue]]
 id = "StartJump.JumpType.Hyperspace"
 purpose = "When a hyperspace jump to another system begins."
+category = "Flight and travel"
 source = "journal"
 event = "StartJump"
 match = { JumpType = "Hyperspace" }
@@ -260,6 +262,7 @@ cooldown = 30
 [[cue]]
 id = "LightsOn.Cleared"
 purpose = "When the ship's lights are switched off."
+category = "Ship systems"
 source = "status"
 flag = "LightsOn"
 edge = "falling"
@@ -287,6 +290,7 @@ share rather than any one key, with no match field beside it:
 [[cue]]
 id = "ReceiveText.Pirate.OnDeclarePiracyAttack"
 purpose = "When a pirate declares it is attacking you for your cargo."
+category = "Comms"
 source = "journal"
 event = "ReceiveText"
 stem = { Message = "Pirate_OnDeclarePiracyAttack" }
@@ -305,6 +309,8 @@ a few beginnings, so its one moment names those beginnings rather than a stem:
 ```toml
 [[cue]]
 id = "ReceiveText.StationTraffic"
+purpose = "When the station, settlement or carrier you are approaching speaks to you: docking answers, welcomes and its no fire zone."
+category = "Docking and stations"
 source = "journal"
 event = "ReceiveText"
 begins = { Message = ["STATION_", "DockingChatter_", "DockingFailed_"] }
@@ -589,7 +595,7 @@ zero. A line that does not parse is dropped, as is one naming no event.
 
 **Status (`internal/infrastructure/status`).** `Status.json` is rewritten in place rather than appended,
 so it needs a different reader: read the whole file, parse it and compare it with the previous reading.
-Each changed bit in `Flags` or `Flags2` emits one event tagged rising or falling; a change of GUI focus,
+Each changed bit the watcher names in `Flags` or `Flags2` emits one event tagged rising or falling; a change of GUI focus,
 fire group or dominant power distribution emits one value event. The first reading only primes the
 baseline, because a flag already set at startup is state rather than news. A reading identical to the
 last emits nothing; a read that fails or does not parse is discarded.
@@ -1124,8 +1130,9 @@ answers.
 Uninstall removes the shortcuts, the login entry and the install record, then the folder the made lines
 are kept in and the run log whatever is ticked (FR-525, FR-715), leaving the product's data folder around it, which can hold the
 default recordings directory. It then hands the install directory to a detached shell that deletes it once
-setup has exited. `setup.RemoveLeftovers` holds the rule for what goes outside the install directory, so
-the facade only finds the folders and passes the boxes on. Its boxes are Also forget my settings
+setup has exited. `setup.RemoveLeftovers` holds the rule for the made lines, the log and the web view's folder;
+the settings file goes through `config`'s own `Forget`, so the facade only finds the folders and
+passes the boxes on. Its boxes are Also forget my settings
 plus Also remove my plugins where the plugins folder holds anything; both are unticked by default.
 With Also remove my plugins unticked, the plugins folder is read again at uninstall and left standing with everything in it
 (FR-578). Also forget my settings, ticked, also removes the web view's folder under `%APPDATA%`, which holds the
@@ -1300,7 +1307,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 | Decision | Why | Rejected alternative |
 |---|---|---|
 | Go with a web front end | A single binary with no runtime to ship; the same web view serves the setup program | A Python and Qt desktop stack |
-| Pure-Go audio, cgo disabled | No system codec, no external process | A system media framework; a bundled transcoder, too heavy for the job |
+| Pure-Go audio decoding, cgo disabled in the Windows build | No system codec, no external process; the flatpak turns cgo on for webkit2gtk and the audio output (The Linux build) | A system media framework; a bundled transcoder, too heavy for the job |
 | A part may be a span of a file, read in place through a section of the open file, with a 64 bit offset and length | Audio holding many recordings to one file is played where it stands, so nothing is copied to the user's disk; a file can be larger than a 32 bit number reaches (FR-588) | A plugin copying each recording out to a file of its own |
 | Only version 2 of the plugin interface is read; version 1 is refused | A group and a span each change a layout, so a version 1 plugin would be read wrongly (FR-581) | Reading both versions side by side |
 | The names on disk are the mapping | Game semantics and a person's recordings change independently, so a voice needs no mapping file | A mapping file per voice, kept in step by hand |

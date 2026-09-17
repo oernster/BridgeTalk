@@ -405,7 +405,8 @@ go run ./tools/pauses
 
 For a quicker check over some voices, `-only` names them (repeated or comma separated); `-out`
 and `-endings` name the files their pauses and endings go to. A run with `-only` refuses to write
-either shipped file, so both flags are needed with it:
+a shipped file, so both flags are needed with it (only `-endings` where `-endings-only` is given
+too):
 
 ```powershell
 go run ./tools/pauses -only bf_emma,bm_george -out <file> -endings <file>
@@ -436,6 +437,8 @@ go run ./tools/pauses -endings-only
 | `tests/machinevoice` | the tests that time a cast and a complete script with the real model, run only with `-Benchmarks` |
 | `tools/` | icon and social card generation, the Linux icons, the model files, the payload, the saved speech sounds with the pauses and endings plus `internal/pyvenv`, which finds a tool's venv; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload`, `build_flatpak.sh` runs `tools/models` and `tools/linuxicons`; the rest are run by hand |
 | `build_flatpak.sh`, `cleanup_flatpak.sh` | the Linux flatpak build and its cleanup |
+| `assets/` | the master artwork `tools/genicons.py` reads |
+| `docs/` | the project site, whose version tokens `stamp_version.py` fills |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

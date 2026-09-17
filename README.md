@@ -61,21 +61,26 @@ lines it makes on your own machine; record a voice of your own whenever you like
   a take already playing is not cut short. Switch all on, Switch all off and a switch for each
   category sit above the list and change many moments at once, asking first. Station traffic
   (docking answers, welcomes and the no fire zone) has a switch of its own, apart from the other
-  messages non-player characters send. A category's name above the list moves the list to it; its
-  heading in the list collapses it. The switches are kept between runs.
+  messages non-player characters send. Each category's name above the list carries a down arrow;
+  pressing it moves the list to that category, opening it where it was collapsed. Each category's
+  heading in the list carries a disclosure mark that turns while the category is collapsed; pressing
+  the heading collapses the category or opens it again. The switches are kept between runs; every
+  category is open again each time the pane opens.
 - **Explains every decision.** For every moment the game raises that has a cue, the Status pane
   logs what became of it (played, queued, making, dropped, cooldown, duplicate, off or unbound), including the
   ones that produced no sound. It keeps the latest 200. The same pane names the journal directory
   and status file being watched and says when no audio device was found or the device ran dry.
-- **Shows what a voice covers.** For any voice, cast or not, the mark beside it on the Cast pane
-  lists the moments it has a recording for and the moments it has none for.
+- **Shows what a recorded voice covers.** For any recorded voice, cast or not, the mark beside it
+  on the Cast pane opens a list of the moments it has a recording for and the moments it has none
+  for. A machine voice or a plugin voice has no such mark.
 - **Lists the takes still missing.** The Missing takes pane offers every voice folder still missing
   a recording. For the one chosen it lists each missing moment with a line saying when it is heard,
   then the folder its take belongs in.
-- **Auditions a voice** before it is cast. Each button plays one take drawn at random from a part of
-  the game, such as docking or combat, drawn only from moments switched on in Chatter; the buttons
-  stand under Chatter's categories. The buttons are held while anything is playing, the ship's own reactions included, so a press never
-  cuts a clip short; Stop ends what is playing. An audition ignores the mute.
+- **Auditions a voice** before it is cast. Each button stands for the moments that share one journal
+  event or status flag (Start jump is one) and plays one take drawn at random from those switched
+  on in Chatter; the buttons stand under Chatter's categories. The buttons are held while anything is playing or
+  being made, the ship's own reactions included, so a press never cuts a clip short; Stop ends what
+  is playing. An audition ignores the mute.
 - **Stays out of the way.** Closing the window asks whether to put it away or quit. Put away, it
   keeps listening from the notification area, whose menu opens the window, mutes, switches voice
   or quits. It can start when you sign in, waiting in the notification area; turn that on in
@@ -93,7 +98,7 @@ lines it makes on your own machine; record a voice of your own whenever you like
 | Part | Choice |
 |---|---|
 | Backend | Go |
-| Desktop shell | Wails v2 over WebView2 |
+| Desktop shell | Wails v2 over WebView2 on Windows and webkit2gtk on Linux |
 | Front end | React and TypeScript, built with Vite |
 | Audio | beep over oto, decoding WAV, MP3, FLAC and Ogg Vorbis in pure Go |
 | Machine voices | the Kokoro-82M model, run through ONNX Runtime |

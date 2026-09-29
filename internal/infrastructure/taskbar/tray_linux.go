@@ -31,10 +31,6 @@ const trayGrace = 15 * time.Second
 // watcherAskEvery is how often the watcher is asked for during the grace period.
 const watcherAskEvery = time.Second
 
-// linuxTraySide is the side of the picture a Linux tray hands the desktop, a size the committed icon
-// holds so nothing is resampled.
-const linuxTraySide = 64
-
 // watcherName is the bus name the desktop's tray watcher owns.
 const watcherName = "org.kde.StatusNotifierWatcher"
 
@@ -140,7 +136,9 @@ func owned(bus *dbus.Conn, name string) bool {
 // build draws the icon and its menu once the desktop is ready for them.
 func (t *Tray) build() {
 	if frame, err := iconfile.Frame(t.options.Icon, linuxTraySide); err == nil {
-		systray.SetIcon(frame)
+		if picture, err := trayPicture(frame); err == nil {
+			systray.SetIcon(picture)
+		}
 	}
 	systray.SetTitle(t.options.Title)
 	systray.SetOnTapped(func() { offer(t.commands, Command{Kind: CommandShow}) })

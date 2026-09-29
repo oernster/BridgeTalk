@@ -4860,7 +4860,11 @@ Verified by: `TestATrayTheDesktopNeverTookIsNoTray` in `window_life_test.go`, se
 `TestTheWatcherIsAskedUntilItAnswersOrTheGracePeriodEnds` and
 `TestTheMenuAndHoverTextReadTheSameOnEveryTray` in
 `internal/infrastructure/taskbar/portable_test.go`; `TestTheCommittedIconHoldsTheTraysPicture` in
-`internal/infrastructure/iconfile/iconfile_test.go`. Not verified: `tray_linux.go` itself, which talks
+`internal/infrastructure/iconfile/iconfile_test.go`;
+`TestTheTraysPictureReachesTheDesktopAsTheArtworksColours` in
+`internal/infrastructure/taskbar/trayicon_test.go`, seen to fail on 2026-09-29 with every pixel handed
+on at the coverage the artwork gives it, which the tray library turned into coloured static. Not
+verified: `tray_linux.go` itself, which talks
 to a session bus no test here has, nor the icon and menu as a desktop draws them. It builds and vets
 for Linux.
 

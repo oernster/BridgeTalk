@@ -197,9 +197,9 @@ foreach ($package in $measured.Keys) {
 # is gated at what its Linux folder opener reaches; the rest of it is Win32 focus handling. TESTING.md says so
 # in full rather than leaving the absence to be read as an oversight.
 # internal/infrastructure/modelfiles/modelfilestest is test support with no tests of its
-# own: the modelfiles and tools/models tests run every part of it. So is
-# internal/infrastructure/nativelib/nativelibtest, which the nativelib, speechmodel and plugin
-# tests run.
+# own, run by the modelfiles, speechmodel, tools/models, tools/payload, tests/structural and
+# tests/machinevoice tests. So is internal/infrastructure/nativelib/nativelibtest, which the
+# nativelib, speechmodel and plugin tests run.
 
 if ($Benchmarks) {
     # The benchmark files carry the benchmarks build tag, which the vet and the suite above leave

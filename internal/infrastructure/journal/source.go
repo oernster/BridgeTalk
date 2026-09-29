@@ -106,7 +106,7 @@ func (s *Source) parse(line string) (event.Event, bool) {
 	return event.New(event.SourceJournal, name, event.EdgeNone, fields, at), true
 }
 
-// newestPath returns the most recently modified journal file.
+// newestPath returns the journal file whose name sorts last, which is the newest one.
 func (s *Source) newestPath() (string, error) {
 	matches, err := filepath.Glob(filepath.Join(s.directory, journalPattern))
 	if err != nil {

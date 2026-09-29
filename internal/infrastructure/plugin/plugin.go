@@ -81,9 +81,8 @@ func (v *Voice) Plugin() *Plugin { return v.plugin }
 //
 // A voice whose audio is not present answers nothing rather than asking the plugin: it
 // could not be cast (FR-570), so a question reaching here is one nobody should have asked.
-// A refusal or an answer that will not read is silence too, recorded by the caller that
-// wired the plugin up; a cue no voice serves is silence, which is always preferred to a
-// wrong line.
+// A refusal or an answer that will not read is silence too. Nothing records it: the error
+// stops here, so above this a refused cue looks the same as one the voice has no take for. A cue no voice serves is silence, which is always preferred to a wrong line.
 func (v *Voice) Lookup(id cue.ID) ([]take.Take, bool) {
 	if !v.Ready {
 		return nil, false

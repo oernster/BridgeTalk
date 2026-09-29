@@ -165,7 +165,7 @@ write "$MANIFEST" \
     "    buildsystem: simple" \
     "    build-commands:" \
     "      - cd frontend && npm install --no-audit --no-fund && npm run build" \
-    "      - go build -tags desktop,production,webkit2_41 -ldflags '-s -w -X main.appVersion=${VERSION}' -o ${BIN_NAME} ." \
+    "      - go build -tags desktop,production,webkit2_41 -ldflags '-s -w' -o ${BIN_NAME} ." \
     "      - install -Dm755 ${BIN_NAME} /app/bin/${BIN_NAME}" \
     "      - go run ./tools/models" \
     "      - install -Dm644 -t /app/bin/${MODELS_DIR} ${MODELS_DIR}/*" \

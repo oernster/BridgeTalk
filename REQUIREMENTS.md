@@ -526,8 +526,8 @@ the voice directory unchanged; `TestAMomentFolderIsMadeWhereMissingAndKeptWhereN
 `internal/infrastructure/library/checklist_test.go` for FR-314 leaving a take already there unchanged;
 `TestMakingAVoicesFoldersMakesOneForEveryCue` in the same `folders_test.go` and
 `TestAMomentFolderIsMadeWhereMissingAndKeptWhereNot` for each landing inside the voice directory named;
-`TestANameThatCannotBeAFolderIsRefused` in `folders_test.go` for a refused name making nothing under
-the root; `TestMadeLinesLiveInTheProductsDataFolder` in
+`TestANameThatCannotBeAFolderIsRefused` in that same `internal/infrastructure/library/folders_test.go`
+for a refused name making nothing under the root; `TestMadeLinesLiveInTheProductsDataFolder` in
 `internal/infrastructure/madelines/madelines_test.go` for made lines going to the product's own data
 folder. Not verified by a test: that a scan, a rescan, an audition or playback writes nothing under the
 library root. By inspection on 2026-09-15 the only write calls in `internal/infrastructure/library`
@@ -1332,7 +1332,8 @@ Verified by: in part, `TestALineWhoseSoundsChangedIsTheOnlyOneMadeAgain`,
 (against a key computed as it was before pauses), `TestAPausedLinesKeyChangesWithItsSampleOrItsDigest` and
 `TestALineWhosePauseChangedIsTheOnlyOneMadeAgain` in `internal/domain/making/pause_test.go` for the pause
 in the key, with `TestAChangedSilenceMakesOnlyThePausedLineAgain` beside them for its silence and
-`TestAChangedFadeLengthMakesOnlyTheFadedLineAgain` in `ending_test.go` for the fade's length. Proved on
+`TestAChangedFadeLengthMakesOnlyTheFadedLineAgain` in `internal/domain/making/ending_test.go` for the
+fade's length. Proved on
 2026-09-14 by planting the sample left out of a paused key, a doubtful pause added to the key, a pause
 looked up for one voice whatever the voice, a paused line keeping its unpaused key and a doubtful line
 counted as paused; each failed its test. Proved on 2026-09-15 by planting the silence left out of a
@@ -1499,8 +1500,9 @@ Verified by: `TestPackedModelFilesAreExtractedIntoTheFolderBesideTheApplication`
 `TestSetupInstallsEveryListedFileButTheTokenizerFile` in `internal/infrastructure/modelfiles/installed_test.go`
 for which files, proved by planting the model files packed at the archive's root and the tokenizer file
 kept. On 2026-09-14 `tools/payload` packed `models/` into a 326.3 MB archive holding the application and
-the 30 installed files in `models`. Not verified: a built setup program installing them, nor its memory;
-neither has been built or run.
+the 30 installed files in `models`. `build.ps1` has since built the setup program
+(`dist-installer/BridgeTalkSetup.exe`, 338,778,112 bytes on 2026-09-29). Not verified by a test: that
+setup program installing the files, nor its memory while it does.
 
 **FR-525 Uninstall removes the made lines**
 Priority: Must.
@@ -1810,7 +1812,7 @@ Verified by: `TestThePayloadHoldsTheApplicationThenEveryModelFileSetupInstalls`,
 application left unlooked for and the archive packed in place; each planted fault failed its test. On
 2026-09-14 the tool took 5.5 s over the repository's `models/` with an application built earlier, writing
 326,264,502 bytes: `BridgeTalk.exe` at the root, 30 files in `models`, no `tokenizer.json`. `build.ps1`
-was checked by the PowerShell parser only; it has not been run.
+runs the tool as its packing step; it built `dist-installer/BridgeTalkSetup.exe` on 2026-09-29.
 
 **FR-544 Casting a machine voice loads the model at once**
 Priority: Should.
@@ -4489,9 +4491,10 @@ Priority: Should.
 When a check finds a newer release, the window shall raise a dialog titled "Update available" saying
 "Bridge Talk L is available. You are running R.", where L is the release and R the running version,
 with three buttons in this order: Download, focused; Skip this version; Later. Download shall hand the
-desktop the release's own file for this platform, `BridgeTalkSetup.exe` on Windows and
-`BridgeTalk.flatpak` on Linux, matched by its ending without regard to case; the release's page where
-the release carries no such file. The address shall be handed over as FR-718 hands over the donation
+desktop the release's own file for this platform: the first file the release carries whose name ends
+`.exe` on Windows or `.flatpak` on Linux, without regard to case (the releases carry
+`BridgeTalkSetup.exe` and `BridgeTalk.flatpak`); the release's page where the release carries no such
+file. The address shall be handed over as FR-718 hands over the donation
 page, refused unless it begins `https://`; the page shall never hold it. Later and Escape shall
 close the dialog, changing nothing. If handing the address over fails, then the dialog shall stay open
 and say why.

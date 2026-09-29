@@ -820,9 +820,9 @@ stands on a card at the top of its section and keeps its pill where it stands, i
 voices in no group, disabled with the danger ring (FR-593). The flat lists, the notification area's menu and the
 Audition chooser, still show a name two plugins share with the plugin offering it (FR-568).
 
-Five surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
-licence, the close choice, the Moments spoken for dialog and the question Chatter asks before changing
-more than one moment. Each opens focused on its first control; the close choice lists Minimise first,
+Six surfaces are modal, all built on one dialog shell so none arrives with rules of its own: About, the
+licence, the close choice, the Moments spoken for dialog, the question Chatter asks before changing
+more than one moment and the update check's answer (`frontend/src/updates.tsx`). Each opens focused on its first control; the close choice lists Minimise first,
 since Enter straight after pressing the cross must not mean stop. Chatter's question lists Cancel first
 for the same reason: Enter straight after the press keeps the choice made for each moment. The licence dialog shows the `LICENSE` file itself, embedded at build time, so the terms shown
 and the terms the source carries cannot differ; About names the licence in a sentence.
@@ -1282,19 +1282,9 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
 
 ## Quality enforcement
 
-- Structural tests enforce the layer direction, domain purity, the module-size limit and its danger
-  band, the composition-root whitelist, the declared bound surface, the wire contract and the rules that
-  keep a value in one home: colours in the theme tokens, the product name in `internal/product`, the
-  game's own words in the cue table. They also hold the shape of every cue id, the secondary lines'
-  contrast, the Status cards' grid, the strip's height, labels and tones, the rings a control, a list
-  or a scrolling region may wear, the setup page's boxes and header and the speech sound table in `internal/domain/speech`
-  against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
-  uintptr only where the call into it is made; another fails where `pauses.toml` or `endings.toml` is stale against the
-  script, the machine voices or the listed model files, with four more for each proving that check names
-  what it should. Others hold the application to its one network request, every write it makes to a stated
-  place, the flatpak's grants and model folder and the heading pills' contrast. The invariant table
-  above lists every one of them with
-  the test that enforces it.
+- The structural tests under `tests/structural` enforce every rule in the invariant table at the top
+  of this document; that table is the one list of them, each with its test and file, so they are not
+  listed again here.
 - The wire is written twice by necessity, as Go structs with json tags and as TypeScript interfaces in
   `frontend/src/wire.ts`. Wails generates the same shapes into `frontend/wailsjs` at build time; that
   output is gitignored and imported by nothing, so it is not the contract and it goes stale silently.

@@ -72,13 +72,13 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,059 test functions, which expand to 1,169 runs once their subtests are counted (measured on
+1,081 test functions, which expand to 1,191 runs once their subtests are counted (measured on
 Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
 uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
-which are 1,053 top-level runs plus 116 subtests; the
+which are 1,075 top-level runs plus 116 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
-Fifty-seven of them are the structural tests in `tests/structural`, which scan the source
+Fifty-eight of them are the structural tests in `tests/structural`, which scan the source
 rather than run it. They hold the layer direction, domain purity, the
 composition-root whitelist, the 400-line cap with its danger band (counting lines as an
 editor shows them), a doc comment on every exported type and the rule that the product is
@@ -162,7 +162,7 @@ code; see [Keeping this honest](#keeping-this-honest).
 |---|---|---|
 | `internal/domain` | pure unit | nothing |
 | `internal/application` | unit, over hand-written fakes | nothing |
-| `internal/infrastructure` | integration, over a temporary directory | the filesystem, the registry read-only, child processes and a tray window with no icon |
+| `internal/infrastructure` | integration, over a temporary directory | the filesystem, a local HTTP server, the registry read-only, child processes and a tray window with no icon |
 | the root package | the facade over a fake device and a fake source | nothing |
 | `tests/structural` | source and AST scans | reads files |
 | the front end | component and hook tests under jsdom | nothing |
@@ -416,7 +416,7 @@ otherwise.
 The gate needs the model files in `models/`; [DEVELOPMENT.md](DEVELOPMENT.md#the-model-files) says
 how to fetch them.
 
-The whole backend gate, which `build.ps1` runs before it builds and cannot be told
+The whole gate, which `build.ps1` runs before it builds and cannot be told
 to skip:
 
 ```powershell
@@ -424,7 +424,7 @@ to skip:
 ```
 
 It checks `models/` against the model files list first and stops where a file is
-missing or differs, saying to run the tool above. It then checks formatting, runs
+missing or differs, saying to run `go run ./tools/models`. It then checks formatting, runs
 `go vet`, runs `staticcheck` at the version it pins, runs every test, runs the front end's own three checks, holds the domain and
 the application layers at 100%, then holds each other gated package at its floor. Read
 the exit code rather than the last line of output.

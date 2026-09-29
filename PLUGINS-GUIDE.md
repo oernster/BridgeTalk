@@ -42,8 +42,13 @@ that is:
 %LOCALAPPDATA%\Programs\BridgeTalk\plugins
 ```
 
-The install folder can be chosen at install time, so read the location from the Apps list entry
-rather than assuming the default.
+The install folder can be chosen at install time, so do not assume the default. The setup program
+records the folder it installed into as `InstallLocation` in its Apps list entry, which PowerShell
+reads with:
+
+```powershell
+(Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\BridgeTalk').InstallLocation
+```
 
 On Linux a plugin is a shared object and the folder is inside Bridge Talk's own data folder, since
 the flatpak's install directory is read only (FR-818). The folder is `BridgeTalk/plugins` under
@@ -53,8 +58,10 @@ the flatpak's install directory is read only (FR-818). The folder is `BridgeTalk
 ~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/plugins
 ```
 
-Bridge Talk makes that folder itself when it starts on Linux (FR-819). Bridge Talk loads every file in that folder at startup and loads a
-plugin from nowhere else (FR-560). The file may be named anything; the name means nothing, because a
+Bridge Talk makes that folder itself when it starts on Linux (FR-819).
+
+Bridge Talk loads every file in the plugins folder at startup and loads a plugin from nowhere else
+(FR-560). The file may be named anything; the name means nothing, because a
 plugin states its own name through the interface (FR-565).
 
 Subfolders are ignored; every other file is tried as a plugin in name order, so a file the plugin
@@ -160,8 +167,8 @@ On the Cast pane your voices stand in a section of their own headed by `pluginNa
 it, the voices with an empty `group` come first, then a panel for each group, in the order your
 description first names each one (FR-584). Within each group, as among the voices in no group, your
 voices stand in the order your description gives them; Bridge Talk sorts nothing. A group is shown
-and never kept, so a voice may move
-between groups from one release to the next without anybody losing the voice they cast.
+and never kept, so a voice may move between groups from one release to the next without anybody
+losing the voice they cast.
 
 A plugin offering no voice at all is passed over with the reason recorded, as is one offering a voice
 with no name or no id (FR-566).
@@ -335,19 +342,23 @@ between the two, the reason changes length and Bridge Talk refuses the answer. A
 
 Every refusal names what was refused and why, in the run log at `%LOCALAPPDATA%\BridgeTalk\Log.txt`
 (FR-567). That holds for a run given no error output of its own; a run that has one, such as a run
-whose error output is redirected, writes these lines to that output instead. A plugin is passed over when the file will not load, when a required function is missing,
-when the ABI version does not match, when it offers no voice or when it offers a voice with no name
-or no id (FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: the voice is shown with
-its reason and cannot be cast; the log names it with that reason too. A voice that gives an empty
-reason is said to have given none.
+whose error output is redirected, writes these lines to that output instead.
+
+A plugin is passed over when the file will not load, when a required function is missing, when the
+ABI version does not match, when it offers no voice or when it offers a voice with no name or no id
+(FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: the voice is shown with its
+reason and cannot be cast; the log names it with that reason too. A voice that gives an empty reason
+is said to have given none.
+
 A single answer is passed over when it does not read as its layout (bytes left over after it, text
-that is not UTF-8, a negative count, a take with no parts or a part of an unknown kind), when the plugin asks for more than
-4 MiB or when a Go panic is raised around the call: the call answers nothing and the application
-carries on. A crash inside the plugin's own code is not known to be survived; assume it ends Bridge
-Talk.
+that is not UTF-8, a negative count, a take with no parts or a part of an unknown kind), when the
+plugin asks for more than 4 MiB or when a Go panic is raised around the call: the call answers
+nothing and the application carries on. A crash inside the plugin's own code is not known to be
+survived; assume it ends Bridge Talk.
+
 A refused or unreadable `BridgeTalkPluginTakes` answer is not written to the run log: the cue is
-silent and the moment appears on the Missing takes pane. Check a Takes layout with a test of your own.
-One plugin being passed over never stops another loading (FR-561).
+silent and the moment appears on the Missing takes pane. Check a Takes layout with a test of your
+own. One plugin being passed over never stops another loading (FR-561).
 
 If two plugins offer voices under the same name, both are kept and each is shown with the name of the
 plugin offering it; where the plugins share a name as well, with the file each was loaded from
@@ -398,9 +409,9 @@ export the functions with `__attribute__((visibility("default")))` in place of
 voice or a part passed over go to the run's error output rather than to the run log: sending error
 output to the log is built for Windows alone, so
 `~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk/Log.txt` holds each run's start line and any
-crash report. No setup program runs there, so the
-folder is kept or removed by hand. No plugin has yet been loaded on Linux; the
-loader's refusals have been tested there, a real plugin's calls have not.
+crash report. No setup program runs there, so the folder is kept or removed by hand. No plugin has
+yet been loaded on Linux; the loader's refusals have been tested there, a real plugin's calls have
+not.
 
 ## Checking your layouts against ours
 

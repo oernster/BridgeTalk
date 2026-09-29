@@ -292,6 +292,13 @@ Plugins are looked for in a `plugins` folder beside the executable on Windows, s
 from the repository root reads `plugins` there. On Linux the folder is inside the data folder and
 the application makes it. [PLUGINS-GUIDE.md](PLUGINS-GUIDE.md) has the rest.
 
+Every run, from source or installed, keeps a log named `Log.txt` in the application's own data
+folder: `%LOCALAPPDATA%\BridgeTalk\Log.txt` on Windows. On Linux the folder is `BridgeTalk` under
+`$XDG_DATA_HOME` where that is set and under `~/.local/share` otherwise; inside the flatpak that comes to
+`~/.var/app/uk.codecrafter.BridgeTalk/data/BridgeTalk`. The log is opened before anything else can
+fail, so a refusal to start and a crash both reach it. Each run adds a start line to what is there;
+a log past 1 MB is started afresh.
+
 ## Testing
 
 `build.ps1` runs the whole gate before it builds; [TESTING.md](TESTING.md) holds every test command
@@ -322,6 +329,23 @@ Neither executable is signed: `build.ps1` has no signing step.
 To uninstall, use the Apps list. The same program is the `uninstall.exe` in the install
 directory. Started with `-uninstall`, as the Apps list starts it, that copy opens on
 the removal screen; started bare it opens on the manage screen, which offers Uninstall.
+
+## Cutting a release
+
+1. Set the new version in `VERSION`, the one place it is written.
+2. Run `./build.ps1` on Windows. It stamps the version into the site, runs the gate with
+   `-Benchmarks`, then builds the application and the setup program.
+3. Run `bash build_flatpak.sh` on Linux from the same tree; it reads `VERSION` for the flatpak's
+   release entry.
+4. Commit what the stamp changed, then tag the commit `v` followed by the version, as the earlier
+   tags are.
+5. Publish a GitHub release on that tag carrying `BridgeTalkSetup.exe` and `BridgeTalk.flatpak`
+   under exactly those names. The site's download buttons link to those two names in GitHub's latest
+   release, so a release missing either leaves a button with nothing behind it.
+
+Publish the release rather than leaving it a draft or a pre-release. The update check asks GitHub
+for the latest published release, drops a leading `v` from its tag and compares the rest with the
+running version, so a draft or a pre-release is never offered.
 
 ## Regenerating the icons
 

@@ -47,3 +47,7 @@ require (
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 )
+
+// fyne.io/systray is carried patched, adding SetVisible so the Linux tray icon can be hidden while
+// the window is on screen. third_party/systray/systray_unix.go says what changed.
+replace fyne.io/systray => ./third_party/systray

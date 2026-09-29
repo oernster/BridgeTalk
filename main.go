@@ -90,6 +90,7 @@ type trayIcon interface {
 	Commands() <-chan taskbar.Command
 	SetMuted(muted bool)
 	SetActiveVoice(cast taskbar.Voice, label string)
+	SetWindowShown(shown bool)
 	Stop()
 }
 
@@ -294,7 +295,7 @@ func run() error {
 		chatter: services.NewChatterService(table, settings),
 	}
 	if !*noTray {
-		current.tray = startTray(found, current.plugins.Voices(), taskbar.Voice{Name: chosen.Name})
+		current.tray = startTray(found, current.plugins.Voices(), taskbar.Voice{Name: chosen.Name}, !*hidden)
 	}
 
 	// A journal directory that cannot be watched is carried to the window rather than

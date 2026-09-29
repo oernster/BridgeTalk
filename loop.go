@@ -143,6 +143,7 @@ func (a *App) handleTray(command taskbar.Command) {
 func (a *App) bringBack() {
 	a.broughtBack.Store(true)
 	a.restore()
+	a.trayFollows(true)
 	a.emit(windowShownEvent, nil)
 }
 

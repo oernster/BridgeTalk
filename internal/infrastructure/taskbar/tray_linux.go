@@ -46,12 +46,18 @@ type Tray struct {
 	active      atomic.Value
 	activeLabel atomic.Value
 
-	// mu guards the menu, which exists only once the desktop has taken the icon.
-	mu     sync.Mutex
-	shown  bool
-	voices []*systray.MenuItem
-	mute   *systray.MenuItem
-	end    func()
+	// windowShown is whether the window is on screen, once the application has said; until then
+	// Options.WindowShown says (FR-820).
+	windowShown atomic.Pointer[bool]
+
+	// mu guards the menu, which exists only once the desktop has taken the icon. It guards published
+	// too: that says the icon is on the bus, so a change to whether it is drawn can be sent there.
+	mu        sync.Mutex
+	shown     bool
+	published bool
+	voices    []*systray.MenuItem
+	mute      *systray.MenuItem
+	end       func()
 
 	started sync.Once
 	stopped sync.Once
@@ -124,7 +130,34 @@ func (t *Tray) offer() {
 	t.mu.Lock()
 	t.end = end
 	t.mu.Unlock()
+	// Said before the icon is published, so it starts drawn or left out as the window needs rather
+	// than showing for a moment first; said again once it is, for a change made in between.
+	systray.SetVisible(t.iconWanted())
 	start()
+	t.mu.Lock()
+	t.published = true
+	systray.SetVisible(t.iconWanted())
+	t.mu.Unlock()
+}
+
+// SetWindowShown says whether the window is on screen. The icon is drawn only while it is not: with
+// the window up, its own panel button already brings it forward, so a second icon beside it would
+// only repeat it (FR-820). Safe from any goroutine.
+func (t *Tray) SetWindowShown(shown bool) {
+	t.windowShown.Store(&shown)
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.published {
+		systray.SetVisible(t.iconWanted())
+	}
+}
+
+// iconWanted reports whether the desktop should draw the icon: only while the window is put away.
+func (t *Tray) iconWanted() bool {
+	if shown := t.windowShown.Load(); shown != nil {
+		return !*shown
+	}
+	return !t.options.WindowShown
 }
 
 // owned asks the bus whether a name is owned, answering no where the bus cannot say.

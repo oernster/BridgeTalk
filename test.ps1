@@ -36,7 +36,9 @@ $gated = './internal/domain/...', './internal/application/...'
 # It is not ours, it is not committed and it is not built into anything this repository
 # produces, so a future version of it failing vet or staticcheck would break a build
 # over code nobody here wrote. The formatting check below filters the same tree by path
-# because gofmt walks directories rather than packages.
+# because gofmt walks directories rather than packages. It leaves out third_party as well:
+# the patched tray library there is its own module, which go list never reaches. It is
+# kept as upstream wrote it so the patch stays the only difference.
 $packages = go list ./... | Where-Object { $_ -notmatch '/node_modules/' }
 if ($LASTEXITCODE -ne 0) { throw "go list failed with exit code $LASTEXITCODE" }
 
@@ -48,7 +50,7 @@ go run ./tools/models -check
 if ($LASTEXITCODE -ne 0) { throw "the model files are not all in models/ as the list gives them: run go run ./tools/models, then run this again" }
 
 Write-Host 'Checking formatting...'
-$unformatted = gofmt -l . | Where-Object { $_ -notmatch '^frontend' }
+$unformatted = gofmt -l . | Where-Object { $_ -notmatch '^(frontend|third_party)' }
 if ($unformatted) { throw "gofmt reports unformatted files:`n$($unformatted -join "`n")" }
 
 Write-Host 'Vetting...'

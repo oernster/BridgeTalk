@@ -104,6 +104,10 @@ func (t *Tray) SetActiveVoice(cast Voice, label string) {
 	t.post(wmRefreshTip)
 }
 
+// SetWindowShown changes nothing: on Windows the icon stays beside the taskbar button, which is
+// where that desktop expects a resident application's icon to be (FR-820).
+func (t *Tray) SetWindowShown(bool) {}
+
 // Start shows the icon and runs the message loop on its own locked thread.
 //
 // It returns once the icon is visible; or with the error that stopped it appearing.

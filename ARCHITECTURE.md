@@ -1088,6 +1088,16 @@ it is offered once a watcher answers within 15 seconds, since a sign-in start co
 panel. Where none answers the tray says so on its command channel; the cross then closes the window
 and a window started hidden is shown (FR-814). Builds for other platforms compile a no-op tray.
 
+On Linux the icon is drawn only while the window is put away (FR-820): the facade tells the tray each
+time `MinimiseToTray` hides the window and each time `bringBack` returns it. The tray then publishes its
+Status as `Active` or `Passive`, which the desktop's host reads as draw it or leave it out.
+The tray library fixes that status, so `fyne.io/systray` is carried patched in `third_party/systray`
+through a `replace` in `go.mod`; the one addition, `SetVisible`, is marked in `systray_unix.go`. It is
+its own module, so `go list ./...` never reaches it; the structural walk and the formatting check
+both leave it out as well, since it stays as upstream wrote it bar the patch. The tray's picture is also made fully
+opaque or fully clear before the library sees it, because the library's conversion to the bytes it
+publishes is right only for those two coverages.
+
 ## The setup program
 
 Delivery is a second Wails application. `installer/` is its own `main` package inside the same module,

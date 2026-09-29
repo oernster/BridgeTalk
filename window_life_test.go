@@ -184,3 +184,21 @@ func TestATrayTheDesktopNeverTookIsNoTray(t *testing.T) {
 		}
 	}
 }
+
+// FR-820: the tray is told each time the window goes away and comes back, so a Linux icon is drawn
+// only while the window's own panel button is gone. Every route back is one bringBack, so the tray's
+// Open stands for the summons and the tray that never came as well.
+func TestTheTrayIsToldWhenTheWindowGoesAndComesBack(t *testing.T) {
+	player := newFakePlayer()
+	app, _ := newTestApp(t, player)
+	tray := &fakeTray{}
+	app.session.tray = tray
+	app.hide = func() {}
+	app.restore = func() {}
+
+	app.MinimiseToTray()
+	app.handleTray(taskbar.Command{Kind: taskbar.CommandShow})
+	if len(tray.windowShown) != 2 || tray.windowShown[0] || !tray.windowShown[1] {
+		t.Errorf("the tray was told %v, want the window away then back: [false true]", tray.windowShown)
+	}
+}

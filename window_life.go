@@ -66,8 +66,19 @@ func (a *App) hasTray() bool {
 	return a.session.tray != nil && !a.trayGone.Load()
 }
 
-// MinimiseToTray puts the window away and leaves the application listening.
-func (a *App) MinimiseToTray() { a.hide() }
+// MinimiseToTray puts the window away and leaves the application listening. The tray is told, so
+// a Linux icon is drawn now that the window's own panel button has gone (FR-820).
+func (a *App) MinimiseToTray() {
+	a.hide()
+	a.trayFollows(false)
+}
+
+// trayFollows tells the tray whether the window is on screen; with no tray there is nothing to tell.
+func (a *App) trayFollows(shown bool) {
+	if a.session.tray != nil {
+		a.session.tray.SetWindowShown(shown)
+	}
+}
 
 // RequestQuit ends the application from the close dialog's own Quit.
 func (a *App) RequestQuit() { a.Quit() }

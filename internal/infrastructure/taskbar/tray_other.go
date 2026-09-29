@@ -26,6 +26,9 @@ func (t *Tray) SetMuted(bool) {}
 // SetActiveVoice records nothing.
 func (t *Tray) SetActiveVoice(Voice, string) {}
 
+// SetWindowShown records nothing.
+func (t *Tray) SetWindowShown(bool) {}
+
 // Start succeeds without showing anything.
 func (t *Tray) Start() error { return nil }
 

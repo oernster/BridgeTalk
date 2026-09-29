@@ -218,14 +218,16 @@ func (s *session) coverageOf(voice library.Voice) (int, int, int) {
 	return covered, used, present
 }
 
-// startTray builds and shows the tray, returning nil when it cannot appear.
+// startTray builds and shows the tray, returning nil when it cannot appear. windowShown says whether
+// the window starts on screen, which decides whether a Linux icon starts drawn (FR-820).
 //
 // A tray that fails to start is not fatal. The application still watches the journal
 // and still speaks, which is the whole point of it. The nil it answers then is the
 // interface's own: a nil *taskbar.Tray held as a trayIcon would read as an icon that is there.
-func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice) trayIcon {
+func startTray(found []library.Voice, offered []*plugin.Voice, active taskbar.Voice, windowShown bool) trayIcon {
 	tray := taskbar.New(taskbar.Options{
 		Title: appTitle, Voices: trayChoices(found, offered), Active: active, Icon: applicationIcon,
+		WindowShown: windowShown,
 	})
 	if err := tray.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: %v (running without a tray icon)\n", err)

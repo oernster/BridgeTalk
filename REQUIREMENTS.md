@@ -4959,6 +4959,27 @@ Verified by: `TestTheApplicationMakesThePluginsFolderOffWindowsAlone`,
 holds a folder already there being left as it is. Not verified: the folder made inside a real
 flatpak's data folder.
 
+**FR-820 On Linux the tray icon is drawn only while the window is put away**
+Priority: Should.
+While the application runs on Linux with a tray icon (FR-814), the application shall ask the desktop
+to leave the icon out while the window is on screen and to draw it while the window is put away.
+Rationale: Oliver on 2026-09-29, on seeing the icon and the window's panel button side by side:
+two icons that do the same thing. With the window up, its own panel button already brings it
+forward; the icon is the way back only once that button has gone. The icon is left in place rather
+than taken off the bus, since the tray library can be started only once; it is marked `Passive`,
+which a StatusNotifierItem host may leave undrawn and Ubuntu's AppIndicator extension does
+(`indicatorStatusIcon.js`, read on 2026-09-29). fyne.io/systray fixes the status at `Active`, so it is
+carried patched in `third_party/systray` with one call added to change it. Windows keeps its icon
+beside the taskbar button, which is that desktop's convention.
+Acceptance: Given a Linux run started with the window on screen, when the tray icon is published,
+then its Status is `Passive`. When the window is minimised to the tray, then its Status is `Active`;
+when the tray brings the window back, then it is `Passive` again.
+Verified by: `TestTheTrayIsToldWhenTheWindowGoesAndComesBack` in `window_life_test.go`, seen to fail
+on 2026-09-29 with the tray not told of the window coming back. The patched library's status change
+was observed on the session bus on 2026-09-29: a probe item read `Active`, then `Passive` after
+`SetVisible(false)`, then `Active` after `SetVisible(true)`. Not verified: `tray_linux.go` itself,
+which talks to a session bus no test here has, nor the icon hidden and shown as a desktop draws it.
+
 ---
 
 ## 10. Build order
@@ -4987,7 +5008,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-760, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-759, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-759, FR-809 to FR-820, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

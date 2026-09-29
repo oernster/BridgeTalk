@@ -14,6 +14,8 @@ type fakeTray struct {
 	voice taskbar.Voice
 	shown string
 	muted bool
+	// windowShown is every word the facade gave about whether the window is on screen, in order.
+	windowShown []bool
 }
 
 func (f *fakeTray) Commands() <-chan taskbar.Command { return nil }
@@ -23,6 +25,9 @@ func (f *fakeTray) SetMuted(muted bool) { f.muted = muted }
 func (f *fakeTray) SetActiveVoice(cast taskbar.Voice, label string) {
 	f.voice, f.shown = cast, label
 }
+
+// SetWindowShown records what the facade last said about the window (FR-820).
+func (f *fakeTray) SetWindowShown(shown bool) { f.windowShown = append(f.windowShown, shown) }
 
 func (f *fakeTray) Stop() {}
 

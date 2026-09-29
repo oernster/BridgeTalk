@@ -4542,7 +4542,10 @@ not reach GitHub.
 Verified by: `TestABuildFromSourceCannotBeCompared` in `internal/application/services/update_test.go`;
 `TestAManualCheckOffersASkippedRelease` in `updates_test.go`; "tells every outcome of Help, then Check
 for updates" and "offers a newer release as the prompt" in `frontend/src/updates.test.tsx`; "reaches
-the update check from Help" in `frontend/src/App.menus.test.tsx`.
+the update check from Help" in `frontend/src/App.menus.test.tsx`. Checked by hand by Oliver in the
+installed release on Windows on 2026-09-29: Help, then Check for updates answered in the running
+window. Not yet seen: the prompt of FR-757 in a running window, which needs a build older than the
+latest release; the check inside the flatpak.
 
 **FR-760 One copy at a time**
 Priority: Must.
@@ -4573,7 +4576,9 @@ fail with the Windows listener no longer passing the summons on; the facade's wi
 arm taken away. The Linux half is compiled and vetted for Linux by `test.ps1` on every run, never run:
 no Linux machine runs the suite. Not verified by a test: the second start from the Start Menu itself;
 the choice in `onecopy.go` to summon unless started hidden, which no test calls since it would claim
-the product's own name on the machine running the tests.
+the product's own name on the machine running the tests. Checked by hand by Oliver in the installed
+release on Windows on 2026-09-29: a second start brought the running copy's window back. Not yet seen:
+a second start on Linux.
 
 ---
 

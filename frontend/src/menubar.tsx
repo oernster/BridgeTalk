@@ -22,6 +22,7 @@ export function MenuBar({
   onToggleMute,
   onTheme,
   onLicence,
+  onCheckUpdates,
   onAbout,
 }: {
   muted: boolean
@@ -30,6 +31,7 @@ export function MenuBar({
   onToggleMute: () => void
   onTheme: (theme: Theme) => void
   onLicence: () => void
+  onCheckUpdates: () => void
   onAbout: () => void
 }) {
   const [menu, setMenu] = useState<Menu>(null)
@@ -151,6 +153,16 @@ export function MenuBar({
           }}
         >
           Licence
+        </button>
+        <button
+          className="menuitem"
+          type="button"
+          onClick={() => {
+            onCheckUpdates()
+            setMenu(null)
+          }}
+        >
+          Check for updates
         </button>
         <button
           className="menuitem"

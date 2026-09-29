@@ -69,6 +69,9 @@ export function installBridge(overrides: Record<string, unknown> = {}) {
     SetMoment: record('SetMoment', { categories: [], problem: '' }),
     SetCategory: record('SetCategory', { categories: [], problem: '' }),
     SetAllMoments: record('SetAllMoments', { categories: [], problem: '' }),
+    CheckForUpdates: record('CheckForUpdates', { outcome: 'current', running: '1.4.2', latest: '1.4.2' }),
+    DownloadUpdate: record('DownloadUpdate', undefined),
+    SkipUpdate: record('SkipUpdate', undefined),
     ...overrides,
   }
   ;(window as unknown as { go: unknown }).go = { main: { App } }

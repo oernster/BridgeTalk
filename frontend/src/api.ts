@@ -17,6 +17,7 @@ import type {
   PluginVoice,
   Reaction,
   State,
+  Update,
   Voice,
   VoiceFolders,
 } from './wire'
@@ -40,6 +41,8 @@ export type {
   PluginVoice,
   Reaction,
   State,
+  Update,
+  UpdateOutcome,
   Voice,
   VoiceFolders,
 } from './wire'
@@ -91,6 +94,9 @@ interface Bridge {
   SetMoment(id: string, on: boolean): Promise<Chatter>
   SetCategory(name: string, on: boolean): Promise<Chatter>
   SetAllMoments(on: boolean): Promise<Chatter>
+  CheckForUpdates(manual: boolean): Promise<Update>
+  DownloadUpdate(): Promise<void>
+  SkipUpdate(): Promise<void>
 }
 
 interface WailsWindow {
@@ -272,6 +278,19 @@ export const api = {
   /** Switches every moment on or off (FR-732). */
   setAllMoments: (on: boolean, refused: Refused): Promise<Chatter | null> =>
     settled<Chatter | null>(bridge()?.SetAllMoments(on), null, refused),
+
+  /**
+   * Runs one update check (FR-756); `manual` is a check asked for from Help, which offers a skipped
+   * release anyway (FR-759). It answers null where no check was made.
+   */
+  checkForUpdates: (manual: boolean, refused: Refused): Promise<Update | null> =>
+    settled<Update | null>(bridge()?.CheckForUpdates(manual), null, refused),
+  /** Hands the offered release's download to the browser (FR-757). */
+  downloadUpdate: (refused: Refused): Promise<void> =>
+    settled(bridge()?.DownloadUpdate(), undefined, refused),
+  /** Keeps the offered release as skipped, so it is not offered unasked again (FR-758). */
+  skipUpdate: (refused: Refused): Promise<void> =>
+    settled(bridge()?.SkipUpdate(), undefined, refused),
 }
 
 // on subscribes to a Wails event and returns the unsubscribe function; a no-op

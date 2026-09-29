@@ -231,3 +231,19 @@ export interface ChatterMoment {
   cue: CueEntry
   on: boolean
 }
+
+/**
+ * UpdateOutcome is what one update check found (FR-756): a newer release offered, none newer, the
+ * newer one skipped, no answer or a running version that is not a release's.
+ */
+export type UpdateOutcome = 'available' | 'current' | 'skipped' | 'unreachable' | 'uncomparable'
+
+/**
+ * Update is one update check's answer: the running version and the release's, empty where it could
+ * not be read. No address crosses; Download acts on the release the facade offered (FR-757).
+ */
+export interface Update {
+  outcome: UpdateOutcome
+  running: string
+  latest: string
+}

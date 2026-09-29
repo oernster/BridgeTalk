@@ -103,6 +103,10 @@ type Settings struct {
 	// moment not named is switched on, so a file that names none, an older one included, has
 	// everything on (FR-628).
 	SwitchedOff []string
+
+	// SkippedUpdate is the release the reader chose to skip, by version (FR-758). An automatic update
+	// check does not offer it again; empty where none was skipped.
+	SkippedUpdate string
 }
 
 // Switchboard answers whether a moment is switched off on Chatter (FR-622).

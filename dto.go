@@ -231,3 +231,12 @@ type ChatterMomentDTO struct {
 	Cue CueDTO `json:"cue"`
 	On  bool   `json:"on"`
 }
+
+// UpdateDTO is what one update check found (FR-756): available, current, skipped, unreachable or
+// uncomparable; the running version; the release's, empty where it could not be read. No address
+// crosses: Download acts on the release the facade offered (FR-757).
+type UpdateDTO struct {
+	Outcome string `json:"outcome"`
+	Running string `json:"running"`
+	Latest  string `json:"latest"`
+}

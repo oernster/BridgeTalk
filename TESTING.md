@@ -47,6 +47,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/reporoot` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/status` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/tomlfile` | 100% | 100% | `test.ps1` |
+| `internal/infrastructure/update` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/voicefiles` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/wholefile` | 100% | 100% | `test.ps1` |
 | `internal/refusal` | 100% | 100% | `test.ps1` |
@@ -56,7 +57,7 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/plugin` | 94.8% | 91% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 85.8% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 86.1% | 82% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
@@ -96,8 +97,9 @@ holding no problem with lines for every cue, the speech sound table held to the 
 tokenizer file, `pauses.toml` and `endings.toml` kept from going stale, every address
 handed to a native library converted only where the call into it is made and the flatpak
 installing the model files where they are read. They also hold the application importing no
-network package with the front end making no request, every write the application links saying
-where it goes with no other setup write called and the flatpak granted what it uses and no more.
+network package but the update check's one, that exemption failing once it is no longer needed,
+the front end making no request, every write the application links saying where it goes with no
+other setup write called and the flatpak granted what it uses and no more.
 
 ### The front end
 
@@ -130,6 +132,7 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `testLayout.ts` | 100% | 100% |
 | `testRefusal.ts` | 100% | 100% |
 | `testState.ts` | 100% | 100% |
+| `updates.tsx` | 100% | 100% |
 | `chatter.tsx` | 100% | 96.7% |
 | `hooks.ts` | 100% | 96.3% |
 | `chatterFixtures.tsx` | 100% | 96.2% |
@@ -141,9 +144,9 @@ where it goes with no other setup write called and the flatpak granted what it u
 | `dialogs.tsx` | 99.3% | 69.4% |
 | `main.tsx` | 0% | 0% |
 | `wire.ts` | 0% | 0% |
-| **all files** | **99.5%** | **96.3%** |
+| **all files** | **99.6%** | **96.5%** |
 
-322 tests across 31 files, run under Vitest with jsdom.
+333 tests across 32 files, run under Vitest with jsdom.
 
 The Chatter suite is two files: `chatter.test.tsx` holds the switches; `chatter.find.test.tsx` holds
 moving to a category, collapsing one and the marks on both (FR-743, FR-744, FR-755). Both read
@@ -187,6 +190,12 @@ fails rather than deleting a real shortcut.
 These need Windows itself or a device; no harness reaches them. A defect in any
 of them is found by running the application, which is what the manual pass before a
 release is for.
+
+- **The update check's request to GitHub (FR-756).** No test reaches the network: the adapter is
+  tested over a client that answers from memory, so the request's shape, the refusals and the cap
+  are tested while GitHub's own answer is not. It was measured by hand on 2026-09-29 through the
+  application's own source and check against the live release. The prompt in a running window and
+  the browser opening on Download are for the manual pass.
 
 - **`internal/infrastructure/window` (7.0%).** Win32 focus handling: finding the
   WebView2 child window and giving it the keyboard. Opening a moment's folder in File

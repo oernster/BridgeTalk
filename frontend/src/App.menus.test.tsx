@@ -12,6 +12,9 @@ import { watching } from './testState'
 const state = vi.fn<() => Promise<State | null>>()
 const setMuted = vi.fn<(muted: boolean) => Promise<void>>()
 const quit = vi.fn<() => Promise<void>>()
+const checkForUpdates = vi.fn((_manual: boolean, _refused: (reason: string) => void) =>
+  Promise.resolve({ outcome: 'current' as const, running: '1.4.2', latest: '1.4.2' }),
+)
 
 const handlers = new Map<string, (...data: unknown[]) => void>()
 
@@ -63,6 +66,8 @@ vi.mock('./api', () => ({
       }),
     rescan: () => Promise.resolve(0),
     chatter: () => Promise.resolve({ categories: [], problem: '' }),
+    checkForUpdates: (manual: boolean, refused: (reason: string) => void) =>
+      checkForUpdates(manual, refused),
   },
   on: (name: string, handler: (...data: unknown[]) => void) => {
     handlers.set(name, handler)
@@ -242,6 +247,16 @@ describe('the menu bar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'About' })).toBeNull())
+  })
+
+  // FR-759: Help checks at once while offering a skipped release too; it answers whatever it found.
+  it('reaches the update check from Help', async () => {
+    await show()
+
+    menuItem('Help', 'Check for updates')
+    const dialog = await screen.findByRole('dialog', { name: 'Check for updates' })
+    expect(dialog.textContent).toContain('You are running the latest version.')
+    expect(checkForUpdates).toHaveBeenCalledWith(true, expect.any(Function))
   })
 
   it('closes a menu that is open when its own title is pressed again', async () => {

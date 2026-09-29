@@ -30,6 +30,7 @@ import (
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/oernster/bridge-talk/internal/infrastructure/speechmodel"
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
+	"github.com/oernster/bridge-talk/internal/infrastructure/update"
 	"github.com/oernster/bridge-talk/internal/infrastructure/voicefiles"
 	"github.com/oernster/bridge-talk/internal/product"
 )
@@ -296,6 +297,8 @@ func run() error {
 	// The facade is the reporter, so every decision reaches the front end. It is
 	// built before the first useVoice call so the very first cue is already logged.
 	app := newApp(current, watched, root, settings)
+	// The application's one network request: the latest published release (NFR-S-1, FR-756).
+	app.updates = services.NewUpdateService(update.New(), version, runtime.GOOS)
 	current.reporter = reporter{app}
 	current.castAtStart(keptFrom(*voice, stored), chosen, os.Stderr)
 

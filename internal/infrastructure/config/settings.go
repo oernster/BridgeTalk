@@ -45,6 +45,8 @@ type stored struct {
 	PluginVoice string `json:"pluginVoice"`
 	// SwitchedOff is absent from a file an older build wrote, which reads as every moment on (FR-628).
 	SwitchedOff []string `json:"switchedOff"`
+	// SkippedUpdate is absent from a file an older build wrote, which reads as no release skipped (FR-758).
+	SkippedUpdate string `json:"skippedUpdate"`
 }
 
 // Settings reads and writes the choices that outlive a run.
@@ -87,13 +89,14 @@ func (s *Settings) Load() ports.Settings {
 		return ports.Settings{}
 	}
 	return ports.Settings{
-		LibraryRoot:  held.LibraryRoot,
-		JournalDir:   held.JournalDir,
-		Voice:        held.Voice,
-		MachineVoice: held.MachineVoice,
-		Plugin:       held.Plugin,
-		PluginVoice:  held.PluginVoice,
-		SwitchedOff:  held.SwitchedOff,
+		LibraryRoot:   held.LibraryRoot,
+		JournalDir:    held.JournalDir,
+		Voice:         held.Voice,
+		MachineVoice:  held.MachineVoice,
+		Plugin:        held.Plugin,
+		PluginVoice:   held.PluginVoice,
+		SwitchedOff:   held.SwitchedOff,
+		SkippedUpdate: held.SkippedUpdate,
 	}
 }
 
@@ -111,13 +114,14 @@ func (s *Settings) Save(chosen ports.Settings) error {
 	// rather than checked, because a branch nothing can reach is a branch nothing can
 	// test.
 	raw, _ := json.MarshalIndent(stored{
-		LibraryRoot:  chosen.LibraryRoot,
-		JournalDir:   chosen.JournalDir,
-		Voice:        chosen.Voice,
-		MachineVoice: chosen.MachineVoice,
-		Plugin:       chosen.Plugin,
-		PluginVoice:  chosen.PluginVoice,
-		SwitchedOff:  chosen.SwitchedOff,
+		LibraryRoot:   chosen.LibraryRoot,
+		JournalDir:    chosen.JournalDir,
+		Voice:         chosen.Voice,
+		MachineVoice:  chosen.MachineVoice,
+		Plugin:        chosen.Plugin,
+		PluginVoice:   chosen.PluginVoice,
+		SwitchedOff:   chosen.SwitchedOff,
+		SkippedUpdate: chosen.SkippedUpdate,
 	}, "", "  ")
 
 	dir := filepath.Dir(s.path)

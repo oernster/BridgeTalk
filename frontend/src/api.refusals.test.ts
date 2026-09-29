@@ -90,6 +90,9 @@ describe('with no window bridge at all', () => {
     expect(await api.setMoment('Docked', false, said)).toBeNull()
     expect(await api.setCategory('Session', true, said)).toBeNull()
     expect(await api.setAllMoments(false, said)).toBeNull()
+    expect(await api.checkForUpdates(true, said)).toBeNull()
+    expect(await api.downloadUpdate(said)).toBeUndefined()
+    expect(await api.skipUpdate(said)).toBeUndefined()
   })
 
   // Making folders with no bridge makes none and answers with nothing, so the Cast pane reads it

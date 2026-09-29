@@ -424,11 +424,11 @@ go run ./tools/pauses -endings-only
 | Path | What it holds |
 |---|---|
 | `main.go`, `app.go` | the composition root and the Wails facade |
-| `audition.go`, `audition_machine.go`, `audition_plugin.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `icon_other.go`, `icon_windows.go`, `journaldir.go`, `loop.go`, `machine.go`, `plugins.go`, `pluginvoices.go`, `reactions.go`, `runlog.go`, `settings.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
+| `audition.go`, `audition_machine.go`, `audition_plugin.go`, `cast.go`, `chatter.go`, `checklist.go`, `donate.go`, `folders.go`, `icon_other.go`, `icon_windows.go`, `journaldir.go`, `loop.go`, `machine.go`, `plugins.go`, `pluginvoices.go`, `reactions.go`, `runlog.go`, `settings.go`, `updates.go`, `voices.go`, `window.go`, `window_life.go` | the rest of the facade, one pane or concern per file |
 | `dto.go`, `identity.go` | the shapes the front end reads, plus the version, credits and licence the About dialog shows |
 | `internal/domain` | the cue model, events, takes and the parts they play, selection with the Chatter switches, the machine voices, the script, speech sounds, making, pauses, endings and the measured books they share; no I/O at all |
-| `internal/application` | the reaction, scheduling, making, audition and Chatter services, over ports |
-| `internal/infrastructure` | appdata, audio, config, iconfile, journal, library, madelines, modelfiles, nativelib, plugin, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, voicefiles, wholefile, window |
+| `internal/application` | the reaction, scheduling, making, audition, Chatter and update check services, over ports |
+| `internal/infrastructure` | appdata, audio, config, iconfile, journal, library, madelines, modelfiles, nativelib, plugin, reporoot, runlog, setup, speechmodel, status, taskbar, tomlfile, update, voicefiles, wholefile, window |
 | `internal/product` | the product's name and slug, in one place |
 | `internal/refusal` | the wording of a file-system refusal, so each one names its path once |
 | `frontend/src` | the React front end |

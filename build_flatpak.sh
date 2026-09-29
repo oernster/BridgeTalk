@@ -49,14 +49,17 @@ MODELS_DIR="models"
 VERSION="$(tr -d '[:space:]' < VERSION)"
 RELEASE_DATE="$(date +%F)"
 
-# GRANTS are the sandbox's permissions (FR-813), one per line, each once. No network is granted: the
-# application makes no request (NFR-S-1).
+# GRANTS are the sandbox's permissions (FR-813), one per line, each once. The network is granted for
+# the update check alone, the application's one request (NFR-S-1, FR-756); without it every check
+# reads as unreachable. The --share=network under build-args below lets the build fetch its modules
+# and grants the installed application nothing.
 GRANTS=(
     --share=ipc
     --socket=wayland
     --socket=fallback-x11
     --device=dri
     --socket=pulseaudio
+    --share=network
     --filesystem=home
     --filesystem=~/.var/app/com.valvesoftware.Steam:ro
     --filesystem=xdg-config/autostart:create

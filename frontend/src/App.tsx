@@ -27,6 +27,7 @@ import { GuidePane } from './guide'
 import { MissingTakesPane } from './missingTakes'
 import { HomePane, SettingsPane } from './panes'
 import { Strip } from './strip'
+import { UpdateDialog, useUpdateCheck } from './updates'
 
 
 // How long the keyboard is given to settle on the window before the page decides
@@ -48,6 +49,8 @@ export function App() {
   const [closing, setClosing] = useState(false)
   const [theme, setTheme] = useTheme()
   const [volume, changeVolume] = useVolume()
+  // FR-756: checked shortly after the page loads, then daily; FR-759: at once from Help.
+  const updates = useUpdateCheck()
 
   const shell = useRef<HTMLDivElement>(null)
   const sink = useRef<HTMLDivElement>(null)
@@ -121,6 +124,7 @@ export function App() {
         onToggleMute={toggleMute}
         onTheme={setTheme}
         onLicence={() => setLicence(true)}
+        onCheckUpdates={updates.checkNow}
         onAbout={() => setAbout(true)}
       />
 
@@ -248,6 +252,7 @@ export function App() {
 
       <AboutDialog open={about} onClose={() => setAbout(false)} />
       <LicenceDialog open={licence} onClose={() => setLicence(false)} />
+      <UpdateDialog found={updates.found} onClose={updates.dismiss} />
 
       <CloseChoiceDialog
         open={closing}

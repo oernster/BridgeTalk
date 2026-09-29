@@ -21,6 +21,7 @@ import (
 var boundSurface = []string{
 	"About", "Audition", "AuditionGroups", "AuditionMachineVoice", "AuditionPluginVoice", "CastMachineVoice", "CastPluginVoice", "Chatter", "Checklist", "ChooseJournalDir", "ChooseLibraryRoot",
 	"SetAllMoments", "SetCategory", "SetMoment",
+	"CheckForUpdates", "DownloadUpdate", "SkipUpdate",
 	"CueBreakdown", "Licence", "MachineAuditionGroups", "MachineVoices", "MakeVoiceFolders", "Making", "MinimiseToTray", "Muted", "OpenDonation", "OpenMomentFolder", "Playing",
 	"PluginAuditionGroups", "PluginChecklist", "PluginVoices", "Quit", "Reactions", "RequestQuit", "Rescan", "SelectVoice", "SetLaunchOnBoot",
 	"VoiceDirectories",

@@ -43,6 +43,9 @@ project.
   folder, reaching the catalogue through that same port (section 6.3).
 - Windows and Linux, decided by Oliver on 2026-09-13. Linux ships as a flatpak offering recorded
   voices, machine voices and plugins (section 9.1).
+- An update check: one anonymous read of the project's latest published release, made shortly after
+  the window's page loads, once a day after that and whenever Help asks for it (FR-756 to FR-759). Added
+  by Oliver on 2026-09-29, which amended NFR-S-1 from no request at all to this one.
 
 **Out of scope:**
 
@@ -154,7 +157,8 @@ Windows and Linux. Go with Wails hosting a React and TypeScript front end. On Wi
 `build.ps1` sets `CGO_ENABLED` to `0`; the flatpak build sets it to `1` for webkit2gtk and the audio
 output (FR-810). Elite Dangerous journal files in their standard location
 unless another directory is chosen in Settings or passed with `-journal`. No network
-dependency at runtime: the application makes no outbound request. Machine voices run on the
+dependency at runtime: the one outbound request is the update check (NFR-S-1); nothing else
+waits on it or fails without it. Machine voices run on the
 processor alone through one native library, ONNX Runtime, loaded with no C bindings written for it
 (CON-8).
 
@@ -180,7 +184,7 @@ Claude so NFR-P-201 had a machine to be measured on; Oliver kept it on 2026-09-1
 | CON-5 | No recording ships inside the application or its setup program. The files a machine voice is made from do (FR-524); amended on 2026-09-14. |
 | CON-6 | Everything written at install time stays per user, under `%LOCALAPPDATA%`, `HKCU`, the user's Start Menu under `%APPDATA%` and the user's Desktop, so Windows never asks for administrator rights. |
 | CON-7 | The application never writes to the library root except where section 3 permits it. |
-| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. Amended on 2026-09-16 for Linux: ONNX Runtime is loaded and called through purego there, with no C bindings written for it, while the flatpak build of the application itself has cgo on for webkit2gtk and the audio output (FR-810); purego then loads the library through the C runtime rather than its own loader. |
+| CON-8 | A machine voice is made with the Kokoro-82M v1.0 model in ONNX form, run through ONNX Runtime from Go with cgo disabled. The application runs no Python, uses no network to make a line and works out no pronunciation: every line's speech sounds are made before the build by the sounds tool (FR-532) and ship with the script. Chosen by Oliver on 2026-09-14 over a bundled Python helper of about 1 GB, after the measurements in section 6.1; amended the same day to make speech sounds before the build rather than while the application runs. Amended on 2026-09-16 for Linux: ONNX Runtime is loaded and called through purego there, with no C bindings written for it, while the flatpak build of the application itself has cgo on for webkit2gtk and the audio output (FR-810); purego then loads the library through the C runtime rather than its own loader. |
 | CON-9 | No file in this repository, tracked or ignored, names the audio a plugin reads, the folders it sits in, the way it is arranged or the words it is described by. The interface speaks the application's own cue ids and file paths alone. That mapping lives in the plugin's own repository. Added on 2026-09-16. |
 | CON-10 | A plugin is a native library loaded from the plugins folder of FR-560: inside the application's own install directory on Windows, so loading one asks for no administrator rights (CON-6); inside the user's own data folder on Linux (FR-818). Loading a plugin writes nothing; on Linux the application makes the folder itself (FR-819). Added on 2026-09-16. |
 
@@ -1004,7 +1008,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported` in
 | NFR-M-2 | No source file exceeds 400 lines; none sits between 381 and 400, each counted as an editor numbers its lines | `TestNoFileExceedsLineLimit` and `TestNoFileInDangerBand` in `tests/structural/boundary_test.go`, over the Go source and both front ends, with the count itself held by `TestLineCountCountsTheLinesAnEditorShows` in `tests/structural/linecount_test.go`; each guard was seen to fail on a planted file on 2026-09-15; build scripts are not counted |
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned to one release in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that release on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
-| NFR-S-1 | The application makes no network request; there is no update check | Inspection: the only Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import; `net/http` reaches the application through Wails alone (`go list -deps .`, 2026-09-15). The front end makes no request. `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. Neither sees a request Wails or its web view makes on its own account |
+| NFR-S-1 | The application makes one network request and no other: the update check of FR-756, an anonymous read of the project's latest published release that sends nothing about the user, the machine or the game. Amended by Oliver on 2026-09-29 from "no network request; there is no update check" | Inspection: the Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import, plus the update check in `internal/infrastructure/update`, which imports `net/http` and nothing else beneath `net`. The front end makes no request: the facade makes the check and hands a download to the browser (FR-757). `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`, apart from `net/http` in the update check's package alone; `TestTheUpdateCheckStillNeedsItsExemption` fails once that package no longer imports `net/http`, so the exemption cannot outlive its reason; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. On 2026-09-29 the import test was seen to fail over `net/http` imported into the settings store and over `net` added to the update check's package; `TestTheUpdateCheckStillNeedsItsExemption` over that package importing no `net/http` and over the application no longer linking it. Neither sees a request Wails or its web view makes on its own account |
 | NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to four names in the setup package, so of setup's writes only the sign-in entry and the plugins folder are reached; the plugins folder is made by the application on Linux alone (FR-819). The fourth name was seen to fail on 2026-09-16 when taken off the list. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; on Linux the plugins folder in its data folder (FR-819, added 2026-09-16); the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory on Windows and the data folder on Linux, each per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `nativelib.Open` by its whole path, which is `windows.LoadDLL` on Windows and `dlopen` through purego on Linux; nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
 | NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. Claude proposed the limit rather than measuring it; Oliver accepted it as proposed on 2026-09-16. Measuring it waits on a built plugin, which needs a C toolchain the development machine does not have |
@@ -4448,6 +4452,95 @@ Verified by: "marks every heading open or shut and every name in the header with
 Chatter pane" in `frontend/src/guide.test.tsx` for the guide's words. Not verified by a test: the
 marks as drawn and turned, which the style sheet decides and jsdom does not compute.
 
+**FR-756 The update check**
+Priority: Should.
+The application shall ask `https://api.github.com/repos/oernster/BridgeTalk/releases/latest` for the
+latest published release 3 seconds after the window's page loads, then every 24 hours while it runs,
+with no retry. The request shall carry no credentials and nothing about the user, the machine or the
+game; it shall give up after 5 seconds and read no more than 1 MiB of the answer. The release's tag,
+less any leading `v`, shall be compared with the running version from `VERSION` as dotted whole
+numbers. A tag or a running version that is not dotted whole numbers shall never read as newer. An
+automatic check that cannot reach the release, finds nothing newer or finds the release skipped
+(FR-758) shall show nothing.
+Rationale: Oliver, 2026-09-29, bringing Bridge Talk into line with the house update check his other
+applications share. That endpoint answers only a published release that is neither a draft nor a
+pre-release, so a tag pushed while work is under way can never prompt. A check that fails costs the
+reader nothing, so it says nothing. A run started hidden in the notification area (FR-704) loads its
+page too, so its prompt waits in the window for the next time the window is brought back rather than
+taking the foreground.
+Acceptance: Given a running version of 1.4.2, when the release reads `v1.5.0`, then the prompt of
+FR-757 is raised; when it reads `v1.4.2`, `v1.4.1`, `v1.5.0-rc1` or cannot be reached, then nothing is
+shown.
+Verified by: `TestANewerReleaseIsOffered`, `TestTheRunningReleaseOrAnOlderOneIsNotOffered`,
+`TestAVersionThatIsNotDottedNumbersIsNeverNewer`, `TestAnUnreachableReleaseIsSaidToBeUnreachable` and
+`TestABuildFromSourceCannotBeCompared` in `internal/application/services/update_test.go`;
+`TestTheRequestAsksForTheLatestPublishedRelease`, `TestAReleaseIsReadFromTheAnswer`,
+`TestAnAnswerThatIsNotAReleaseIsRefused`, `TestAnAnswerLargerThanTheCapIsRefused`,
+`TestAnAnswerThatBreaksOffIsRefused` and `TestTheCheckGivesUpAfterFiveSeconds` in
+`internal/infrastructure/update/github_test.go`; "checks 3 seconds after the page loads, then once a
+day" and "stays silent when an automatic check offers nothing" in `frontend/src/updates.test.tsx`.
+Not verified by a test: the request against GitHub itself, which no test makes. Measured on
+2026-09-29 through the application's own source and check: running 1.4.1 was offered 1.4.2 with
+`BridgeTalkSetup.exe` on Windows and `BridgeTalk.flatpak` on Linux; 1.4.2 read as current;
+`0.0.0-dev` read as uncomparable.
+
+**FR-757 The update prompt**
+Priority: Should.
+When a check finds a newer release, the window shall raise a dialog titled "Update available" saying
+"Bridge Talk L is available. You are running R.", where L is the release and R the running version,
+with three buttons in this order: Download, focused; Skip this version; Later. Download shall hand the
+desktop the release's own file for this platform, `BridgeTalkSetup.exe` on Windows and
+`BridgeTalk.flatpak` on Linux, matched by its ending without regard to case; the release's page where
+the release carries no such file. The address shall be handed over as FR-718 hands over the donation
+page, refused unless it begins `https://`; the page shall never hold it. Later and Escape shall
+close the dialog, changing nothing. If handing the address over fails, then the dialog shall stay open
+and say why.
+Rationale: the page never names an address, so the rule of NFR-S-1 that the front end neither makes a
+request nor names one to make stays whole; the facade keeps the release it last offered and acts on
+that.
+Acceptance: Given the prompt for 1.5.0 on Windows, when Download is pressed, then the desktop is asked
+to open the release's `BridgeTalkSetup.exe` and nothing else.
+Verified by: `TestTheDownloadIsTheFileForThisPlatform` and `TestADownloadFallsBackToTheReleasePage` in
+`internal/application/services/update_test.go`; `TestDownloadHandsTheOfferedReleaseToTheBrowser` and
+`TestADownloadWithNothingOfferedIsRefused` in `updates_test.go`; `TestAnAddressThatIsNotHTTPSIsRefusedHandingNothingOver`
+in `donate_test.go` for the refusal both hand-overs share; "offers Download, Skip this version and
+Later for a newer release", "hands the download to the facade and closes", "keeps the dialog open to
+say why a download could not be handed over" and "closes on Later, changing nothing" in
+`frontend/src/updates.test.tsx`. Not verified by a test: the dialog as drawn; Escape, which the
+shared dialog shell handles for every dialog.
+
+**FR-758 Skip this version**
+Priority: Should.
+When Skip this version is pressed, the application shall keep the offered release's version in its
+settings file and close the dialog. An automatic check shall not offer that version again; a later
+release shall be offered as usual. If the version cannot be kept, then the dialog shall stay open and
+say why.
+Rationale: a reader who has decided against one release should not be asked about it every day; a
+later release is a new question.
+Acceptance: Given 1.5.0 skipped, when an automatic check finds 1.5.0, then nothing is shown; when it
+finds 1.5.1, then the prompt is raised.
+Verified by: `TestASkippedReleaseIsNotOfferedAgain` and `TestALaterReleaseThanTheSkippedOneIsOffered` in
+`internal/application/services/update_test.go`; `TestSkippingKeepsTheOfferedRelease` and
+`TestAnAutomaticCheckHonoursTheSkippedRelease` in `updates_test.go`; `TestChoicesSurviveASave` in
+`internal/infrastructure/config/settings_test.go`; "skips the offered version and closes" and "keeps
+the dialog open to say why a skip could not be kept" in `frontend/src/updates.test.tsx`.
+
+**FR-759 Help, then Check for updates**
+Priority: Should.
+Help shall offer Check for updates between Licence and About. It shall run the check of FR-756 at once
+while ignoring a skipped version. It shall answer every outcome in a dialog: the prompt of FR-757 for a
+newer release; "You are running the latest version."; "The update check could not reach GitHub.
+Please try again later."; for a running version that is not dotted whole numbers, "This copy was built
+from source as R, so there is no released version to compare it with."
+Rationale: a question asked from a menu is owed an answer, whatever it is. A build from source is told
+so rather than told it is up to date, which it cannot know.
+Acceptance: Given no network, when Check for updates is chosen, then the dialog says the check could
+not reach GitHub.
+Verified by: `TestABuildFromSourceCannotBeCompared` in `internal/application/services/update_test.go`;
+`TestAManualCheckOffersASkippedRelease` in `updates_test.go`; "tells every outcome of Help, then Check
+for updates" and "offers a newer release as the prompt" in `frontend/src/updates.test.tsx`; "reaches
+the update check from Help" in `frontend/src/App.menus.test.tsx`.
+
 ---
 
 ## 9. The setup program
@@ -4699,17 +4792,20 @@ with only the first place named. That the reason reaches the Status pane is FR-2
 **FR-813 The sandbox is granted what the application uses and no more**
 Priority: Should.
 The manifest `build_flatpak.sh` writes shall grant `--share=ipc`, `--socket=wayland`,
-`--socket=fallback-x11`, `--device=dri`, `--socket=pulseaudio`, `--filesystem=home`,
+`--socket=fallback-x11`, `--device=dri`, `--socket=pulseaudio`, `--share=network`, `--filesystem=home`,
 `--filesystem=~/.var/app/com.valvesoftware.Steam:ro`, `--filesystem=xdg-config/autostart:create`
 and `--talk-name=org.kde.StatusNotifierWatcher`, each once; it shall grant nothing else.
 Rationale: home holds the prefix of FR-811 and any library root; flatpak excludes `~/.var/app` from
 home, so Steam installed as a flatpak needs its own read-only grant; the sign-in entry of FR-815 sits
-outside the sandbox's own configuration; the tray of FR-814 needs the watcher. No network is granted,
-since the application makes no request (NFR-S-1).
+outside the sandbox's own configuration; the tray of FR-814 needs the watcher. The network is granted
+for the update check alone (NFR-S-1, FR-756), added on 2026-09-29: without it the sandbox blocks the
+socket and every check reads as unreachable. The `--share=network` under the manifest's build
+arguments is a different grant, letting the build fetch its modules; it gives the installed
+application nothing.
 Verified by: `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` in `tests/structural/flatpak_test.go`, which
-reads the script's GRANTS list and its APP_ID; seen to fail on 2026-09-16 with a network grant added,
-a grant dropped and the manifest's grants written from anything but GRANTS. Not verified: that each
-grant is enough on a real desktop.
+reads the script's GRANTS list and its APP_ID; seen to fail on 2026-09-16 with a grant added,
+a grant dropped and the manifest's grants written from anything but GRANTS; on 2026-09-29 with the
+network grant dropped. Not verified: that each grant is enough on a real desktop.
 
 **FR-814 On Linux the tray icon is offered to the desktop's watcher**
 Priority: Should.
@@ -4853,7 +4949,7 @@ There are no open questions.
 | Priority | Content |
 |---|---|
 | **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
-| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-755, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
+| **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-759, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |
 

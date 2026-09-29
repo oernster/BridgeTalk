@@ -133,7 +133,8 @@ export const guideSections: GuideSection[] = [
   {
     heading: 'The menus',
     paragraphs: [
-      'File holds Quit. Audio opens Cast, Audition, Missing takes or Chatter and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence and About.',
+      'File holds Quit. Audio opens Cast, Audition, Missing takes or Chatter and holds Mute. Settings opens the settings pane and switches between light and dark. Help holds this guide, the licence, Check for updates and About.',
+      'Shortly after it starts, then once a day, it asks GitHub whether a newer release is out; Check for updates asks at once. A newer release offers three answers: Download opens it in your browser; Skip this version stops that release being offered again; Later leaves it for now.',
     ],
   },
   {
@@ -165,7 +166,7 @@ export const guideSections: GuideSection[] = [
       },
       {
         title: 'Your recordings are never changed.',
-        text: 'It ships no audio. It never changes or removes anything in the directory you choose; the one thing it writes there is empty folders, made by Make folders or by Open folder. Lines made for machine voices are kept in the Made lines folder inside your own local application data folder. It makes no network requests of its own.',
+        text: 'It ships no audio. It never changes or removes anything in the directory you choose; the one thing it writes there is empty folders, made by Make folders or by Open folder. Lines made for machine voices are kept in the Made lines folder inside your own local application data folder. Its one network request is the update check, which sends nothing about you, your machine or the game.',
       },
     ],
   },

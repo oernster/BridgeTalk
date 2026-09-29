@@ -161,6 +161,7 @@ $measured = [ordered]@{
     './internal/infrastructure/status'    = 100
     './internal/infrastructure/taskbar'   = 67
     './internal/infrastructure/tomlfile'  = 100
+    './internal/infrastructure/update'    = 100
     './internal/infrastructure/voicefiles' = 100
     './internal/infrastructure/window'    = 7
     './internal/infrastructure/wholefile' = 100

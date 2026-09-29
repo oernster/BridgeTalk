@@ -5,12 +5,14 @@ worth speaking about has happened, then plays a matching recording from a librar
 is one-directional. There is no microphone, no speech recognition and no command and control; the
 application talks to the commander and never listens.
 
-It ships no recordings. The application makes no request of its own. The Go source that imports a
-network package is the model files download alone: `internal/infrastructure/modelfiles`, its test
-support `modelfilestest` and the `tools/models` command. The application imports none of them;
-`net/http` reaches it through Wails alone, which `TestTheApplicationImportsNoNetworkPackage` holds
-over every package of this module the application links. The front end makes no request, which
-`TestTheFrontEndMakesNoRequest` holds.
+It ships no recordings. The application makes one request of its own: the update check, an anonymous
+read of the project's latest published release (NFR-S-1, FR-756). The Go source that imports a
+network package is the model files download, `internal/infrastructure/modelfiles`, its test support
+`modelfilestest` and the `tools/models` command, none of which the application imports; plus the
+update check, `internal/infrastructure/update`, which imports `net/http` and nothing else beneath
+`net`. `TestTheApplicationImportsNoNetworkPackage` holds that over every package of this module the
+application links; `TestTheUpdateCheckStillNeedsItsExemption` fails once the exemption is no longer
+needed. The front end makes no request, which `TestTheFrontEndMakesNoRequest` holds.
 
 ## Invariant
 
@@ -27,7 +29,8 @@ exactly like one that holds.
 | Domain is pure: no network, filesystem, process or database package; no wall clock or global random source | `TestDomainIsPure` | `boundary_test.go` |
 | Application never imports infrastructure or wails | `TestApplicationDoesNotImportInfrastructure` | `boundary_test.go` |
 | Only the composition root wires the application services to infrastructure | `TestCompositionRootIsWhitelisted` | `boundary_test.go` |
-| No package of this module the application links imports a network package | `TestTheApplicationImportsNoNetworkPackage` | `network_test.go` |
+| No package of this module the application links imports a network package except `net/http` in the update check's package | `TestTheApplicationImportsNoNetworkPackage` | `network_test.go` |
+| The update check's exemption is still needed: the application links its package and it imports `net/http` | `TestTheUpdateCheckStillNeedsItsExemption` | `network_test.go` |
 | The front end's own source neither makes a request nor names an address to make one to | `TestTheFrontEndMakesNoRequest` | `network_test.go` |
 | The request pattern catches every form a page makes a request with and passes ordinary words | `TestTheRequestPatternCatchesEachWayARequestIsMade` | `network_test.go` |
 | Every write in a package the application links is listed with where it goes; nothing listed has gone | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` | `writes_test.go` |
@@ -64,7 +67,7 @@ exactly like one that holds.
 | The setup page header repeats no title beneath the title bar | `TestTheSetupHeaderRepeatsNoTitle` | `setupheader_test.go` |
 | The setup page, the scripts beside it and `setupScripts` stay in step: the page loads every script and every script has a place in the list | `TestTheSetupPageLoadsEveryScript` | `setupring_test.go` |
 | The setup page's body, a keyboard stop because it scrolls, wears a focus ring | `TestTheSetupBodyRingsForTheKeyboard` | `setupring_test.go` |
-| The flatpak is granted exactly the grants FR-813 lists, none of them network, under the product's own id | `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` | `flatpak_test.go` |
+| The flatpak is granted exactly the grants FR-813 lists, the network among them for the update check alone, under the product's own id | `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` | `flatpak_test.go` |
 | The flatpak installs the model files in the folder the application reads them from | `TestTheFlatpakInstallsTheModelFilesWhereTheyAreRead` | `flatpak_test.go` |
 | The Status cards widen to share their row: their grid fits its columns to the cards | `TestTheStatusCardsWidenToShareTheRow` | `strip_test.go` |
 | The strip is three quarters of the band's height, derived from the sizes the band's own rules draw it with | `TestTheStripIsAShareOfTheBandDrawnFromItsOwnSizes` | `strip_test.go` |
@@ -110,9 +113,9 @@ exactly like one that holds.
   one or more parts played in order (FR-573); a part is a whole file or a span of one with its format,
   offset and length (FR-588); a take is identified by its first part's key, which carries the span
   (FR-591).
-- **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling, making and Chatter services plus the ports they
+- **Application** (`internal/application`: `ports`, `services`): the reaction, scheduling, making, Chatter and update check services plus the ports they
   depend on (`EventSource`, `AudioPlayer`, `VoiceCatalogue`, `AudioSource`, `Clock`, `SettingsStore`,
-  `Reporter`, `Switchboard`). `Switchboard` answers whether a moment is switched off, which the
+  `Reporter`, `Switchboard`, `ReleaseSource`). `Switchboard` answers whether a moment is switched off, which the
   reaction service and the scheduler ask at each decision rather than holding a copy (FR-622, FR-627). `AudioSource` answers the takes for a cue id and nothing else, so the catalogue serves
   any kind of voice without knowing where its audio came from (FR-501, FR-502). A machine voice is made
   through three more: `SpeechMaker` loads the model and turns a line's numbers and style row into samples, `VoiceFiles`
@@ -138,8 +141,9 @@ exactly like one that holds.
   (`plugin`), reading the pictures out of the committed `.ico` for Linux (`iconfile`), the model run through ONNX Runtime's C API with no binding written for it (`speechmodel`), loading a
   native library and calling into it on Windows and Linux for the plugin adapter and the model run (`nativelib`), the one rule
   for putting a file in place whole or not at all, which the made lines, the stored settings, the model
-  files and the payload archive are written through (`wholefile`) and the per-user install work behind
-  the setup program (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
+  files and the payload archive are written through (`wholefile`), reading the latest published
+  release for the update check (`update`) and the per-user install work behind the setup program
+  (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
   the tests. Never imported by Domain or Application.
 - **Development support** (`internal/infrastructure/modelfiles`, `internal/infrastructure/reporoot`):
   `modelfiles` holds the pinned list of model files with the download that fills a folder from it and
@@ -196,7 +200,7 @@ failing to load stops the run, then hands the service `runlog.Lines` over the ru
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`, `audition_plugin.go`,
-`chatter.go`, `donate.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
+`chatter.go`, `donate.go`, `updates.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
 `loop.go` (the loop watching the game), `plugins.go` and `pluginvoices.go` (the plugin surface)
 plus `icon_windows.go` and `icon_other.go` (the icon a Linux tray is handed), each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`. `window.go` holds the window `run` launches: its assets,
@@ -224,7 +228,7 @@ its geometry and `launch`.
                        | speechmodel, appdata,       |
                        | runlog, wholefile, taskbar, |
                        | window, setup, nativelib,   |
-                       | plugin, iconfile            |
+                       | plugin, iconfile, update    |
                        +-----------------------------+
 ```
 
@@ -786,7 +790,7 @@ order; a drawn rule, no stop, sets Status and Settings apart within the first gr
 switches between Cast, Audition, Chatter, Missing takes, Status, Settings and Guide;
 it opens on Cast. The menu bar repeats the ways in: File holds Quit; Audio holds Cast, Audition, Missing
 takes, Chatter and Mute; Settings holds the
-pane and the theme; Help holds the guide, the licence and About.
+pane and the theme; Help holds the guide, the licence, Check for updates and About.
 
 **Machine voices on the Cast pane.** `frontend/src/machineVoices.tsx` offers them under their own heading
 after the recorded voices and any plugin sections, as pills in a panel for each accent and sex, the panels sharing the row
@@ -990,6 +994,23 @@ connection for the button and fetches nothing: the browser does the asking, so n
 application for it. Wails reports nothing back from the hand-over, so the one failure the facade can see is
 having no window to open from; the page shows a rejection in the indicator for four seconds.
 
+**The update check** (FR-756 to FR-759) is the application's one network request. The port is
+`ports.ReleaseSource`; `services.UpdateService` compares the release's tag, less its leading `v`, with
+the running version as dotted whole numbers and answers an outcome: available, current, skipped,
+unreachable or uncomparable, the last for a running version that is not a release's, as a build from
+source is not. It also picks what Download opens: the release's file whose name ends `.exe` on Windows or
+`.flatpak` on Linux, else the release's page. `internal/infrastructure/update` reads GitHub's
+latest-release endpoint, which answers only a published release, over a client that gives up after five
+seconds, reading at most 1 MiB. `main.go` builds the service over it with the version from `VERSION`
+and `runtime.GOOS`. The facade's `updates.go` binds `CheckForUpdates(manual)`, `DownloadUpdate` and
+`SkipUpdate`; an automatic check passes the skipped version from the settings file, a manual one passes
+none. The facade keeps the release it last offered under its lock; Download hands that one's address
+to the browser through the same refusing helper as the donate button, Skip writes its version to the
+settings file. No address crosses the wire, so the page names none and `TestTheFrontEndMakesNoRequest`
+holds unchanged. `frontend/src/updates.tsx` runs the check three seconds after the page loads, then
+every 24 hours, showing only an offer unasked; Help, then Check for updates shows every outcome. A run
+started hidden loads its page too, so an offer waits in the window rather than taking the foreground.
+
 The indicator's message is chosen by `indicate` in `frontend/src/indicator.ts` (FR-719). It is a pure
 function of the state, the last `making` announcement, the last moment played with the time it arrived,
 the time a donation hand-over last failed and the time now, so every row of the table and the order
@@ -1153,7 +1174,9 @@ directory, so running setup leaves no folder beside the application's.
 
 Linux has no setup program. `build_flatpak.sh` builds a flatpak on the GNOME runtime, since Wails
 renders there through webkit2gtk, with cgo on for that link and for the audio output. It writes the
-sandbox's grants from one GRANTS list with no network among them (FR-813). Inside the sandbox it
+sandbox's grants from one GRANTS list, the network among them for the update check alone (FR-813); the
+`--share=network` under its build arguments lets the build fetch modules and grants the installed
+application nothing. Inside the sandbox it
 fetches the model files through `tools/models`, ONNX Runtime for Linux among them, then installs
 them in `models` beside the executable (FR-817). `tools/linuxicons` installs every picture in the
 committed `.ico` under the hicolor theme (FR-810). `cleanup_flatpak.sh` removes the install and what
@@ -1169,7 +1192,7 @@ autostart file (FR-815).
 | Journal and status files | `-journal`, else the stored choice, else the game's saved-games directory under the user's profile; on Linux, that directory inside the game's Proton prefix, looked for under each Steam root in turn (FR-811, FR-812) |
 | Recordings | `-library`, else the stored choice; at startup nothing is detected |
 | Default recordings directory | `%LOCALAPPDATA%\BridgeTalk\Recordings` on Windows, `BridgeTalk/Recordings` under `$XDG_DATA_HOME` or `~/.local/share` elsewhere; made on first use and never removed by setup |
-| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories, the cast voice (a recorded voice's name, a machine voice's id or a plugin's name with its voice's id; at most one kind is kept) and the ids of the moments switched off on Chatter. Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice; a switch writes the switches |
+| Settings | `settings.json` in `BridgeTalk` under Go's user configuration directory (`%APPDATA%` on Windows): both directories, the cast voice (a recorded voice's name, a machine voice's id or a plugin's name with its voice's id; at most one kind is kept), the ids of the moments switched off on Chatter and the release skipped from the update prompt (FR-758). Choosing either directory writes both, as does Make folders adopting the default recordings directory; casting writes the voice; a switch writes the switches; Skip this version writes the skipped release |
 | Cue table | embedded in the binary |
 | Script | `script.toml`, embedded in the binary beside the cue table |
 | Saved speech sounds | `sounds.toml`, embedded in the binary beside the script; written by `go run ./tools/sounds`, never by hand |
@@ -1268,7 +1291,7 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   against the model's tokenizer file in `models/`. Another lets an address handed to a DLL become a
   uintptr only where the call into it is made; another fails where `pauses.toml` or `endings.toml` is stale against the
   script, the machine voices or the listed model files, with four more for each proving that check names
-  what it should. Others hold the application off the network, every write it makes to a stated
+  what it should. Others hold the application to its one network request, every write it makes to a stated
   place, the flatpak's grants and model folder and the heading pills' contrast. The invariant table
   above lists every one of them with
   the test that enforces it.

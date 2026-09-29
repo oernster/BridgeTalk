@@ -66,6 +66,9 @@ describe('with the window bridge present', () => {
     await api.setMoment('Docked', false, said)
     await api.setCategory('Session', true, said)
     await api.setAllMoments(false, said)
+    await api.checkForUpdates(false, said)
+    await api.downloadUpdate(said)
+    await api.skipUpdate(said)
 
     expect(calls.map((call) => call.name)).toEqual([
       'State',
@@ -108,6 +111,9 @@ describe('with the window bridge present', () => {
       'SetMoment',
       'SetCategory',
       'SetAllMoments',
+      'CheckForUpdates',
+      'DownloadUpdate',
+      'SkipUpdate',
     ])
   })
 
@@ -128,6 +134,7 @@ describe('with the window bridge present', () => {
     await api.checklist('Beta', said)
     await api.openMomentFolder('Beta', 'Docked', said)
     await api.setLaunchOnBoot(false, said)
+    await api.checkForUpdates(true, said)
 
     expect(calls.map((call) => call.args)).toEqual([
       ['Beta'],
@@ -144,6 +151,7 @@ describe('with the window bridge present', () => {
       ['Beta'],
       ['Beta', 'Docked'],
       [false],
+      [true],
     ])
   })
 
@@ -179,6 +187,11 @@ describe('with the window bridge present', () => {
       total: 3,
       missing: [],
       folder: 'D:/Recordings/Alpha/',
+    })
+    expect(await api.checkForUpdates(false, said)).toEqual({
+      outcome: 'current',
+      running: '1.4.2',
+      latest: '1.4.2',
     })
   })
 

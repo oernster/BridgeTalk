@@ -2,8 +2,8 @@ package structural
 
 // FR-813: the flatpak's sandbox is granted what the application uses and no more. build_flatpak.sh
 // writes the manifest from its GRANTS list, so the list is held here to the requirement's grants,
-// each once, with no network among them; its APP_ID is held to the product's own id, which the
-// sign-in entry and the tray are named with too.
+// each once; the network among them is for the update check alone (NFR-S-1, FR-756). Its APP_ID is
+// held to the product's own id, which the sign-in entry and the tray are named with too.
 //
 // What this cannot see: whether each grant is enough on a real desktop, which only running the
 // flatpak shows.
@@ -30,6 +30,8 @@ var requiredGrants = []string{
 	"--socket=fallback-x11",
 	"--device=dri",
 	"--socket=pulseaudio",
+	// The update check's one request (FR-756); without it the sandbox reads every check as unreachable.
+	"--share=network",
 	"--filesystem=home",
 	"--filesystem=~/.var/app/com.valvesoftware.Steam:ro",
 	"--filesystem=xdg-config/autostart:create",
@@ -71,11 +73,6 @@ func TestTheFlatpakIsGrantedWhatItUsesAndNoMore(t *testing.T) {
 	grants := flatpakGrants(t, script)
 	if !slices.Equal(sorted(grants), sorted(requiredGrants)) {
 		t.Errorf("GRANTS = %v, want exactly %v", grants, requiredGrants)
-	}
-	for _, grant := range grants {
-		if strings.Contains(grant, "network") {
-			t.Errorf("GRANTS holds %s; the application makes no request (NFR-S-1)", grant)
-		}
 	}
 	if !strings.Contains(script, `for grant in "${GRANTS[@]}"; do`) {
 		t.Errorf("%s does not write its manifest's grants from GRANTS", flatpakScript)

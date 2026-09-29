@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
+	"github.com/oernster/bridge-talk/internal/application/services"
 	"github.com/oernster/bridge-talk/internal/infrastructure/setup"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -89,6 +90,11 @@ type App struct {
 
 	// browse hands an address to the desktop's browser (FR-718); a field so a test opens none.
 	browse func(address string) error
+
+	// updates is the update check (FR-756). offered is the release it last offered, held under mu,
+	// which Download and Skip act on so the page never holds an address (FR-757).
+	updates *services.UpdateService
+	offered services.UpdateStatus
 
 	// quitting records that a quit has already been decided, so the close dialog is
 	// not raised over the top of the quit it was just asked to perform.

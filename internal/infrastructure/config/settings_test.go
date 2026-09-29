@@ -41,6 +41,8 @@ func TestChoicesSurviveASave(t *testing.T) {
 		MachineVoice: "bf_emma",
 		Plugin:       "Bridge Crew",
 		PluginVoice:  "one",
+		// FR-758: the release the reader chose to skip.
+		SkippedUpdate: "1.5.0",
 	}
 
 	if err := store.Save(want); err != nil {

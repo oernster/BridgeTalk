@@ -51,6 +51,7 @@ var wireShapes = map[string]string{
 	"PluginVoiceDTO":     "PluginVoice",
 	"ReactionDTO":        "Reaction",
 	"StateDTO":           "State",
+	"UpdateDTO":          "Update",
 	"VoiceDTO":           "Voice",
 	"VoiceFoldersDTO":    "VoiceFolders",
 }

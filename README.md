@@ -91,7 +91,11 @@ lines it makes on your own machine; record a voice of your own whenever you like
 - **Leaves your recordings alone.** It never changes or removes a file in your recordings
   directory. The only things it writes there are empty folders: a voice's folders when you press
   Make folders and a moment's folder when you press Open folder beside it. Uninstalling does not
-  touch it. It makes no network requests of its own.
+  touch it.
+- **Tells you when there is a new release.** Shortly after it starts, then once a day, it asks
+  GitHub for the latest published release; Help, then Check for updates asks at once. A newer one
+  offers Download, Skip this version or Later. That anonymous question is the only network request
+  it makes: it sends nothing about you, your machine or the game.
 
 ## Built with
 
@@ -119,7 +123,8 @@ On Linux, download `BridgeTalk.flatpak` and install it for your own account:
 flatpak install --user BridgeTalk.flatpak
 ```
 
-Then start Bridge Talk from your applications menu. The sandbox is granted no network access.
+Then start Bridge Talk from your applications menu. The sandbox is granted network access for the
+update check alone.
 
 Once the window opens, cast a machine voice from the Cast pane. To use recordings of your own,
 choose your recordings directory on the Missing takes pane, then cast that voice from the Cast pane.

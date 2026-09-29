@@ -96,6 +96,10 @@ type App struct {
 	updates *services.UpdateService
 	offered services.UpdateStatus
 
+	// summons yields when a later start asks for the window back (FR-760). Nil in a facade built
+	// without a claim, where it never fires.
+	summons <-chan struct{}
+
 	// quitting records that a quit has already been decided, so the close dialog is
 	// not raised over the top of the quit it was just asked to perform.
 	quitting atomic.Bool

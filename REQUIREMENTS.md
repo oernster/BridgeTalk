@@ -1009,7 +1009,7 @@ Verified by: `TestAMomentFolderThatCannotBeMadeIsReported` in
 | NFR-M-3 | The layering invariant holds | `tests/structural/boundary_test.go` |
 | NFR-M-4 | `gofmt`, `go vet` and `staticcheck` all exit zero | `test.ps1` runs `gofmt`, `go vet` and `staticcheck`, stopping on the first that fails; `build.ps1` runs `test.ps1` ahead of any build. `staticcheck` is pinned to one release in `test.ps1`, so a new release cannot fail a change that touched nothing it reads; it was clean at that release on 2026-09-16. Seen to fail that day with an expression compared with itself (SA4000), which `go vet` passed |
 | NFR-S-1 | The application makes one network request and no other: the update check of FR-756, an anonymous read of the project's latest published release that sends nothing about the user, the machine or the game. Amended by Oliver on 2026-09-29 from "no network request; there is no update check" | Inspection: the Go source naming a network package is the model files download in `internal/infrastructure/modelfiles` and `tools/models`, which the application does not import, plus the update check in `internal/infrastructure/update`, which imports `net/http` and nothing else beneath `net`. The front end makes no request: the facade makes the check and hands a download to the browser (FR-757). `TestTheApplicationImportsNoNetworkPackage` in `tests/structural/network_test.go` holds every package of this module the application links, followed from its own imports, to importing no package beneath `net`, `crypto/tls` or `golang.org/x/net`, apart from `net/http` in the update check's package alone; `TestTheUpdateCheckStillNeedsItsExemption` fails once that package no longer imports `net/http`, so the exemption cannot outlive its reason; `TestTheFrontEndMakesNoRequest` holds the front end's source and its page to no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `sendBeacon` and no web address, with the pattern itself held by `TestTheRequestPatternCatchesEachWayARequestIsMade`. Both were seen to fail on 2026-09-16, over `net/http` imported beside the plugin loader and a `fetch` on the Chatter pane. On 2026-09-29 the import test was seen to fail over `net/http` imported into the settings store and over `net` added to the update check's package; `TestTheUpdateCheckStillNeedsItsExemption` over that package importing no `net/http` and over the application no longer linking it. Neither sees a request Wails or its web view makes on its own account |
-| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to four names in the setup package, so of setup's writes only the sign-in entry and the plugins folder are reached; the plugins folder is made by the application on Linux alone (FR-819). The fourth name was seen to fail on 2026-09-16 when taken off the list. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; on Linux the plugins folder in its data folder (FR-819, added 2026-09-16); the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
+| NFR-S-2 | The application never writes outside the library root and its own per user data directories, apart from the per user sign-in entry under `HKCU` on Windows and in the user's autostart directory on Linux (FR-815) | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` in `tests/structural/writes_test.go` finds every call that writes, moves or removes a file or changes the registry in every package the application links (followed from its own imports) and holds each to a list saying where it writes; a new one fails until it is listed and a listed one that has gone fails too. `TestTheApplicationCallsNoOtherSetupWrite` in the same file holds the application to four names in the setup package, so of setup's writes only the sign-in entry and the plugins folder are reached; the plugins folder is made by the application on Linux alone (FR-819). The fourth name was seen to fail on 2026-09-16 when taken off the list. Both were seen to fail on 2026-09-16: a write added to the application, a write taken off the list and the application reaching `setup.ExtractZip`. What the list says about where each write goes is inspection rather than measurement; neither test sees a write made through COM or by Wails. By inspection (2026-09-15) the application writes the settings file under the user configuration directory; under `%LOCALAPPDATA%\BridgeTalk` the default recordings directory, the made lines of FR-523 (writing and deleting them) and the log of FR-715; the folders of FR-223 and FR-314 under the library root; on Linux the plugins folder in its data folder (FR-819, added 2026-09-16); on Linux the lock file and summons pipe in its data folder that keep to one copy (FR-760, added 2026-09-29); the sign-in entry; the console it was started from, which is no file. WebView2 keeps the window's state under `%APPDATA%\BridgeTalk.exe`, which no Go code in the application writes. Setup's removals are the installer's, not the application's |
 | NFR-S-3 | A plugin is loaded without checking a signature, a publisher or a hash, so its code runs with the user's own rights inside the application. Added on 2026-09-16 as a stated property rather than a defect: the folder sits inside the install directory on Windows and the data folder on Linux, each per user; only what the user put there is loaded (FR-560) | Inspection on 2026-09-16: `OpenLibrary` loads a file with `nativelib.Open` by its whole path, which is `windows.LoadDLL` on Windows and `dlopen` through purego on Linux; nothing before or after checks a signature, a publisher or a hash. `TestEveryPluginIsOpenedByItsWholePathInTheFolder` in `internal/infrastructure/plugin/load_test.go` holds that each file is opened by its whole path inside the folder, never by its name alone, which Windows would look for along its search path; seen to fail that day with the name alone. `TestPluginsAreLookedForBesideTheApplication` in `plugins_test.go` holds which folder that is. The property itself is told to a user installing a plugin in `README.md` and to an author in `PLUGINS-GUIDE.md` |
 | NFR-P-206 | Loading every plugin in the folder adds no more than 500 ms to the time the window takes to appear on the development machine, measured with one plugin present | No test today. Claude proposed the limit rather than measuring it; Oliver accepted it as proposed on 2026-09-16. Measuring it waits on a built plugin, which needs a C toolchain the development machine does not have |
 | NFR-O-1 | Every scan produces a report naming every candidate voice directory that resolved no take, every subdirectory or audio file matching no cue, every cue folder differing from another only in case and every take that will not play, each with a reason | `TestADirectoryResolvingNothingIsReportedRatherThanOffered`, `TestNamesMatchingNoCueAreReportedWhereTheyWereFound` and `TestDirectoriesDifferingOnlyInCaseMergeTheirTakes` in `internal/infrastructure/library/voice_test.go`; `TestATakeThatWillNotPlayIsLeftOutAndReported` in `internal/infrastructure/library/playable_test.go` |
@@ -3813,9 +3813,9 @@ made so far, which rises as the game is played (read in `library.Catalogue.Cover
 service's `Lookup` on 2026-09-14). The window already says moment ("Moments spoken for", Missing takes).
 Wording proposed by Claude; approved by Oliver on 2026-09-14.
 Acceptance: Given a window wide enough for six 215 px columns, when the Status pane opens, then its four
-cards fill the pane's width in one row. Given a vocabulary of 256 moments and `bf_emma` cast with lines
-made for 3 of them, then Moments covered reads "3 of 256" with the machine voice line beneath its
-tagline. Given the same vocabulary and `Oliver/` holding a take for `Docked` alone, then it reads "1 of 256" with "The other 255 moments have no recording yet".
+cards fill the pane's width in one row. Given the shipped vocabulary of 263 moments and `bf_emma` cast with
+lines made for 3 of them, then Moments covered reads "3 of 263" with the machine voice line beneath its
+tagline. Given the same vocabulary and `Oliver/` holding a take for `Docked` alone, then it reads "1 of 263" with "The other 262 moments have no recording yet".
 Verified by: "labels the coverage card Moments covered, its figure in the value colour", "says beneath each
 figure what its card means", "names no product beneath a figure until About answers", "says what the figure
 means for" each of the four situations and "reads the acceptance figures with the line for each" in
@@ -3899,8 +3899,8 @@ moment's full title: the `reaction` event carried the moment's id alone, so it n
 already finds for any voice (Oliver, 2026-09-14). A row that means nothing will be heard comes first. The table was proposed by Claude
 and approved by Oliver on 2026-09-14, naming the moment by its id; its full title replaces the id since
 every moment has one (FR-233).
-Acceptance: Given a machine voice with 13 of 768 lines made while lines are being made, then the
-indicator reads "Making lines: 13 of 768 ready" in the notice colour; with playback muted as well, it
+Acceptance: Given a machine voice with 13 of the shipped script's 789 lines made while lines are being
+made, then the indicator reads "Making lines: 13 of 789 ready" in the notice colour; with playback muted as well, it
 still reads that. Given the journal directory refused, then it reads "Not hearing the game: choose a
 journal folder in Settings" whatever else holds, save a donation page that failed to open within the
 last 4 seconds.
@@ -3958,10 +3958,10 @@ Rationale: Oliver asked on 2026-09-15 for the cast voice to stand apart at the t
 leaving its group. Pressing it would cast it again, which makes and plays its confirmation a second
 time (`CastMachineVoice` in `machine.go`, read on 2026-09-15), so the card is not a control.
 Recommended by Claude; accepted by Oliver on 2026-09-15.
-Acceptance: Given a vocabulary of 256 moments, a script of 768 lines and `bf_emma` cast with 120 of
-those lines made for 40 moments, when the Cast pane opens,
-then the card reads "Emma (British, female) is cast as your ship's voice" above "120 of 768 lines made;
-40 of 256 moments spoken" while British, female holds Alice, Emma, Isabella, Lily with Emma disabled. Given `bm_george` then
+Acceptance: Given the shipped vocabulary of 263 moments, its script of 789 lines and `bf_emma` cast with
+120 of those lines made for 40 moments, when the Cast pane opens,
+then the card reads "Emma (British, female) is cast as your ship's voice" above "120 of 789 lines made;
+40 of 263 moments spoken" while British, female holds Alice, Emma, Isabella, Lily with Emma disabled. Given `bm_george` then
 cast, then the card reads "George (British, male) is cast as your ship's voice", British, female holds
 Alice, Emma, Isabella, Lily with none disabled while British, male holds Daniel, Fable, George, Lewis
 with George disabled.
@@ -4429,7 +4429,7 @@ colour did not catch the eye while scrolling. Lavender rather than the accent: o
 something speaking. Measured that day, the orange pair reads 3.88 to 1 in the light theme while the
 lavender pair reads 6.13 to 1 in the light theme and 8.42 to 1 in the dark one. 4.5 to 1 is WCAG 2
 success criterion 1.4.3 at level AA for normal text.
-Acceptance: Given Chatter open, then the heading "Docking and stations (2 of 2 on)" is drawn in
+Acceptance: Given Chatter open with every moment on, then the heading "Docking and stations (15 of 15 on)" is drawn in
 lavender inside a lavender pill; given Audition open on a voice, then the heading "Comms" is too.
 Verified by: `TestTheHeadingPillsContrastInBothThemes` in `tests/structural/contrast_test.go` for the
 contrast; "draws each category heading as a pill" in `frontend/src/chatter.test.tsx` and in
@@ -4446,8 +4446,8 @@ changes what a control is announced as.
 Rationale: Oliver, 2026-09-17: the names and the headings were drawn as plain words and showed a ring
 only on hover, so he did not know either could be pressed. The Chatter guide section named neither
 until the same change.
-Acceptance: Given Chatter open, then Session in the header shows an arrow pointing down and the
-heading "Session (2 of 2 on)" shows a mark pointing down; when that heading is pressed, then its mark
+Acceptance: Given Chatter open with every moment on, then Session in the header shows an arrow pointing
+down and the heading "Session (6 of 6 on)" shows a mark pointing down; when that heading is pressed, then its mark
 points at its words; when it is pressed again, then the mark points down.
 Verified by: "marks every heading open or shut and every name in the header with an arrow" in
 `frontend/src/chatter.find.test.tsx`, seen to fail with the mark left unturned while shut; "describes the
@@ -4543,6 +4543,37 @@ Verified by: `TestABuildFromSourceCannotBeCompared` in `internal/application/ser
 `TestAManualCheckOffersASkippedRelease` in `updates_test.go`; "tells every outcome of Help, then Check
 for updates" and "offers a newer release as the prompt" in `frontend/src/updates.test.tsx`; "reaches
 the update check from Help" in `frontend/src/App.menus.test.tsx`.
+
+**FR-760 One copy at a time**
+Priority: Must.
+While Bridge Talk is running, when it is started again, the second start shall end before it opens a
+window, a tray icon, an audio device, the voice model or a plugin. It shall first ask the running copy
+to bring its window back, centred, on the Cast pane, as the tray's Open does (FR-710). A second start
+with `-hidden`, as the sign-in entry makes it, shall end without asking. `-list` and `-unbound` shall
+run as they always have, since they open no window. If the claim to be the one copy cannot be made,
+then the application shall say why in its log (FR-715) and start regardless.
+Rationale: Oliver, 2026-09-29: no second copy. Two copies would each watch the journal and speak every
+moment over the other. The claim is the application's own, taken before anything else is built: a
+named mutex and a named event on Windows; a locked file and a named pipe beside it in the product's
+data folder on Linux. Wails v2.12.0 offers a lock of its own, which was read in its source and not
+used: it is taken inside the call that opens the window, after the tray, the plugins, the voice model
+and the audio device are up, then ends the second copy there with `os.Exit`, which skips removing the
+tray icon it has already added; on Linux it asks the session bus for a name the flatpak is not
+granted, then lets the second copy run.
+Acceptance: Given Bridge Talk running with its window put away in the notification area, when it is
+started from the Start Menu, then its window comes back on the Cast pane and no second tray icon
+appears; when the sign-in entry starts it, then nothing changes.
+Verified by: `TestOnlyOneClaimIsGrantedAtATime`, `TestASecondStartSummonsTheFirst`,
+`TestAHiddenSecondStartSummonsNobody`, `TestAReleasedClaimCanBeTakenAgain` and
+`TestAClaimWindowsRefusesIsSaidAndStillStarts` in
+`internal/infrastructure/instance/instance_windows_test.go`; `TestAClaimThatCannotBeMadeStillStarts`
+and `TestAsksWaitingTogetherAreOne` in `internal/infrastructure/instance/instance_test.go`;
+`TestASummonsBringsTheWindowBack` in `window_life_test.go`. On 2026-09-29 the summons test was seen to
+fail with the Windows listener no longer passing the summons on; the facade's with the loop's summons
+arm taken away. The Linux half is compiled and vetted for Linux by `test.ps1` on every run, never run:
+no Linux machine runs the suite. Not verified by a test: the second start from the Start Menu itself;
+the choice in `onecopy.go` to summon unless started hidden, which no test calls since it would claim
+the product's own name on the machine running the tests.
 
 ---
 
@@ -4951,7 +4982,7 @@ There are no open questions.
 
 | Priority | Content |
 |---|---|
-| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
+| **Must** | FR-201 to FR-205, FR-207 to FR-209, FR-211, FR-213 to FR-225, FR-227 to FR-238, FR-311, FR-314 to FR-318, FR-501 to FR-508, FR-510 to FR-521, FR-523 to FR-528, FR-530, FR-532 to FR-543, FR-545 to FR-548, FR-554, FR-557, FR-560 to FR-567, FR-569, FR-570, FR-572 to FR-584, FR-588 to FR-591, FR-601 to FR-615, FR-621 to FR-623, FR-627 to FR-630, FR-633, FR-634, FR-701, FR-702, FR-704 to FR-706, FR-708 to FR-711, FR-713 to FR-715, FR-725 to FR-727, FR-729, FR-733, FR-735 to FR-738, FR-742, FR-760, FR-801 to FR-808, NFR-M-1 to NFR-M-4, NFR-S-1 to NFR-S-3, NFR-O-1, NFR-P-202, NFR-P-205, NFR-C-501, NFR-C-502 |
 | **Should** | FR-206, FR-210, FR-313, FR-509, FR-522, FR-529, FR-531, FR-544, FR-549 to FR-553, FR-555, FR-556, FR-568, FR-571, FR-585 to FR-587, FR-592, FR-593, FR-616 to FR-620, FR-624 to FR-626, FR-631, FR-632, FR-635 to FR-638, FR-703, FR-707, FR-712, FR-716 to FR-724, FR-728, FR-730 to FR-732, FR-734, FR-739 to FR-741, FR-743 to FR-759, FR-809 to FR-819, NFR-P-201, NFR-P-204, NFR-P-206 |
 | **Could** | Nothing at present |
 | **Won't this time** | Distributing recordings between users; speaking a line as its event fires; machine voices in any language but English; working out pronunciation while the application runs; audio post processing beyond the pause of FR-553 and the fade of FR-556; any fuzzy or normalising name matching; editing the cue vocabulary from the user interface; switching a moment for one voice alone; searching or filtering the list on Chatter; switching moments by time or by what the game is doing; a built-in recorder, FR-301 to FR-310 with NFR-C-301 to NFR-C-304, withdrawn on 2026-09-13 |

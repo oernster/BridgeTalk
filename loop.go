@@ -40,6 +40,9 @@ func (a *App) run() {
 				continue
 			}
 			a.handleTray(command)
+		case <-a.summons:
+			// A later start asked for the window; it comes back as the tray's Open brings it (FR-760).
+			a.bringBack()
 		case <-a.session.player.Done():
 			// An audition plays with no voice cast (FR-216), when there is no scheduler to tell.
 			if a.session.scheduler != nil {
@@ -120,9 +123,7 @@ func (a *App) handleTray(command taskbar.Command) {
 		// the close dialog does not appear over a quit chosen from the tray.
 		a.Quit()
 	case taskbar.CommandShow:
-		a.broughtBack.Store(true)
-		a.restore()
-		a.emit(windowShownEvent, nil)
+		a.bringBack()
 	case taskbar.CommandToggleMute:
 		a.SetMuted(!a.session.muted)
 	case taskbar.CommandSelectVoice:
@@ -132,11 +133,17 @@ func (a *App) handleTray(command taskbar.Command) {
 		// nothing; a window started hidden for a tray that never came is shown (FR-814).
 		a.trayGone.Store(true)
 		if a.startedHidden {
-			a.broughtBack.Store(true)
-			a.restore()
-			a.emit(windowShownEvent, nil)
+			a.bringBack()
 		}
 	}
+}
+
+// bringBack brings the window back, centred with the keyboard, telling the page to open on the Cast
+// pane: what the tray's Open does, a later start's summons (FR-760) and a tray that never came.
+func (a *App) bringBack() {
+	a.broughtBack.Store(true)
+	a.restore()
+	a.emit(windowShownEvent, nil)
 }
 
 // castFromTray casts what the tray menu chose, by the kind the choice carries.

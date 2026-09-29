@@ -57,6 +57,8 @@ var writesByTheApplication = map[string]string{
 	"internal/infrastructure/madelines/madelines.go:Delete":       "a made line under " + localData + " (FR-527)",
 	"internal/infrastructure/runlog/output_windows.go:toTerminal": "the console the run was started from, which is no file",
 	"internal/infrastructure/runlog/runlog.go:Open":               "Log.txt under " + localData + " (FR-715)",
+	"internal/infrastructure/instance/instance_other.go:take":     "on Linux, the data folder with the lock file and summons pipe in it that keep to one copy (FR-760)",
+	"internal/infrastructure/instance/instance_other.go:openPipe": "on Linux, the summons pipe in the data folder, opened to read or to write a byte down (FR-760)",
 	setupPackage + "/windows.go:SetLaunchOnBoot":                  "the sign-in entry under HKCU, the one registry write the application makes",
 	setupPackage + "/autostart.go:applyAutostart":                 "the Linux sign-in entry under the user's autostart directory (FR-815)",
 	setupPackage + "/plugins.go:MakePluginsFolder":                "the plugins folder: in the install directory when setup makes it (FR-576), in the data folder when the application makes it on Linux (FR-818)",

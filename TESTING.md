@@ -57,7 +57,8 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/plugin` | 94.8% | 91% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 86.1% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 84.4% | 82% | `test.ps1` |
+| `internal/infrastructure/instance` | 83.0% | 83% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
@@ -72,10 +73,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,081 test functions, which expand to 1,191 runs once their subtests are counted (measured on
+1,089 test functions, which expand to 1,199 runs once their subtests are counted (measured on
 Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
 uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
-which are 1,075 top-level runs plus 116 subtests; the
+which are 1,083 top-level runs plus 116 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
 Fifty-eight of them are the structural tests in `tests/structural`, which scan the source
@@ -278,6 +279,15 @@ release is for.
 - **The rest of the root package's shortfall.** The facade's event loop receiving a tray
   command or finding the tray's channel closed is not reached; the commands themselves
   are tested through `handleTray`. Nor is `os.Executable` failing in `SetLaunchOnBoot`.
+  Nor is `claimTheOneCopy` in `onecopy.go` (FR-760): it claims the product's own name, so a test
+  calling it on a machine where Bridge Talk is running would summon that copy's window. The claim
+  itself is tested under a name of each test's own in `internal/infrastructure/instance`.
+- **`internal/infrastructure/instance` (83.0%).** The claim to be the one copy is tested for real
+  on Windows, over named objects in the test's own session. What is not reached is Windows refusing
+  to make the summons event or the stop event once the mutex was made, a summons the holder's event
+  refuses and the listener's fault handler. The Linux half, a locked file and a named pipe, is
+  compiled and vetted for Linux by `test.ps1` on every run and never run: no Linux machine runs the
+  suite.
 
 ### It would change the machine
 
@@ -425,7 +435,8 @@ to skip:
 
 It checks `models/` against the model files list first and stops where a file is
 missing or differs, saying to run `go run ./tools/models`. It then checks formatting, runs
-`go vet`, runs `staticcheck` at the version it pins, runs every test, runs the front end's own three checks, holds the domain and
+`go vet`, runs `staticcheck` at the version it pins, runs every test, vets the Linux half of the
+one-copy claim for Linux, runs the front end's own three checks, holds the domain and
 the application layers at 100%, then holds each other gated package at its floor. Read
 the exit code rather than the last line of output.
 

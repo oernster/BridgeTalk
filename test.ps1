@@ -68,6 +68,20 @@ Write-Host 'Running the whole suite...'
 go test $packages
 if ($LASTEXITCODE -ne 0) { throw "go test failed with exit code $LASTEXITCODE" }
 
+# The one-copy claim has a Linux half that no machine running this gate runs (FR-760). It is compiled
+# and vetted for Linux here on every run, so a change that breaks it is caught now rather than by the
+# next flatpak build. The environment is put back as it was found.
+Write-Host 'Vetting the Linux half of the one-copy claim...'
+$savedGoos, $savedCgo = $env:GOOS, $env:CGO_ENABLED
+try {
+    $env:GOOS, $env:CGO_ENABLED = 'linux', '0'
+    go vet ./internal/infrastructure/instance
+    $linuxVet = $LASTEXITCODE
+} finally {
+    $env:GOOS, $env:CGO_ENABLED = $savedGoos, $savedCgo
+}
+if ($linuxVet -ne 0) { throw "go vet of the Linux one-copy claim failed with exit code $linuxVet" }
+
 # The front end is held to the same bar in its own runner, here rather than at build time
 # alone. Its checks used to run only inside `wails build`, which meant a lint failure, a type error
 # or a broken component test was caught by cutting a release rather than by the everyday gate; the
@@ -147,6 +161,7 @@ $measured = [ordered]@{
     './internal/infrastructure/config'    = 100
     './internal/infrastructure/iconfile'  = 100
     './internal/infrastructure/appdata'   = 100
+    './internal/infrastructure/instance'  = 83
     './internal/infrastructure/journal'   = 100
     './internal/infrastructure/library'   = 100
     './internal/infrastructure/madelines' = 100

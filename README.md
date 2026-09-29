@@ -85,7 +85,8 @@ lines it makes on your own machine; record a voice of your own whenever you like
   keeps listening from the notification area, whose menu opens the window, mutes, switches voice
   or quits. It can start when you sign in, waiting in the notification area; turn that on in
   Settings; on Windows the setup program offers it too. On a Linux desktop that offers no notification
-  area, closing the window quits.
+  area, closing the window quits. Only one copy runs at a time: starting it again brings the running
+  copy's window back instead.
 - **Remembers how you like it.** The volume slider and the light or dark theme on the band are kept
   between runs.
 - **Leaves your recordings alone.** It never changes or removes a file in your recordings
@@ -187,8 +188,9 @@ aside and the voice is found by its names alone.
 
 ## Testing
 
-The gate checks the model files, formatting, vet and staticcheck, runs the Go suite and the front
-end's lint, type check and tests, then holds each package to its coverage floor:
+The gate checks the model files, formatting, vet and staticcheck, runs the Go suite, vets the Linux
+half of the one-copy claim, runs the front end's lint, type check and tests, then holds each package
+to its coverage floor:
 
 ```powershell
 ./test.ps1

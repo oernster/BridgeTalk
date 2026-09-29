@@ -200,6 +200,17 @@ func run() error {
 	if *listVoices || *showUnbound {
 		reportToTerminal()
 	}
+	// One copy at a time, claimed before anything is built (FR-760). The reports open no window, so
+	// they run beside a copy that is already running.
+	var summons <-chan struct{}
+	if !*listVoices && !*showUnbound {
+		claim, running := claimTheOneCopy(*hidden)
+		if running {
+			return nil
+		}
+		defer claim.Release()
+		summons = claim.Summons()
+	}
 
 	table, err := config.LoadCueTable("")
 	if err != nil {
@@ -299,6 +310,7 @@ func run() error {
 	app := newApp(current, watched, root, settings)
 	// The application's one network request: the latest published release (NFR-S-1, FR-756).
 	app.updates = services.NewUpdateService(update.New(), version, runtime.GOOS)
+	app.summons = summons
 	current.reporter = reporter{app}
 	current.castAtStart(keptFrom(*voice, stored), chosen, os.Stderr)
 

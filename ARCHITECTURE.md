@@ -142,8 +142,8 @@ exactly like one that holds.
   native library and calling into it on Windows and Linux for the plugin adapter and the model run (`nativelib`), the one rule
   for putting a file in place whole or not at all, which the made lines, the stored settings, the model
   files and the payload archive are written through (`wholefile`), reading the latest published
-  release for the update check (`update`) and the per-user install work behind the setup program
-  (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
+  release for the update check (`update`), the claim that keeps to one copy at a time (`instance`)
+  and the per-user install work behind the setup program (`setup`). `audio/audiotest` lays out the smallest playable take in each format for
   the tests. Never imported by Domain or Application.
 - **Development support** (`internal/infrastructure/modelfiles`, `internal/infrastructure/reporoot`):
   `modelfiles` holds the pinned list of model files with the download that fills a folder from it and
@@ -200,7 +200,7 @@ failing to load stops the run, then hands the service `runlog.Lines` over the ru
 package-level variable and there is no service locator or auto-wiring. The structural test whitelists
 `main.go` and `app.go`: no other file may import both the application services and infrastructure. The
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`, `audition_plugin.go`,
-`chatter.go`, `donate.go`, `updates.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
+`chatter.go`, `donate.go`, `updates.go`, `onecopy.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
 `loop.go` (the loop watching the game), `plugins.go` and `pluginvoices.go` (the plugin surface)
 plus `icon_windows.go` and `icon_other.go` (the icon a Linux tray is handed), each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`. `window.go` holds the window `run` launches: its assets,
@@ -228,7 +228,8 @@ its geometry and `launch`.
                        | speechmodel, appdata,       |
                        | runlog, wholefile, taskbar, |
                        | window, setup, nativelib,   |
-                       | plugin, iconfile, update    |
+                       | plugin, iconfile, update,   |
+                       | instance                    |
                        +-----------------------------+
 ```
 
@@ -744,6 +745,20 @@ the cues it covers, then exits; `-unbound` lists the cues the chosen voice canno
 `-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window. `-list`
 and `-unbound` exit with an error where the recordings directory holds no voice. A windowed build started
 from a terminal attaches to it first (`runlog.ReportToTerminal`), so both reports print there.
+
+**One copy at a time** (FR-760). Straight after the flags are read, `claimTheOneCopy` in `onecopy.go`
+takes the claim from `internal/infrastructure/instance`, before the cue table, the tray, the plugins,
+the voice model or the audio device exist. On Windows the claim is a named mutex in the user's session
+whose existence is the claim, with a named event beside it; on Linux it is a locked file with a named
+pipe beside it in the product's data folder. The kernel lets either go however the holder ends. A later
+start sets the event or writes a byte down the pipe, unless it was started `-hidden`, then `run`
+returns before building anything. The holder's listener passes each summons to a channel that `loop.go`
+selects on beside the tray's commands; it calls the same `bringBack` as the tray's Open. `-list` and
+`-unbound` take no claim, since they open no window. A claim that cannot be made is said in the log and
+the run starts over a claim that does nothing. Wails' own `SingleInstanceLock` is not used: it is
+taken inside `wails.Run`, after the tray and the audio device are up, then ends the second copy with
+`os.Exit`, which skips removing the tray icon it has already added; on Linux it needs a session bus
+name the flatpak is not granted.
 
 ## Idle remarks: not built
 

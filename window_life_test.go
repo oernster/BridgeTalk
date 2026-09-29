@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"github.com/oernster/bridge-talk/internal/infrastructure/taskbar"
@@ -134,6 +135,25 @@ func TestASummonedWindowIsToldToOpenOnTheCast(t *testing.T) {
 
 	if !log.saw(windowShownEvent) {
 		t.Error("nothing told the page the window was summoned, so it opens wherever it was left")
+	}
+}
+
+// FR-760: a later start's summons, arriving at the running loop, brings the window back as the tray's
+// Open does: restored, marked as brought back and opening on the Cast pane.
+func TestASummonsBringsTheWindowBack(t *testing.T) {
+	app, log := newTestApp(t, newFakePlayer())
+	var restored atomic.Int32
+	app.restore = func() { restored.Add(1) }
+	summons := make(chan struct{}, 1)
+	app.summons = summons
+
+	go app.run()
+	defer close(app.stop)
+	summons <- struct{}{}
+
+	log.await(t, windowShownEvent)
+	if restored.Load() != 1 || !app.broughtBack.Load() {
+		t.Errorf("restored %d times, brought back %v; want once and true", restored.Load(), app.broughtBack.Load())
 	}
 }
 

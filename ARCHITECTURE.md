@@ -1083,10 +1083,10 @@ from an ordinary raise. Showing it precedes taking focus: `SetForegroundWindow` 
 already visible.
 
 A tray that cannot be created is not fatal: the application still watches the journal and still speaks.
-On Linux the icon is published over D-Bus as a StatusNotifierItem for the desktop's watcher to draw;
-it is offered once a watcher answers within 15 seconds, since a sign-in start comes up before the
-panel. Where none answers the tray says so on its command channel; the cross then closes the window
-and a window started hidden is shown (FR-814). Builds for other platforms compile a no-op tray.
+The tray is put up on Windows alone (`offersTray`): on Linux the window's own panel button is the one
+icon, so the run has no tray, the cross closes the window and a window started hidden is shown
+(FR-814). `tray_linux.go` still builds and vets but nothing starts it. Builds for other platforms
+compile a no-op tray.
 
 ## The setup program
 

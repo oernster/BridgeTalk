@@ -293,7 +293,7 @@ func run() error {
 		// Read once here, over the same store the directories came from (FR-629).
 		chatter: services.NewChatterService(table, settings),
 	}
-	if !*noTray {
+	if !*noTray && offersTray(runtime.GOOS) {
 		current.tray = startTray(found, current.plugins.Voices(), taskbar.Voice{Name: chosen.Name})
 	}
 

@@ -91,3 +91,15 @@ func TestOnlyAChosenLibraryRootThatCannotBeReadWarns(t *testing.T) {
 		}
 	}
 }
+
+// FR-814: a tray icon is put up on Windows alone; on Linux the window's panel button is the one icon.
+func TestATrayIconIsPutUpOnWindowsAlone(t *testing.T) {
+	t.Parallel()
+
+	if !offersTray(windowsOS) {
+		t.Error("no tray icon is put up on Windows, where it is how a window put away comes back")
+	}
+	if offersTray("linux") {
+		t.Error("a tray icon is put up on Linux beside the window's own panel button")
+	}
+}

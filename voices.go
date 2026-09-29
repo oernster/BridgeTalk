@@ -218,6 +218,11 @@ func (s *session) coverageOf(voice library.Voice) (int, int, int) {
 	return covered, used, present
 }
 
+// offersTray reports whether the application puts up a tray icon on the platform goos: on Windows
+// alone. On Linux the window's own panel button is the one icon, so a tray icon beside it would be a
+// second icon doing the same thing (FR-814).
+func offersTray(goos string) bool { return goos == windowsOS }
+
 // startTray builds and shows the tray, returning nil when it cannot appear.
 //
 // A tray that fails to start is not fatal. The application still watches the journal

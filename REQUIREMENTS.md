@@ -4841,32 +4841,20 @@ reads the script's GRANTS list and its APP_ID; seen to fail on 2026-09-16 with a
 a grant dropped and the manifest's grants written from anything but GRANTS; on 2026-09-29 with the
 network grant dropped. Not verified: that each grant is enough on a real desktop.
 
-**FR-814 On Linux the tray icon is offered to the desktop's watcher**
+**FR-814 On Linux the window's panel button is the one icon**
 Priority: Should.
-While the application runs on Linux, the application shall offer its tray icon to the
-StatusNotifierWatcher on the session bus, asking for the watcher until one answers or 15 seconds
-from start have passed. The icon shall carry what FR-710 gives it. If no watcher has answered by
-then, then the application shall treat itself as having no tray icon: the cross closes it
-(FR-709) and a start with `-hidden` shows the window.
-Rationale: a Linux tray icon is published over D-Bus for the desktop to draw; not every desktop
-draws one. Started at sign-in, the application is up before the panel that hosts the icon, so asking
-once would find no tray on a desktop about to have one; o7 Debrief measured this and waits 15
-seconds. Before this, the Linux stand-in reported an icon that was never drawn, so the cross offered
-to minimise to a notification area with nothing in it.
-Acceptance: Given a session bus with no StatusNotifierWatcher, when the application starts with
-`-hidden`, then after 15 seconds the window is shown and its cross closes the application.
-Verified by: `TestATrayTheDesktopNeverTookIsNoTray` in `window_life_test.go`, seen to fail on
-2026-09-16 with the command ignored and with the hidden window left hidden;
-`TestTheWatcherIsAskedUntilItAnswersOrTheGracePeriodEnds` and
-`TestTheMenuAndHoverTextReadTheSameOnEveryTray` in
-`internal/infrastructure/taskbar/portable_test.go`; `TestTheCommittedIconHoldsTheTraysPicture` in
-`internal/infrastructure/iconfile/iconfile_test.go`;
-`TestTheTraysPictureReachesTheDesktopAsTheArtworksColours` in
-`internal/infrastructure/taskbar/trayicon_test.go`, seen to fail on 2026-09-29 with every pixel handed
-on at the coverage the artwork gives it, which the tray library turned into coloured static. Not
-verified: `tray_linux.go` itself, which talks
-to a session bus no test here has, nor the icon and menu as a desktop draws them. It builds and vets
-for Linux.
+While the application runs on Linux, the application shall put up no tray icon: the window's own
+panel button is its one icon. The cross closes the application (FR-709) and a start with `-hidden`
+shows the window.
+Rationale: Oliver on 2026-09-29, on seeing the tray icon and the window's panel button side by side:
+two icons doing the same thing, where there should be one. The window's button already brings it
+forward; minimising the window keeps the application listening with that button on the panel.
+Acceptance: Given a Linux run, when the application starts, then no StatusNotifierItem is registered
+for it and the panel shows the window's button alone.
+Verified by: `TestATrayIconIsPutUpOnWindowsAlone` in `voices_test.go`, seen to fail on 2026-09-29
+with a tray put up on Linux; `TestATrayTheDesktopNeverTookIsNoTray` in `window_life_test.go` holds a
+run with no tray closing on the cross and showing a hidden window. Not verified: the panel as a
+Linux desktop draws it.
 
 **FR-815 On Linux the sign-in entry is an autostart file**
 Priority: Should.

@@ -35,5 +35,5 @@ const (
 	// DonateURL is the donation page the donate button hands to the desktop (FR-718), the
 	// one the site's donate section links. The application never fetches it; the browser
 	// does the asking.
-	DonateURL = "https://www.paypal.com/ncp/payment/DVP73MPL9JPSU"
+	DonateURL = "https://www.paypal.com/ncp/payment/UUU2GYLAF27UE"
 )

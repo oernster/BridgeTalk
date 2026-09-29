@@ -3845,7 +3845,7 @@ The donate button shall show the donate artwork, which the icon tool derives fro
 for the window; the site shall show the donate mark every project site shares, 133 by 116 pixels, which
 the icon tool leaves alone (Oliver, 2026-09-15). The button shall carry the tooltip "Donate to support" followed by the
 product's name and "(opens your browser)". When it is pressed, the application shall hand
-`https://www.paypal.com/ncp/payment/DVP73MPL9JPSU` to the desktop to open in the browser, fetching
+`https://www.paypal.com/ncp/payment/UUU2GYLAF27UE` to the desktop to open in the browser, fetching
 nothing itself. The facade shall refuse an address that does not begin `https://`. Where handing the
 address over fails, the live indicator shall say "Could not open a browser for the donation page"
 (FR-719). The button shall take its place in the keyboard ring after everything above it (FR-713).
@@ -3854,7 +3854,7 @@ Bridge Talk's own on 2026-09-14. The application opens no connection for the but
 asking. Nothing is withheld behind a donation. A picture alone does not say that pressing it leaves the
 application, so the tooltip does.
 Acceptance: Given the strip, when the donate button is pressed, then the desktop is asked to open exactly
-`https://www.paypal.com/ncp/payment/DVP73MPL9JPSU` and nothing else is opened or fetched.
+`https://www.paypal.com/ncp/payment/UUU2GYLAF27UE` and nothing else is opened or fetched.
 Verified by: `TestTheDonateButtonHandsOverTheOneDonationPage`, `TestAnAddressThatIsNotHTTPSIsRefusedHandingNothingOver`,
 `TestAHandOverThatFailsIsReportedToThePage` and `TestAHandOverBeforeTheWindowExistsIsRefused` in
 `donate_test.go`, over a seam in place of the browser; `TestTheBoundSurfaceIsDeclared` in

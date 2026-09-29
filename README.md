@@ -220,7 +220,7 @@ Bridge Talk is free and stays free. There is no paid tier, no licence key and no
 behind a donation. If it has been useful, a donation supports its maintenance and continued
 development.
 
-<a href="https://www.paypal.com/ncp/payment/DVP73MPL9JPSU"><img src="docs/images/donate.png" alt="Donate to Bridge Talk" width="120"></a>
+<a href="https://www.paypal.com/ncp/payment/UUU2GYLAF27UE"><img src="docs/images/donate.png" alt="Donate to Bridge Talk" width="120"></a>
 
 ## Licence
 

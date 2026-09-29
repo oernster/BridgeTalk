@@ -8,7 +8,7 @@ import (
 // donationPage is the address FR-718 names. It is written out here rather than read from
 // the product package, so a character changed there fails this test instead of passing
 // along with it.
-const donationPage = "https://www.paypal.com/ncp/payment/DVP73MPL9JPSU"
+const donationPage = "https://www.paypal.com/ncp/payment/UUU2GYLAF27UE"
 
 // handOver records every address the facade hands to the desktop, answering each with
 // fails, so a test sees what would have been opened without a browser opening.
@@ -47,7 +47,7 @@ func TestAnAddressThatIsNotHTTPSIsRefusedHandingNothingOver(t *testing.T) {
 	app := &App{browse: desktop.open}
 
 	for _, address := range []string{
-		"http://www.paypal.com/ncp/payment/DVP73MPL9JPSU",
+		"http://www.paypal.com/ncp/payment/UUU2GYLAF27UE",
 		"https:/www.paypal.com",
 		"javascript:alert(1)",
 		"file:///C:/Windows",

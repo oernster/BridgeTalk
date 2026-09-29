@@ -87,8 +87,4 @@ type Options struct {
 	// Icon is the application's .ico file, which a tray handed a picture takes its frame from. Windows
 	// reads the icon out of the binary instead, so it is left empty there (FR-814).
 	Icon []byte
-	// WindowShown is whether the window starts on screen. On Linux the icon is drawn only while the
-	// window is put away, so the icon and the window's own panel button never stand side by side
-	// doing the same thing; Windows keeps its icon beside the taskbar button (FR-820).
-	WindowShown bool
 }

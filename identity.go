@@ -78,7 +78,7 @@ var shipped = []credit{
 	{"github.com/mewkiz/flac", "flac", "Unlicense", "FLAC decoding"},
 	{"github.com/BurntSushi/toml", "BurntSushi/toml", "MIT", "the cue table and voice manifests"},
 	{"golang.org/x/sys", "golang.org/x/sys", "BSD-3-Clause", "the Windows tray"},
-	{"fyne.io/systray", "fyne.io/systray, modified", "Apache-2.0", "the Linux tray"},
+	{"fyne.io/systray", "fyne.io/systray", "Apache-2.0", "the Linux tray"},
 	{"github.com/godbus/dbus/v5", "godbus/dbus", "BSD-2-Clause", "the Linux tray's session bus"},
 	{"github.com/ebitengine/purego", "purego", "Apache-2.0", "calling ONNX Runtime and plugins on Linux"},
 	{"github.com/go-ole/go-ole", "go-ole", "MIT", "writing the Start Menu and Desktop shortcuts"},

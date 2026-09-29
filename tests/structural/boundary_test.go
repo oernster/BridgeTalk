@@ -58,9 +58,7 @@ func repoRoot(t *testing.T) string {
 	return root
 }
 
-// goFiles returns every Go source file in the repository. third_party holds the patched tray
-// library, which is upstream's code kept as upstream wrote it bar the patch, so it is not ours to
-// hold to these rules.
+// goFiles returns every Go source file in the repository.
 func goFiles(t *testing.T) []string {
 	t.Helper()
 	root := repoRoot(t)
@@ -70,7 +68,7 @@ func goFiles(t *testing.T) []string {
 			return err
 		}
 		if entry.IsDir() {
-			if entry.Name() == "frontend" || entry.Name() == "venv" || entry.Name() == ".git" || entry.Name() == "third_party" {
+			if entry.Name() == "frontend" || entry.Name() == "venv" || entry.Name() == ".git" {
 				return filepath.SkipDir
 			}
 			return nil

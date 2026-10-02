@@ -165,7 +165,8 @@ One command builds everything:
 It does six things in order and stops at the first failure:
 
 1. Reads the version from `VERSION`, then stamps it into the site's version tokens with
-   `python stamp_version.py`.
+   `python stamp_version.py`. It also versions the site's stylesheet and script links with each
+   file's content hash.
 2. Pins `CGO_ENABLED=0` for everything that follows; see [A note on cgo](#a-note-on-cgo).
 3. Runs `test.ps1 -Benchmarks`, the gate [TESTING.md](TESTING.md#running-it) describes plus
    the tests that need the real model for minutes. There is no switch to skip it: a gate that

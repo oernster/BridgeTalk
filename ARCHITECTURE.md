@@ -186,7 +186,8 @@ exactly like one that holds.
   the page, its colours from the site's stylesheet and its picture from the icon's master; it is not
   part of the build and its output is committed;
   `stamp_version.py`, which `build.ps1` runs first, stamps the version from `VERSION` into the site's
-  delimited tokens.
+  delimited tokens and links each page's local stylesheet and script by a hash of its content, so a
+  deployed page is never drawn with a stylesheet the browser kept from before.
 
 ## Composition root
 
@@ -1320,7 +1321,8 @@ shows writes its path with `%s` rather than `%q`, which doubles every Windows se
   tests of their own; `internal/product` holds constants
   alone and is not measured. TESTING.md tabulates every figure beside its floor and names what each
   shortfall is, so the numbers are stated there once.
-- `build.ps1` first stamps the version into the site through `stamp_version.py`, then runs
+- `build.ps1` first stamps the version and the stylesheet's content hash into the site through
+  `stamp_version.py`, then runs
   `test.ps1 -Benchmarks` before it builds and offers no switch to skip it. `-Benchmarks` vets and runs
   `tests/machinevoice` and `internal/infrastructure/speechmodel` under the `benchmarks` build tag, so
   every build also times a machine voice's cast against NFR-P-205 and measures making a complete script

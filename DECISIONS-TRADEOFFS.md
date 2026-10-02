@@ -88,11 +88,11 @@ address.
 
 ### Update checks: daily, quiet unless there is news
 
-The page asks three seconds after it loads, then every 24 hours; unasked, it
-shows only an offer. Help, then Check for updates shows every outcome. The
-request names the project's latest release and nothing about the user, the
-machine or the game. A running version that is not a release's is never told
-it is out of date.
+The page asks shortly after it loads, then once a day; unasked, it shows only
+an offer. Help, then Check for updates shows every outcome. The request names
+the project's latest release and nothing about the user, the machine or the
+game. A running version that is not a release's is never told it is out of
+date.
 
 - **Rather than:** no check at all; one that reports every outcome.
 - **Gains:** updates are found without nagging; a build from source is never
@@ -103,8 +103,8 @@ it is out of date.
 ### The browser does the asking
 
 The donate button and an update's Download hand an address to the default
-browser and stop there. An address that does not begin `https://` is refused
-before it is handed over; the page never names an address at all.
+browser and stop there. An address that is not secure is refused before it is
+handed over; the page never names an address at all.
 
 - **Rather than:** fetching anything from inside the application.
 - **Gains:** no connection of the application's own for either.
@@ -124,8 +124,8 @@ it runs with the user's own rights.
 ### A plain-text run log
 
 Each run adds to a log in the product's own data folder; a windowed start
-sends all of its error output there, so a crash leaves its report. Past 1 MB
-the log starts afresh. Uninstall removes it.
+sends all of its error output there, so a crash leaves its report. A log
+grown past a set size starts afresh. Uninstall removes it.
 
 - **Rather than:** keeping no record; sending reports anywhere.
 - **Gains:** a fault that left the screen still has an account of itself.
@@ -137,23 +137,17 @@ the log starts afresh. Uninstall removes it.
 
 Every moment is named in the game's own words: the journal event or the
 status flag followed by Set or Cleared. A recording reaches a moment by being
-named for it. There is no mapping file.
+named for it, matched exactly apart from case; nothing else is normalised.
+There is no mapping file.
 
-- **Rather than:** a mapping file per voice, kept in step by hand.
+- **Rather than:** a mapping file per voice, kept in step by hand; fuzzy or
+  partial matching.
 - **Gains:** pointing the application at a folder simply shows what it holds;
-  the game's facts and a person's recordings change independently.
-- **Costs:** recordings have to be named exactly; Make folders exists to do
-  it for the user.
-
-### Exact names, apart from case
-
-A name matches a moment only when the two are equal ignoring case. Nothing
-else is normalised: spaces, hyphens or dots where they do not belong resolve
-nothing.
-
-- **Rather than:** fuzzy or partial matching.
-- **Gains:** a file never answers a moment it was not meant for.
-- **Costs:** a near miss is silent until the Missing takes pane shows the gap.
+  a file never answers a moment it was not meant for; the game's facts and a
+  person's recordings change independently.
+- **Costs:** recordings have to be named exactly, so a near miss is silent
+  until the Missing takes pane shows the gap; Make folders exists to do the
+  naming for the user.
 
 ### The cue table is built in
 
@@ -228,7 +222,7 @@ records why.
 Every moment carries a priority. An alert cuts anything less urgent; a notice
 waits its turn; an ambient line is dropped when something is waiting; a
 flavour line is dropped when anything is waiting or playing. Many moments
-hold a minimum interval; the same moment twice within 900 milliseconds is
+hold a minimum interval; the same moment raised twice in quick succession is
 heard once.
 
 - **Rather than:** a plain queue.
@@ -254,38 +248,34 @@ never the one that moment played last.
 - **Gains:** a moment heard often does not sound canned.
 - **Costs:** none recorded.
 
-### The player owns its speaker
+### An audio path of its own, in pure Go
 
-Bridge Talk drives the audio output itself rather than through the audio
-library's shared speaker, asking Windows for a 100 ms buffer. Stopping or
-cutting in drops whatever was queued.
+WAV, MP3, FLAC and Ogg Vorbis are decoded in Go, with no system codec, media
+framework or outside process; the Windows build pins cgo off. Bridge Talk
+drives the audio output itself rather than through the audio library's shared
+speaker, so stopping or cutting in drops whatever was queued.
 
-- **Rather than:** the library's own speaker, which kept 240 ms of audio
-  queued ahead of every take.
-- **Gains:** a take begins within the 150 ms budget, measured at 100.5 ms at
-  the 95th percentile on a real device (349.7 ms with the old queue put back).
-- **Costs:** the output path is Bridge Talk's own to maintain.
-
-### Pure Go decoding
-
-WAV, MP3, FLAC and Ogg Vorbis are decoded in Go. No system codec, media
-framework or outside process is used; the Windows build pins cgo off.
-
-- **Rather than:** a system media framework; a bundled transcoder.
-- **Gains:** the same decoding everywhere; a machine with a C toolchain
-  cannot quietly produce a different Windows binary.
-- **Costs:** formats beyond those four are not played.
+- **Rather than:** a system media framework or a bundled transcoder; the
+  library's own speaker, which kept audio queued ahead of every take.
+- **Gains:** the same decoding everywhere; a machine with a C toolchain cannot
+  quietly produce a different Windows binary; a take begins within its
+  latency budget, which a test on a real device holds.
+- **Costs:** formats beyond those four are not played; the output path is
+  Bridge Talk's own to maintain.
 
 ### A take may be several parts
 
-A take is one or more parts played in order with no added gap; a part is a
-whole file or a span of one.
+A take is one or more parts played in order with no added gap. A part is a
+whole file or a span of a larger one, read where it stands.
 
 - **Rather than:** one file per take, which was the rule until plugins needed
-  otherwise.
-- **Gains:** a line recorded in pieces is never spoken from the middle.
+  otherwise; a plugin copying each recording out to a file of its own.
+- **Gains:** a line recorded in pieces is never spoken from the middle; audio
+  held many recordings to a file is played without anything copied to the
+  user's disk.
 - **Costs:** a part that will not open is passed over and logged, so a take
-  can be heard short of a piece.
+  can be heard short of a piece; a span outside its file is found only as it
+  is played.
 
 ### An audition never cuts a clip and ignores the mute
 
@@ -303,29 +293,22 @@ the game, never a deliberate press.
 
 Chatter gives each moment a switch, kept in the settings file. A moment
 switched off starts no cooldown and makes no line. One switched off while it
-waits is let go when its turn comes; a take already playing is never cut.
+waits is let go when its turn comes; a take already playing is never cut. A
+change replaces the whole set of switches at once.
 
 - **Rather than:** switches per voice; editing the queue at the press; keeping
-  the switches in the page beside the theme.
+  the switches in the page beside the theme; a set edited in place under a
+  lock.
 - **Gains:** which moments are spoken for is a question about the game, so a
   new voice inherits the answer; the engine has the switches before any page
-  loads.
+  loads; the loop watching the game always reads a complete set without
+  taking a lock.
 - **Costs:** a voice cannot have moments of its own switched off.
-
-### The switches are one value swapped whole
-
-The loop that watches the game reads the switches while the window changes
-them from another thread. Each change replaces the whole set at once.
-
-- **Rather than:** a map edited in place under a lock.
-- **Gains:** a reader always holds a complete set with no lock on the path
-  every firing takes.
-- **Costs:** none recorded.
 
 ### A volume curve that sounds even
 
-The slider has twenty steps. Its position picks a point up to six halvings
-below full, read once per audio buffer.
+The slider picks a point on a curve of halvings below full rather than a
+straight share of the gain. The level is read once per audio buffer.
 
 - **Rather than:** mapping the slider straight onto gain, where most of the
   travel sounds the same.
@@ -345,28 +328,38 @@ It speaks through whichever device the system is set to use.
 
 ### Kokoro through ONNX Runtime, with no C written
 
-The 28 English voices of the Kokoro model are run through ONNX Runtime's C
+The English voices of the Kokoro model are run through ONNX Runtime's C
 interface, called from Go with no binding written and the library loaded by
-its full path.
+its full path. The same call helper serves plugins.
 
-- **Rather than:** a bundled Python helper of about 1 GB; cgo bindings, which
-  need a C toolchain and headers on every build machine.
+- **Rather than:** a bundled Python helper of about a gigabyte; cgo bindings,
+  which need a C toolchain and headers on every build machine.
 - **Gains:** the Windows build stays pure Go; the full path keeps the older
-  copy Windows ships from standing in.
+  copy Windows ships from standing in; one helper reaches ONNX Runtime and
+  plugins on both platforms.
 - **Costs:** the call table is read by position, so the runtime's version is
-  pinned; British and American English only.
+  pinned; passing an address across the boundary follows a rule a structural
+  test holds, since the language does not; British and American English only.
 
-### Pronunciation worked out before the build
+### Speech prepared before the build
 
-Every line's speech sounds are made by a development tool running misaki in
-its own Python environment, then saved beside the script and embedded. The
-application runs no Python and works out no pronunciation.
+Every line's speech sounds, the pause before a final "commander" and the fade
+over the hiss the model adds after a final nasal are worked out by
+development tools, misaki for the sounds and Praat for the cuts, then shipped
+with the script. The application runs no Python and works out no
+pronunciation. It applies a cut only where the samples it made match those
+measured; otherwise the line is written as made and logged. A doubtful break
+gets no pause.
 
-- **Rather than:** a Go port of the pronunciation step, which reached 99.4
-  percent of the reference lines where misaki matched all 512.
-- **Gains:** exact speech sounds; no dictionaries or Python in the package.
-- **Costs:** a change to the script means running the tool again; a misread
-  word is put right in the script by hand.
+- **Rather than:** working out pronunciation or processing the sound while
+  the application runs; a Go port of the pronunciation step, which fell short
+  of misaki's own; leaving the model's output alone.
+- **Gains:** exact speech sounds with no dictionaries or Python in the
+  package; "commander" no longer restarts the pitch and the hiss after a
+  final nasal is gone; both stay exact, since a mismatch is never cut.
+- **Costs:** a change to the script or the model means running the tools
+  again; a structural test fails the build while their output is stale; a
+  misread word is put right in the script by hand.
 
 ### Three lines for every moment
 
@@ -377,68 +370,36 @@ voice. A moment without three distinct lines fails the build.
 - **Gains:** a moment heard often does not sound the same each time.
 - **Costs:** three lines to write and keep for every moment.
 
-### Each line made the first time it is needed, then kept
+### Lines made when they are first needed
 
-Casting a machine voice makes only its confirmation. Every other line is made
-the first time its moment fires, then kept. A moment that fires before its
-line exists waits up to two seconds for it.
+Casting a machine voice makes only its confirmation; every other line is made
+the first time its moment fires, which waits a short while for it. The model
+loads when a machine voice is cast or a line is first made, without holding
+up the cast, then stays loaded; a load that fails is tried again on the next
+line.
 
-- **Rather than:** speaking a line as its event fires, which takes 204 to
-  348 ms against a 150 ms budget; making every line at the cast, which took
-  3 minutes 17 seconds for one voice.
-- **Gains:** a cast is heard confirming within a second and a half (measured
-  at 1.30 to 1.35 seconds); nothing is made that is never heard.
-- **Costs:** the first time a moment fires it may be late or let go.
+- **Rather than:** speaking a line as its event fires, which is slower than
+  the latency budget allows; making every line at the cast, which takes
+  minutes; loading the model at start whatever is cast.
+- **Gains:** a cast is heard confirming within moments; nothing is made that
+  is never heard; a player who casts only recorded voices never pays for the
+  model.
+- **Costs:** the first time a moment fires it may be late or let go; the
+  loaded model holds a large share of memory until the application closes.
 
 ### Made lines kept for every machine voice
 
-A made line is kept until it is no longer current. Casting another voice of
-any kind keeps them; casting a machine voice deletes only that voice's stale
-lines. Uninstall removes them all.
+A made line is kept until it is no longer current, stored losslessly at 16
+bits and written whole or not at all. Casting another voice of any kind keeps
+them; casting a machine voice deletes only that voice's stale lines.
+Uninstall removes them all.
 
 - **Rather than:** deleting the lines of every voice not cast, which was the
-  first rule.
-- **Gains:** switching between voices never makes the same line twice.
-- **Costs:** disk space: one voice's complete script measured 51.7 MB.
-
-### The model loaded when it is first wanted
-
-The model loads when a machine voice is cast or a line is first made, without
-waiting; it stays loaded until the maker closes and is never unloaded. A load
-that fails is tried again on the next line.
-
-- **Rather than:** loading at start whatever is cast; remembering a failed
-  load.
-- **Gains:** a player who casts only recorded voices never pays for it; the
-  first line made on call is spared the 539 ms load.
-- **Costs:** loaded, it was measured at a 408.5 MB working set.
-
-### Made lines kept as 16-bit FLAC
-
-Each line is stored as mono 16-bit FLAC at 24 kHz, written beside its place
-then renamed into it.
-
-- **Rather than:** keeping the model's floating-point samples.
-- **Gains:** lossless storage at a fraction of the size; an interrupted write
-  leaves no made line.
-- **Costs:** the samples are clamped and rounded to 16 bits.
-
-### Pauses and fades measured before the build
-
-A final "commander" gets 40 ms of silence before it; a line ending on a nasal
-is faded over the 30 ms before the hiss the model adds there. Where to cut is
-found for every voice by a development tool using Praat and saved with the
-script. The application applies a cut only where the samples it made match
-those measured; otherwise the line is written as made and logged. A doubtful
-break gets no pause.
-
-- **Rather than:** processing the sound while the application runs; leaving
-  the model's output alone.
-- **Gains:** "commander" no longer restarts the pitch; the hiss after a
-  final nasal is gone. Both stay exact, since a mismatch is never cut.
-- **Costs:** the files must be found again whenever the script or the model
-  changes; a structural test fails the build while they are stale. The full
-  run found 999 of 6,720 joined lines doubtful.
+  first rule; keeping the model's floating-point samples.
+- **Gains:** switching between voices never makes the same line twice; an
+  interrupted write leaves no made line.
+- **Costs:** disk space for every voice used; the samples are rounded to 16
+  bits.
 
 ## Recorded voices
 
@@ -488,9 +449,9 @@ to exactly one moment.
 
 ### The folder name is the identity
 
-A voice may carry a `voice.toml` giving a display name, a credit and takes its
-names do not reach. The folder name stays what the settings remember. A
-manifest that cannot be read is set aside whole.
+A voice may carry an optional manifest giving a display name, a credit and
+takes its names do not reach. The folder name stays what the settings
+remember. A manifest that cannot be read is set aside whole.
 
 - **Rather than:** a required manifest; the display name as the identity.
 - **Gains:** a voice works with no manifest at all; renaming it on screen
@@ -505,84 +466,56 @@ chosen and on Refresh.
 
 - **Rather than:** finding a bad file when its moment fires; caching scans.
 - **Gains:** a broken take is reported where it was found; nothing can go
-  stale. Ten voices of 5,000 recordings scanned in under 900 ms, measured.
+  stale; a large library still scans within its time budget.
 - **Costs:** every scan reads every file.
 
 ## Plugins
 
-### A C interface, three functions
+### A C interface of three functions
 
 A plugin is a native library in the plugins folder offering voices whose
 audio is already on the machine. It exports three functions: its version, a
-description of itself with its voices, then one answer per moment.
+description of itself with its voices, then one answer per moment. Every
+answer is asked for its size first, then filled into a buffer Bridge Talk
+owns; a negative return is always a refusal, never a size. Only the current
+version of the interface is read.
 
 - **Rather than:** a Go plugin, which does not run on Windows; a helper
   process over a pipe, which is a second program to install and keep alive;
-  a dozen smaller calls.
-- **Gains:** a plugin can be written in any language; a small surface.
-- **Costs:** every answer is a byte layout both sides must read alike.
+  a dozen smaller calls; the plugin allocating with a fourth function to
+  free; reading every version side by side.
+- **Gains:** a plugin can be written in any language; a small surface;
+  nothing is allocated on one side and freed on the other; a size and an
+  error can never be confused; an older layout is never read wrongly.
+- **Costs:** every answer is a byte layout both sides must read alike, asked
+  for in two calls; a plugin built against an older version must be rebuilt.
 
-### Buffers owned by Bridge Talk
-
-Every answer is asked for its size first, then filled into a buffer Bridge
-Talk owns. A negative return is always a refusal, never a size. An answer
-over 4 MiB is refused before anything is made to hold it.
-
-- **Rather than:** the plugin allocating with a fourth function to free;
-  negative meaning the bytes needed.
-- **Gains:** nothing is allocated on one side and freed on the other; a size
-  and an error can never be confused; a garbage size cannot end the run.
-- **Costs:** two calls for every answer.
-
-### One locked thread for every plugin
+### One locked thread; never unloaded
 
 Every call into every plugin is made one at a time from a single goroutine
-holding one operating system thread.
+holding one operating system thread. A plugin, like ONNX Runtime, stays
+loaded until the process ends.
 
 - **Rather than:** a lock alone, which serialises without keeping the
-  thread.
+  thread; freeing a library once it is no longer used.
 - **Gains:** a plugin author needs no locking; something tied to a thread is
-  found on it again.
-- **Costs:** a channel round trip per moment. No plugin existed to measure;
-  it was taken as a precaution while it was cheap.
+  found on it again; no risk of unloading under a thread of the plugin's own.
+- **Costs:** a channel round trip per moment. No plugin existed to measure, so
+  the thread is a precaution taken while it was cheap; whether a plugin could
+  be unloaded safely has not been measured.
 
 ### What a plugin sends is foreign input
 
 No length or count a plugin sends is trusted; text must be UTF-8 and bytes
-left over are a refusal. A fault raised by a call ends that call alone. A
+left over are a refusal. An answer larger than a set cap is refused before
+anything is made to hold it. A fault raised by a call ends that call alone. A
 plugin that will not load is named in the run log and never stops the
 application starting.
 
 - **Rather than:** trusting a well-behaved plugin.
-- **Gains:** a misbehaving plugin costs only itself.
+- **Gains:** a misbehaving plugin costs only itself; a garbage size cannot
+  end the run.
 - **Costs:** a fault inside the plugin's own code still cannot be caught.
-
-### Only version 2 is read
-
-The interface is at version 2, which added a voice's group and a part that is
-a span of a file. Any other version is passed over by name.
-
-- **Rather than:** reading both versions side by side.
-- **Gains:** a version 1 layout is never read wrongly.
-- **Costs:** a version 1 plugin must be rebuilt.
-
-### Spans read where they stand
-
-A part may be a span of a larger file, read in place through a section of the
-open file with a 64-bit offset and length. A plugin's audio is never copied,
-moved or rewritten; a test watches its folder to hold that.
-
-- **Rather than:** a plugin copying each recording out to a file of its own.
-- **Gains:** nothing is copied to the user's disk.
-- **Costs:** a span outside its file is found only as it is played.
-
-### Never unloaded
-
-A plugin, like ONNX Runtime, stays loaded until the process ends.
-
-- **Rather than:** freeing a library once it is no longer used.
-- **Gains:** no risk of unloading under a thread of its own.
-- **Costs:** whether it could be unloaded safely has not been measured.
 
 ### The plugins folder belongs to the user
 
@@ -735,14 +668,20 @@ a test fails when the band shows a picture no entry does.
 ### A setup program of its own
 
 Install, update, repair and removal are a second Wails application wearing the
-application's look. Which screen opens is read from the machine. Repair and
-reinstall are different acts over one install path. While the application
-runs, setup offers to close it, forcing it and waiting up to five seconds.
+application's look, one file carrying the application and its model files.
+Which screen opens is read from the machine. Repair and reinstall are
+different acts over one install path. While the application runs, setup
+offers to close it, forcing it and waiting a short while. Shortcuts are
+written through the shell's own shortcut object, each path handed over as a
+value.
 
-- **Rather than:** a generic installer.
+- **Rather than:** a generic installer; typing paths into a script, which
+  misread some folder names and saved a shortcut under the wrong name or not
+  at all.
 - **Gains:** one identity throughout; never a half-written install over a
-  locked executable.
-- **Costs:** the setup program is Bridge Talk's own to maintain.
+  locked executable; any folder name works for a shortcut.
+- **Costs:** the setup program is Bridge Talk's own to maintain; one large
+  download; a COM dependency.
 
 ### Per user, never asking for administrator rights
 
@@ -756,31 +695,11 @@ deletes the install folder whole.
   cannot take files that were there before the install.
 - **Costs:** each account installs separately.
 
-### Shortcuts written through the shell's own object
-
-Shortcuts are made through Windows' shortcut object over COM, each path handed
-over as a value.
-
-- **Rather than:** typing paths into a PowerShell script, which read a dollar
-  sign as a variable and saved a shortcut under the wrong name or not at all.
-- **Gains:** any folder name works; a failure is reported.
-- **Costs:** a COM dependency.
-
-### The payload embedded as a string
-
-The setup program carries the application and its model files. They are
-embedded as a string rather than a byte slice.
-
-- **Rather than:** a byte slice, which charges the whole payload to memory at
-  start.
-- **Gains:** measured at 12.8 MB of private memory at start against 323.6 MB.
-- **Costs:** the model files take the payload from 6.0 MB to 326.2 MB.
-
 ### Model files fetched from a pinned list
 
-The model, ONNX Runtime and the 28 style files are not committed. A Go tool
-fills a folder from a list of addresses, sizes and published SHA-256s; the
-test gate stops while a file is missing or differs.
+The model, ONNX Runtime and the voices' style files are not committed. A Go
+tool fills a folder from a list of addresses, sizes and published checksums;
+the test gate stops while a file is missing or differs.
 
 - **Rather than:** committing them; an environment variable naming a folder
   with the checksums checked again in PowerShell.
@@ -813,11 +732,15 @@ published interface may carry terms of its author's choosing.
 
 The site is four pages: home, features, why and download. It explains what
 Bridge Talk does, with no build instructions. Its comparison with EDDI,
-EDDiscovery and EDCoPilot is drawn from their own pages.
+EDDiscovery and EDCoPilot is drawn from their own pages. Its stylesheet is
+linked by a hash of its content, stamped with the version from the source.
 
-- **Rather than:** a developer's project page.
-- **Gains:** the people deciding whether to install it find what they need.
-- **Costs:** developers go to the repository instead.
+- **Rather than:** a developer's project page; one long page; relying on a
+  browser's cache to expire.
+- **Gains:** the people deciding whether to install it find what they need;
+  a deployed page is never drawn with an old stylesheet.
+- **Costs:** developers go to the repository instead; every change to the
+  stylesheet means stamping the pages again.
 
 ## Engineering
 
@@ -835,9 +758,9 @@ treated as missing.
 
 ### Complete coverage where it means something
 
-The domain and application layers are held to 100 percent. Every other package
-is held to a floor set from what it measured, never from a target; a gap is
-named in TESTING.md or closed.
+The domain and application layers are held to full coverage. Every other
+package is held to a floor set from what it measured, never from a target; a
+gap is named in TESTING.md or closed.
 
 - **Rather than:** one figure over everything; floors as aspirations.
 - **Gains:** a floor fails only when cover is lost, which is when it is worth
@@ -847,8 +770,8 @@ named in TESTING.md or closed.
 
 ### Small files
 
-No source file may pass 400 lines; one between 381 and 400 is cut to 350 or
-fewer.
+No source file may pass a fixed line limit; one that comes close is cut well
+below it rather than trimmed to fit.
 
 - **Rather than:** letting files grow.
 - **Gains:** files split at real seams.
@@ -862,20 +785,6 @@ live in one place; tests refuse a second spelling.
 - **Rather than:** copies written where they are needed.
 - **Gains:** a change is made once and cannot drift.
 - **Costs:** the site has to be stamped from the source.
-
-### Addresses converted inside the call
-
-An address handed to a native library becomes a number only in the argument
-list of the one call helper, which is marked so the compiler moves such
-values off the stack.
-
-- **Rather than:** converting before the call, which let a moving goroutine
-  stack leave ONNX Runtime writing an old copy: 13 of 300 lines broke in the
-  reproduction.
-- **Gains:** one helper serves ONNX Runtime and plugins on both platforms; a
-  structural test refuses the pattern that broke.
-- **Costs:** the rule is subtle and lives in a test rather than in the
-  language.
 
 ### Fakes written by hand; guards proved to bite
 

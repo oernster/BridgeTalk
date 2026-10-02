@@ -57,12 +57,12 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/infrastructure/plugin` | 94.8% | 91% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
 | `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 84.4% | 82% | `test.ps1` |
+| the root package (the Wails facade) | 84.5% | 82% | `test.ps1` |
 | `internal/infrastructure/instance` | 83.0% | 83% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
 | `tools/pauses` | 73.6% | 73% | `test.ps1` |
-| `internal/infrastructure/taskbar` | 69.6% | 67% | `test.ps1` |
+| `internal/infrastructure/taskbar` | 71.1% | 67% | `test.ps1` |
 | `tools/payload` | 53.3% | 53% | `test.ps1` |
 | `internal/infrastructure/runlog` | 48.8% | 48% | `test.ps1` |
 | `tools/models` | 48.3% | 48% | `test.ps1` |
@@ -73,10 +73,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,089 test functions, which expand to 1,199 runs once their subtests are counted (measured on
+1,093 test functions, which expand to 1,203 runs once their subtests are counted (measured on
 Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
 uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
-which are 1,083 top-level runs plus 116 subtests; the
+which are 1,087 top-level runs plus 116 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
 Fifty-eight of them are the structural tests in `tests/structural`, which scan the source
@@ -203,7 +203,7 @@ release is for.
   Explorer lives here too. There is no window in a test; the facade reaches the opener
   through a field, so what it opens is tested while Explorer appearing is not. The Linux
   opener's rule is tested on every platform (FR-816); the 7% is that rule.
-- **`internal/infrastructure/taskbar` (69.6%).** The tray icon runs its own Win32
+- **`internal/infrastructure/taskbar` (71.1%).** The tray icon runs its own Win32
   message loop on a locked OS thread. One test runs that loop for real over a real
   window, replacing only the call that hands the icon to the shell, so the
   hover text being sent again after a change is tested while an icon appearing is

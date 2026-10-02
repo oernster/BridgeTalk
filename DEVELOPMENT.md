@@ -463,7 +463,7 @@ go run ./tools/pauses -endings-only
 | `tools/` | icon and social card generation, the Linux icons, the model files, the payload, the saved speech sounds with the pauses and endings plus `internal/pyvenv`, which finds a tool's venv; `test.ps1` runs `tools/models -check`, `build.ps1` runs `tools/payload`, `build_flatpak.sh` runs `tools/models` and `tools/linuxicons`; the rest are run by hand |
 | `build_flatpak.sh`, `cleanup_flatpak.sh` | the Linux flatpak build and its cleanup |
 | `assets/` | the master artwork `tools/genicons.py` reads |
-| `docs/` | the project site, whose version tokens `stamp_version.py` fills |
+| `docs/` | the project site, whose version tokens and stylesheet links `stamp_version.py` fills |
 
 `ARCHITECTURE.md` explains the layering, the dependency direction and the reasoning
 behind each decision; it lists every structural test against the rule it enforces.

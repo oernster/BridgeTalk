@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download Bridge Talk for Windows and Linux</title>
+<meta name="description" content="Download Bridge Talk free for Windows and Linux: a setup program for your own Windows account or a flatpak for your own Linux account. One download installs everything, the ready-made voices included.">
+<meta name="author" content="Oliver Ernster">
+<meta name="application-name" content="Bridge Talk">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bridge Talk">
+<meta property="og:title" content="Download Bridge Talk for Windows and Linux">
+<meta property="og:description" content="Download Bridge Talk free for Windows and Linux: a setup program for your own Windows account or a flatpak for your own Linux account. One download installs everything, the ready-made voices included.">
+<meta property="og:url" content="https://ernster.dev/BridgeTalk/download.html">
+<meta property="og:image" content="https://ernster.dev/BridgeTalk/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Bridge Talk icon, a commander's helmet speaking, with rings of sound spreading from it">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:locale" content="en_GB">
+<link rel="icon" type="image/png" href="application-icon.png">
+<link rel="apple-touch-icon" href="application-icon.png">
+<link rel="stylesheet" href="styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "name": "Download Bridge Talk for Windows and Linux",
+      "description": "Download Bridge Talk free for Windows and Linux: a setup program for your own Windows account or a flatpak for your own Linux account. One download installs everything, the ready-made voices included.",
+      "url": "https://ernster.dev/BridgeTalk/download.html",
+      "inLanguage": "en-GB",
+      "isPartOf": {"@type": "WebSite", "name": "Bridge Talk", "url": "https://ernster.dev/BridgeTalk/"}
+    }
+  ]
+}
+</script>
+</head>
+<body>
+  <div class="wrap">
+
+    <nav class="site-nav" aria-label="Site">
+      <a class="nav-brand" href="./"><img src="application-icon.png" width="28" height="28" alt="">Bridge Talk</a>
+      <div class="nav-links">
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a class="btn primary" href="download.html" aria-current="page">Download</a>
+      </div>
+    </nav>
+
+    <section id="download">
+      <div class="eyebrow">Get Bridge Talk</div>
+      <h2 class="section-title">Download Bridge Talk</h2>
+      <p class="section-sub">One download installs everything, the ready-made voices included.</p>
+      <span class="dl-version" id="dl-version">Version <!--VERSION-->1.5.0<!--/VERSION--></span>
+      <div class="downloads">
+        <div class="dl-card">
+          <div class="ico">&#129695;</div>
+          <h3>Windows</h3>
+          <p class="req">For your own Windows account</p>
+          <a class="btn primary" href="https://github.com/oernster/BridgeTalk/releases/latest/download/BridgeTalkSetup.exe">Download for Windows</a>
+          <p class="meta" data-asset="BridgeTalkSetup.exe">Setup program</p>
+          <p class="meta">Windows may show a SmartScreen warning when you run it: <a href="https://ernster.dev/windows-smartscreen.html">here's why</a>.</p>
+          <p class="how">Run it and choose a Start Menu entry, a Desktop shortcut or starting when you sign in. It installs under your own account unless you pick another folder. A newer one updates it; the same one repairs or uninstalls it.</p>
+        </div>
+        <div class="dl-card">
+          <div class="ico">&#128039;</div>
+          <h3>Linux</h3>
+          <p class="req">A flatpak for your own account</p>
+          <a class="btn primary" href="https://github.com/oernster/BridgeTalk/releases/latest/download/BridgeTalk.flatpak">Download for Linux</a>
+          <p class="meta" data-asset="BridgeTalk.flatpak">Flatpak bundle</p>
+          <p class="how">Install it with <code>flatpak install --user BridgeTalk.flatpak</code>, then start Bridge Talk from your applications menu. It finds the game's journal inside its Proton or Wine prefix and is given network access for the update check alone.</p>
+        </div>
+      </div>
+      <p class="dl-links">
+        <a id="dl-whats-new" href="https://github.com/oernster/BridgeTalk/releases/latest">What's new in this release</a>
+        &nbsp;&middot;&nbsp;
+        <a href="https://github.com/oernster/BridgeTalk/releases">All releases</a>
+      </p>
+    </section>
+
+    <footer>
+      <p class="mono">Bridge Talk</p>
+      <p class="footer-links">
+        <a href="./">Home</a> &middot; <a href="features.html">Features</a>
+        &middot; <a href="why.html">Why</a> &middot; <a href="download.html">Download</a>
+      </p>
+      <p>
+        Built by Oliver Ernster &middot; free and open source under the GNU General Public Licence v3.0
+        &middot; <a href="https://github.com/oernster/BridgeTalk">github.com/oernster/BridgeTalk</a>
+      </p>
+      <p>Elite Dangerous is a trademark of Frontier Developments plc. This is an unofficial, fan-made tool.
+        EDDI, EDDiscovery and EDCoPilot are independent projects with no connection to Bridge Talk.</p>
+    </footer>
+
+  </div>
+<script>
+  // The download button never goes stale: it points at GitHub's releases/latest/download
+  // redirect, which always serves the newest release's setup program. This script only
+  // decorates the page: the version chip and the setup program's size, read from the GitHub
+  // API. Where the call fails, the static text stands on its own; the chip then carries the
+  // version stamped into this page from the VERSION file. No date is ever shown.
+  (function () {
+    var api = 'https://api.github.com/repos/oernster/BridgeTalk/releases/latest';
+    fetch(api).then(function (r) {
+      if (!r.ok) { throw new Error('release lookup failed'); }
+      return r.json();
+    }).then(function (rel) {
+      var version = (rel.tag_name || '').replace(/^v/, '');
+      if (version) {
+        document.getElementById('dl-version').textContent = 'Version ' + version;
+      }
+      if (rel.html_url) {
+        document.getElementById('dl-whats-new').href = rel.html_url;
+      }
+      (rel.assets || []).forEach(function (asset) {
+        var meta = document.querySelector('[data-asset="' + asset.name + '"]');
+        if (meta && asset.size) {
+          var mb = (asset.size / (1024 * 1024)).toFixed(1);
+          meta.textContent = meta.textContent + ' · ' + mb + ' MB';
+        }
+      });
+    }).catch(function () { /* The static page already says everything essential. */ });
+  })();
+</script>
+</body>
+</html>

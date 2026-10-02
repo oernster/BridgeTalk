@@ -55,20 +55,6 @@
       "license": "https://www.gnu.org/licenses/gpl-3.0.html",
       "isAccessibleForFree": true,
       "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {"@type": "Question", "name": "Do I have to record anything?", "acceptedAnswer": {"@type": "Answer", "text": "No. Bridge Talk comes with 28 ready-made voices, British and American, female and male. Cast one on the Cast pane and your ship starts talking."}},
-        {"@type": "Question", "name": "Does it need the internet?", "acceptedAnswer": {"@type": "Answer", "text": "No. The ready-made voices are made on your own computer. Its one trip online is a check for a newer release, shortly after it starts and once a day, which sends nothing about you, your computer or your game; everything else works without the internet. The Donate button simply opens your web browser."}},
-        {"@type": "Question", "name": "Can I use my own voice?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Type a name on the Cast pane and press Make folders: you get a folder for every moment, already named. Record each line in any program you like, drop it in its folder and press Refresh."}},
-        {"@type": "Question", "name": "Does it listen to me?", "acceptedAnswer": {"@type": "Answer", "text": "Never. There is no microphone and there are no voice commands. Bridge Talk only speaks."}},
-        {"@type": "Question", "name": "Will it talk over itself?", "acceptedAnswer": {"@type": "Answer", "text": "Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like."}},
-        {"@type": "Question", "name": "Can I stop it saying some things?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken."}},
-        {"@type": "Question", "name": "What happens to my recordings if I uninstall?", "acceptedAnswer": {"@type": "Answer", "text": "Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not."}},
-        {"@type": "Question", "name": "Which computers does it run on?", "acceptedAnswer": {"@type": "Answer", "text": "Windows and Linux. On Windows it installs just for your own account, so it never asks for administrator permission. On Linux it comes as a flatpak, installed for your own account and given network access for the update check alone."}},
-        {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation."}}
-      ]
     }
   ]
 }
@@ -76,6 +62,15 @@
 </head>
 <body>
   <div class="wrap">
+
+    <nav class="site-nav" aria-label="Site">
+      <a class="nav-brand" href="./"><img src="application-icon.png" width="28" height="28" alt="">Bridge Talk</a>
+      <div class="nav-links">
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a class="btn primary" href="download.html">Download</a>
+      </div>
+    </nav>
 
     <header class="hero">
       <img class="logo fade" src="application-icon.png" width="128" height="128" alt="Bridge Talk icon">
@@ -87,9 +82,9 @@
         one line for every moment.
       </p>
       <div class="cta fade d3">
-        <a class="btn primary" href="#download">Download</a>
-        <a class="btn ghost" href="#voices">Meet the voices</a>
-        <a class="btn ghost" href="#record">Record your own</a>
+        <a class="btn primary" href="download.html#download">Download</a>
+        <a class="btn ghost" href="features.html#voices">Meet the voices</a>
+        <a class="btn ghost" href="features.html#record">Record your own</a>
       </div>
       <p class="platform-note fade d3">Free for Windows and Linux &middot; waits quietly out of the way &middot; talks, never listens</p>
       <figure class="shot hero-shot fade d4">
@@ -113,265 +108,12 @@
       </div>
     </section>
 
-    <section id="voices">
-      <div class="eyebrow">Ready-made voices</div>
-      <h2 class="section-title">28 voices, ready when you are</h2>
-      <p class="section-sub">No recording needed. Cast any of them and your ship has a voice straight
-        away. Each one is made on your own computer, so making one never goes online.</p>
-      <div class="voice-groups">
-        <div class="voice-group">
-          <h3>British, female</h3>
-          <ul class="chips"><li>Alice</li><li>Emma</li><li>Isabella</li><li>Lily</li></ul>
-        </div>
-        <div class="voice-group">
-          <h3>British, male</h3>
-          <ul class="chips"><li>Daniel</li><li>Fable</li><li>George</li><li>Lewis</li></ul>
-        </div>
-        <div class="voice-group">
-          <h3>American, female</h3>
-          <ul class="chips"><li>Alloy</li><li>Aoede</li><li>Bella</li><li>Heart</li><li>Jessica</li><li>Kore</li><li>Nicole</li><li>Nova</li><li>River</li><li>Sarah</li><li>Sky</li></ul>
-        </div>
-        <div class="voice-group">
-          <h3>American, male</h3>
-          <ul class="chips"><li>Adam</li><li>Echo</li><li>Eric</li><li>Fenrir</li><li>Liam</li><li>Michael</li><li>Onyx</li><li>Puck</li><li>Santa</li></ul>
-        </div>
+    <section class="onward">
+      <div class="cta">
+        <a class="btn ghost" href="features.html">Everything it does</a>
+        <a class="btn ghost" href="why.html">How it compares</a>
+        <a class="btn primary" href="download.html#download">Download</a>
       </div>
-      <p class="voices-note">Not sure which? Listen to any of them on the Audition pane before you choose.</p>
-    </section>
-
-    <section id="features">
-      <div class="eyebrow">What it does</div>
-      <h2 class="section-title">A voice that knows the ship</h2>
-      <p class="section-sub">Bridge Talk follows the game while you play and answers each moment worth
-        a word.</p>
-      <div class="features">
-        <div class="card">
-          <div class="icon">&#127897;&#65039;</div>
-          <h3>Ready to go</h3>
-          <p>28 voices, British and American, female and male. Cast one and your ship starts talking.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#127911;</div>
-          <h3>Or a voice of your own</h3>
-          <p>Record yourself, a friend or a whole crew. Bridge Talk makes a folder for every moment, already named.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128640;</div>
-          <h3>262 moments</h3>
-          <p>Docking, jumps, supercruise, fuel scooping, overheating, a pirate scanning your cargo, coming under fire and many more.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128680;</div>
-          <h3>Knows what matters</h3>
-          <p>An urgent warning cuts straight in. Everyday updates wait their turn and idle chatter gives way.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128172;</div>
-          <h3>Never the same line twice running</h3>
-          <p>Where a voice has more than one line for a moment, it picks a different one from last time.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128066;</div>
-          <h3>Hear before you choose</h3>
-          <p>The Audition pane plays any voice, chosen or not, one part of the game at a time.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128203;</div>
-          <h3>See what is left to record</h3>
-          <p>The Missing takes pane lists every moment still waiting for a line, with when you will hear it.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128269;</div>
-          <h3>Every silence explained</h3>
-          <p>The Status pane shows what was said and why anything was not, so a quiet ship is never a mystery.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#127898;&#65039;</div>
-          <h3>Say only what you want</h3>
-          <p>The Chatter pane gives every moment a switch, under twelve categories. Switch one off, a whole category or all of them; station traffic has a switch of its own. Jump straight to a category or fold one away.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#127769;</div>
-          <h3>Out of the way</h3>
-          <p>Put the window away and it keeps talking from the notification area. It can start when you sign in.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128263;</div>
-          <h3>Talks, never listens</h3>
-          <p>No microphone and no voice commands. Mute is one press away whenever you want quiet.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128450;&#65039;</div>
-          <h3>Your recordings stay yours</h3>
-          <p>Bridge Talk never changes or removes a recording. Uninstalling leaves every one where it is.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128276;</div>
-          <h3>Tells you when there is a newer one</h3>
-          <p>Shortly after it starts and once a day it looks for a newer release; Check for updates on the Help menu asks straight away. When one is out, choose Download, Skip this version or Later.</p>
-        </div>
-        <div class="card">
-          <div class="icon">&#128274;</div>
-          <h3>Nothing about you goes online</h3>
-          <p>Everything happens on your own computer. No account; its one request is an anonymous check for a newer release, which sends nothing about you or your game.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="alongside">
-      <div class="eyebrow">Alongside other tools</div>
-      <h2 class="section-title">A voice, not a companion suite</h2>
-      <p class="section-sub">EDDI, EDDiscovery and EDCoPilot are established community tools that also
-        speak as you play. Bridge Talk does one job: it gives your ship a voice. This is where that makes
-        it different.</p>
-      <div class="compare-wrap">
-        <table class="compare">
-          <thead>
-            <tr>
-              <td></td>
-              <th scope="col">Bridge Talk</th>
-              <th scope="col"><a href="https://github.com/EDCD/EDDI">EDDI</a></th>
-              <th scope="col"><a href="https://github.com/EDDiscovery/EDDiscovery">EDDiscovery</a></th>
-              <th scope="col"><a href="https://www.razzafrag.com/">EDCoPilot</a></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th scope="row">What it is</th>
-              <td>A ship's voice and nothing else</td>
-              <td>A companion that responds to game events, drawing on the game and third-party tools</td>
-              <td>A captain's log with 2D and 3D maps of the galaxy</td>
-              <td>A ship's console of more than forty panels, with a talkative ship AI on top</td>
-            </tr>
-            <tr>
-              <th scope="row">The voices</th>
-              <td>28 ready-made voices made on your own computer, with nothing to buy or install</td>
-              <td>Windows text-to-speech voices; more can be bought</td>
-              <td>Speech through its Voice Output Pack add-on</td>
-              <td>Microsoft Edge neural voices by default; Windows, bought and paid online voices as well</td>
-            </tr>
-            <tr>
-              <th scope="row">Your own recordings</th>
-              <td>A folder made for every moment; Missing takes lists what is left to record</td>
-              <td>Played from its speech scripts</td>
-              <td>MP3s played on events through its SoundBlaster Pack add-on</td>
-              <td>Sound samples dropped into the event folders it lays out; its spoken lines come from text files</td>
-            </tr>
-            <tr>
-              <th scope="row">Listening</th>
-              <td>Never: no microphone, no voice commands, no VoiceAttack</td>
-              <td>Runs on its own or as a VoiceAttack plugin</td>
-              <td>Voice control through its Free Voice Control pack</td>
-              <td>Voice commands through VoiceAttack, which its overlay mode needs</td>
-            </tr>
-            <tr>
-              <th scope="row">Going online</th>
-              <td>Makes one request of its own: a check for a newer release</td>
-              <td>Connects to EDSM, Inara and EDDN</td>
-              <td>Connects to EDSM, Inara, Spansh, EDDN and others</td>
-              <td>Looks up stations, routes and trade data online; it also reports usage back to its author</td>
-            </tr>
-            <tr>
-              <th scope="row">Setting it up</th>
-              <td>Cast a voice; there are no scripts to write</td>
-              <td>Speech scripts you can edit</td>
-              <td>Add-on packs for speech, sound and voice control</td>
-              <td>Text files of phrases plus settings files you edit yourself</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="compare-note">Bridge Talk only reads the game's journal and status file. Run it beside
-        another tool that speaks and you will hear both. What EDDI, EDDiscovery and EDCoPilot do is taken
-        from their own pages, which describe far more than this table can.</p>
-    </section>
-
-    <section id="record">
-      <div class="eyebrow">Record your own</div>
-      <h2 class="section-title">A folder for every moment</h2>
-      <p class="section-sub">You never have to type a moment's name. Bridge Talk makes the folders for
-        you; you fill them.</p>
-      <ol class="steps">
-        <li><strong>Name your voice</strong>Type a name on the Cast pane and press Make folders.</li>
-        <li><strong>Record a line</strong>Use any recording program you like, such as <a href="https://www.audacityteam.org/">Audacity</a>, which is free.</li>
-        <li><strong>Drop it in</strong>Save it in the folder for its moment. A folder can hold several takes.</li>
-        <li><strong>Press Refresh</strong>Your voice appears on the Cast pane, ready to cast.</li>
-      </ol>
-    </section>
-
-    <section id="inside">
-      <div class="eyebrow">A look inside</div>
-      <h2 class="section-title">A pane for each job</h2>
-      <p class="section-sub">Cast, Audition, Chatter, Missing takes, Status and Settings sit along the top of the
-        window, with the guide at its far end.</p>
-      <div class="gallery">
-        <figure class="shot">
-          <img src="images/settings.png" loading="lazy" decoding="async" alt="The Settings pane, with the journal folder and the box that starts Bridge Talk when you sign in">
-          <figcaption>Start it when you sign in, if you like.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="images/audition.png" loading="lazy" decoding="async" alt="The Audition pane, with a play button for each part of the game under a heading for each category">
-          <figcaption>Hear a voice one part of the game at a time.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="images/status.png" loading="lazy" decoding="async" alt="The Status pane, with cards for the voice speaking, the moments it covers, the journal and the status file above the list of what was said">
-          <figcaption>See what was said and why.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="images/missing-takes.png" loading="lazy" decoding="async" alt="The Missing takes pane, where the recordings folder is chosen and a new voice's missing moments are listed">
-          <figcaption>Find the lines still to record.</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="images/chatter.png" loading="lazy" decoding="async" alt="The Chatter pane, with Switch all on, Switch all off and a switch for each category, each name carrying an arrow down to the list, above the open Combat and danger category with its moments in three columns, each with a switch of its own">
-          <figcaption>Choose which moments it speaks for.</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section id="faq">
-      <div class="eyebrow">Common questions</div>
-      <div class="faq">
-        <div class="card"><h3>Do I have to record anything?</h3><p>No. Bridge Talk comes with 28 ready-made voices, British and American, female and male. Cast one on the Cast pane and your ship starts talking.</p></div>
-        <div class="card"><h3>Does it need the internet?</h3><p>No. The ready-made voices are made on your own computer. Its one trip online is a check for a newer release, shortly after it starts and once a day, which sends nothing about you, your computer or your game; everything else works without the internet. The Donate button simply opens your web browser.</p></div>
-        <div class="card"><h3>Can I use my own voice?</h3><p>Yes. Type a name on the Cast pane and press Make folders: you get a folder for every moment, already named. Record each line in any program you like, drop it in its folder and press Refresh.</p></div>
-        <div class="card"><h3>Does it listen to me?</h3><p>Never. There is no microphone and there are no voice commands. Bridge Talk only speaks.</p></div>
-        <div class="card"><h3>Will it talk over itself?</h3><p>Only when it matters. An urgent warning cuts in over anything less important; everyday updates wait their turn and idle chatter gives way. Mute silences it whenever you like.</p></div>
-        <div class="card"><h3>Can I stop it saying some things?</h3><p>Yes. The Chatter pane lists all 262 moments under twelve categories, each with a switch. A moment switched off stays quiet whichever voice is cast. Station traffic is a moment of its own, so docking answers and station welcomes can go quiet while other messages are still spoken.</p></div>
-        <div class="card"><h3>What happens to my recordings if I uninstall?</h3><p>Nothing. Bridge Talk never changes or removes your recordings, whether you uninstall or not.</p></div>
-        <div class="card"><h3>Which computers does it run on?</h3><p>Windows and Linux. On Windows it installs just for your own account, so it never asks for administrator permission. On Linux it comes as a flatpak, installed for your own account and given network access for the update check alone.</p></div>
-        <div class="card"><h3>Is it free?</h3><p>Yes. Bridge Talk is free and open source. There is no paid tier and nothing held back behind a donation.</p></div>
-      </div>
-    </section>
-
-    <section id="download">
-      <div class="eyebrow">Get Bridge Talk</div>
-      <h2 class="section-title">Download Bridge Talk</h2>
-      <p class="section-sub">One download installs everything, the ready-made voices included.</p>
-      <span class="dl-version" id="dl-version">Version <!--VERSION-->1.5.0<!--/VERSION--></span>
-      <div class="downloads">
-        <div class="dl-card">
-          <div class="ico">&#129695;</div>
-          <h3>Windows</h3>
-          <p class="req">For your own Windows account</p>
-          <a class="btn primary" href="https://github.com/oernster/BridgeTalk/releases/latest/download/BridgeTalkSetup.exe">Download for Windows</a>
-          <p class="meta" data-asset="BridgeTalkSetup.exe">Setup program</p>
-          <p class="meta">Windows may show a SmartScreen warning when you run it: <a href="https://ernster.dev/windows-smartscreen.html">here's why</a>.</p>
-          <p class="how">Run it and choose a Start Menu entry, a Desktop shortcut or starting when you sign in. It installs under your own account unless you pick another folder. A newer one updates it; the same one repairs or uninstalls it.</p>
-        </div>
-        <div class="dl-card">
-          <div class="ico">&#128039;</div>
-          <h3>Linux</h3>
-          <p class="req">A flatpak for your own account</p>
-          <a class="btn primary" href="https://github.com/oernster/BridgeTalk/releases/latest/download/BridgeTalk.flatpak">Download for Linux</a>
-          <p class="meta" data-asset="BridgeTalk.flatpak">Flatpak bundle</p>
-          <p class="how">Install it with <code>flatpak install --user BridgeTalk.flatpak</code>, then start Bridge Talk from your applications menu. It finds the game's journal inside its Proton or Wine prefix and is given network access for the update check alone.</p>
-        </div>
-      </div>
-      <p class="dl-links">
-        <a id="dl-whats-new" href="https://github.com/oernster/BridgeTalk/releases/latest">What's new in this release</a>
-        &nbsp;&middot;&nbsp;
-        <a href="https://github.com/oernster/BridgeTalk/releases">All releases</a>
-      </p>
     </section>
 
     <section id="support">
@@ -387,6 +129,10 @@
 
     <footer>
       <p class="mono">Bridge Talk</p>
+      <p class="footer-links">
+        <a href="./">Home</a> &middot; <a href="features.html">Features</a>
+        &middot; <a href="why.html">Why</a> &middot; <a href="download.html">Download</a>
+      </p>
       <p>
         Built by Oliver Ernster &middot; free and open source under the GNU General Public Licence v3.0
         &middot; <a href="https://github.com/oernster/BridgeTalk">github.com/oernster/BridgeTalk</a>
@@ -396,34 +142,5 @@
     </footer>
 
   </div>
-<script>
-  // The download button never goes stale: it points at GitHub's releases/latest/download
-  // redirect, which always serves the newest release's setup program. This script only
-  // decorates the page: the version chip and the setup program's size, read from the GitHub
-  // API. Where the call fails, the static text stands on its own; the chip then carries the
-  // version stamped into this page from the VERSION file. No date is ever shown.
-  (function () {
-    var api = 'https://api.github.com/repos/oernster/BridgeTalk/releases/latest';
-    fetch(api).then(function (r) {
-      if (!r.ok) { throw new Error('release lookup failed'); }
-      return r.json();
-    }).then(function (rel) {
-      var version = (rel.tag_name || '').replace(/^v/, '');
-      if (version) {
-        document.getElementById('dl-version').textContent = 'Version ' + version;
-      }
-      if (rel.html_url) {
-        document.getElementById('dl-whats-new').href = rel.html_url;
-      }
-      (rel.assets || []).forEach(function (asset) {
-        var meta = document.querySelector('[data-asset="' + asset.name + '"]');
-        if (meta && asset.size) {
-          var mb = (asset.size / (1024 * 1024)).toFixed(1);
-          meta.textContent = meta.textContent + ' · ' + mb + ' MB';
-        }
-      });
-    }).catch(function () { /* The static page already says everything essential. */ });
-  })();
-</script>
 </body>
 </html>

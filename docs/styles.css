@@ -77,6 +77,31 @@ a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-ra
 
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
 
+/* The bar across the top of every page: the name leads home, the three pages sit at the
+   right. The page being read wears the accent. */
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--accent);
+}
+.nav-brand img { width: 28px; height: 28px; }
+.nav-links { display: flex; align-items: center; gap: 20px; }
+.nav-links a { color: var(--text); font-weight: 600; font-size: 15px; }
+.nav-links a[aria-current="page"]:not(.btn) { color: var(--accent); }
+.nav-links .btn { padding: 8px 20px; }
+
 /* Hero. A soft glow of the accent sits behind the icon and the name. */
 header.hero {
   position: relative;
@@ -375,6 +400,10 @@ footer {
   font-size: 14px;
 }
 footer .mono { font-family: var(--mono); color: var(--accent); }
+
+/* The way on from the foot of the home page: the buttons alone, so the section gives up
+   its top padding to the one above it. */
+.onward { padding-top: 0; }
 
 @media (max-width: 720px) {
   .gallery { grid-template-columns: 1fr; }

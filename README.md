@@ -33,15 +33,14 @@ lines it makes on your own machine; record a voice of your own whenever you like
   Each line is made on your own machine the first time its moment happens, then kept, so nothing is
   downloaded and nothing is sent anywhere. The Audition pane plays any of them before you cast it.
 - **Casts a recorded voice.** Every folder in your recordings directory that holds at least one recording
-  for a moment, named for it or in its folder, is a voice. Cast one from the Cast pane or from the Voice menu on the
-  notification-area icon and it becomes the ship's voice. Where it holds a recording for
+  for a moment, named for it or in its folder, is a voice. Cast one from the Cast pane (on Windows the
+  Voice menu on the notification-area icon casts it too) and it becomes the ship's voice. Where it holds a recording for
   `Cast.Confirmed` and mute is off, it plays that as it takes the part. The choice is remembered
   for the next run.
 - **Takes voices from plugins.** A plugin is a library file placed in the plugins folder, offering
   voices whose audio already sits on your machine. On the Cast pane each plugin's voices stand in a
   section of their own above the machine voices, in the groups the plugin names. Its voices are
-  auditioned on the Audition pane, cast from the Cast pane or the notification-area menu like any
-  other and remembered for the next run; a voice whose audio is missing is listed with the reason its
+  auditioned on the Audition pane, cast like any other and remembered for the next run; a voice whose audio is missing is listed with the reason its
   plugin gave. The Missing takes pane lists what the cast plugin
   voice has no take for. A plugin that will not load is named in the run log with the reason and
   never stops the application starting.
@@ -81,12 +80,13 @@ lines it makes on your own machine; record a voice of your own whenever you like
   on in Chatter; the buttons stand under Chatter's categories. The buttons are held while anything is playing or
   being made, the ship's own reactions included, so a press never cuts a clip short; Stop ends what
   is playing. An audition ignores the mute.
-- **Stays out of the way.** Closing the window asks whether to put it away or quit. Put away, it
-  keeps listening from the notification area, whose menu opens the window, mutes, switches voice
-  or quits. It can start when you sign in, waiting in the notification area; turn that on in
-  Settings; on Windows the setup program offers it too. On a Linux desktop that offers no notification
-  area, closing the window quits. Only one copy runs at a time: starting it again brings the running
-  copy's window back instead.
+- **Stays out of the way.** On Windows, closing the window asks whether to put it away or quit. Put
+  away, it keeps listening from the notification area, whose menu opens the window, mutes, switches
+  voice or quits. On Linux it puts up no notification-area icon, since the window's own panel button
+  is its icon, so closing the window quits; minimise it to keep it listening. It can start when you
+  sign in: turn that on in Settings, which the setup program also offers on Windows. A start at
+  sign-in waits in the notification area on Windows and opens the window on Linux. Only one copy runs
+  at a time: starting it again brings the running copy's window back instead.
 - **Remembers how you like it.** The volume slider and the light or dark theme on the band are kept
   between runs.
 - **Leaves your recordings alone.** It never changes or removes a file in your recordings

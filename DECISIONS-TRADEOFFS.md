@@ -123,9 +123,9 @@ it runs with the user's own rights.
 
 ### A plain-text run log
 
-Each run adds to a log in the product's own data folder; a windowed start
-sends all of its error output there, so a crash leaves its report. A log
-grown past a set size starts afresh. Uninstall removes it.
+Each run adds to a log in the product's own data folder and a crash leaves
+its report there; on Windows a windowed start sends all of its error output
+there too. A log grown past a set size starts afresh. Uninstall removes it.
 
 - **Rather than:** keeping no record; sending reports anywhere.
 - **Gains:** a fault that left the screen still has an account of itself.

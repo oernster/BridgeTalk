@@ -136,7 +136,7 @@ exactly like one that holds.
   (`voicefiles`), the made lines kept as 16-bit FLAC (`madelines`), the product's local data folder
   both it and the default recordings directory sit in (`appdata`), the log each run leaves in that
   folder with the `RunLog` written to the run's error output (`runlog`),
-  the notification-area icon on Windows and Linux (`taskbar`), keyboard focus for the web view on
+  the notification-area icon, put up on Windows alone (`taskbar`), keyboard focus for the web view on
   Windows plus opening a folder in the platform's file manager (`window`), the plugin adapter
   (`plugin`), reading the pictures out of the committed `.ico` for Linux (`iconfile`), the model run through ONNX Runtime's C API with no binding written for it (`speechmodel`), loading a
   native library and calling into it on Windows and Linux for the plugin adapter and the model run (`nativelib`), the one rule
@@ -203,7 +203,7 @@ package-level variable and there is no service locator or auto-wiring. The struc
 facade is spread over the root files beside them, `settings.go`, `cast.go`, `machine.go`, `folders.go`, `checklist.go`, `audition.go`, `audition_machine.go`, `audition_plugin.go`,
 `chatter.go`, `donate.go`, `updates.go`, `onecopy.go`, `journaldir.go`, `reactions.go`, `runlog.go`, `voices.go`, `identity.go`, `window_life.go`,
 `loop.go` (the loop watching the game), `plugins.go` and `pluginvoices.go` (the plugin surface)
-plus `icon_windows.go` and `icon_other.go` (the icon a Linux tray is handed), each a slice of the surface it would otherwise outgrow the size limit
+plus `icon_windows.go` and `icon_other.go` (the icon a tray off Windows would be handed, though none is started there), each a slice of the surface it would otherwise outgrow the size limit
 carrying; the wire shapes are in `dto.go`. `window.go` holds the window `run` launches: its assets,
 its geometry and `launch`.
 
@@ -743,7 +743,8 @@ no longer found falls back to the first voice with a warning on standard error.
 
 **The command line.** `-voice` names a voice for one run; `-list` prints each voice with its takes and
 the cues it covers, then exits; `-unbound` lists the cues the chosen voice cannot serve, then exits;
-`-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window. `-list`
+`-no-tray` runs without a notification-area icon; `-hidden` starts in the tray with no window, except
+where there is no tray (under `-no-tray` or on Linux), when the window is shown. `-list`
 and `-unbound` exit with an error where the recordings directory holds no voice. A windowed build started
 from a terminal attaches to it first (`runlog.ReportToTerminal`), so both reports print there.
 
@@ -778,7 +779,7 @@ been built on the way past.
 
 ## UI
 
-**Shape.** The application is resident rather than foreground. A tray icon carries the menu; the main
+**Shape.** The application is resident rather than foreground. On Windows a tray icon carries the menu; the main
 window is summoned. The cross asks rather than acts: it is ambiguous in a resident application, meaning
 "put it away" at least as often as "stop it", so `OnBeforeClose` cancels the close and the page draws the
 choice. Minimising leaves the application listening with its tray icon on screen; quitting is deliberate;

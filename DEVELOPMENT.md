@@ -282,12 +282,12 @@ run only.
 | `-list` | prints the recorded voices found with their takes and moment coverage, then exits |
 | `-unbound` | prints the moments the chosen voice cannot serve, then exits |
 | `-no-tray` | runs without a notification-area icon, so closing the window quits |
-| `-hidden` | starts in the notification area with no window, as the login entry does; ignored with `-no-tray` |
+| `-hidden` | starts in the notification area with no window, as the login entry does; ignored with `-no-tray` and on Linux, which has no notification-area icon |
 
 `-list` and `-unbound` open no window and refuse when no voice is found. A windowed
 build started from a terminal prints them in that terminal. With
 `-unbound`, a `-voice` that is not installed is refused rather than replaced. Machine voices and
-plugin voices are cast from the window or the tray; the reporting flags cover recordings alone.
+plugin voices are cast from the window or the Windows tray; the reporting flags cover recordings alone.
 
 Plugins are looked for in a `plugins` folder beside the executable on Windows, so a `go build` run
 from the repository root reads `plugins` there. On Linux the folder is inside the data folder and

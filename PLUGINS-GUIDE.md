@@ -378,9 +378,11 @@ For the person installing one; also for an author proving one works.
 4. **Hear it first** on the Audition pane, which offers every plugin voice that can speak above the
    machine voices (in the order the Cast pane stands them) and plays its takes without casting it
    (FR-585, FR-586).
-5. **Cast the voice** from the Cast pane or from the Voice menu of the icon in the notification
-   area, which lists every plugin voice that can speak after the machine voices (FR-509). Where two
-   plugins offer one voice name, both of those lists show each with the plugin offering it (FR-568).
+5. **Cast the voice** from the Cast pane. On Windows the Voice menu of the icon in the notification
+   area casts it too, listing every plugin voice that can speak after the machine voices (FR-509); on
+   Linux there is no such icon (FR-814). Where two plugins offer one voice name, the Cast pane shows
+   each under its own plugin's heading while the menu shows each with the plugin offering it (FR-568,
+   FR-583).
    The choice is kept for the next run by the plugin's name and the voice's id (FR-569).
 6. **See what it lacks** on the Missing takes pane, which lists the moments the cast voice has no take
    for. It offers no folder to open for a plugin voice, since the plugin decides where its audio is

@@ -9,9 +9,11 @@ Section 11 records open questions; it holds none at present.
 ### 1.1 Purpose
 
 Bridge Talk is a desktop application that watches Elite Dangerous as it is
-played and plays a short piece of recorded audio when something happens in the
-game. The audio is supplied by the person using it: recordings they made
-themselves; recordings made for them by people they know.
+played and speaks a short line when something happens in the game, in the voice
+the person using it has cast. That voice is one of three kinds: recordings the
+person supplies, made by themselves or by people they know (section 3); a machine
+voice whose lines the application makes on the person's own machine (section 6.1);
+a voice a plugin offers from audio already on that machine (section 6.3).
 
 It listens to the game. It does not control the game.
 
@@ -4836,7 +4838,9 @@ The manifest `build_flatpak.sh` writes shall grant `--share=ipc`, `--socket=wayl
 and `--talk-name=org.kde.StatusNotifierWatcher`, each once; it shall grant nothing else.
 Rationale: home holds the prefix of FR-811 and any library root; flatpak excludes `~/.var/app` from
 home, so Steam installed as a flatpak needs its own read-only grant; the sign-in entry of FR-815 sits
-outside the sandbox's own configuration; the tray of FR-814 needs the watcher. The network is granted
+outside the sandbox's own configuration. The watcher was granted for a Linux tray icon; since FR-814
+no tray is put up on Linux, so nothing the application runs talks to the watcher and that one grant
+is wider than what the application uses. The network is granted
 for the update check alone (NFR-S-1, FR-756), added on 2026-09-29: without it the sandbox blocks the
 socket and every check reads as unreachable. The `--share=network` under the manifest's build
 arguments is a different grant, letting the build fetch its modules; it gives the installed

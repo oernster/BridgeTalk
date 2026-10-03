@@ -23,8 +23,15 @@ import (
 // with one of these is one of them.
 var networkPackages = []string{"net", "crypto/tls", "golang.org/x/net"}
 
-// pageRequests are what a page makes a request with or makes one to.
-var pageRequests = regexp.MustCompile(`\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|https?://`)
+// pageRequests are the forms a page is known to make a request with or make one to: the request
+// calls, an address with a scheme or with none (a quote, a paren or an equals sign then two
+// slashes), opening a window, loading a module from anything but a relative path, a service worker,
+// a new image and a member of the global object reached by a computed name, which is how a call
+// can be spelled so that no name above appears. It is a list of known forms, not a proof that no
+// other exists; ARCHITECTURE.md says so.
+var pageRequests = regexp.MustCompile(`\bfetch\s*\(|XMLHttpRequest|\bWebSocket\b|\bEventSource\b|sendBeacon|https?://` +
+	`|['"(=]\s*//[^/\s]|\bwindow\.open\s*\(|\bimport\s*\(\s*(?:[^'"\s.]|['"][^.])|\bserviceWorker\b` +
+	`|\bnew\s+Image\s*\(|\b(?:window|globalThis|self)\s*\[`)
 
 // frontendPage is the page the front end is served from, which can name an address of its own.
 var frontendPage = filepath.Join("frontend", "index.html")
@@ -113,12 +120,20 @@ func TestTheRequestPatternCatchesEachWayARequestIsMade(t *testing.T) {
 		`fetch("/voices")`, `await fetch (url)`, `new XMLHttpRequest()`, `new WebSocket(address)`,
 		`new EventSource(feed)`, `navigator.sendBeacon(url, body)`, `const donate = "https://example.org"`,
 		`@import url(http://fonts.example/a.css);`,
+		// B-9: forms a page makes a request with that the pattern once let through.
+		`<img src="//example.org/p.png" />`, `background: url(//example.org/a.png);`,
+		`new Image().src = "//example.org/p.png"`, `window.open("//example.org")`,
+		`await import("//example.org/m.js")`, `await import(address)`, `window["fe" + "tch"](address)`,
+		`globalThis[name](address)`, `navigator.serviceWorker.register("/worker.js")`,
 	} {
 		if !pageRequests.MatchString(request) {
 			t.Errorf("%q makes a request and was not caught", request)
 		}
 	}
-	for _, ordinary := range []string{`refetchVoices()`, `const fetched = true`, `// the socket is closed`} {
+	for _, ordinary := range []string{
+		`refetchVoices()`, `const fetched = true`, `// the socket is closed`,
+		`const { ChatterPane } = await import('./chatter')`, `run( // a comment`, `import { api } from './api'`,
+	} {
 		if pageRequests.MatchString(ordinary) {
 			t.Errorf("%q makes no request and was caught", ordinary)
 		}

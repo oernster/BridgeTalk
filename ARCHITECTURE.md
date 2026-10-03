@@ -32,7 +32,7 @@ exactly like one that holds.
 | No package of this module the application links imports a network package except `net/http` in the update check's package | `TestTheApplicationImportsNoNetworkPackage` | `network_test.go` |
 | The update check's exemption is still needed: the application links its package and it imports `net/http` | `TestTheUpdateCheckStillNeedsItsExemption` | `network_test.go` |
 | The front end's own source neither makes a request nor names an address to make one to | `TestTheFrontEndMakesNoRequest` | `network_test.go` |
-| The request pattern catches every form a page makes a request with and passes ordinary words | `TestTheRequestPatternCatchesEachWayARequestIsMade` | `network_test.go` |
+| The request pattern catches each known form a page makes a request with (the request calls, an address with or without a scheme, opening a window, a module loaded from anything but a relative path, a service worker, a new image, a global reached by a computed name) and passes ordinary words; it is a list of known forms, not a proof that no other exists | `TestTheRequestPatternCatchesEachWayARequestIsMade` | `network_test.go` |
 | Every write in a package the application links is listed with where it goes; nothing listed has gone | `TestEveryWriteTheApplicationLinksSaysWhereItGoes` | `writes_test.go` |
 | The application reaches the setup package for the sign-in entry and the plugins folder alone | `TestTheApplicationCallsNoOtherSetupWrite` | `writes_test.go` |
 | No source file exceeds the 400-line limit: the Go, the front end's TypeScript and CSS, the setup page | `TestNoFileExceedsLineLimit` | `boundary_test.go` |
@@ -82,7 +82,7 @@ exactly like one that holds.
 | No cue id ends in a segment of digits, which the flat form reads as a take number | `TestNoCueIdEndsInDigits` | `vocabulary_test.go` |
 | No cue id ends in a dot or a space, which Windows strips from a name | `TestNoCueIdEndsInADotOrASpace` | `vocabulary_test.go` |
 | No cue id holds an underscore, which a cue folder writes for a dot | `TestNoCueIdHoldsAnUnderscore` | `vocabulary_test.go` |
-| The wire is stated identically in the DTOs and in `wire.ts` | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
+| The wire is stated identically in the DTOs and in `wire.ts`: every field's name, its type (a Go scalar, DTO, slice or pointer as the TypeScript it arrives as; a union of string literals as a string) and whether it may be absent (`omitempty` against `?`). A slice left nil ships as `null`, which a declared type cannot show; every slice is built with `make` for that reason | `TestTheWireContractMatchesOnBothSides` | `wire_test.go` |
 
 ## Layers
 
@@ -590,14 +590,20 @@ file format reaches the Application layer. The facade polls both every 250 milli
 `Journal.*.log`. The reader stores a byte offset, seeks to it, reads to end of file, prepends any
 partial line carried from the previous pass, splits on newline and carries the trailing fragment
 forward. A file smaller than the stored offset means rotation or truncation, so the reader restarts at
-zero. A line that does not parse is dropped, as is one naming no event.
+zero; only a size actually read says so. A file that cannot be stat'ed or opened for a moment yields
+nothing and keeps its offset and its carried fragment, since reading it as shrunk would replay the
+whole of it once it came back. A line that does not parse is dropped, as is one naming no event.
 
 - **Start at the end, never at the beginning.** On launch the newest journal file's current size becomes
   the starting offset and nothing is read. Replaying an existing session would fire hundreds of clips at
   once. There is no read-all path in this application.
-- **Follow the newest file.** Each poll re-resolves the newest journal by name, since the names embed a
-  sortable timestamp. A changed path starts at offset zero, because the new file's contents genuinely are
-  new.
+- **Follow the newest file.** Each poll re-resolves the newest journal by the time its name states,
+  read in either form the game has named journals in (`Journal.2026-10-03T120000.01.log` and
+  `Journal.261003120000.01.log`), then by part; the two forms do not sort against each other as text.
+  A name stating no time is older than any that does. Only a newer journal is followed: an older one is
+  the newest only while the one being followed is out of reach for a moment. Before a newer journal is
+  followed, the rest of the old one is read, so lines written to it just before the next one opened are
+  heard. A changed path starts at offset zero, because the new file's contents genuinely are new.
 
 **Status (`internal/infrastructure/status`).** `Status.json` is rewritten in place rather than appended,
 so it needs a different reader: read the whole file, parse it and compare it with the previous reading.
@@ -1246,15 +1252,23 @@ journal reader tests a read error's text against `"EOF"`.
   chosen. `openJournal` carries the reason rather than returning it; the Status pane and the Journal
   directory row on the Settings pane show it, standard error prints it and nothing is polled until Browse
   takes a directory that can be watched.
-- **A warning on standard error, then carry on:** no audio device, which runs silent and says so on the
+- **A warning on standard error, then carry on:** a settings file that does not parse, which is kept
+  aside as `settings.json.damaged` (numbered beside any copy kept earlier, never over it) before
+  anything is saved in its place; a settings file that cannot be read, which is left where it is and
+  not saved over while it stays unreadable, a choice then refused with the reason;
+  no audio device, which runs silent and says so on the
   status pane; no tray; a recordings root that is missing or unreadable; a voice name that is not
   found; the scan report.
 - **Said on the Status pane, the window still working:** a fault raised in the loop watching the
   game, which ends that loop alone and writes the fault with its stack to standard error (FR-742).
-- **Passed over while running:** a poll that fails is printed to standard error and skipped until the next
-  tick; a malformed journal line is dropped; a status read that fails to parse is discarded; a part that
-  will not open or decode is passed over with a line in the run log while the take's other parts play,
-  a span reaching outside its file included (FR-574, FR-590); a made line whose samples differ from those
+- **Passed over while running:** a poll that fails is skipped until the next tick, its reason printed to
+  standard error once for each new reason and once more when the source reads again, rather than four
+  times a second; a malformed journal line is dropped; a status read that fails to parse is discarded; a
+  part that will not open or decode is passed over with a line in the run log while the take's other
+  parts play, a span reaching outside its file included (FR-574, FR-590). So is a part whose header
+  states no sample rate or a length over ten minutes, refused before any of it is decoded; so is a part
+  whose decoder faults on what its file states, the fault named as the reason; the scan reports the
+  same takes as ones that will not play rather than offering them; a made line whose samples differ from those
   its pause or its ending was found in is written without that pause or fade and logged (FR-553,
   FR-556).
 - **Passed over at startup, named in the run log:** a plugins folder that cannot be found, made or

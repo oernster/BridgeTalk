@@ -123,14 +123,16 @@ func (r *reader) part() take.Part {
 	return take.Part{}
 }
 
-// size reads a number that may not be negative and may not exceed what is left, which is
-// every length and every count in these layouts.
+// size reads a number that may not be negative and may not exceed how many entries the bytes
+// left can hold, each taking at least least bytes, which is every length and every count in
+// these layouts.
 //
 // Both guards matter against foreign input: a negative would index backwards, while a count
-// larger than the bytes remaining would have a reader allocate for entries that cannot be
-// there. Nothing in a layout is smaller than one byte, so the bytes left are a true ceiling
-// on how many entries can follow.
-func (r *reader) size(what string) int32 {
+// larger than the bytes remaining can hold would have a reader allocate for entries that cannot
+// be there. The bytes left divided by the least an entry occupies is a true ceiling on how many
+// can follow; the bytes left alone are not, since a reader holds an entry in more memory than
+// its least encoding, so a count bounded by bytes alone could set aside many times the answer.
+func (r *reader) size(what string, least int) int32 {
 	value := r.count(what)
 	if r.err != nil {
 		return 0
@@ -139,12 +141,24 @@ func (r *reader) size(what string) int32 {
 		r.fail("its %s is %d, which is not a number of anything", what, value)
 		return 0
 	}
-	if int(value) > len(r.data)-r.at {
-		r.fail("its %s is %d with %d bytes left", what, value, len(r.data)-r.at)
+	if left := len(r.data) - r.at; int(value) > left/least {
+		r.fail("its %s is %d with %d bytes left", what, value, left)
 		return 0
 	}
 	return value
 }
+
+// The least bytes each entry of a layout occupies, which bound the counts that precede them.
+const (
+	// leastByte is one byte of text.
+	leastByte = 1
+	// leastPart is a part's kind and its path's length, the path empty.
+	leastPart = 2 * intSize
+	// leastTake is a take's part count and one part, since a take with no parts is refused.
+	leastTake = intSize + leastPart
+	// leastVoice is a voice's id, name, group and reason lengths with its ready flag.
+	leastVoice = 5 * intSize
+)
 
 // text reads one length-prefixed string.
 //
@@ -153,7 +167,7 @@ func (r *reader) size(what string) int32 {
 // user as a name nobody can read or a path nobody can find, so they are refused here where
 // the plugin that sent them can still be named.
 func (r *reader) text(what string) string {
-	length := r.size(what + " length")
+	length := r.size(what+" length", leastByte)
 	if r.err != nil {
 		return ""
 	}
@@ -184,7 +198,7 @@ func (r *reader) done(what string) error {
 // DecodeDescription reads a plugin's account of itself.
 func DecodeDescription(data []byte) (Description, error) {
 	r := &reader{data: data}
-	voices := r.size("voice count")
+	voices := r.size("voice count", leastVoice)
 	described := Description{Name: r.text("plugin name")}
 	for index := int32(0); index < voices; index++ {
 		voice := VoiceInfo{ID: r.text("voice id"), Name: r.text("voice name"), Group: r.text("group")}
@@ -208,10 +222,10 @@ func DecodeDescription(data []byte) (Description, error) {
 // who installed it.
 func DecodeTakes(data []byte) ([]take.Take, error) {
 	r := &reader{data: data}
-	count := r.size("take count")
+	count := r.size("take count", leastTake)
 	var takes []take.Take
 	for index := int32(0); index < count; index++ {
-		parts := r.size("part count")
+		parts := r.size("part count", leastPart)
 		if r.err == nil && parts == 0 {
 			r.fail("one of its takes has no parts")
 		}

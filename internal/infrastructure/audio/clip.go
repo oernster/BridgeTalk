@@ -53,12 +53,27 @@ func load(part take.Part) (beep.Streamer, error) {
 		source = beep.Resample(resampleQuality, format.SampleRate, deviceSampleRate, streamer)
 	}
 
-	buffer := beep.NewBuffer(deviceFormat)
-	buffer.Append(source)
+	buffer, err := readWhole(source)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", described(part), err)
+	}
 	if buffer.Len() == 0 {
 		return nil, fmt.Errorf("%q decoded to no audio", described(part))
 	}
 	return buffer.Streamer(0, buffer.Len()), nil
+}
+
+// readWhole reads a part's samples, already at the device's rate, into memory, refusing one that
+// runs past maxPartFrames. fits refuses a part whose header states too great a length; this holds
+// one whose header states no length (or less than it holds) to the same ceiling, reading one frame
+// past it at most.
+func readWhole(source beep.Streamer) (*beep.Buffer, error) {
+	buffer := beep.NewBuffer(deviceFormat)
+	buffer.Append(beep.Take(maxPartFrames+1, source))
+	if buffer.Len() > maxPartFrames {
+		return nil, fmt.Errorf("%w: it runs past %v", ErrTooLong, maxPartDuration)
+	}
+	return buffer, nil
 }
 
 // decode opens a part with the decoder its format names, naming the part in any error it

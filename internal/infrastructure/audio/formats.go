@@ -34,6 +34,23 @@ var ErrNoSound = errors.New("it holds no sound")
 // past the end of its file (FR-590).
 var ErrSpanOutsideFile = errors.New("its span does not lie inside its file")
 
+// ErrDamaged is returned for a file whose decoder faulted on what the file states, such as a
+// block align of 0; the fault is named after it.
+var ErrDamaged = errors.New("it is damaged")
+
+// ErrNoSampleRate is returned for a file whose header states a sample rate of 0 or below, which
+// no rate can be brought from.
+var ErrNoSampleRate = errors.New("its header states no sample rate")
+
+// ErrTooLong is returned for a part that would decode to more than maxPartDuration.
+var ErrTooLong = errors.New("it is longer than any part is held for")
+
+// maxPartDuration is the longest a part may play. A part is decoded whole into memory before it is
+// heard (clip.go), so its length is a size foreign input chooses: a file's header or a plugin's
+// span. A spoken line runs to seconds; ten minutes at the device's rate is about a hundred
+// megabytes held, which is the most one part may cost.
+const maxPartDuration = 10 * time.Minute
+
 // opener decodes an open part in one format.
 type opener func(part io.ReadSeekCloser) (beep.StreamSeekCloser, beep.Format, error)
 
@@ -115,12 +132,87 @@ func open(part take.Part) (beep.StreamSeekCloser, beep.Format, func() error, err
 		_ = file.Close()
 		return nil, beep.Format{}, noCloser, err
 	}
-	streamer, format, err := decoder(reading)
+	var streamer beep.StreamSeekCloser
+	var format beep.Format
+	err = safely(func() (err error) {
+		streamer, format, err = decoder(reading)
+		return err
+	})
+	if err == nil {
+		err = fits(streamer, format)
+	}
 	if err != nil {
 		_ = file.Close()
 		return nil, beep.Format{}, noCloser, err
 	}
-	return streamer, format, file.Close, nil
+	return &guarded{StreamSeekCloser: streamer}, format, file.Close, nil
+}
+
+// fits refuses a decoded part whose header states no sample rate or a length longer than any part
+// is held for, before a sample of it is read. A length the header does not state reads as 0 here;
+// readWhole holds such a part to the same ceiling as it reads.
+func fits(streamer beep.StreamSeekCloser, format beep.Format) error {
+	if format.SampleRate <= 0 {
+		return fmt.Errorf("%w: %d", ErrNoSampleRate, format.SampleRate)
+	}
+	return safely(func() error {
+		atDeviceRate := int64(streamer.Len()) * int64(deviceSampleRate) / int64(format.SampleRate)
+		if atDeviceRate > int64(maxPartFrames) {
+			return fmt.Errorf("%w: %v", ErrTooLong, deviceSampleRate.D(int(atDeviceRate)).Round(time.Second))
+		}
+		return nil
+	})
+}
+
+// maxPartFrames is maxPartDuration counted in frames at the device's rate.
+var maxPartFrames = deviceSampleRate.N(maxPartDuration)
+
+// safely runs a call into a decoder, answering a fault inside it as ErrDamaged with the fault named.
+// A decoder believes what a file states; a file stating a block align of 0 makes one index out of
+// range. A part is the user's file or a plugin's span, so such a fault is the reason that part will
+// not play, never the end of the run.
+func safely(call func() error) (err error) {
+	defer func() {
+		if fault := recover(); fault != nil {
+			err = fmt.Errorf("%w: %v", ErrDamaged, fault)
+		}
+	}()
+	return call()
+}
+
+// guarded is a decoder whose reading and seeking go through safely. A fault ends the stream; Err
+// then answers it, as it would answer a read the file refused.
+type guarded struct {
+	beep.StreamSeekCloser
+	fault error
+}
+
+// Stream reads through safely; after a fault it reads nothing more.
+func (g *guarded) Stream(samples [][2]float64) (filled int, ok bool) {
+	if g.fault != nil {
+		return 0, false
+	}
+	g.fault = safely(func() error {
+		filled, ok = g.StreamSeekCloser.Stream(samples)
+		return nil
+	})
+	if g.fault != nil {
+		return 0, false
+	}
+	return filled, ok
+}
+
+// Seek moves through safely.
+func (g *guarded) Seek(position int) error {
+	return safely(func() error { return g.StreamSeekCloser.Seek(position) })
+}
+
+// Err answers a fault met while reading before anything the decoder holds.
+func (g *guarded) Err() error {
+	if g.fault != nil {
+		return g.fault
+	}
+	return g.StreamSeekCloser.Err()
 }
 
 // spanReader is a stretch of an open file that reads, seeks and closes as a file of its own, so

@@ -125,20 +125,17 @@ func TestAFileThatShrankIsReadFromTheBeginningAgain(t *testing.T) {
 	}
 }
 
-// A file that has gone is a file that shrank to nothing, so it is a rotation and the
-// position resets. Holding the old offset would leave the reader seeking past the end
-// of whatever file appears next under that name.
-func TestAFileThatVanishedIsTreatedAsARotation(t *testing.T) {
+// A file that is not there yields nothing and keeps its place: being out of reach is not
+// shrinking. A file that later appears under that name smaller than the offset is a
+// rotation, which a successful stat then says (TestAJournalThatCameBackSmallerIsReadFromItsStart).
+func TestAFileThatIsNotThereKeepsItsPlace(t *testing.T) {
 	result := journal.ReadNewBytes(filepath.Join(t.TempDir(), "absent.log"), 42, []byte("held"))
 
 	if len(result.Lines) != 0 {
 		t.Fatalf("got lines from a missing file: %v", result.Lines)
 	}
-	if result.Offset != 0 {
-		t.Fatalf("offset: got %d, want a reset to 0", result.Offset)
-	}
-	if len(result.Partial) != 0 {
-		t.Fatalf("partial: got %q, want the stale carry dropped", result.Partial)
+	if result.Offset != 42 || string(result.Partial) != "held" {
+		t.Fatalf("got offset %d and partial %q, want 42 and the carry kept", result.Offset, result.Partial)
 	}
 }
 

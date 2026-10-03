@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -63,25 +62,38 @@ func (s *Source) Poll() ([]event.Event, error) {
 	if err != nil {
 		return nil, err
 	}
-	if newest != s.path {
+	events := make([]event.Event, 0)
+	// Only a newer journal is followed. One that is older than the journal being followed is
+	// history: it is the newest only while the one being followed is out of reach for a moment.
+	if newest != s.path && newerJournal(newest, s.path) {
+		// The game can write its last lines to the old journal and open the next within one
+		// poll; those lines are read before the old journal is left behind.
+		events = s.readOn(events)
 		// A new journal means a new play session. Read it from the start.
 		s.path = newest
 		s.offset = emptyOffset
 		s.partial = nil
 	}
+	return s.readOn(events), nil
+}
 
+// readOn reads what has been added to the journal being followed, appending its events to events.
+func (s *Source) readOn(events []event.Event) []event.Event {
 	result := ReadNewBytes(s.path, s.offset, s.partial)
 	s.offset = result.Offset
 	s.partial = result.Partial
-
-	events := make([]event.Event, 0, len(result.Lines))
 	for _, line := range result.Lines {
 		parsed, ok := s.parse(line)
 		if ok {
 			events = append(events, parsed)
 		}
 	}
-	return events, nil
+	return events
+}
+
+// newerJournal reports whether the journal at path names a later time than the one at current.
+func newerJournal(path, current string) bool {
+	return stampOf(filepath.Base(path)).newerThan(stampOf(filepath.Base(current)))
 }
 
 // parse turns one journal line into an Event, dropping anything malformed.
@@ -106,7 +118,7 @@ func (s *Source) parse(line string) (event.Event, bool) {
 	return event.New(event.SourceJournal, name, event.EdgeNone, fields, at), true
 }
 
-// newestPath returns the journal file whose name sorts last, which is the newest one.
+// newestPath returns the journal file whose name states the latest time, which is the newest one.
 func (s *Source) newestPath() (string, error) {
 	matches, err := filepath.Glob(filepath.Join(s.directory, journalPattern))
 	if err != nil {
@@ -115,10 +127,16 @@ func (s *Source) newestPath() (string, error) {
 	if len(matches) == 0 {
 		return "", fmt.Errorf("no journal files in %s", s.directory)
 	}
-	// Journal names embed a sortable timestamp, so lexical order is time order and
-	// a name comparison avoids stat-ing every file on every poll.
-	sort.Strings(matches)
-	return matches[len(matches)-1], nil
+	// Journal names embed the time their session began, so reading it avoids stat-ing every
+	// file on every poll. It is read rather than compared as text: the two forms the game has
+	// named journals in do not sort against each other (order.go).
+	newest := matches[0]
+	for _, match := range matches[1:] {
+		if newerJournal(match, newest) {
+			newest = match
+		}
+	}
+	return newest, nil
 }
 
 // IsJournalFile reports whether a name looks like a journal file, used by tests and

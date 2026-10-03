@@ -102,8 +102,8 @@ func (a *App) poll() {
 
 	for _, source := range sources {
 		events, err := source.Poll()
+		a.noteFailure(source.Name(), err)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", source.Name(), err)
 			continue
 		}
 		if len(events) > 0 && a.session.hasVoice() {
@@ -112,6 +112,26 @@ func (a *App) poll() {
 	}
 	if a.session.scheduler != nil {
 		a.session.scheduler.Advance()
+	}
+}
+
+// noteFailure says a source's failure once for each new reason; it says once that it reads again.
+//
+// A poll runs four times a second; a journal lost for an hour failing every one of them wrote a
+// line each time into a log cut only when a run starts. Repeating a fault changes nothing a reader
+// can act on (FR-742), so only a change is said.
+func (a *App) noteFailure(name string, err error) {
+	last, failed := a.failing[name]
+	if err == nil {
+		if failed {
+			delete(a.failing, name)
+			fmt.Fprintf(a.errorOutput, "%s: reading again\n", name)
+		}
+		return
+	}
+	if reason := err.Error(); !failed || reason != last {
+		a.failing[name] = reason
+		fmt.Fprintf(a.errorOutput, "%s: %v\n", name, err)
 	}
 }
 

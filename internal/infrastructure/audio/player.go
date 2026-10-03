@@ -265,11 +265,20 @@ func (p *Player) passedOver(part take.Part, err error) {
 }
 
 // loadClip reads a clip whole with the player's load where one is set, else the package's own.
-func (p *Player) loadClip(part take.Part) (beep.Streamer, error) {
-	if p.load != nil {
-		return p.load(part)
-	}
-	return load(part)
+//
+// It runs on the player's own goroutine, where a fault would end the run. A fault while reading a
+// part is that part's reason for not playing, so it is answered as one and the part is passed over
+// like any other that will not open.
+func (p *Player) loadClip(part take.Part) (source beep.Streamer, err error) {
+	err = safely(func() (err error) {
+		if p.load != nil {
+			source, err = p.load(part)
+			return err
+		}
+		source, err = load(part)
+		return err
+	})
+	return source, err
 }
 
 // sleepOrCancel waits for a gap, returning false when cancelled during it.

@@ -119,6 +119,9 @@ log names the file, the version it stated and the version Bridge Talk implements
    plugin answering garbage could ask Bridge Talk to set aside two gigabytes. A size above the limit
    is refused by the number it asked for and the second call is never made. No honest answer comes
    near it: the largest is a description of every voice a plugin offers, which is names and reasons.
+   Within an answer, a count is refused where the bytes left could not hold that many entries at their
+   smallest. The audio a part names is held to a limit as well: a part that would play for more than
+   ten minutes is passed over before any of it is decoded, as is one whose header states no sample rate.
 
 ### Calls arrive one at a time, on one thread
 
@@ -171,7 +174,8 @@ and never kept, so a voice may move between groups from one release to the next 
 losing the voice they cast.
 
 A plugin offering no voice at all is passed over with the reason recorded, as is one offering a voice
-with no name or no id (FR-566).
+with no name or no id (FR-566) or two voices under one id, since a voice is found by its id and the
+second could never be cast.
 
 ### BridgeTalkPluginTakes
 
@@ -345,7 +349,8 @@ Every refusal names what was refused and why, in the run log at `%LOCALAPPDATA%\
 whose error output is redirected, writes these lines to that output instead.
 
 A plugin is passed over when the file will not load, when a required function is missing, when the
-ABI version does not match, when it offers no voice or when it offers a voice with no name or no id
+ABI version does not match or Version faults, when it offers no voice, when it offers a voice with no
+name or no id or when two of its voices share an id
 (FR-566). A voice whose `ready` is 0 is not a refusal of the plugin: the voice is shown with its
 reason and cannot be cast; the log names it with that reason too. A voice that gives an empty reason
 is said to have given none.

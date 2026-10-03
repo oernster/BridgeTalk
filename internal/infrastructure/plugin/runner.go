@@ -50,16 +50,18 @@ func newRunner() *runner {
 // else's code reached through a raw call, so a panic on the way into it or out of it is a thing
 // that can happen; without this it would end the whole application, taking the window with it
 // over one voice that misbehaved. The call then answers whatever it had, which for every caller
-// here is the zero value; that is already what a refused call means.
-func (r *runner) do(fn func()) {
+// here is the zero value; that is already what a refused call means. The fault is answered too,
+// so a caller that would otherwise read the zero value as an answer can say what really happened.
+func (r *runner) do(fn func()) (fault any) {
 	defer func() { _ = recover() }()
 	done := make(chan struct{})
 	r.work <- func() {
 		defer close(done)
-		defer func() { _ = recover() }()
+		defer func() { fault = recover() }()
 		fn()
 	}
 	<-done
+	return fault
 }
 
 // close ends the thread. It is safe to call more than once, since the application closes on

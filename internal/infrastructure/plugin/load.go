@@ -117,7 +117,11 @@ func (s *Set) one(path, name string, open Opener) (*Plugin, string) {
 	loaded := &Plugin{File: name, library: library, on: s.on}
 
 	var version int32
-	s.on.do(func() { version = library.Version() })
+	// A fault inside Version leaves version at 0, which would read as a plugin built against
+	// version 0; the fault is the reason it is passed over, so the fault is what is said.
+	if fault := s.on.do(func() { version = library.Version() }); fault != nil {
+		return nil, fmt.Sprintf("it faulted when asked which interface version it was built against: %v", fault)
+	}
 	if version != ABIVersion {
 		return nil, fmt.Sprintf(
 			"it was built against interface version %d; this is %s %d",
@@ -137,10 +141,17 @@ func (s *Set) one(path, name string, open Opener) (*Plugin, string) {
 	}
 
 	loaded.Name = described.Name
+	// A voice is found by its plugin and its id (FR-569), so an id must name one voice alone: a
+	// second voice under it could never be cast, since casting it would cast the first.
+	firstWithID := make(map[string]int, len(described.Voices))
 	for index, voice := range described.Voices {
 		if voice.Name == "" || voice.ID == "" {
 			return nil, fmt.Sprintf("its voice %d has no %s", index+1, missing(voice))
 		}
+		if earlier, taken := firstWithID[voice.ID]; taken {
+			return nil, fmt.Sprintf("its voices %d and %d share the id %q", earlier+1, index+1, voice.ID)
+		}
+		firstWithID[voice.ID] = index
 		reason := voice.Reason
 		if !voice.Ready && reason == "" {
 			reason = noReasonGiven

@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/oernster/bridge-talk/internal/application/ports"
 	"github.com/oernster/bridge-talk/internal/infrastructure/wholefile"
@@ -49,8 +50,58 @@ type stored struct {
 	SkippedUpdate string `json:"skippedUpdate"`
 }
 
+// damagedSuffix names where a settings file that will not parse is kept aside.
+const damagedSuffix = ".damaged"
+
 // Settings reads and writes the choices that outlive a run.
-type Settings struct{ path string }
+//
+// It remembers what its last Load met. Every remembered choice is a load, one field changed and a
+// save, so a load that answered nothing because the file could not be read must stop the save that
+// follows it: that save would put one choice in place of all of them.
+type Settings struct {
+	path string
+
+	mu         sync.Mutex
+	problem    error
+	unreadable bool
+}
+
+// Problem answers what the last Load met that was wrong with the file; nil where nothing was. No
+// file is not a problem: it is a first run.
+func (s *Settings) Problem() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.problem
+}
+
+// ErrUnreadable is returned by a save that follows a load which could not read the file.
+var ErrUnreadable = errors.New("the settings file could not be read, so it was not written over")
+
+// met records what a load met: a problem (nil for none) with whether the file stood unread.
+func (s *Settings) met(problem error, unreadable bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.problem, s.unreadable = problem, unreadable
+}
+
+// keepAside moves a file that will not parse to a name of its own beside it, never over a copy
+// kept aside earlier: each is the only record of the choices it held. It answers where it went.
+func (s *Settings) keepAside() (string, error) {
+	aside := s.path + damagedSuffix
+	for count := firstNumberedCopy; ; count++ {
+		if _, err := os.Lstat(aside); errors.Is(err, fs.ErrNotExist) {
+			break
+		}
+		aside = fmt.Sprintf("%s%s.%d", s.path, damagedSuffix, count)
+	}
+	if err := os.Rename(s.path, aside); err != nil {
+		return "", refusal.Reason(err)
+	}
+	return aside, nil
+}
+
+// firstNumberedCopy is the number the second copy kept aside is given; the first has none.
+const firstNumberedCopy = 2
 
 // NewSettings builds a store under the user's own configuration directory.
 //
@@ -72,22 +123,39 @@ func (s *Settings) Path() string { return s.path }
 // Load answers with what is stored. It answers with nothing at all where there is no
 // file, where it cannot be read or where it does not parse.
 //
-// None of those three is different to a reader: in each case nothing has been chosen
-// that can be honoured, so the application detects as usual. Returning an error would
-// make the caller decide between "start anyway" and "refuse", where only one answer
-// is sensible.
+// None of those three stops a start: in each case nothing has been chosen that can be
+// honoured, so the application detects as usual. Returning an error would make the caller
+// decide between "start anyway" and "refuse", where only one answer is sensible.
+//
+// They differ to the file, though. A file that will not parse is the user's choices with a
+// fault in them, so it is kept aside before anything can be saved in its place; Problem
+// names where. A file that cannot be read is left where it is and the next Save refuses, since
+// a choice built from nothing would be saved over all of them.
 func (s *Settings) Load() ports.Settings {
 	if s.path == "" {
 		return ports.Settings{}
 	}
 	raw, err := os.ReadFile(s.path)
+	if errors.Is(err, fs.ErrNotExist) {
+		s.met(nil, false)
+		return ports.Settings{}
+	}
 	if err != nil {
+		s.met(fmt.Errorf("reading %s: %w", s.path, refusal.Reason(err)), true)
 		return ports.Settings{}
 	}
 	var held stored
 	if err := json.Unmarshal(raw, &held); err != nil {
+		aside, keepErr := s.keepAside()
+		if keepErr != nil {
+			s.met(fmt.Errorf("%s does not parse and could not be kept aside: %w", s.path, keepErr), true)
+			return ports.Settings{}
+		}
+		s.met(fmt.Errorf("%s did not parse, so it was kept aside as %s and the choices start afresh",
+			s.path, aside), false)
 		return ports.Settings{}
 	}
+	s.met(nil, false)
 	return ports.Settings{
 		LibraryRoot:   held.LibraryRoot,
 		JournalDir:    held.JournalDir,
@@ -108,6 +176,12 @@ func (s *Settings) Load() ports.Settings {
 func (s *Settings) Save(chosen ports.Settings) error {
 	if s.path == "" {
 		return fmt.Errorf("no configuration directory on this machine")
+	}
+	s.mu.Lock()
+	unreadable := s.unreadable
+	s.mu.Unlock()
+	if unreadable {
+		return ErrUnreadable
 	}
 	// The encode cannot fail: stored holds strings only; the encoder replaces
 	// invalid UTF-8 rather than refusing it. The error it returns is discarded here

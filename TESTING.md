@@ -53,11 +53,11 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `internal/refusal` | 100% | 100% | `test.ps1` |
 | `tools/internal/pyvenv` | 100% | 100% | `test.ps1` |
 | `internal/infrastructure/modelfiles` | 98.6% | 98% | `test.ps1` |
-| `internal/infrastructure/audio` | 95.7% | 95% | `test.ps1` |
-| `internal/infrastructure/plugin` | 94.8% | 91% | `test.ps1` |
+| `internal/infrastructure/audio` | 96.6% | 95% | `test.ps1` |
+| `internal/infrastructure/plugin` | 94.9% | 91% | `test.ps1` |
 | `internal/infrastructure/speechmodel` | 92.5% | 91% | `test.ps1` |
-| `internal/infrastructure/audio/audiotest` | 86.1% | 86% | `test.ps1` |
-| the root package (the Wails facade) | 84.5% | 82% | `test.ps1` |
+| `internal/infrastructure/audio/audiotest` | 87.2% | 86% | `test.ps1` |
+| the root package (the Wails facade) | 84.4% | 82% | `test.ps1` |
 | `internal/infrastructure/instance` | 83.0% | 83% | `test.ps1` |
 | `internal/infrastructure/setup` | 80.7% | 79% | `test.ps1` |
 | `tools/linuxicons` | 80.6% | 80% | `test.ps1` |
@@ -73,10 +73,10 @@ gone](#it-could-not-happen-so-it-is-gone).
 | `installer` | 0% | none | not gated |
 | `internal/product` | no statements, constants only | none | not gated |
 
-1,093 test functions, which expand to 1,203 runs once their subtests are counted (measured on
+1,115 test functions, which expand to 1,225 runs once their subtests are counted (measured on
 Windows: `func Test` in every tracked `_test.go` file bar `TestMain`, then the `run` events of an
 uncached `go test -count=1 -json` over the packages `go list ./...` gives outside `node_modules`,
-which are 1,087 top-level runs plus 116 subtests; the
+which are 1,108 top-level runs plus 117 subtests; the
 three build-tagged benchmarks and the three tests of `nativelib`'s Linux half are counted as
 functions but do not run there).
 Fifty-eight of them are the structural tests in `tests/structural`, which scan the source
@@ -211,7 +211,7 @@ release is for.
   menu as drawn is not. The plugin voices added statements to what the menu is given that
   only the Windows shell can run, the separator between one kind of voice and the next among
   them; everything a test can reach in the package is still reached.
-- **`internal/infrastructure/audio` (95.7%).** `run` and `playOne` hand a loaded clip
+- **`internal/infrastructure/audio` (96.6%).** `run` and `playOne` hand a loaded clip
   to the speaker. What the speaker decides about its queue is tested over a fake of the
   device's queue in `speaker_test.go`: a take that follows another closely waits for its end,
   while a stop, an interrupting take and a take after silence each drop what is queued. The
@@ -221,7 +221,10 @@ release is for.
   volume curve are tested without a sound card. What stays unreached is the device
   failing to open (`NewPlayer`, `outputContext`, `openSpeaker`), a clip at another sample
   rate being resampled, a clip that decodes to no audio, a probe that ends in a stream
-  error and a cancel landing between clips or during the gap in `run`. A part that will not
+  error, a part whose header states no length running past the ten-minute ceiling as it is
+  read whole (the ceiling itself is tested in `readWhole` over an endless stream; the WAV and
+  MP3 fixtures state their length, so `fits` refuses them first) and a cancel landing between
+  clips or during the gap in `run`. A part that will not
   open is no longer among them: `playOne` answers on that path before the device is
   reached, so what it records is read back with no sound card (FR-574). The figure moves
   between runs: 95.3% and 95.7% were both measured on 2026-09-15, so the floor sits at 95%. Reading a clip whole
@@ -229,7 +232,7 @@ release is for.
   a streamer still holding reading to do fails there, which is exactly the reading that
   must not happen on the device's thread. The stall counter is tested over an injected
   clock rather than by waiting.
-- **`internal/infrastructure/audio/audiotest` (86.1%).** Test support. What is not run is
+- **`internal/infrastructure/audio/audiotest` (87.2%).** Test support. What is not run is
   its own failure branches: a WAV that cannot be built, a format it cannot make and a
   folder or file that cannot be written. Each fails the test that called it, which no
   passing run does.
@@ -269,7 +272,7 @@ release is for.
   way. Every test passed then, the stress test included; the `plugin` tests have changed since the
   plugin interface was revised and have not been run there again. The flatpak's own build has cgo on, which that run
   does not cover.
-- **A plugin's three calls in `internal/infrastructure/plugin` (94.8%).** `Version`, `Describe` and
+- **A plugin's three calls in `internal/infrastructure/plugin` (94.9%).** `Version`, `Describe` and
   `Takes` in `native.go`, with the line of `OpenLibrary` that keeps a function it found, need a
   library exporting the three functions, which cannot be built here.
 - **`main`, `run` and `newMaking` in `main.go`, `startTray` in `voices.go`, `launch` in `window.go`

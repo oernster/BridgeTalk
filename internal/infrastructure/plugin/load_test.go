@@ -210,6 +210,12 @@ func TestAPluginThatMisbehavesIsRefusedWithAReason(t *testing.T) {
 	corrupt.Corrupt = true
 	refusing := crew("Crew")
 	refusing.RefuseDescribe = true
+	// B-7: a voice is found by its plugin and its id, taking the first match, so a second voice
+	// under one id could never be cast: casting it cast the first.
+	repeated := crew("Crew")
+	twin := repeated.Voices[0]
+	twin.Name = "The Second Officer"
+	repeated.Voices = append(repeated.Voices, twin)
 
 	for _, each := range []struct {
 		name    string
@@ -222,6 +228,7 @@ func TestAPluginThatMisbehavesIsRefusedWithAReason(t *testing.T) {
 		{"offering no voice", noVoices, "offers no voice"},
 		{"offering a voice with no name", unnamed, "has no name"},
 		{"offering a voice with no id", noID, "has no id"},
+		{"offering two voices under one id", repeated, `its voices 1 and 2 share the id "one"`},
 	} {
 		t.Run(each.name, func(t *testing.T) {
 			t.Parallel()

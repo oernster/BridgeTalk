@@ -45,13 +45,41 @@ func MP3() []byte {
 	return frame
 }
 
+// Header is the format chunk of a WAV file, field by field as the file states it, so a test
+// can state one that lies: a block align of 0 or below, a sample rate of 0, a low rate that
+// expands many times over when it is brought up to the device's.
+type Header struct {
+	SampleRate    int32
+	Channels      int16
+	BitsPerSample int16
+	BlockAlign    int16
+}
+
+// Standard is the header of every recording that plays made here: 44.1 kHz, stereo, 16 bit.
+func Standard() Header {
+	return Header{
+		SampleRate:    sampleRate,
+		Channels:      channels,
+		BitsPerSample: bitsPerSample,
+		BlockAlign:    channels * bitsPerSample / bitsPerByte,
+	}
+}
+
 // WAV builds the smallest real WAV file holding a given count of frames: a header the
 // decoder accepts and the samples behind it. Zero frames makes the header alone.
 func WAV(t testing.TB, frames int) []byte {
 	t.Helper()
-	blockAlign := channels * bitsPerSample / bitsPerByte
-	dataSize := frames * blockAlign
+	var samples bytes.Buffer
+	for index := 0; index < frames*channels; index++ {
+		_ = binary.Write(&samples, binary.LittleEndian, int16(index))
+	}
+	return WAVOf(t, Standard(), samples.Bytes())
+}
 
+// WAVOf builds a WAV file stating header, with data as the samples behind it. The header is
+// written as given, damaged or not; the data chunk's size is the length of data.
+func WAVOf(t testing.TB, header Header, data []byte) []byte {
+	t.Helper()
 	var out bytes.Buffer
 	write := func(values ...any) {
 		for _, value := range values {
@@ -66,16 +94,14 @@ func WAV(t testing.TB, frames int) []byte {
 		headerAfterRiff = 36
 	)
 	out.WriteString("RIFF")
-	write(uint32(headerAfterRiff + dataSize))
+	write(uint32(headerAfterRiff + len(data)))
 	out.WriteString("WAVE")
 	out.WriteString("fmt ")
-	write(uint32(formatChunkSize), uint16(pcm), uint16(channels), uint32(sampleRate))
-	write(uint32(sampleRate*blockAlign), uint16(blockAlign), uint16(bitsPerSample))
+	write(uint32(formatChunkSize), uint16(pcm), header.Channels, header.SampleRate)
+	write(header.SampleRate*int32(header.BlockAlign), header.BlockAlign, header.BitsPerSample)
 	out.WriteString("data")
-	write(uint32(dataSize))
-	for index := 0; index < frames*channels; index++ {
-		write(int16(index))
-	}
+	write(uint32(len(data)))
+	out.Write(data)
 	return out.Bytes()
 }
 

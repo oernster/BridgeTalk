@@ -57,20 +57,72 @@ var wireShapes = map[string]string{
 }
 
 // tsInterface captures one interface and its body; tsField matches one field inside
-// that body; tsComment matches a block comment, which is removed first so that prose
-// naming a field is never read as a declaration of one.
+// that body, with its optional mark and its type; tsAlias matches a type alias, such as a
+// union of string literals; tsComment matches a block comment, which is removed first so
+// that prose naming a field is never read as a declaration of one.
 var (
 	tsInterface = regexp.MustCompile(`(?s)export interface (\w+) \{(.*?)\n\}`)
-	tsField     = regexp.MustCompile(`(?m)^\s+([A-Za-z_]\w*)\??:`)
+	tsField     = regexp.MustCompile(`(?m)^\s+([A-Za-z_]\w*)(\??):\s*(.+?)\s*;?\s*$`)
+	tsAlias     = regexp.MustCompile(`(?m)^export type (\w+) = (.+?)\s*;?\s*$`)
+	tsLiteral   = regexp.MustCompile(`^\s*('[^']*'|"[^"]*")\s*$`)
 	tsComment   = regexp.MustCompile(`(?s)/\*.*?\*/`)
 )
 
-// facadeFieldNames reads the wire field names off one struct, taking the json tag
-// rather than the Go name because the tag is what actually reaches the page.
-func facadeFieldNames(t *testing.T, path, name string, structure *ast.StructType) []string {
+// wireField is one field as it crosses: the TypeScript type it reads as and whether it may be
+// absent. On the Go side the type is what the marshaller sends, stated in TypeScript; absent is
+// a field tagged omitempty, which the page must declare with a question mark.
+type wireField struct {
+	tsType   string
+	optional bool
+}
+
+// goScalars are the Go types the facade sends, by the TypeScript type each arrives as.
+var goScalars = map[string]string{
+	"string": "string", "bool": "boolean",
+	"int": "number", "int32": "number", "int64": "number", "float64": "number",
+}
+
+// omitEmpty is the json option that leaves a field out of the object when it is empty.
+const omitEmpty = "omitempty"
+
+// tsTypeOf states a Go field type in TypeScript: a scalar, another DTO by the interface paired
+// with it, a slice as an array and a pointer as its type or null. Empty for a type the wire test
+// cannot state, which is refused rather than passed over.
+func tsTypeOf(expr ast.Expr) string {
+	switch typed := expr.(type) {
+	case *ast.Ident:
+		if shape, ok := wireShapes[typed.Name]; ok {
+			return shape
+		}
+		return goScalars[typed.Name]
+	case *ast.ArrayType:
+		if inner := tsTypeOf(typed.Elt); inner != "" && typed.Len == nil {
+			return inner + "[]"
+		}
+	case *ast.StarExpr:
+		if inner := tsTypeOf(typed.X); inner != "" {
+			return inner + " | null"
+		}
+	}
+	return ""
+}
+
+// fieldNames answers the names of a shape's fields in order.
+func fieldNames(fields map[string]wireField) []string {
+	names := make([]string, 0, len(fields))
+	for name := range fields {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// facadeFields reads the wire fields off one struct, taking the json tag rather than the Go
+// name because the tag is what actually reaches the page.
+func facadeFields(t *testing.T, path, name string, structure *ast.StructType) map[string]wireField {
 	t.Helper()
 
-	var fields []string
+	fields := map[string]wireField{}
 	for _, field := range structure.Fields.List {
 		if len(field.Names) == 0 || !field.Names[0].IsExported() {
 			continue
@@ -86,24 +138,39 @@ func facadeFieldNames(t *testing.T, path, name string, structure *ast.StructType
 		if err != nil {
 			t.Fatalf("%s: unreadable tag on %s.%s", path, name, field.Names[0].Name)
 		}
-		tag := strings.Split(reflect.StructTag(raw).Get("json"), ",")[0]
+		options := strings.Split(reflect.StructTag(raw).Get("json"), ",")
+		tag := options[0]
 		if tag == "" || tag == "-" {
 			continue
 		}
-		fields = append(fields, tag)
+		stated := tsTypeOf(field.Type)
+		if stated == "" {
+			t.Errorf("%s: %s.%s has a Go type this test cannot state in TypeScript; add it to goScalars",
+				filepath.ToSlash(path), name, field.Names[0].Name)
+		}
+		fields[tag] = wireField{tsType: stated, optional: hasOption(options[1:], omitEmpty)}
 	}
-	sort.Strings(fields)
 	return fields
+}
+
+// hasOption reports whether a json tag's options hold one.
+func hasOption(options []string, want string) bool {
+	for _, option := range options {
+		if option == want {
+			return true
+		}
+	}
+	return false
 }
 
 // facadeDTOs returns every wire struct the facade declares, by json field name.
 //
 // Only the files at the repository root are read. The setup program is a second Wails
 // application with a page of its own, so its DTOs answer to a different contract.
-func facadeDTOs(t *testing.T, root string) map[string][]string {
+func facadeDTOs(t *testing.T, root string) map[string]map[string]wireField {
 	t.Helper()
 
-	out := map[string][]string{}
+	out := map[string]map[string]wireField{}
 	for _, path := range goFiles(t) {
 		if filepath.Dir(path) != root || strings.HasSuffix(path, "_test.go") {
 			continue
@@ -124,7 +191,7 @@ func facadeDTOs(t *testing.T, root string) map[string][]string {
 					continue
 				}
 				if structure, ok := typed.Type.(*ast.StructType); ok {
-					out[typed.Name.Name] = facadeFieldNames(t, relative, typed.Name.Name, structure)
+					out[typed.Name.Name] = facadeFields(t, relative, typed.Name.Name, structure)
 				}
 			}
 		}
@@ -136,7 +203,7 @@ func facadeDTOs(t *testing.T, root string) map[string][]string {
 }
 
 // wireInterfaces returns every interface the front end declares, by field name.
-func wireInterfaces(t *testing.T, root string) map[string][]string {
+func wireInterfaces(t *testing.T, root string) map[string]map[string]wireField {
 	t.Helper()
 
 	raw, err := os.ReadFile(filepath.Join(root, wireContract))
@@ -145,13 +212,26 @@ func wireInterfaces(t *testing.T, root string) map[string][]string {
 	}
 	source := tsComment.ReplaceAll(raw, nil)
 
-	out := map[string][]string{}
-	for _, match := range tsInterface.FindAllSubmatch(source, -1) {
-		var fields []string
-		for _, field := range tsField.FindAllSubmatch(match[2], -1) {
-			fields = append(fields, string(field[1]))
+	// An alias every member of which is a string literal arrives as a string.
+	literals := map[string]bool{}
+	for _, match := range tsAlias.FindAllSubmatch(source, -1) {
+		every := true
+		for _, member := range strings.Split(string(match[2]), "|") {
+			every = every && tsLiteral.MatchString(member)
 		}
-		sort.Strings(fields)
+		literals[string(match[1])] = every
+	}
+
+	out := map[string]map[string]wireField{}
+	for _, match := range tsInterface.FindAllSubmatch(source, -1) {
+		fields := map[string]wireField{}
+		for _, field := range tsField.FindAllSubmatch(match[2], -1) {
+			stated := strings.Join(strings.Fields(string(field[3])), " ")
+			if literals[stated] {
+				stated = "string"
+			}
+			fields[string(field[1])] = wireField{tsType: stated, optional: len(field[2]) > 0}
+		}
 		out[string(match[1])] = fields
 	}
 	if len(out) == 0 {
@@ -160,16 +240,12 @@ func wireInterfaces(t *testing.T, root string) map[string][]string {
 	return out
 }
 
-// absent returns the entries of want that got does not hold.
-func absent(want, got []string) []string {
-	present := map[string]bool{}
-	for _, item := range got {
-		present[item] = true
-	}
+// absent returns the fields of want that got does not hold.
+func absent(want, got map[string]wireField) []string {
 	var out []string
-	for _, item := range want {
-		if !present[item] {
-			out = append(out, item)
+	for _, name := range fieldNames(want) {
+		if _, present := got[name]; !present {
+			out = append(out, name)
 		}
 	}
 	return out
@@ -218,7 +294,7 @@ func TestTheWireContractMatchesOnBothSides(t *testing.T) {
 
 // checkShape compares one pair, kept apart from the loop so each failure reads as a
 // statement about that shape rather than about the pass as a whole.
-func checkShape(t *testing.T, name, shape string, structs, interfaces map[string][]string) {
+func checkShape(t *testing.T, name, shape string, structs, interfaces map[string]map[string]wireField) {
 	t.Helper()
 
 	fields, ok := structs[name]
@@ -244,5 +320,20 @@ func checkShape(t *testing.T, name, shape string, structs, interfaces map[string
 				"undefined at runtime with nothing to say so",
 			shape, field, name,
 		)
+	}
+	for _, field := range fieldNames(fields) {
+		sent, read := fields[field], declared[field]
+		if _, both := declared[field]; !both || sent.tsType == "" {
+			continue
+		}
+		if sent.tsType != read.tsType {
+			t.Errorf("%s.%s is sent as %s but interface %s reads it as %s",
+				name, field, sent.tsType, shape, read.tsType)
+		}
+		if sent.optional != read.optional {
+			t.Errorf("%s.%s is optional on one side alone (omitempty %v, ? %v): a field left out "+
+				"reads as undefined where the page expects a value; otherwise a value is guarded for nothing",
+				name, field, sent.optional, read.optional)
+		}
 	}
 }

@@ -129,7 +129,7 @@ func TestAMalformedDescriptionIsRefused(t *testing.T) {
 		{"a length runs past the end", append(counted(0), counted(9)...)},
 		{"a length is negative", append(counted(0), counted(-1)...)},
 		{"a name is not text", append(counted(0), text([]byte{0xff, 0xfe})...)},
-		{"a voice is malformed after a good name", join(counted(1), text([]byte("A")), counted(99))},
+		{"a voice is malformed after a good name", padded(join(counted(1), text([]byte("A")), counted(99)))},
 		{"bytes follow the description", append(plugintest.Description("A"), 0)},
 	} {
 		t.Run(each.name, func(t *testing.T) {
@@ -156,8 +156,8 @@ func TestMalformedTakesAreRefused(t *testing.T) {
 	}{
 		{"nothing at all", nil},
 		{"it promises a take it has no bytes for", counted(1)},
-		{"a take has no parts", append(counted(1), counted(0)...)},
-		{"a part count is negative", append(counted(1), counted(-2)...)},
+		{"a take has no parts", padded(append(counted(1), counted(0)...))},
+		{"a part count is negative", padded(append(counted(1), counted(-2)...))},
 		{"a path runs past the end", join(counted(1), counted(1), counted(plugintest.PartFile), counted(40))},
 		{"a path is not text", join(counted(1), counted(1), counted(plugintest.PartFile), text([]byte{0xc3, 0x28}))},
 		{"a part is neither a file nor a span", join(counted(1), counted(1), counted(unknownKind), text([]byte("a.mp3")))},
@@ -201,6 +201,15 @@ func TestAnyNonZeroReadyFlagMeansReady(t *testing.T) {
 	if err != nil || len(got.Voices) != 1 || !got.Voices[0].Ready {
 		t.Errorf("description = %+v, %v; want the voice read as ready", got, err)
 	}
+}
+
+// roomForAnEntry is more bytes than the largest least size of an entry, a voice of five numbers.
+const roomForAnEntry = 6 * 4
+
+// padded adds zero bytes after a deliberately wrong answer, so the count ahead of the fault finds
+// room for its entries and the reader reaches the fault itself rather than refusing the count.
+func padded(data []byte) []byte {
+	return append(data, make([]byte, roomForAnEntry)...)
 }
 
 // counted writes one bare number, for building an answer that is deliberately wrong.

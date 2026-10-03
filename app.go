@@ -8,6 +8,8 @@ package main
 
 import (
 	"context"
+	"io"
+	"os"
 	"sync"
 	"sync/atomic"
 
@@ -59,6 +61,12 @@ type App struct {
 	// own goroutine writes it and the window's reads it, so it is held under the lock beside the
 	// sources for the same reason they are (FR-742).
 	stoppedReacting string
+
+	// errorOutput is where the loop says a source failed, which is the run log (FR-715); a field
+	// so a test can read what was said. failing holds each source's last reason, by name, so a
+	// reason repeated poll after poll is said once. The loop's goroutine alone touches failing.
+	errorOutput io.Writer
+	failing     map[string]string
 
 	// emit sends one event to the front end. It is a field rather than a direct
 	// call so a test can read what the facade announced; production wiring points
@@ -128,6 +136,8 @@ func newApp(
 		libraryRoot: libraryRoot,
 		settings:    settings,
 		stop:        make(chan struct{}),
+		errorOutput: os.Stderr,
+		failing:     make(map[string]string),
 	}
 	built.watch(watched)
 	built.emit = built.emitToWails

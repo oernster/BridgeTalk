@@ -4,7 +4,7 @@
 // o7Debrief and EDColonisationAsst. The game appends journal lines one at a time,
 // so reading while it is mid-write can yield a final line with no trailing newline.
 // The reader returns that trailing partial so the caller can prepend it next pass,
-// which is what guarantees no event is lost or counted twice.
+// which is what keeps a line caught mid-write from being lost or counted twice.
 package journal
 
 import (
@@ -33,7 +33,9 @@ type TailResult struct {
 // The carried partial from the previous call is prepended before splitting. A file
 // now smaller than the recorded offset was rotated or truncated, so the read starts
 // again from the beginning. A missing or unreadable file yields no lines and leaves
-// the offset where it was, because a journal directory can legitimately be busy.
+// the offset and the partial where they were, because a journal directory can
+// legitimately be busy: a file out of reach for a moment has not shrunk. Reading it
+// as shrunk would replay the whole of it once it came back.
 func ReadNewBytes(path string, offset int64, partial []byte) TailResult {
 	start, carried := normaliseForRotation(path, offset, partial)
 
@@ -67,9 +69,10 @@ func FileSize(path string) int64 {
 	return info.Size()
 }
 
-// normaliseForRotation resets the offset and partial when the file has shrunk.
+// normaliseForRotation resets the offset and partial when the file has shrunk. Only a size
+// actually read can say so; a stat that fails says nothing about the size and keeps both.
 func normaliseForRotation(path string, offset int64, partial []byte) (int64, []byte) {
-	if FileSize(path) < offset {
+	if info, err := os.Stat(path); err == nil && info.Size() < offset {
 		return emptyOffset, nil
 	}
 	return offset, partial

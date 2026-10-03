@@ -119,10 +119,10 @@ type Switchboard interface {
 
 // SettingsStore keeps those choices between runs.
 //
-// Load answers with what is stored and nothing else. A first run has no file, an
-// unreadable one is indistinguishable from that to a reader; neither is a reason to
-// refuse to start, so there is no error to handle: an empty Settings means detect
-// as usual.
+// Load answers with what is stored and nothing else. A first run has no file; a file
+// that cannot be read or parsed answers nothing too. None is a reason to refuse to
+// start, so there is no error to handle: an empty Settings means detect as usual. A
+// store keeps a damaged file from being saved over by what follows such a load.
 type SettingsStore interface {
 	Load() Settings
 	Save(Settings) error

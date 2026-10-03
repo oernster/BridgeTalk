@@ -226,6 +226,11 @@ func run() error {
 	// they are; nothing is detected and nothing is guessed at.
 	settings := config.NewSettings()
 	stored := settings.Load()
+	// A settings file that did not parse was kept aside rather than read as nothing and saved over;
+	// one that could not be read is left alone and not saved over this run. Either is said here.
+	if problem := settings.Problem(); problem != nil {
+		fmt.Fprintf(os.Stderr, "warning: %v\n", problem)
+	}
 
 	root := preferred(*libraryRoot, stored.LibraryRoot)
 	found, report := scanLibrary(root, table)

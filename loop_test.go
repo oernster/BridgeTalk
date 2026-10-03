@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -94,6 +95,41 @@ func TestAFailingSourceDoesNotStopTheOthers(t *testing.T) {
 
 	if failing.polled() != 1 || working.polled() != 1 {
 		t.Fatalf("polls were %d and %d, want one each", failing.polled(), working.polled())
+	}
+}
+
+// A source failing for one reason poll after poll is said once, not four times a second: a lost
+// journal once wrote 14,400 identical lines an hour into a log cut only when a run starts. A new
+// reason is said again; so is the source reading once more.
+func TestASourceFailingTheSameWayIsSaidOnceAndItsRecoveryOnce(t *testing.T) {
+	app, _, _ := fixtureApp(t)
+	var said strings.Builder
+	app.errorOutput = &said
+	failing := &fakeSource{name: "journal", err: errors.New("no journal files in D:\\journals")}
+	app.sources = []ports.EventSource{failing}
+
+	for range 3 {
+		app.poll()
+	}
+	failing.mu.Lock()
+	failing.err = errors.New("searching D:\\journals: refused")
+	failing.mu.Unlock()
+	app.poll()
+	failing.mu.Lock()
+	failing.err = nil
+	failing.mu.Unlock()
+	app.poll()
+	app.poll()
+
+	lines := strings.Split(strings.TrimSpace(said.String()), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("said %d lines %q, want the first reason, the second and the recovery", len(lines), lines)
+	}
+	if !strings.Contains(lines[0], "no journal files") || !strings.Contains(lines[1], "refused") {
+		t.Errorf("said %q, want each reason once", lines[:2])
+	}
+	if !strings.Contains(lines[2], "journal") || !strings.Contains(lines[2], "reading again") {
+		t.Errorf("said %q last, want the source named as reading again", lines[2])
 	}
 }
 

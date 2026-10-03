@@ -47,6 +47,28 @@ func TestATakeThatWillNotPlayIsLeftOutAndReported(t *testing.T) {
 	}
 }
 
+// A take whose header lies, such as a block align of 0, once made the decoder fault inside the
+// scan's probe, which ended the process before any window opened, on every start. It is reported
+// as a take that will not play like any other; the good take beside it is offered.
+func TestATakeWithADamagedHeaderIsReportedAndTheScanGoesOn(t *testing.T) {
+	root := t.TempDir()
+	ivy := filepath.Join(root, "Ivy")
+	audiotest.WriteTake(t, filepath.Join(ivy, "DockingGranted.wav"))
+	damaged := audiotest.Standard()
+	damaged.BlockAlign = 0
+	audiotest.WriteFile(t, filepath.Join(ivy, "DockingDenied.wav"), audiotest.WAVOf(t, damaged, make([]byte, 64)))
+
+	voices, report := scanned(t, root, journalTable(t, "DockingGranted", "DockingDenied"))
+
+	if found := only(t, voices); found.Takes != 1 {
+		t.Errorf("Ivy holds %d takes, want the one that plays", found.Takes)
+	}
+	want := []string{filepath.Join("Ivy", "DockingDenied.wav")}
+	if got := paths(report.Undecodable); !reflect.DeepEqual(got, want) {
+		t.Errorf("undecodable = %v, want %v", got, want)
+	}
+}
+
 // ScanVoice asks the same question, so the Missing takes pane counts only what plays.
 func TestAVoiceScannedAloneLeavesOutWhatWillNotPlay(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "Kim")

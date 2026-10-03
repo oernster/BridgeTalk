@@ -49,6 +49,7 @@ var writesByTheApplication = map[string]string{
 	"internal/infrastructure/wholefile/wholefile.go:Write":        "a part beside the file its caller names, then that file; each caller is listed here",
 	"internal/infrastructure/config/settings.go:Save":             "the settings file under the user configuration directory",
 	"internal/infrastructure/config/settings.go:Forget":           "the settings file and its folder under the user configuration directory",
+	"internal/infrastructure/config/settings.go:keepAside":        "a settings file that will not parse, renamed beside itself under the user configuration directory",
 	"internal/infrastructure/library/checklist.go:MomentFolder":   "a moment's folder under the library root (FR-314)",
 	"internal/infrastructure/library/folders.go:MakeVoiceFolders": "a new voice's folders under the library root (FR-223)",
 	"internal/infrastructure/library/folders.go:makeVoiceFolders": "a new voice's folders under the library root (FR-223)",

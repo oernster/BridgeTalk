@@ -63,7 +63,6 @@ GRANTS=(
     --filesystem=home
     --filesystem=~/.var/app/com.valvesoftware.Steam:ro
     --filesystem=xdg-config/autostart:create
-    --talk-name=org.kde.StatusNotifierWatcher
 )
 
 section() { printf '\n\033[1m== %s ==\033[0m\n' "$1"; }

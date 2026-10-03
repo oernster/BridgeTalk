@@ -266,7 +266,8 @@ export function SettingsPane({ state }: { state: State | null }) {
           Start it when I sign in
           <br />
           <span className="hint">
-            It waits in the notification area until the game runs.
+            On Windows it waits in the notification area until the game runs; on Linux it opens its
+            window.
           </span>
         </label>
         <input

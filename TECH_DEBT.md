@@ -13,7 +13,26 @@ deliberately unnumbered and are not open items.
 History is not recorded here. A resolved item is deleted outright, never rewritten as done and never
 archived. A resolution worth remembering belongs in the release notes.
 
-There is no open technical debt.
+## 1. The Linux tray code outlives the Linux tray
+
+No tray is put up on Linux since FR-814 (`offersTray` in `voices.go` answers true on Windows alone), yet
+the code that drew one is still compiled into every Linux build and never runs:
+
+- `internal/infrastructure/taskbar/tray_linux.go`, `watcher.go` and `trayicon.go` with
+  `trayicon_test.go`, plus `awaitWatcher`, `trayPicture` and `linuxTraySide`;
+- `icon_other.go` (which embeds the icon only to hand it to that tray) beside its empty Windows twin
+  `icon_windows.go`, with `Options.Icon` and the `Icon: applicationIcon` voices.go passes;
+- `CommandNoTray` with its handler in `loop.go`, `App.trayGone` and the `hasTray` check it feeds, plus
+  `TestATrayTheDesktopNeverTookIsNoTray`, which FR-814's Verified-by cites; nothing sends that command;
+- `fyne.io/systray` and `godbus/dbus` in `go.mod`, needed by the taskbar package alone and credited in
+  `identity.go`.
+
+The cost of carrying it is small: two dependencies and some dead code in the Linux binary. The cost of
+removing it is the risk. Taking it out touches the close logic as well as the taskbar package; the
+change can be checked from Windows only by a cgo-off `go vet` of the taskbar package; the root package
+cannot be vetted for Linux there. Blocked on a Linux build to test it: remove it all at once, retag
+`tray_other.go` as `!windows`, run `go mod tidy`, update ARCHITECTURE.md, DEVELOPMENT.md, TESTING.md and
+FR-814's Verified-by, then build and run on Linux.
 
 ## Looks like debt, not worth touching
 

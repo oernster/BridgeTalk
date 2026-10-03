@@ -4834,21 +4834,23 @@ with only the first place named. That the reason reaches the Status pane is FR-2
 Priority: Should.
 The manifest `build_flatpak.sh` writes shall grant `--share=ipc`, `--socket=wayland`,
 `--socket=fallback-x11`, `--device=dri`, `--socket=pulseaudio`, `--share=network`, `--filesystem=home`,
-`--filesystem=~/.var/app/com.valvesoftware.Steam:ro`, `--filesystem=xdg-config/autostart:create`
-and `--talk-name=org.kde.StatusNotifierWatcher`, each once; it shall grant nothing else.
+`--filesystem=~/.var/app/com.valvesoftware.Steam:ro` and `--filesystem=xdg-config/autostart:create`,
+each once; it shall grant nothing else.
 Rationale: home holds the prefix of FR-811 and any library root; flatpak excludes `~/.var/app` from
 home, so Steam installed as a flatpak needs its own read-only grant; the sign-in entry of FR-815 sits
-outside the sandbox's own configuration. The watcher was granted for a Linux tray icon; since FR-814
-no tray is put up on Linux, so nothing the application runs talks to the watcher and that one grant
-is wider than what the application uses. The network is granted
+outside the sandbox's own configuration. The network is granted
 for the update check alone (NFR-S-1, FR-756), added on 2026-09-29: without it the sandbox blocks the
 socket and every check reads as unreachable. The `--share=network` under the manifest's build
 arguments is a different grant, letting the build fetch its modules; it gives the installed
 application nothing.
+Amended on 2026-10-03 (Oliver). It also granted `--talk-name=org.kde.StatusNotifierWatcher`, for a
+Linux tray icon. Since FR-814 no tray is put up on Linux and the Linux tray's code is gone, so nothing
+the application runs talks to the watcher; the grant was wider than what the application uses.
 Verified by: `TestTheFlatpakIsGrantedWhatItUsesAndNoMore` in `tests/structural/flatpak_test.go`, which
 reads the script's GRANTS list and its APP_ID; seen to fail on 2026-09-16 with a grant added,
 a grant dropped and the manifest's grants written from anything but GRANTS; on 2026-09-29 with the
-network grant dropped. Not verified: that each grant is enough on a real desktop.
+network grant dropped; on 2026-10-03 with the watcher grant still in the script. Not verified: that
+each grant is enough on a real desktop.
 
 **FR-814 On Linux the window's panel button is the one icon**
 Priority: Should.

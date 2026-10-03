@@ -118,7 +118,8 @@ export const guideSections: GuideSection[] = [
   },
   {
     heading: 'The notification area',
-    intro: 'While the window is put away the application keeps watching the game and keeps speaking.',
+    intro:
+      'On Windows the window can be put away while the application keeps watching the game and keeps speaking. Linux has no notification-area icon: the window itself is how it is reached.',
     entries: [
       {
         icons: [artwork.application],
@@ -127,7 +128,7 @@ export const guideSections: GuideSection[] = [
       },
     ],
     paragraphs: [
-      'The cross on the window asks rather than closes. Minimise to the notification area keeps it listening; Quit stops it; Escape leaves everything as it was.',
+      'On Windows the cross on the window asks rather than closes. Minimise to the notification area keeps it listening; Quit stops it; Escape leaves everything as it was. On Linux the cross quits at once, since there is no icon to bring a hidden window back.',
     ],
   },
   {
@@ -175,7 +176,7 @@ export const guideSections: GuideSection[] = [
     paragraphs: [
       'The cast voice, both directories and the moments switched off are kept in a settings file under your own application data folder; the theme and the volume are kept by the window itself. All of them are picked up again at the next start.',
       'The journal directory is found under your own profile until you choose one. Choosing the journal directory in Settings or the recordings directory on the Missing takes pane takes effect at once. A recordings directory holding no voice yet is refused; until one is chosen, Make folders puts a new voice in a Recordings folder inside your local application data folder and keeps that as the recordings directory.',
-      'With Start it when I sign in ticked, signing in to Windows starts it hidden in the notification area.',
+      'With Start it when I sign in ticked, signing in to Windows starts it hidden in the notification area; signing in to Linux opens its window.',
       'Started from a command line it takes -library, -journal and -voice for that run only, over what Settings holds. -list prints the voices found with their coverage and -unbound the cues the chosen voice cannot serve, each then exiting; -no-tray runs it without the notification-area icon, when the cross on the window quits at once.',
     ],
   },

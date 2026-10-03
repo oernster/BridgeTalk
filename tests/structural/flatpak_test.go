@@ -3,7 +3,7 @@ package structural
 // FR-813: the flatpak's sandbox is granted what the application uses and no more. build_flatpak.sh
 // writes the manifest from its GRANTS list, so the list is held here to the requirement's grants,
 // each once; the network among them is for the update check alone (NFR-S-1, FR-756). Its APP_ID is
-// held to the product's own id, which the sign-in entry and the tray are named with too.
+// held to the product's own id, which the desktop entry and the sign-in entry are named with too.
 //
 // What this cannot see: whether each grant is enough on a real desktop, which only running the
 // flatpak shows.
@@ -35,7 +35,6 @@ var requiredGrants = []string{
 	"--filesystem=home",
 	"--filesystem=~/.var/app/com.valvesoftware.Steam:ro",
 	"--filesystem=xdg-config/autostart:create",
-	"--talk-name=org.kde.StatusNotifierWatcher",
 }
 
 // grantsBlock is the GRANTS array in the script, from its opening line to its closing bracket.

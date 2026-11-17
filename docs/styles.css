@@ -97,7 +97,7 @@ a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-ra
   color: var(--accent);
 }
 .nav-brand img { width: 28px; height: 28px; }
-.nav-links { display: flex; align-items: center; gap: 20px; }
+.nav-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 .nav-links a { color: var(--text); font-weight: 600; font-size: 15px; }
 .nav-links a[aria-current="page"]:not(.btn) { color: var(--accent); }
 .nav-links .btn { padding: 8px 20px; }
@@ -355,6 +355,23 @@ h2.section-title {
 .compare td { color: var(--muted); }
 .compare td:nth-child(2) { color: var(--text); background: var(--accent-soft); }
 .compare-note { margin: 18px 0 0; color: var(--muted); font-size: 14px; max-width: 760px; }
+
+/* What's new: one card per release, newest first, each led by its version in a pill. */
+.releases { display: grid; gap: 18px; }
+.ver-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 2px 12px;
+}
+.release h3 { margin: 12px 0 10px; }
+.release ul { margin: 0; padding-left: 20px; color: var(--text); font-size: 15px; }
+.release li + li { margin-top: 6px; }
+.releases-more { margin-top: 36px; }
 
 /* Download */
 #download { text-align: center; }

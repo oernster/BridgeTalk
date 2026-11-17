@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What's new in Bridge Talk: release history</title>
+<meta name="description" content="Bridge Talk's release history: damaged recordings and settings that no longer stop the voice, an update check, a website with a page for each job, plugin voices, the Linux flatpak, the Chatter pane and the first release's 28 ready-made voices.">
+<meta name="author" content="Oliver Ernster">
+<meta name="application-name" content="Bridge Talk">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#f6f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Bridge Talk">
+<meta property="og:title" content="What's new in Bridge Talk: release history">
+<meta property="og:description" content="Bridge Talk's release history: damaged recordings and settings that no longer stop the voice, an update check, a website with a page for each job, plugin voices, the Linux flatpak, the Chatter pane and the first release's 28 ready-made voices.">
+<meta property="og:url" content="https://ernster.dev/BridgeTalk/whats-new.html">
+<meta property="og:image" content="https://ernster.dev/BridgeTalk/social-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Bridge Talk icon, a commander's helmet speaking, with rings of sound spreading from it">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:locale" content="en_GB">
+<link rel="canonical" href="https://ernster.dev/BridgeTalk/whats-new.html">
+<meta property="og:image:type" content="image/png">
+<meta name="twitter:title" content="What's new in Bridge Talk: release history">
+<meta name="twitter:description" content="Bridge Talk's release history: damaged recordings and settings that no longer stop the voice, an update check, a website with a page for each job, plugin voices, the Linux flatpak, the Chatter pane and the first release's 28 ready-made voices.">
+<meta name="twitter:image" content="https://ernster.dev/BridgeTalk/social-card.png">
+<meta name="twitter:image:alt" content="The Bridge Talk icon, a commander's helmet speaking, with rings of sound spreading from it">
+<link rel="icon" type="image/png" href="application-icon.png">
+<link rel="apple-touch-icon" href="application-icon.png">
+<link rel="stylesheet" href="styles.css?v=7d057be78b">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "What's new in Bridge Talk: release history",
+  "description": "Bridge Talk's release history: damaged recordings and settings that no longer stop the voice, an update check, a website with a page for each job, plugin voices, the Linux flatpak, the Chatter pane and the first release's 28 ready-made voices.",
+  "url": "https://ernster.dev/BridgeTalk/whats-new.html",
+  "inLanguage": "en-GB",
+  "isPartOf": {"@type": "WebSite", "name": "Bridge Talk", "url": "https://ernster.dev/BridgeTalk/"}
+}
+</script>
+<script>window.goatcounter = {path: function (p) { return location.host + p }}</script>
+<script data-goatcounter="https://oernster.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <div class="wrap">
+
+    <nav class="site-nav" aria-label="Site">
+      <a class="nav-brand" href="./"><img src="application-icon.png" width="28" height="28" alt="">Bridge Talk</a>
+      <div class="nav-links">
+        <a href="features.html">Features</a>
+        <a href="why.html">Why</a>
+        <a href="whats-new.html" aria-current="page">What's New</a>
+        <a class="btn primary" href="download.html">Download</a>
+      </div>
+    </nav>
+
+    <section id="whats-new">
+      <div class="eyebrow">Changelog</div>
+      <h2 class="section-title">What's new</h2>
+      <p class="section-sub">Recent releases have made Bridge Talk harder to knock over: a damaged
+        recording, a damaged settings file or a journal briefly out of reach no longer stops the voice
+        or loses your place. Before that it learned to tell you about a new release, kept to one running
+        copy and gained a website with a page for each job. Earlier releases brought plugins as a third
+        kind of voice, a Linux flatpak, the Chatter pane for choosing which moments are spoken and the
+        first release's 28 ready-made voices.</p>
+
+      <div class="releases">
+
+        <div class="card release">
+          <span class="ver-tag">v<!--VERSION-->1.7.0<!--/VERSION--></span>
+          <h3>Damaged files no longer stop the voice</h3>
+          <ul>
+            <li>A recording whose file describes itself wrongly, stating no sample rate or claiming to run for more than ten minutes, could stop the scan of your recordings or end playback. It is now set aside before any of it is read; the scan goes on and Bridge Talk keeps playing</li>
+            <li>A recording that makes the decoder fail is passed over the same way, with the reason written to the log</li>
+            <li>A settings file that cannot be understood is kept beside the new one with .damaged added to its name, so fresh settings never overwrite what was there; one that cannot be read at all is left alone and a change you make is refused with the reason</li>
+            <li>A journal briefly out of reach no longer makes Bridge Talk speak earlier lines again: it keeps its place, always follows the newest journal under either form of name the game has used and plays the last lines of the old journal before moving to a new one</li>
+            <li>A journal folder that cannot be read is reported in the log once for each new reason rather than four times a second</li>
+            <li>Plugins are refused for the true reason: two voices under one id, a failure while stating the version or an answer claiming more entries than it could hold</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.6.0</span>
+          <h3>A website with a page for each job</h3>
+          <ul>
+            <li>Bridge Talk itself is unchanged; this release is about the website and the documents beside the code</li>
+            <li>The site was one long page and is now four: Home, Features, Why and Download, linked from a bar across the top and again from the foot of every page</li>
+            <li>Each page links its stylesheet by a fingerprint of its content, so a browser never draws a new page in an old style</li>
+            <li>The README, the website, the plugin guide and the developer documents now describe Linux as it is: no notification-area icon, closing the window quits and a start at sign-in opens the window</li>
+            <li>For developers, DECISIONS-TRADEOFFS.md sets out the decisions Bridge Talk rests on with what each one gains and costs</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.5.0</span>
+          <h3>It tells you when there is a new release</h3>
+          <ul>
+            <li>A few seconds after it starts and once a day while it runs, Bridge Talk asks GitHub for its latest published release; when a newer one is out it offers Download, Skip this version or Later</li>
+            <li>Download opens the right file for your computer in your browser: the setup program on Windows, the flatpak on Linux</li>
+            <li>Help, then Check for updates asks at once and reports whatever it found, a skipped release included</li>
+            <li>The check is the one network request Bridge Talk makes and sends nothing about you, your computer or the game; when it cannot reach GitHub it stays silent unless you asked</li>
+            <li>Starting Bridge Talk while it is already running brings back the running copy's window instead of a second copy speaking over the first</li>
+            <li>On Linux the flatpak is granted network access for the update check alone; reinstall from the new bundle for the check to reach GitHub</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.4.2</span>
+          <h3>A new donation page</h3>
+          <ul>
+            <li>The Donate button now opens a new PayPal page that suggests £5 and lets you give any amount you choose; nothing else has changed</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.4.1</span>
+          <h3>Chatter shows what can be pressed</h3>
+          <ul>
+            <li>Each category name in Chatter's header now carries an arrow pointing down at the list, since pressing it moves the list to that category</li>
+            <li>Each heading in the list carries a mark that points down while its category is open and at its words while it is collapsed</li>
+            <li>The help guide's Chatter section now says what pressing either one does</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.4.0</span>
+          <h3>Plugin voices on the Cast and Audition panes</h3>
+          <ul>
+            <li>Bridge Talk speaks version 2 of the plugin interface and loads no other; a version 1 plugin is refused with the file and both versions named in the run log</li>
+            <li>Version 2 lets a plugin arrange its voices under groups of its own naming and point at a recording that is a span of a larger file, read where it stands without being copied</li>
+            <li>Each plugin's voices stand in a section of their own on the Cast pane, headed by the plugin's name, above the machine voices</li>
+            <li>The Audition pane offers every plugin voice that can speak, in the same order as the Cast pane, so you can hear one before casting it</li>
+            <li>The cast voice now keeps its place in its panel, shown disabled, so every voice stays where you would look for it</li>
+            <li>The licence gains a plugin exception: a plugin that talks to Bridge Talk only through the published interface may carry terms of its own author's choosing</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.3.0</span>
+          <h3>Plugins, Linux and a Chatter pane that is easier to find your way around</h3>
+          <ul>
+            <li>Plugins are a third kind of voice beside recorded and machine voices: a library file in the plugins folder offering voices whose audio is already on your machine</li>
+            <li>Nothing a plugin does can stop Bridge Talk starting; one that will not load is passed over and named in the run log. A plugin runs with your own rights, so only put in one whose author you trust</li>
+            <li>PLUGINS-GUIDE.md is the contract for writing a plugin, with a worked example in C</li>
+            <li>Bridge Talk now builds for Linux as a flatpak with recorded voices, all 28 machine voices and plugins; it finds the journal inside the game's Proton or Wine prefix</li>
+            <li>The Audition pane plays only moments switched on in Chatter, grouped under Chatter's categories, so it never plays a line the ship would not say</li>
+            <li>Each category name in Chatter's header moves the list to it, each heading collapses its category and the moments stand in three columns, so far less scrolling is needed</li>
+            <li>Category headings stand in a lavender pill; the line under each title is cyan so it reads apart from the headings</li>
+            <li>A fault in the part that watches the game no longer closes the window: the Status pane says Bridge Talk has stopped reacting and should be started again</li>
+            <li>The setup window's error screen now offers Close</li>
+            <li>The site offers the Linux flatpak beside the Windows setup program and compares Bridge Talk with EDCoPilot as well</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.2.0</span>
+          <h3>Chatter: choose which moments are spoken</h3>
+          <ul>
+            <li>A new Chatter pane lists all 262 moments the game raises under twelve categories, each with a switch</li>
+            <li>A moment switched off stays quiet whichever voice is cast and holds nothing back, so switching it on again lets the next one be heard straight away; the Status pane records each one as off so a silence still explains itself</li>
+            <li>Switch all on, Switch all off and a switch for each category stay in view while the list scrolls; anything that changes more than one moment asks first, naming how many</li>
+            <li>The switches belong to no voice and are kept for the next start</li>
+            <li>Station traffic (docking answers, welcomes and no fire zone notices) is a moment of its own, so it can be switched off while other messages are still spoken</li>
+            <li>The site now carries a picture card for any service that shows one when a link is shared</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.1.1</span>
+          <h3>A fix for auditioning with no voice cast</h3>
+          <ul>
+            <li>Bridge Talk no longer closes when a line on the Audition pane finishes while no voice is cast</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.1.0</span>
+          <h3>Pirates get a reaction; install where you like</h3>
+          <ul>
+            <li>The ship's voice now speaks when a pirate arrives, scans your cargo, loses interest in it, starts an interdiction or declares its attack, whatever words the game chose</li>
+            <li>A recorded voice lists these six new moments on the Missing takes pane until they are recorded</li>
+            <li>Setup can install into a folder of your choosing, always inside a BridgeTalk folder of its own so uninstalling takes nothing else with it</li>
+            <li>Setup refuses a folder that already holds other files or that your account cannot write to, saying why before anything is written</li>
+          </ul>
+        </div>
+
+        <div class="card release">
+          <span class="ver-tag">v1.0.0</span>
+          <h3>The first release: a ship's voice for Elite Dangerous</h3>
+          <ul>
+            <li>28 machine voices in British and American English, female and male, make every line on your own machine; nothing is downloaded and nothing is sent anywhere</li>
+            <li>Every moment has three lines written for it; a newly cast machine voice speaks within five seconds</li>
+            <li>Follows the game's journal and status file, knowing 256 moments each named in the game's own words</li>
+            <li>Decides what gets said: an alert cuts in over anything less urgent, a notice waits its turn and an idle remark gives way</li>
+            <li>Record a voice of your own: Make folders gives every moment a folder already named; Missing takes lists what is left to record with a button to open each folder</li>
+            <li>Plays WAV, MP3, FLAC and Ogg recordings, picking one of several takes at random</li>
+            <li>The Status pane logs every decision with its reason, including those that produced no sound</li>
+            <li>Lives in the notification area, can start when you sign in to Windows and talks without ever listening: no microphone and no voice commands</li>
+            <li>A setup program of its own installs for your account only, so Windows never asks for administrator rights; uninstalling never touches your recordings</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="cta releases-more">
+        <a class="btn ghost" href="https://github.com/oernster/BridgeTalk/releases">View all releases on GitHub</a>
+      </div>
+    </section>
+
+    <footer>
+      <p class="mono">Bridge Talk</p>
+      <p class="footer-links">
+        <a href="./">Home</a> &middot; <a href="features.html">Features</a>
+        &middot; <a href="why.html">Why</a> &middot; <a href="whats-new.html">What's New</a>
+        &middot; <a href="download.html">Download</a>
+      </p>
+      <p>
+        Built by Oliver Ernster &middot; free and open source under the GNU General Public Licence v3.0
+        &middot; <a href="https://github.com/oernster/BridgeTalk">github.com/oernster/BridgeTalk</a>
+        &middot; <a href="https://ernster.dev">More of my work</a>
+      </p>
+      <p>Elite Dangerous is a trademark of Frontier Developments plc. This is an unofficial, fan-made tool.
+        EDDI, EDDiscovery and EDCoPilot are independent projects with no connection to Bridge Talk.</p>
+    </footer>
+
+  </div>
+</body>
+</html>
